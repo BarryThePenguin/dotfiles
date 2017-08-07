@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# dot
+#
+# `dot` handles installation, updates, things like that. Run it periodically
+# to make sure you're on the latest and greatest.
+
+install_homebrew() {
+  readonly url=https://raw.githubusercontent.com/Homebrew/install/master/install
+  ruby -e "$(curl -fsSL $url)"
+}
+
+install_fonts() {
+  brew tap caskroom/fonts
+}
+
+install_cask() {
+  brew tap caskroom/cask
+  brew tap caskroom/versions
+}
+
+# update deps
+which brew > /dev/null || install_homebrew
+brew cask --version > /dev/null || install_cask
+brew update && brew upgrade
+
+# Upgrade homebrew and Install homebrew packages
+cat "$ZSH"/homebrew/Brewfile | xargs -n1 brew install
+cat "$ZSH"/homebrew/Caskfile | xargs -n1 brew cask install
+cat "$ZSH"/npm/Packagefile | xargs -n1 npm install -g
+cat "$ZSH"/atom/Packagefile | xargs -n1 apm install
+
+# Upgrade vim plugins
+# nvim -c 'PluginInstall'
+# nvim -c 'PluginUpdate'

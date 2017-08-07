@@ -1,0 +1,101 @@
+"*":
+  "atom-beautify":
+    general:
+      _analyticsUserId: "0c53d4a8-1c2a-45b5-9534-d8f49e5eda76"
+  "atom-material-ui":
+    colors:
+      abaseColor: "#7e57c2"
+      accentColor: "#b0e457"
+      predefinedColor: "Purple"
+    tabs:
+      compactTabs: true
+      tintedTabBar: true
+    treeView:
+      blendTabs: true
+      compactList: true
+    ui:
+      panelContrast: true
+      panelShadows: true
+  "atom-package-deps":
+    ignored: []
+  core:
+    disabledPackages: [
+      "whitespace"
+      "stylefmt"
+      "vim-mode-plus"
+      "prettier-atom"
+    ]
+    packagesWithKeymapsDisabled: []
+    projectHome: "~/src"
+    telemetryConsent: "limited"
+    themes: [
+      "atom-material-ui"
+      "dracula-syntax"
+    ]
+    titleBar: "hidden"
+  "css-declaration-sorter":
+    sortOrder: "smacss"
+  editor:
+    invisibles: {}
+    preferredLineLength: 120
+  "elm-format":
+    binary: "C:\\Users\\Jonathan\\bin\\elm-format.exe"
+  "exception-reporting":
+    userId: "c609a773-9be5-c877-d805-674c6616fddf"
+  "file-icons": {}
+  "flow-ide": {}
+  fonts:
+    fontFamily: "FiraCode"
+    preview: "The Quick brown fox { 0 !== \"O\" } () => { return \"Hello\" }"
+  "git-plus":
+    general:
+      _analyticsUserId: "57471cb6-c26d-4af0-b4dc-aef0b8d719c9"
+  "language-babel": {}
+  "language-elm":
+    elmOraclePath: "/Users/jonathan.haines/.nvm/versions/node/v6.6.0/bin/elm-oracle"
+  "line-ending-selector":
+    defaultLineEnding: "LF"
+  linter: {}
+  "linter-elm-make":
+    elmMakeExecutablePath: "C:\\Users\\Jonathan\\AppData\\Roaming\\npm\\elm-make"
+  "linter-eslint":
+    disableWhenNoEslintrcFileInPath: true
+  "linter-less":
+    includePath: [
+      "node_modules"
+    ]
+  "linter-scss-lint":
+    disableWhenNoConfigFileInPath: true
+  "linter-ui-default":
+    panelHeight: 81
+  "markdown-preview":
+    breakOnSingleNewline: true
+    useGitHubStyle: true
+  pigments:
+    traverseIntoSymlinkDirectories: true
+  "prettier-atom":
+    formatOnSaveOptions:
+      enabled: true
+    prettierOptions:
+      singleQuote: true
+      trailingComma: "all"
+    silenceErrors: true
+    useEslint: true
+  "project-manager":
+    alwaysOpenInSameWindow: true
+    includeGitRepositories: true
+  "reason-refmt":
+    formatOnSave: false
+    useLinter: false
+  "split-diff":
+    diffWords: true
+    ignoreWhitespace: true
+    leftEditorColor: "red"
+    rightEditorColor: "green"
+    syncHorizontalScroll: true
+  "tree-view":
+    autoReveal: true
+    focusOnReveal: false
+    hideIgnoredNames: true
+  welcome:
+    showOnStartup: false
