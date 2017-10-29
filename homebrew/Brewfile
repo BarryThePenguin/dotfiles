@@ -1,8 +1,37 @@
-bash
-git
-git-extras
-mongodb
-ripgrep
-terminal-notifier
-tmux
-zsh
+tap 'caskroom/fonts'
+tap 'caskroom/cask'
+tap 'caskroom/versions'
+
+brew 'bash'
+brew 'git'
+brew 'git-extras'
+brew 'gpg-agent'
+brew 'gnupg'
+brew 'hub'
+brew 'pinentry'
+brew 'pinentry-mac'
+brew 'ripgrep'
+brew 'terminal-notifier'
+brew 'tmux'
+brew 'zsh'
+
+cask 'atom'
+cask 'cyberduck'
+cask 'docker'
+cask 'endurance'
+cask 'flux'
+cask 'font-fira-code'
+cask 'franz'
+cask 'google-chrome'
+cask 'google-play-music-desktop-player'
+cask 'iterm2-beta'
+cask 'kap'
+cask 'keybase'
+cask 'now'
+cask 'sip'
+cask 'sketch'
+cask 'skype'
+cask 'sourcetree'
+cask 'steam'
+cask 'virtualbox'
+cask 'zeplin'

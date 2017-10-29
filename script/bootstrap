@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#
+# Run all installers and symlink dotfiles
+
+set -e
+
+echo "Bootstrapping"
+
+script/platform
+script/generic
+script/symlinks

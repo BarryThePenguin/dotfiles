@@ -1,0 +1,14 @@
+#!/bin/sh
+# Usage: $0 <args>
+# Install global homebrew and node modules
+
+set -e
+
+# Homebrew
+brew bundle --file="$DOTFILES/homebrew/Brewfile"
+
+# Atom
+cat $DOTFILES/atom/packages | xargs -n1 apm install
+
+# Node
+cat $DOTFILES/node/packages | xargs -n1 npm install -g

@@ -4,6 +4,7 @@ export PROJECTS=~/src
 export ZSH=$HOME/src/$username/dotfiles
 export DOTFILES=$HOME/src/$username/dotfiles
 export TEMPLATES=$HOME/src/$username/templates
+export GPG_TTY=$(tty)
 
 # if this ever breaks run "$ brew prefix <toolname>"
 export PATH="$PATH:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/X11/bin:/Users/$USER/.config/base16-shell"
@@ -27,9 +28,14 @@ export LC_ALL="en_US.UTF-8"
 export TERM=screen-256color
 
 # add gpg agent to every shell
-# if [ -f ~/.gnupg/.gpg-agent-info ] && [ -n "$(pgrep gpg-agent)" ]; then
-#   source ~/.gnupg/.gpg-agent-info
-#   export GPG_AGENT_INFO
-# else
-#   eval $(gpg-agent --daemon --write-env-file ~/.gnupg/.gpg-agent-info)
-# fi
+if [ -f ~/.gnupg/.gpg-agent-info ] && [ -n "$(pgrep gpg-agent)" ]; then
+  source ~/.gnupg/.gpg-agent-info
+  export GPG_AGENT_INFO
+else
+  eval $(gpg-agent --daemon --options ~/.gpg-agent.conf)
+fi
+
+# android studio
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/tools
+export PATH=$PATH:$ANDROID_HOME/platform-tools

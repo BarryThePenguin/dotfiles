@@ -1,11 +1,9 @@
 Sublime-Style-Column-Selection
 atom-beautify
-atom-material-ui
 autocomplete-haskell
 autocomplete-modules
 busy-signal
 css-declaration-sorter
-dracula-syntax
 editorconfig
 elm-format
 emmet
@@ -14,6 +12,7 @@ flow-ide
 fonts
 haskell-ghc-mod
 hyperclick
+ide-csharp
 ide-haskell
 ide-haskell-cabal
 intentions

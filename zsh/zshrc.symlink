@@ -71,6 +71,7 @@ done
 # Fix history search in tmux
 bindkey '^R' history-incremental-search-backward
 
+
 ###############################################################################
 # Default programs
 ###############################################################################
@@ -80,5 +81,15 @@ else
   export EDITOR="vim"
 fi
 
+autoload -U promptinit; promptinit
+prompt pure
+
 # default programs
 export GHI_PAGER=less
+
+# tabtab source for serverless package
+# uninstall by removing these lines or running `tabtab uninstall serverless`
+[[ -f /Users/jonathan.haines/src/v100it/v100it-lambdas/node_modules/tabtab/.completions/serverless.zsh ]] && . /Users/jonathan.haines/src/v100it/v100it-lambdas/node_modules/tabtab/.completions/serverless.zsh
+# tabtab source for sls package
+# uninstall by removing these lines or running `tabtab uninstall sls`
+[[ -f /Users/jonathan.haines/src/v100it/v100it-lambdas/node_modules/tabtab/.completions/sls.zsh ]] && . /Users/jonathan.haines/src/v100it/v100it-lambdas/node_modules/tabtab/.completions/sls.zsh
