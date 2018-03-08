@@ -6,6 +6,19 @@
 [core]
 	excludesfile = /Users/jonathan.haines/.gitignore_global
 
+[github]
+  user = barrythepenguin
+
+[hub]
+  protocol = https
+
+[commit]
+  gpgsign = true
+	template = /Users/jonathan.haines/.stCommitMsg
+
+[gpg]
+	program = /usr/local/bin/gpg
+
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 	path = 
@@ -13,10 +26,3 @@
 [mergetool "sourcetree"]
 	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
-
-[commit]
-	template = /Users/jonathan.haines/.stCommitMsg
-  gpgsign = true
-
-[gpg]
-	program = /usr/local/bin/gpg

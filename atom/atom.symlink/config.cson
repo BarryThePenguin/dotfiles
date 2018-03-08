@@ -22,7 +22,6 @@
     disabledPackages: [
       "whitespace"
       "stylefmt"
-      "vim-mode-plus"
       "prettier-atom"
     ]
     packagesWithKeymapsDisabled: []
@@ -38,12 +37,9 @@
   editor:
     invisibles: {}
     preferredLineLength: 120
-  "elm-format":
-    binary: "C:\\Users\\Jonathan\\bin\\elm-format.exe"
   "exception-reporting":
     userId: "c609a773-9be5-c877-d805-674c6616fddf"
   "file-icons": {}
-  "flow-ide": {}
   fonts:
     fontFamily: "FiraCode"
     preview: "The Quick brown fox { 0 !== \"O\" } () => { return \"Hello\" }"
@@ -84,9 +80,6 @@
   "project-manager":
     alwaysOpenInSameWindow: true
     includeGitRepositories: true
-  "reason-refmt":
-    formatOnSave: false
-    useLinter: false
   "split-diff":
     diffWords: true
     ignoreWhitespace: true

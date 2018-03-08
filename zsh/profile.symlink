@@ -28,11 +28,11 @@ export LC_ALL="en_US.UTF-8"
 export TERM=screen-256color
 
 # add gpg agent to every shell
-if [ -f ~/.gnupg/.gpg-agent-info ] && [ -n "$(pgrep gpg-agent)" ]; then
+if [ -f ~/.gnupg/gpg-agent-info ] && [ -n "$(pgrep gpg-agent)" ]; then
   source ~/.gnupg/.gpg-agent-info
   export GPG_AGENT_INFO
 else
-  eval $(gpg-agent --daemon --options ~/.gpg-agent.conf)
+  eval $(gpg-agent --daemon --options ~/.gnupg/gpg-agent.conf)
 fi
 
 # android studio
