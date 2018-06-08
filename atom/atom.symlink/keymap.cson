@@ -32,8 +32,3 @@
   'ctrl-w f': 'open-this:split-down'
   'ctrl-w F': 'open-this:split-right'
   
-# '.editor':
-#   'left': "core:nop"
-#   'right': "core:nop"
-#   'up': "core:nop"
-#   'down': "core:nop"
