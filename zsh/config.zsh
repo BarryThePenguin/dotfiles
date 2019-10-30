@@ -32,7 +32,11 @@ setopt HIST_REDUCE_BLANKS
 setopt complete_aliases
 
 zle -N newtab
+zle -N history-substring-search-up
+zle -N history-substring-search-down
 
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
 bindkey '^[^[[D' backward-word
 bindkey '^[^[[C' forward-word
 bindkey '^[[5D' beginning-of-line

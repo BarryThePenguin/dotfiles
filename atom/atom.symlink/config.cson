@@ -2,6 +2,14 @@
   "atom-beautify":
     general:
       _analyticsUserId: "0c53d4a8-1c2a-45b5-9534-d8f49e5eda76"
+    handlebars:
+      wrap_line_length: 120
+    html:
+      wrap_line_length: 120
+  "atom-ide-ui":
+    "atom-ide-diagnostics-ui": {}
+    use:
+      "atom-ide-diagnostics-ui": "never"
   "atom-material-ui":
     colors:
       abaseColor: "#7e57c2"
@@ -20,11 +28,12 @@
     ignored: []
   core:
     disabledPackages: [
+      "pigments"
+      "markdown-preview"
       "whitespace"
-      "stylefmt"
     ]
     packagesWithKeymapsDisabled: []
-    projectHome: "~/src"
+    projectHome: "~/Blake"
     telemetryConsent: "limited"
     themes: [
       "atom-material-ui"
@@ -36,21 +45,44 @@
   editor:
     invisibles: {}
     preferredLineLength: 120
+  "ember-cli-helper":
+    pathToEmberExecutable: "/Users/jonno/.asdf/shims/ember"
+    pathToNodeExecutable: "/Users/jonno/.asdf/shims/node"
   "exception-reporting":
     userId: "c609a773-9be5-c877-d805-674c6616fddf"
   "file-icons": {}
+  "find-and-replace":
+    useRipgrep: true
+  "flow-ide": {}
   fonts:
     fontFamily: "FiraCode"
     preview: "The Quick brown fox { 0 !== \"O\" } () => { return \"Hello\" }"
+  "fuzzy-finder":
+    scoringSystem: "fast"
+    useRipGrep: true
   "git-plus":
     general:
       _analyticsUserId: "57471cb6-c26d-4af0-b4dc-aef0b8d719c9"
+  "ide-typescript":
+    javascriptSupport: false
+    typeScriptServer: {}
   "language-babel": {}
   "line-ending-selector":
     defaultLineEnding: "LF"
   linter: {}
   "linter-eslint":
+    autofix:
+      fixOnSave: true
     disableWhenNoEslintrcFileInPath: true
+    scopes: [
+      "source.js"
+      "source.jsx"
+      "source.js.jsx"
+      "source.flow"
+      "source.babel"
+      "source.js-semantic"
+      "source.ts"
+    ]
   "linter-less":
     includePath: [
       "node_modules"
@@ -59,6 +91,7 @@
     disableWhenNoConfigFileInPath: true
   "linter-ui-default":
     panelHeight: 203
+    showPanel: true
   "linter-xo":
     fixOnSave: true
   "markdown-preview":
@@ -67,8 +100,7 @@
   pigments:
     traverseIntoSymlinkDirectories: true
   "prettier-atom":
-    formatOnSaveOptions:
-      enabled: true
+    formatOnSaveOptions: {}
     prettierOptions:
       singleQuote: true
       trailingComma: "all"

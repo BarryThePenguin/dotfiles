@@ -1,28 +1,38 @@
 [user]
 	name = Jonathan Haines
 	email = jonno.haines@gmail.com
-	signingkey = D86B9698C01E08F7
+	signingkey = A045A2D259E8FB45
 
 [core]
-	excludesfile = /Users/jonathan.haines/.gitignore_global
+	excludesfile = /Users/jonno/.gitignore_global
 
 [github]
   user = barrythepenguin
 
 [hub]
-  protocol = https
+	protocol = ssh:
 
 [commit]
-  gpgsign = true
-	template = /Users/jonathan.haines/.stCommitMsg
+	gpgsign = true
 
 [gpg]
 	program = /usr/local/bin/gpg
 
+[pull]
+	rebase = true
+
+[rebase]
+	autoStash = true
+
 [difftool "sourcetree"]
 	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path = 
+	path =
 
 [mergetool "sourcetree"]
 	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
+
+[alias]
+	cb = rev-parse --symbolic-full-name --abbrev-ref HEAD
+	gp = !git push --set-upstream origin HEAD:$(git cb)
+	gup = !git fetch --prune origin && git rebase -r origin/$(git cb)

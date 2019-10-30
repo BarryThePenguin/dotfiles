@@ -23,12 +23,10 @@
 # This file uses CoffeeScript Object Notation (CSON).
 # If you are unfamiliar with CSON, you can read more about it here:
 # https://github.com/bevry/cson#what-is-cson
+# 
 
-'atom-text-editor[data-grammar~="jsx"]:not([mini])':
+'atom-text-editor[data-grammar~="js"]:not([mini])':
   'tab': 'emmet:expand-abbreviation-with-tab'
 
-'atom-text-editor.vim-mode-plus.normal-mode':
-  'g f':      'open-this:here'
-  'ctrl-w f': 'open-this:split-down'
-  'ctrl-w F': 'open-this:split-right'
-  
+'atom-text-editor[data-grammar="text html handlebars"]:not([mini])':
+  'tab': 'emmet:expand-abbreviation-with-tab'
