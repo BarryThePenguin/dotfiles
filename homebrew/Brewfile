@@ -1,5 +1,4 @@
 tap 'homebrew/cask-fonts'
-tap 'homebrew/cask-cask'
 tap 'homebrew/cask-versions'
 
 brew 'bash'
