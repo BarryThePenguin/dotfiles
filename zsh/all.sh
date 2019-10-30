@@ -20,3 +20,9 @@ if [ ! -d ~/.config/dracula ]; then
   git clone https://github.com/dracula/zsh.git \
     ~/.config/dracula
 fi
+
+if [ ! -d ~/.asdf ]; then
+  git clone https://github.com/asdf-vm/asdf.git \
+    ~/.asdf \
+    --branch v0.7.4
+fi
