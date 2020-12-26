@@ -1,5 +1,0 @@
-# Don't lose ENV
-set -ga update-environment ' ITERM_PROFILE TMUX_STATUS_LEFT'
-
-# Initialize (keep this line at the very bottom of tmux.conf)
-run-shell '~/.tmux/plugins/tpm/tpm'

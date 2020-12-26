@@ -15,4 +15,4 @@
   trustExitCode = true
 
 [commit]
-  template = /Users/jonathan.haines/.stCommitMsg
+  template = /Users/jonno/.stCommitMsg

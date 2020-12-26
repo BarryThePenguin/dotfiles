@@ -12,9 +12,4 @@ install_homebrew() {
 
 # update deps
 which brew > /dev/null || install_homebrew
-brew cask --version > /dev/null || install_cask
 brew update && brew upgrade
-
-# Upgrade vim plugins
-# nvim -c 'PluginInstall'
-# nvim -c 'PluginUpdate'

@@ -15,7 +15,6 @@ username="btp"
 export PATH="$PATH:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/X11/bin:/Users/$USER/.config/base16-shell"
 export PATH="$PATH:/Users/$USER/Blake/$username/dotfiles/bin"
 export PATH="$PATH:/Users/$USER/.config/base16-shell"
-export PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
 export PATH="/usr/local/opt/python@2/bin:$PATH"
 export PATH="$PATH:/Users/$USER/.local/bin/"
 
@@ -52,7 +51,6 @@ fi
 antigen bundle mafredri/zsh-async
 antigen bundle sindresorhus/pure
 antigen bundle marzocchi/zsh-notify
-antigen bundle kiurchv/asdf.plugin.zsh
 antigen bundle zsh-users/zsh-completions
 antigen bundle zsh-users/zsh-syntax-highlighting
 antigen bundle zsh-users/zsh-history-substring-search
@@ -63,15 +61,17 @@ antigen bundle tarruda/zsh-autosuggestions
 antigen apply
 
 # initialize autocomplete here, otherwise functions won't be loaded
-autoload -U compinit promptinit
-compinit
-promptinit
+autoload -Uz compinit && compinit
+autoload -Uz promptinit && promptinit
 
 prompt pure
 
 for f in $ZSH/**/completion.sh; do
   source "$f"
 done
+
+# asdf
+source $HOME/.asdf/asdf.sh
 
 # default programs
 export GHI_PAGER=less
@@ -100,9 +100,17 @@ export PATH=$PATH:$HOME/Blake/bs/bin/
 # tabtab source for sls package
 # uninstall by removing these lines or running `tabtab uninstall sls`
 [[ -f $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/sls.zsh ]] && . $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/sls.zsh
-
-source /usr/local/share/chruby/chruby.sh
-
 # tabtab source for slss package
 # uninstall by removing these lines or running `tabtab uninstall slss`
 [[ -f $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/slss.zsh ]] && . $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/slss.zsh
+
+# bk8s shell setup
+export PATH=$PATH:/Users/jonno/Blake/bk8s/bin/
+source $HOME/Blake/bk8s/completions/bk.bash
+
+export GOPATH=$HOME/go
+PATH=$PATH:${GOPATH//://bin:}/bin
+
+source $HOME/.asdf/completions/asdf.bash
+
+eval "$(direnv hook zsh)"

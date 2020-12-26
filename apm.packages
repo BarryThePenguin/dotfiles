@@ -1,8 +1,13 @@
 atom-ember-template-lint
 atom-handlebars
-atom-ide-ui
+atom-ide-datatip
+atom-ide-definitions
+atom-ide-hyperclick
+atom-ide-markdown-service
+atom-ide-signature-help
 atom-material-ui
 atom-typescript
+autocomplete
 autocomplete-modules
 busy-signal
 change-case
@@ -17,7 +22,6 @@ fonts
 ide-rust
 intentions
 json-schema
-language-babel
 linter
 linter-eslint
 linter-remark
@@ -28,7 +32,6 @@ linter-xo
 markdown-preview-plus
 minimap
 open-this
-prettier-atom
 project-manager
 release-notes
 sort-lines

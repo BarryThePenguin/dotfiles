@@ -8,4 +8,3 @@ echo "Bootstrapping"
 
 script/platform
 script/generic
-script/symlinks

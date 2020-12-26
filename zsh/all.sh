@@ -24,5 +24,5 @@ fi
 if [ ! -d ~/.asdf ]; then
   git clone https://github.com/asdf-vm/asdf.git \
     ~/.asdf \
-    --branch v0.7.4
+    --branch v0.8.0
 fi

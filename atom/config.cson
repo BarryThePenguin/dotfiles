@@ -1,15 +1,4 @@
 "*":
-  "atom-beautify":
-    general:
-      _analyticsUserId: "0c53d4a8-1c2a-45b5-9534-d8f49e5eda76"
-    handlebars:
-      wrap_line_length: 120
-    html:
-      wrap_line_length: 120
-  "atom-ide-ui":
-    "atom-ide-diagnostics-ui": {}
-    use:
-      "atom-ide-diagnostics-ui": "never"
   "atom-material-ui":
     colors:
       abaseColor: "#7e57c2"
@@ -25,7 +14,9 @@
       panelContrast: true
       panelShadows: true
   "atom-package-deps":
-    ignored: []
+    ignored: [
+      "ide-rust"
+    ]
   core:
     disabledPackages: [
       "pigments"
@@ -43,11 +34,9 @@
   "css-declaration-sorter":
     sortOrder: "smacss"
   editor:
+    fontSize: 12
     invisibles: {}
     preferredLineLength: 120
-  "ember-cli-helper":
-    pathToEmberExecutable: "/Users/jonno/.asdf/shims/ember"
-    pathToNodeExecutable: "/Users/jonno/.asdf/shims/node"
   "exception-reporting":
     userId: "c609a773-9be5-c877-d805-674c6616fddf"
   "file-icons": {}
@@ -74,6 +63,7 @@
     autofix:
       fixOnSave: true
     disableWhenNoEslintrcFileInPath: true
+    global: {}
     scopes: [
       "source.js"
       "source.jsx"
@@ -90,8 +80,7 @@
   "linter-scss-lint":
     disableWhenNoConfigFileInPath: true
   "linter-ui-default":
-    panelHeight: 203
-    showPanel: true
+    panelHeight: 300
   "linter-xo":
     fixOnSave: true
   "markdown-preview":
@@ -109,6 +98,7 @@
   "project-manager":
     alwaysOpenInSameWindow: true
     includeGitRepositories: true
+  "spell-check": {}
   "split-diff":
     diffWords: true
     ignoreWhitespace: true
@@ -121,3 +111,6 @@
     hideIgnoredNames: true
   welcome:
     showOnStartup: false
+".handlebars.html.text":
+  editor:
+    autoIndent: true

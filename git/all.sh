@@ -1,5 +1,5 @@
 setup_gitconfig () {
-  if ! [ -f git/gitconfig.symlink ]; then
+  if ! [ -f git/gitconfig ]; then
     echo 'setup gitconfig'
 
     echo ' - What is your github author name?'
@@ -9,7 +9,7 @@ setup_gitconfig () {
     echo ' - What is your github GPG key ID?'
     read -e git_gpgkeyid
 
-    sed -e "s/AUTHORNAME/$git_authorname/g" -e "s/AUTHOREMAIL/$git_authoremail/g" -e "s/GPGKEYID/$git_gpgkeyid/g" git/gitconfig.symlink.example > git/gitconfig.symlink
+    sed -e "s/AUTHORNAME/$git_authorname/g" -e "s/AUTHOREMAIL/$git_authoremail/g" -e "s/GPGKEYID/$git_gpgkeyid/g" git/gitconfig.example > git/gitconfig
 
     echo 'gitconfig'
   fi

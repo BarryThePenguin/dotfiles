@@ -8,7 +8,7 @@ OS X configuration files. There's no place like ~/.
 $ mkdir -p ~/src/btp
 $ git clone https://github.com/BarryThePenguin/dotfiles.git ~/src/btp/dotfiles
 $ cd ~/src/btp/dotfiles
-$ ./script/{setup,iterm,vim,zsh,tmux}
+$ ./install
 ```
 
 ## See also
@@ -26,4 +26,4 @@ $ ./script/{setup,iterm,vim,zsh,tmux}
 
 [license]: LICENSE
 
-[author]: http://barrythepenguin.github.io
+[author]: http://jonno.dev

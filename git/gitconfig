@@ -14,6 +14,7 @@
 
 [commit]
 	gpgsign = true
+	template = /Users/jonno/.stCommitMsg
 
 [gpg]
 	program = /usr/local/bin/gpg
@@ -36,3 +37,6 @@
 	cb = rev-parse --symbolic-full-name --abbrev-ref HEAD
 	gp = !git push --set-upstream origin HEAD:$(git cb)
 	gup = !git fetch --prune origin && git rebase -r origin/$(git cb)
+
+[push]
+	default = simple
