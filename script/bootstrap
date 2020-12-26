@@ -6,5 +6,4 @@ set -e
 
 echo "Bootstrapping"
 
-script/platform
 script/generic
