@@ -48,7 +48,6 @@ fi
 ###########################
 #  Plugins
 ###########################
-antigen bundle mafredri/zsh-async
 antigen bundle sindresorhus/pure
 antigen bundle marzocchi/zsh-notify
 antigen bundle zsh-users/zsh-completions
@@ -73,9 +72,6 @@ done
 # asdf
 source $HOME/.asdf/asdf.sh
 
-# default programs
-export GHI_PAGER=less
-
 # add gpg agent to every shell
 if [ ! -S "$HOME/.gnupg/S.gpg-agent.ssh" ]; then
   gpg-agent --daemon >/dev/null 2>&1
@@ -93,16 +89,7 @@ eval "$($HOME/Blake/bs/bin/bs init -)"
 eval "$($HOME/Blake/blake-cloud/bin/bc init -)"
 
 export PATH=$PATH:$HOME/Blake/bs/bin/
-
-# tabtab source for serverless package
-# uninstall by removing these lines or running `tabtab uninstall serverless`
-[[ -f $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/serverless.zsh ]] && . $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/serverless.zsh
-# tabtab source for sls package
-# uninstall by removing these lines or running `tabtab uninstall sls`
-[[ -f $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/sls.zsh ]] && . $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/sls.zsh
-# tabtab source for slss package
-# uninstall by removing these lines or running `tabtab uninstall slss`
-[[ -f $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/slss.zsh ]] && . $HOME/Blake/nfd/v100it-lambdas/node_modules/tabtab/.completions/slss.zsh
+export PATH="/usr/local/opt/openjdk/bin:$PATH"
 
 # bk8s shell setup
 export PATH=$PATH:/Users/jonno/Blake/bk8s/bin/

@@ -40,3 +40,7 @@
 
 [push]
 	default = simple
+[init]
+	defaultBranch = main
+[url "git@github.com:blake-education/"]
+	insteadOf = https://github.com/blake-education/

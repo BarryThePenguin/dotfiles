@@ -2,10 +2,9 @@
     link:
       relink: true
 
-- clean: ['~']
+- clean: ["~"]
 
 - link:
-    ~/.atom: atom
     ~/.default-npm-packages: npm.packages
     ~/.gitconfig: git/gitconfig
     ~/.gpg: gpg
@@ -14,6 +13,5 @@
     ~/.zshrc: zshrc
 
 - shell:
-  - [git submodule update --init --recursive, Installing submodules]
-  - [brew bundle, Install brew packages]
-  - [apm install --packages-file apm.packages, Install apm packages]
+    - [git submodule update --init --recursive, Installing submodules]
+    - [brew bundle, Install brew packages]
