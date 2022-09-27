@@ -19,3 +19,9 @@ open "iterm/dracula/Dracula.itermcolors"
 
 # Don’t display the annoying prompt when quitting iTerm
 defaults write com.googlecode.iterm2 PromptOnQuit -bool false
+
+# Save iTerm preferences to dotfiles
+defaults write com.googlecode.iterm2 PrefsCustomFolder -string "~/.config/iterm2/settings"
+
+# Tell iTerm2 to use the custom preferences in the directory
+defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool true
