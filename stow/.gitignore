@@ -1,0 +1,5 @@
+.zsh_history
+
+.config/gpg/*
+!.config/gpg/gpg-agent.conf
+!.config/gpg/gpg.conf

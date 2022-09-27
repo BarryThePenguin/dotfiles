@@ -1,2 +1,3 @@
-#!/bin/sh
+#!/bin/zsh -f
+
 exec chmod +x "$@"

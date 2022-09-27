@@ -1,0 +1,6 @@
+#!/bin/zsh -f
+
+chown -R $(whoami) $GNUPGHOME
+
+find $GNUPGHOME -type f -exec chmod 600 {} \;
+find $GNUPGHOME -type d -exec chmod 700 {} \;

@@ -12,12 +12,18 @@
 [hub]
 	protocol = ssh:
 
+[init]
+	defaultBranch = main
+
 [commit]
 	gpgsign = true
 	template = /Users/jonno/.stCommitMsg
 
 [gpg]
 	program = /usr/local/bin/gpg
+
+[push]
+	default = simple
 
 [pull]
 	rebase = true
@@ -33,14 +39,5 @@
 	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
 	trustExitCode = true
 
-[alias]
-	cb = rev-parse --symbolic-full-name --abbrev-ref HEAD
-	gp = !git push --set-upstream origin HEAD:$(git cb)
-	gup = !git fetch --prune origin && git rebase -r origin/$(git cb)
-
-[push]
-	default = simple
-[init]
-	defaultBranch = main
 [url "git@github.com:blake-education/"]
 	insteadOf = https://github.com/blake-education/

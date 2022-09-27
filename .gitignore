@@ -1,6 +1,1 @@
 .DS_Store
-npm-debug.log
-
-gpg/*
-!gpg/gpg-agent.conf
-!gpg/gpg.conf
