@@ -14,8 +14,8 @@ if [[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "$ZDOTDIR/.zprofile" ]]; then
 fi
 
 # shortcut to this dotfiles path is $ZSH
-export ZSH="$HOME/Blake/$username/dotfiles"
-export DOTFILES="$HOME/Blake/$username/dotfiles"
+export ZSH="$HOME/src/$username/dotfiles"
+export DOTFILES="$HOME/src/$username/dotfiles"
 
 # your project folder that we can `c [tab]` to
 export PROJECTS="$HOME/Blake"

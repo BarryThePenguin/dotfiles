@@ -2,10 +2,10 @@
   "entries": {
     "tap": {
       "homebrew/cask-fonts": {
-        "revision": "8775023bc54bb476d9ed9beef154913aae28a99c"
+        "revision": "acadf2ba9a0e5508e7e945076eb26b7d549236ca"
       },
       "homebrew/cask-versions": {
-        "revision": "c6a2d5af1229fde275f4c81d6d734aec77077567"
+        "revision": "102787664386279600474cfae3ccd234d437b0e5"
       },
       "github/gh": {
         "revision": "209f59cda890de69b74c224982591642c21323d3"
@@ -755,7 +755,7 @@
       },
       "Xcode": {
         "id": "497799835",
-        "version": "14.0"
+        "version": "14.0.1"
       }
     }
   },
@@ -771,11 +771,11 @@
       },
       "monterey": {
         "HOMEBREW_VERSION": "3.6.3",
-        "HOMEBREW_PREFIX": "/usr/local",
-        "Homebrew/homebrew-core": "45b6d2a25b6b9e780a39acbb1a94c2d2ed208363",
-        "CLT": "14.0.0.0.1.1661618636",
-        "Xcode": "14.0",
-        "macOS": "12.5.1"
+        "HOMEBREW_PREFIX": "/opt/homebrew",
+        "Homebrew/homebrew-core": "6c67fede344db416d9aa8f7bfc672eea372b83c7",
+        "CLT": "13.4.0.0.1.1651278267",
+        "Xcode": "14.0.1",
+        "macOS": "12.6"
       }
     }
   }

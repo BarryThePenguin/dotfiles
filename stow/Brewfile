@@ -4,7 +4,6 @@ tap 'homebrew/cask-versions'
 tap 'stripe/stripe-cli'
 
 brew 'awscli'
-brew 'bash'
 brew 'git'
 brew 'gh'
 brew 'kubectl'
@@ -31,7 +30,6 @@ cask 'keybase'
 cask 'macpass'
 cask 'skype'
 cask 'sourcetree'
-cask 'zoom'
 
 mas "Boop", id: 1518425043
 mas "DaisyDisk", id: 411643860

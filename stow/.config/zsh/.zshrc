@@ -48,3 +48,14 @@ function timezsh() {
     shell=${1-$SHELL}
     for i in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
 }
+
+###########################
+#  Work
+###########################
+
+export PATH=$PATH:$HOME/Blake/bk8s/bin
+source $HOME/Blake/bk8s/completions/bk.bash
+export GOPATH=$HOME/go
+PATH=$PATH:${GOPATH//://bin:}/bin
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+source $HOME/.asdf/completions/asdf.bash

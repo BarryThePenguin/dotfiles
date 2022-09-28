@@ -1,4 +1,5 @@
 .zsh_history
+.zsh_sessions
 
 .config/gpg/*
 !.config/gpg/gpg-agent.conf
