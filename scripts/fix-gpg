@@ -1,6 +1,6 @@
 #!/bin/zsh -f
 
-chown -R $(whoami) $GNUPGHOME
+chown -R $(whoami) $DOTFILES/stow/.config/gpg/
 
-find $GNUPGHOME -type f -exec chmod 600 {} \;
-find $GNUPGHOME -type d -exec chmod 700 {} \;
+find $DOTFILES/stow/.config/gpg -type f -exec chmod 600 {} \;
+find $DOTFILES/stow/.config/gpg -type d -exec chmod 700 {} \;
