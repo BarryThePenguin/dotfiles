@@ -12,7 +12,7 @@
 	ignore = dirty
 [submodule "stow/.config/zsh/plugins/zsh-notify"]
 	path = stow/.config/zsh/plugins/zsh-notify
-	url = https://github.com:marzocchi/zsh-notify.git
+	url = https://github.com/marzocchi/zsh-notify.git
 [submodule "iterm/dracula"]
 	path = iterm/dracula
 	url = https://github.com/dracula/iterm.git
