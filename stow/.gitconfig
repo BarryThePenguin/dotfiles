@@ -20,7 +20,7 @@
 	template = /Users/jonno/.stCommitMsg
 
 [gpg]
-	program = /usr/local/bin/gpg
+	program = /opt/homebrew/bin/gpg
 
 [push]
 	default = simple
