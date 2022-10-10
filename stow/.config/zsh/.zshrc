@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
 
+# Source Prezto.
 source "$ZDOTDIR/.zprezto/init.zsh"
 source $XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh
 
@@ -54,8 +55,6 @@ function timezsh() {
 ###########################
 
 export PATH=$PATH:$HOME/Blake/bk8s/bin
-source $HOME/Blake/bk8s/completions/bk.bash
 export GOPATH=$HOME/go
 PATH=$PATH:${GOPATH//://bin:}/bin
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
-source $HOME/.asdf/completions/asdf.bash
