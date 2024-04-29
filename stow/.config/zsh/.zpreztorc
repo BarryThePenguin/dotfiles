@@ -37,6 +37,8 @@ zstyle ':prezto:load' pmodule \
   'directory' \
   'spectrum' \
 	'asdf' \
+	'npm' \
+	'tmux' \
   'utility' \
   'completion' \
   'history-substring-search' \
@@ -244,3 +246,6 @@ zstyle ':prezto:module:ruby:chruby' auto-switch 'yes'
 # before deleting or overwriting files. Set to 'no' to disable this safer
 # behavior.
 # zstyle ':prezto:module:utility' safe-ops 'yes'
+
+zstyle ':notify:*' error-title "Command failed"
+zstyle ':notify:*' success-title "Command finished"

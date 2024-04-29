@@ -22,6 +22,9 @@
 [gpg]
 	program = /opt/homebrew/bin/gpg
 
+[merge]
+	conflictstyle = zdiff3
+
 [push]
 	default = simple
 
