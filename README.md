@@ -9,12 +9,12 @@ $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/
 $ mkdir -p ~/src/btp
 $ git clone https://github.com/BarryThePenguin/dotfiles.git ~/src/btp/dotfiles
 $ cd ~/src/btp/dotfiles
-$ ./install
+$ brew bundle --file stow/Brewfile
+$ task dotfiles:install
 ```
 
 ## Includes
 
-- https://github.com/asdf-vm/asdf.git
 - https://github.com/chriskempson/base16-shell.git
 - https://github.com/dracula/zsh.git
 - https://github.com:marzocchi/zsh-notify.git

@@ -1,12 +1,13 @@
 awscli 2.7.33
-bun 1.0.33
+bun 1.2.2
+deno 1.43.6
 direnv 2.32.2
 dotnet 7.0.201
 elixir 1.12.2
 golang 1.17.6
 kubectl 1.23.13
-nodejs 20.10.0
+nodejs 22.14.0
 pnpm 8.14.0
-python 3.10.2
+python 3.13.2
 rust 1.62.0
 terraform 1.7.5

@@ -36,11 +36,16 @@ zstyle ':prezto:load' pmodule \
   'history' \
   'directory' \
   'spectrum' \
+	'brew' \
 	'asdf' \
-	'npm' \
+	'direnv' \
 	'tmux' \
+	'taskfile' \
   'utility' \
   'completion' \
+	'npm' \
+	'flux' \
+	'op' \
   'history-substring-search' \
 	'autosuggestions' \
   'prompt' \
