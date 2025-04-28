@@ -1,3 +1,3 @@
-#!/bin/zsh -f
+#!/usr/bin/env zsh
 
 exec chmod +x "$@"
