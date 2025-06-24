@@ -3,4 +3,5 @@
 version: "3"
 
 includes:
+  asdf: .config/asdf
   dotfiles: .config/dotfiles

@@ -39,5 +39,3 @@ tasks:
 
       - git submodule sync --recursive
       - git submodule update --recursive
-
-      - asdf plugin update --all

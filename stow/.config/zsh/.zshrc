@@ -2,7 +2,7 @@
 
 # Source Prezto.
 source "$ZDOTDIR/.zprezto/init.zsh"
-source $XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh
+source "$XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh"
 
 ###########################
 #  Aliases
@@ -42,19 +42,10 @@ alias map="xargs -n1"
 #  Scripts
 ###########################
 
-PATH+=$PATH:$DOTFILES/scripts
+path+="$DOTFILES/scripts"
 
 # Tell me how slow my shell is
 function timezsh() {
     shell=${1-$SHELL}
     for i in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
 }
-
-###########################
-#  Work
-###########################
-
-export PATH=$PATH:$HOME/Blake/bk8s/bin
-export GOPATH=$HOME/go
-PATH=$PATH:${GOPATH//://bin:}/bin
-export PATH="/opt/homebrew/opt/libpq/bin:$PATH"

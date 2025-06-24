@@ -30,26 +30,26 @@ zstyle ':prezto:load' pmodule-dirs $ZDOTDIR/plugins
 # Set the Prezto modules to load (browse modules).
 # The order matters.
 zstyle ':prezto:load' pmodule \
-  'environment' \
-  'terminal' \
-  'editor' \
-  'history' \
-  'directory' \
-  'spectrum' \
+	'environment' \
+	'terminal' \
+	'editor' \
+	'history' \
+	'directory' \
+	'spectrum' \
 	'brew' \
 	'asdf' \
 	'direnv' \
 	'tmux' \
 	'taskfile' \
-  'utility' \
-  'completion' \
+	'utility' \
+	'completion' \
 	'npm' \
 	'flux' \
 	'op' \
-  'history-substring-search' \
+	'podman' \
+  	'history-substring-search' \
 	'autosuggestions' \
-  'prompt' \
-	'blake' \
+  	'prompt' \
 	'gpg' \
 	'zsh-notify'
 
