@@ -4,6 +4,20 @@ Brewfile.lock.json
 .zsh_history
 .zsh_sessions
 
+.config/containers
+
 .config/gpg/*
 !.config/gpg/gpg-agent.conf
 !.config/gpg/gpg.conf
+
+.config/iterm2
+!.config/iterm2/settings
+
+.config/mise/age.txt
+
+.config/op
+
+.config/pulumi
+
+.config/.wrangler
+.config/zed

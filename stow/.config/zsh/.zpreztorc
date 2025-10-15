@@ -37,13 +37,13 @@ zstyle ':prezto:load' pmodule \
 	'directory' \
 	'spectrum' \
 	'brew' \
-	'asdf' \
-	'direnv' \
 	'tmux' \
-	'taskfile' \
 	'utility' \
 	'completion' \
+	'kubectl' \
+	'mise' \
 	'npm' \
+	'pulumi' \
 	'flux' \
 	'op' \
 	'podman' \

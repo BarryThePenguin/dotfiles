@@ -1,0 +1,31 @@
+[env]
+HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
+HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
+
+[settings]
+trusted_config_paths = ["~/src/btp"]
+
+[tools]
+"npm:corepack" = "latest"
+age = "latest"
+bun = "latest"
+cloudflared = "latest"
+cosign = "latest"
+deno = "2"
+flux2 = "latest"
+go = "latest"
+helm = "latest"
+kubectl = "latest"
+node = "24"
+opentofu = "latest"
+packer = "latest"
+slsa-verifier = "latest"
+sops = "latest"
+talosctl = "latest"
+cilium-cli = "latest"
+cilium-hubble = "latest"
+python = "latest"
+uv = "latest"
+
+[task_config]
+includes = [".config/mise/tasks/dotfiles.toml"]
