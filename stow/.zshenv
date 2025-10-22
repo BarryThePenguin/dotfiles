@@ -13,9 +13,14 @@ export GNUPGHOME="$XDG_CONFIG_HOME/gpg"
 export KUBECONFIG="$XDG_CONFIG_HOME/kube/config"
 export PULUMI_HOME="$XDG_CONFIG_HOME/pulumi"
 
+# brew shellenv
+export HOMEBREW_PREFIX="/opt/homebrew";
+export HOMEBREW_CELLAR="/opt/homebrew/Cellar";
+export HOMEBREW_REPOSITORY="/opt/homebrew";
+
 # Ensure that a non-login, non-interactive shell has a defined environment.
-if [[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "$ZDOTDIR/.zprofile" ]]; then
-  source "$ZDOTDIR/.zprofile"
+if [[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "${ZDOTDIR}/.zprofile" ]]; then
+  source "${ZDOTDIR}/.zprofile"
 fi
 
 # shortcut to this dotfiles path is $ZSH
