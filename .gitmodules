@@ -1,17 +1,19 @@
 [submodule "stow/.config/base16-shell"]
 	path = stow/.config/base16-shell
 	url = https://github.com/chriskempson/base16-shell.git
-	ignore = dirty
+	branch = master
 [submodule "stow/.config/dracula"]
 	path = stow/.config/dracula
 	url = https://github.com/dracula/zsh.git
-	ignore = dirty
-[submodule "stow/.config/zsh/plugins/zsh-notify"]
+	branch = master
+[submodule "stow/.zprezto-contrib/zsh-notify"]
 	path = stow/.zprezto-contrib/zsh-notify
 	url = https://github.com/marzocchi/zsh-notify.git
+	branch = master
 [submodule "iterm/dracula"]
 	path = iterm/dracula
 	url = https://github.com/dracula/iterm.git
+	branch = master
 [submodule "stow/.config/zsh/.zprezto"]
 	path = stow/.config/zsh/.zprezto
 	url = https://github.com/sorin-ionescu/prezto.git
