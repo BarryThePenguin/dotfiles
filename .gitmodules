@@ -15,3 +15,4 @@
 [submodule "stow/.config/zsh/.zprezto"]
 	path = stow/.config/zsh/.zprezto
 	url = https://github.com/sorin-ionescu/prezto.git
+	branch = master

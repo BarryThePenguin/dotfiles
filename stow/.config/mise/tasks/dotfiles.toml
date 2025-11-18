@@ -14,32 +14,32 @@ run = "stow --verbose --delete --target ~ stow"
 description = "Install stowed dotfiles"
 dir = "{{env.DOTFILES}}"
 run = [
-  "git submodule sync --quiet --recursive",
-  "git submodule update --init --recursive",
-  "stow --verbose --restow --target ~ stow",
+	"git submodule sync --quiet --recursive",
+	"git submodule update --init --recursive",
+	"stow --verbose --restow --target ~ stow",
 
-  # Only use UTF-8 in Terminal.app
-  "defaults write com.apple.terminal StringEncodings -array 4",
+	# Only use UTF-8 in Terminal.app
+	"defaults write com.apple.terminal StringEncodings -array 4",
 
-  # Install the Solarized Dark theme for iTerm
-  "open iterm/dracula/Dracula.itermcolors",
+	# Install the Solarized Dark theme for iTerm
+	"open iterm/dracula/Dracula.itermcolors",
 
-  # Don’t display the annoying prompt when quitting iTerm
-  "defaults write com.googlecode.iterm2 PromptOnQuit -bool false",
+	# Don’t display the annoying prompt when quitting iTerm
+	"defaults write com.googlecode.iterm2 PromptOnQuit -bool false",
 
-  # Save iTerm preferences to dotfiles
-  "defaults write com.googlecode.iterm2 PrefsCustomFolder -string '{{env.HOME}}/.config/iterm2/settings'",
+	# Save iTerm preferences to dotfiles
+	"defaults write com.googlecode.iterm2 PrefsCustomFolder -string '{{env.HOME}}/.config/iterm2/settings'",
 
-  # Tell iTerm2 to use the custom preferences in the directory
-  "defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool true",
+	# Tell iTerm2 to use the custom preferences in the directory
+	"defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool true",
 ]
 
 ["dotfiles:update"]
 description = "Update stowed dotfiles"
 dir = "{{env.DOTFILES}}"
 run = [
-  "brew update",
-  "brew upgrade",
-  "git submodule sync --recursive",
-  "git submodule update --recursive",
+	"brew update",
+	"brew upgrade",
+	"git submodule sync --recursive",
+	"git submodule update --recursive",
 ]

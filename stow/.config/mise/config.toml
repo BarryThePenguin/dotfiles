@@ -28,4 +28,4 @@ python = "latest"
 uv = "latest"
 
 [task_config]
-includes = [".config/mise/tasks/dotfiles.toml"]
+includes = ["tasks/dotfiles.toml"]

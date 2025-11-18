@@ -40,6 +40,7 @@ zstyle ':prezto:load' pmodule \
 	'tmux' \
 	'utility' \
 	'completion' \
+	'atuin' \
 	'kubectl' \
 	'mise' \
 	'npm' \

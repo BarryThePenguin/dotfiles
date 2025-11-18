@@ -38,6 +38,8 @@ alias showdesktop="defaults write com.apple.finder CreateDesktop -bool true && k
 # ls **/*.zsh | map dirname
 alias map="xargs -n1"
 
+alias docker="podman"
+
 ###########################
 #  Scripts
 ###########################
