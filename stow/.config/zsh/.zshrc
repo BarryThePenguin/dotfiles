@@ -1,9 +1,5 @@
 #!/usr/bin/env zsh
 
-# Source Prezto.
-source "$ZDOTDIR/.zprezto/init.zsh"
-source "$XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh"
-
 ###########################
 #  Aliases
 ###########################
@@ -38,8 +34,6 @@ alias showdesktop="defaults write com.apple.finder CreateDesktop -bool true && k
 # ls **/*.zsh | map dirname
 alias map="xargs -n1"
 
-alias docker="podman"
-
 ###########################
 #  Scripts
 ###########################
@@ -51,3 +45,10 @@ function timezsh() {
     shell=${1-$SHELL}
     for i in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
 }
+
+###########################
+#  Source Prezto
+###########################
+
+source "$ZDOTDIR/.zprezto/init.zsh"
+source "$XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh"
