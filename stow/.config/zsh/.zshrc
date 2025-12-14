@@ -49,6 +49,9 @@ function timezsh() {
 ###########################
 #  Source Prezto
 ###########################
-
-source "$ZDOTDIR/.zprezto/init.zsh"
-source "$XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh"
+if [ $INTELLIJ_ENVIRONMENT_READER ]; then
+	eval "$(mise activate zsh --shims)"
+else
+	source "$ZDOTDIR/.zprezto/init.zsh"
+	source "$XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh"
+fi
