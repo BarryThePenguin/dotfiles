@@ -47,6 +47,7 @@ zstyle ':prezto:load' pmodule \
 	'pulumi' \
 	'flux' \
 	'op' \
+	'jj' \
 	'podman' \
   	'history-substring-search' \
 	'autosuggestions' \
