@@ -35,7 +35,7 @@
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 
-[includeIf "gitdir:~/src/btp/"]
+[includeIf "gitdir:~/src/"]
 	path = ~/.config/git/btp.gitconfig
 
 [includeIf "gitdir:~/src/work/"]
