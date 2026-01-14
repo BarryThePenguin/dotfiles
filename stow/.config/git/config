@@ -1,6 +1,3 @@
-[core]
-	excludesfile = /Users/jonno/.gitignore_global
-
 [github]
   	user = barrythepenguin
 
