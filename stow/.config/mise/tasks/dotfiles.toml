@@ -3,7 +3,15 @@
 ["brew:bundle"]
 description = "Install Homebrew packages from Brewfile"
 dir = "{{env.DOTFILES}}"
-run = "brew bundle --file stow/Brewfile"
+run = [
+	"brew bundle --file stow/Brewfile",
+	"brew bundle cleanup --file stow/Brewfile",
+]
+
+["brew:cleanup"]
+description = "Uninstall Homebrew packages removed from Brewfile"
+dir = "{{env.DOTFILES}}"
+run = "brew bundle cleanup --force --file stow/Brewfile"
 
 ["dotfiles:clean"]
 description = "Delete stowed dotfiles"
