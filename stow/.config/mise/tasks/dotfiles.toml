@@ -22,8 +22,8 @@ run = "stow --verbose --delete --target ~ stow"
 description = "Install stowed dotfiles"
 dir = "{{env.DOTFILES}}"
 run = [
-	"git submodule sync --quiet --recursive",
-	"git submodule update --init --recursive",
+	"git submodule sync --quiet",
+	"git submodule update --init",
 	"stow --verbose --restow --target ~ stow",
 
 	# Only use UTF-8 in Terminal.app
@@ -48,6 +48,7 @@ dir = "{{env.DOTFILES}}"
 run = [
 	"brew update",
 	"brew upgrade",
-	"git submodule sync --recursive",
-	"git submodule update --recursive",
+	"zprezto-update",
+	"git submodule sync",
+	"git submodule update",
 ]
