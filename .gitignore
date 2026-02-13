@@ -3,6 +3,9 @@ Brewfile.lock.json
 .zsh_history
 .zsh_sessions
 
+stow/.augment/*
+!stow/.augment/commands
+
 stow/.config/containers
 
 stow/.config/gpg/*

@@ -1,3 +1,6 @@
+[alias]
+	root = !pwd
+
 [github]
   	user = barrythepenguin
 
@@ -16,6 +19,7 @@
 
 [merge]
 	conflictstyle = zdiff3
+	tool = vscode
 
 [push]
 	default = simple
@@ -37,3 +41,12 @@
 
 [includeIf "gitdir:~/src/work/"]
 	path = ~/.config/git/work.gitconfig
+
+[mergetool "vscode"]
+	cmd = code --wait $MERGED
+
+[diff]
+	tool = vscode
+
+[difftool "vscode"]
+	cmd = code --wait --diff $LOCAL $REMOTE

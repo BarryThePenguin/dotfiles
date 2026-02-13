@@ -1,9 +1,12 @@
 [env]
+EDITOR = "code"
+MISE_ENV_FILE = ".env"
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 
 [settings]
 trusted_config_paths = ["~/src/btp"]
+experimental = true
 
 [tools]
 "npm:corepack" = "latest"
@@ -15,7 +18,6 @@ cilium-hubble = "latest"
 cloudflared = "latest"
 cosign = "latest"
 deno = "2"
-dotnet = "9"
 flux2 = "latest"
 go = "latest"
 helm = "latest"

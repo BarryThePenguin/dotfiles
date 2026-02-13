@@ -49,9 +49,22 @@ function timezsh() {
 ###########################
 #  Source Prezto
 ###########################
-if [ $INTELLIJ_ENVIRONMENT_READER ]; then
+if [[ -n $INTELLIJ_ENVIRONMENT_READER ]]; then
 	eval "$(mise activate zsh --shims)"
+elif [[ "$TERM" == "xterm-ghostty" ]]; then
+	source "$ZDOTDIR/.zprezto/init.zsh"
 else
 	source "$ZDOTDIR/.zprezto/init.zsh"
-	source "$XDG_CONFIG_HOME/base16-shell/scripts/base16-dracula.sh"
+fi
+
+if [[ "$TERM" == "xterm-ghostty" ]] && [[ -z "$ZELLIJ" ]]; then
+    if [[ "$ZELLIJ_AUTO_ATTACH" == "true" ]]; then
+        zellij attach -c
+    else
+        zellij -l welcome
+    fi
+
+    if [[ "$ZELLIJ_AUTO_EXIT" == "true" ]]; then
+        exit
+    fi
 fi

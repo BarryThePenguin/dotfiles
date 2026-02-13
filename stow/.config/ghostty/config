@@ -1,0 +1,24 @@
+# shellcheck disable=all
+
+font-family = FiraCode Nerd Font Mono
+
+keybind = global:opt+space=toggle_quick_terminal
+
+# Zellij keybinds
+keybind = cmd+t=unbind
+keybind = cmd+n=unbind
+keybind = cmd+c=unbind
+keybind = cmd+w=unbind
+keybind = cmd+opt+left=unbind
+keybind = cmd+opt+right=unbind
+
+initial-window = false
+macos-hidden = always
+quick-terminal-size = 600px
+
+shell-integration = detect
+
+theme = dracula
+
+window-padding-x = 10
+window-padding-y = 10
