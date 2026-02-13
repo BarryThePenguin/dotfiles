@@ -12,9 +12,6 @@ stow/.config/gpg/*
 !stow/.config/gpg/gpg-agent.conf
 !stow/.config/gpg/gpg.conf
 
-stow/.config/iterm2
-!stow/.config/iterm2/settings
-
 stow/.config/mise/age.txt
 
 stow/.config/op

@@ -1,6 +1,5 @@
 {
 	"search.exclude": {
-		"iterm/dracula": true,
 		"stow/.config/base16-shell": true,
 		"stow/.config/dracula": true,
 		"stow/.config/zsh/.zprezto": true,

@@ -10,15 +10,13 @@ $ mkdir -p ~/src/btp
 $ git clone https://github.com/BarryThePenguin/dotfiles.git ~/src/btp/dotfiles
 $ cd ~/src/btp/dotfiles
 $ brew bundle --file stow/Brewfile
-$ task dotfiles:install
+$ mise dotfiles:install
 ```
 
 ## Includes
 
-- https://github.com/chriskempson/base16-shell.git
-- https://github.com/dracula/zsh.git
-- https://github.com:marzocchi/zsh-notify.git
-- https://github.com/dracula/iterm.git
+- https://github.com/dracula/ghostty.git
+- https://github.com/marzocchi/zsh-notify.git
 - https://github.com/sorin-ionescu/prezto.git
 
 ## See also

@@ -2,10 +2,6 @@
 	path = stow/.zprezto-contrib/zsh-notify
 	url = https://github.com/marzocchi/zsh-notify.git
 	branch = master
-[submodule "iterm/dracula"]
-	path = iterm/dracula
-	url = https://github.com/dracula/iterm.git
-	branch = master
 [submodule "stow/.config/zsh/.zprezto"]
 	path = stow/.config/zsh/.zprezto
 	url = https://github.com/sorin-ionescu/prezto.git
