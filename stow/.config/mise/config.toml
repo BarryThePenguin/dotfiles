@@ -1,12 +1,12 @@
 [env]
+DOTFILES = { required = true }
 EDITOR = "code"
 MISE_ENV_FILE = ".env"
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 
 [settings]
-trusted_config_paths = ["~/src/btp"]
-experimental = true
+trusted_config_paths = ["~/src/btp", "~/src/work"]
 
 [tools]
 "npm:corepack" = "latest"
@@ -33,4 +33,4 @@ talosctl = "latest"
 uv = "latest"
 
 [task_config]
-includes = ["tasks/dotfiles.toml"]
+includes = [".config/mise/tasks/dotfiles.toml"]

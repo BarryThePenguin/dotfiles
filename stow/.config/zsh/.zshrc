@@ -61,7 +61,7 @@ if [[ "$TERM" == "xterm-ghostty" ]] && [[ -z "$ZELLIJ" ]]; then
     if [[ "$ZELLIJ_AUTO_ATTACH" == "true" ]]; then
         zellij attach -c
     else
-        zellij -l welcome
+        zellij -l main
     fi
 
     if [[ "$ZELLIJ_AUTO_EXIT" == "true" ]]; then
