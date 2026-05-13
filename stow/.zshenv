@@ -30,5 +30,6 @@ export ZSH="$HOME/src/$username/dotfiles";
 export DOTFILES="$HOME/src/$username/dotfiles";
 
 export EDITOR="code";
+export SOPS_EDITOR="code --wait --new-window --disable-workspace-trust --disable-extensions --disable-telemetry"
 # your project folder that we can `c [tab]` to
 export PROJECTS="$HOME/src"

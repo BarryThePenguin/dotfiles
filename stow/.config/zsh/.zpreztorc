@@ -39,10 +39,10 @@ zstyle ':prezto:load' pmodule \
 	'brew' \
 	'utility' \
 	'completion' \
-	'atuin' \
-	'starship' \
-	'kubectl' \
 	'mise' \
+	'atuin' \
+	'kubectl' \
+	'starship' \
 	'hk' \
 	'npm' \
 	'pulumi' \
