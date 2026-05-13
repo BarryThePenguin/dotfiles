@@ -13,6 +13,7 @@ export PULUMI_HOME="$XDG_CONFIG_HOME/pulumi"
 export STARSHIP_CONFIG="$XDG_CONFIG_HOME/starship/starship.toml"
 export STARSHIP_CACHE="$XDG_CACHE_HOME/starship"
 export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+export ASPIRE_CONTAINER_RUNTIME="podman"
 
 # brew shellenv
 export HOMEBREW_PREFIX="/opt/homebrew";

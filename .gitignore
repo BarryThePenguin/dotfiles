@@ -1,5 +1,10 @@
 Brewfile.lock.json
 
+coverage
+node_modules
+node_modules/
+dist
+
 .zsh_history
 .zsh_sessions
 
@@ -18,5 +23,11 @@ stow/.config/op
 
 stow/.config/pulumi
 
+stow/.claude/plugins/*
+!stow/.claude/plugins/installed_plugins.json
+!stow/.claude/plugins/known_marketplaces.json
+
 stow/.config/.wrangler
 stow/.config/zed
+
+todoist.db

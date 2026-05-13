@@ -1,0 +1,31 @@
+{
+  "name": "doist",
+  "version": "0.1.0",
+  "description": "Sync Todoist tasks to SQLite for AI agent consumption",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "doist": "src/cli.ts",
+    "doist-mcp": "src/mcp.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node src/cli.ts",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0-alpha.2",
+    "@valibot/to-json-schema": "^1.7.0",
+    "citty": "^0.2.2",
+    "kysely": "^0.29.0",
+    "valibot": "^1.4.0"
+  },
+  "devDependencies": {
+    "@cfworker/json-schema": "^4.1.1",
+    "@types/node": "^24.0.0",
+    "undici": "^8.2.0"
+  }
+}

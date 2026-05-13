@@ -4,6 +4,7 @@ EDITOR = "code"
 MISE_ENV_FILE = ".env"
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
+TODOIST_API_TOKEN = "{{ exec(command='op read \"op://Private/Todoist API token/password\"', cache_duration='8h') }}"
 
 [settings]
 trusted_config_paths = ["~/src/btp", "~/src/work"]
