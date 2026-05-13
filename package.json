@@ -2,19 +2,19 @@
 	"name": "dotfiles",
 	"type": "module",
 	"devDependencies": {
-		"@eslint/js": "^10.0.1",
-		"@tsconfig/node-ts": "^23.6.4",
-		"@tsconfig/node24": "^24.0.4",
-		"@tsconfig/strictest": "^2.0.8",
-		"@vitest/coverage-v8": "^4.1.6",
-		"@vitest/eslint-plugin": "^1.6.17",
+		"@eslint/js": "10.0.1",
+		"@tsconfig/node-ts": "23.6.4",
+		"@tsconfig/node24": "24.0.4",
+		"@tsconfig/strictest": "2.0.8",
+		"@vitest/coverage-v8": "4.1.6",
+		"@vitest/eslint-plugin": "1.6.17",
 		"doist": "workspace:*",
-		"eslint": "^10.3.0",
-		"globals": "^17.6.0",
-		"prettier": "^3.8.3",
-		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.59.3",
-		"vitest": "^4.1.6"
+		"eslint": "10.3.0",
+		"globals": "17.6.0",
+		"prettier": "3.8.3",
+		"typescript": "6.0.3",
+		"typescript-eslint": "8.59.3",
+		"vitest": "4.1.6"
 	},
 	"packageManager": "pnpm@11.1.1+sha512.d1fdf5f73c617b64fa1a56a81c3c8dfe0e966e33a6010aa256b517ae77be21d93e05affc0de1a83b0e4f29d569f68b446ae8f068cd7247c0bb3df0fb4d7bdf9a"
 }
