@@ -1,14 +1,8 @@
-import type { SyncDb } from "./db.ts";
-import {
-	getSyncToken,
-	resetSyncToken,
-	setLastSyncedAt,
-	setSyncToken,
-	upsertLabel,
-	upsertProject,
-	upsertSection,
-	upsertTask,
-} from "./db.ts";
+import type { Database } from "./db.ts";
+import { filterToAllowedProjects } from "./filtering.ts";
+import { logger } from "./logger.ts";
+import { markDeleted, reconcileCompleted } from "./reconciliation.ts";
+import { getToken, resetToken, persistSync } from "./sync-lifecycle.ts";
 import type { AllData, TodoistClient } from "./todoist.ts";
 
 export type SyncResult = {
@@ -17,142 +11,150 @@ export type SyncResult = {
 	labels: number;
 	tasks: number;
 	reconciled: number;
-	updatedTaskIds: Set<string>;
 };
 
-export function filterToAllowedProjects(
-	data: AllData,
-	allowed: string[],
-): AllData {
-	if (allowed.length === 0) {
-		return data;
-	}
+/**
+ * Result of a persist operation: filtered sync data + reconciliation count.
+ */
+export interface SyncAndPersistResult {
+	data: AllData;
+	reconciled: number;
+}
 
-	const resolvedIds = new Set(allowed);
-	for (const p of data.projects) {
-		if (allowed.includes(p.name)) {
-			resolvedIds.add(p.id);
-		}
-	}
-
-	const allowedProjects = data.projects.filter((p) => resolvedIds.has(p.id));
-
+/**
+ * Convenience helper to compute sync statistics from sync data.
+ *
+ * @param dataOrResult Sync data (AllData) or persist result (SyncAndPersistResult)
+ * @returns Sync statistics (resource counts)
+ */
+export function countSyncData(
+	dataOrResult: AllData | SyncAndPersistResult,
+): SyncResult {
+	const data = "data" in dataOrResult ? dataOrResult.data : dataOrResult;
+	const reconciled = "reconciled" in dataOrResult ? dataOrResult.reconciled : 0;
 	return {
-		projects: allowedProjects,
-		sections: data.sections.filter((s) => resolvedIds.has(s.project_id)),
-		labels: data.labels,
-		tasks: data.tasks.filter(
-			(t) => t.project_id !== null && resolvedIds.has(t.project_id),
-		),
-		deletedTaskIds: data.deletedTaskIds,
-		syncToken: data.syncToken,
+		projects: data.projects.length,
+		sections: data.sections.length,
+		labels: data.labels.length,
+		tasks: data.tasks.length,
+		reconciled,
 	};
 }
 
-function reconcileCompleted(
-	db: SyncDb,
-	projectIds: string[],
-	returnedTaskIds: Set<string>,
-): number {
-	if (projectIds.length === 0) {
-		return 0;
-	}
-
-	const stale = db.all(
-		db.q
-			.selectFrom("tasks")
-			.select("id")
-			.where("is_completed", "=", 0)
-			.where("project_id", "in", projectIds)
-			.compile(),
-	);
-
-	const missing = stale.filter((r) => !returnedTaskIds.has(r.id));
-	if (missing.length === 0) {
-		return 0;
-	}
-
-	const now = new Date().toISOString();
-	for (const { id } of missing) {
-		db.run(
-			db.q
-				.updateTable("tasks")
-				.set({ is_completed: 1, synced_at: now })
-				.where("id", "=", id)
-				.compile(),
-		);
-	}
-	return missing.length;
-}
-
-function markDeleted(db: SyncDb, ids: string[]): void {
-	if (ids.length === 0) {
-		return;
-	}
-	const now = new Date().toISOString();
-	for (const id of ids) {
-		db.run(
-			db.q
-				.updateTable("tasks")
-				.set({ is_completed: 1, synced_at: now })
-				.where("id", "=", id)
-				.compile(),
-		);
-	}
-}
-
-export async function sync(
-	db: SyncDb,
+/**
+ * Fetch and filter sync response without persisting.
+ *
+ * Returns the raw sync data (filtered to allowed projects) for inspection
+ * (e.g., explicit conflict detection before mutations). Does NOT update the
+ * sync token; the next sync will include the same data.
+ *
+ * @param db Database instance
+ * @param client TodoistClient for API calls
+ * @param allowedProjects Project IDs/names to keep (empty = all)
+ * @param full Force a full sync (reset token before fetching)
+ * @returns Filtered sync response with updated data
+ */
+export async function syncAndFetch(
+	db: Database,
 	client: TodoistClient,
 	allowedProjects: string[] = [],
 	full = false,
-): Promise<SyncResult> {
+): Promise<AllData> {
 	if (full) {
-		resetSyncToken(db);
+		resetToken(db);
 	}
-	const token = getSyncToken(db) ?? "*";
+	const token = getToken(db) ?? "*";
+	const tokenLabel =
+		token === "*" ? "FULL_SYNC" : `token_${token.slice(0, 8)}...`;
+	logger.info({ token: tokenLabel, allowedProjects }, "syncAndFetch: syncing");
+	const raw = await client.sync(token);
+
+	logger.info(
+		{
+			tasks_in_response: raw.tasks.length,
+			projects_in_response: raw.projects.length,
+			sections_in_response: raw.sections.length,
+			labels_in_response: raw.labels.length,
+			has_syncToken: !!raw.syncToken,
+			task_ids: raw.tasks.map((t) => t.id),
+		},
+		"syncAndFetch: received sync response",
+	);
+
+	const filtered = filterToAllowedProjects(raw, allowedProjects);
+	logger.info(
+		{
+			filtered_tasks: filtered.tasks.length,
+			task_ids_after_filter: filtered.tasks.map((t) => t.id),
+		},
+		"syncAndFetch: after filtering to allowed projects",
+	);
+	return filtered;
+}
+
+/**
+ * Sync, reconcile, and persist atomically.
+ *
+ * Fetches changes from Todoist, filters to allowed projects,
+ * marks remotely-deleted tasks as completed, and persists all changes
+ * (including sync token) in a single atomic transaction.
+ * On full sync, reconciles completed tasks.
+ *
+ * @param db Database instance
+ * @param client TodoistClient for API calls
+ * @param allowedProjects Project IDs/names to keep (empty = all)
+ * @param full Force a full sync (reset token before fetching)
+ * @returns Persist result with filtered sync response and reconciliation count
+ */
+export async function syncAndPersist(
+	db: Database,
+	client: TodoistClient,
+	allowedProjects: string[] = [],
+	full = false,
+): Promise<SyncAndPersistResult> {
+	if (full) {
+		resetToken(db);
+	}
+	const token = getToken(db) ?? "*";
 	const isFullSync = token === "*";
 	const raw = await client.sync(token);
-	const { projects, sections, labels, tasks, deletedTaskIds } =
-		filterToAllowedProjects(raw, allowedProjects);
+	const filtered = filterToAllowedProjects(raw, allowedProjects);
 
-	const updatedTaskIds = isFullSync
-		? new Set<string>()
-		: new Set(tasks.map((t) => t.id));
+	const { projects, sections, labels, tasks, deletedTaskIds } = filtered;
 
-	const reconciled = db.transaction(() => {
-		for (const p of projects) {
-			upsertProject(db, p);
-		}
-		for (const s of sections) {
-			upsertSection(db, s);
-		}
-		for (const l of labels) {
-			upsertLabel(db, l);
-		}
-		for (const t of tasks) {
-			upsertTask(db, t);
-		}
-		markDeleted(db, deletedTaskIds);
-		if (raw.syncToken) {
-			setSyncToken(db, raw.syncToken);
-		}
-		setLastSyncedAt(db, new Date().toISOString());
-		return isFullSync
-			? reconcileCompleted(
-					db,
-					projects.map((p) => p.id),
-					new Set(tasks.map((t) => t.id)),
-				)
-			: 0;
-	});
+	const reconciled = persistSync(
+		db,
+		raw.syncToken,
+		() => {
+			for (const p of projects) {
+				db.upsertProject(p);
+			}
+			for (const s of sections) {
+				db.upsertSection(s);
+			}
+			for (const l of labels) {
+				db.upsertLabel(l);
+			}
+			for (const t of tasks) {
+				db.upsertTask(t);
+			}
+			markDeleted(db, deletedTaskIds);
+			return isFullSync
+				? reconcileCompleted(
+						db,
+						projects.map((p) => p.id),
+						new Set(tasks.map((t) => t.id)),
+					)
+				: 0;
+		},
+	);
 
-	return {
-		projects: projects.length,
-		sections: sections.length,
-		labels: labels.length,
-		tasks: tasks.length,
-		reconciled,
-		updatedTaskIds,
-	};
+	if (reconciled > 0) {
+		logger.info(
+			{ reconciled_count: reconciled },
+			"syncAndPersist: reconciled completed tasks",
+		);
+	}
+
+	return { data: filtered, reconciled };
 }

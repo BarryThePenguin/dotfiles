@@ -1,41 +1,21 @@
 #!/usr/bin/env node
+
+import { shutdown } from "./instrumentation/cli.ts";
+import { ATTR_ERROR_TYPE } from "@opentelemetry/semantic-conventions";
 import { defineCommand, runMain } from "citty";
+import { basename } from "node:path";
 import * as v from "valibot";
-import {
-	addProject,
-	findPaths,
-	listProjectIds,
-	removeProject,
-} from "./config.ts";
-import { env } from "./env.ts";
-import {
-	addTask,
-	completeTask,
-	getTask,
-	listLabels,
-	listProjects,
-	listSections,
-	listTasks,
-	openDb,
-	updateTask,
-} from "./index.ts";
-import { parseAddTaskFields, parseUpdateTaskFields } from "./operations.ts";
+import { createContainer } from "./container.ts";
+import { addTask, completeTask, updateTask } from "./index.ts";
+import { listSections, resolveProject } from "./operations.ts";
 import { out } from "./output.ts";
-import { sync } from "./sync.ts";
-import { createClient } from "./todoist.ts";
+import { parseAddTaskFields, parseUpdateTaskFields } from "./schemas.ts";
+import { ATTR_EXITCODE } from "./semconv.ts";
+import { countSyncData, syncAndPersist } from "./sync.ts";
+import { tracer } from "./telemetry.ts";
 
-const paths = findPaths();
-const { dbPath, rcPath } = paths;
-
-function writeError(message: string): void {
-	process.stderr.write(JSON.stringify({ error: message }) + "\n");
-}
-
-function handleError(err: unknown): never {
-	const message = err instanceof Error ? err.message : String(err);
-	writeError(message);
-	process.exit(1);
-}
+const container = createContainer();
+const { db, addProject, removeProject, listProjectIds, client } = container;
 
 const parseListTask = v.parser(
 	v.object({
@@ -70,9 +50,13 @@ const syncCmd = defineCommand({
 		},
 	},
 	async run({ args }) {
-		using db = openDb(dbPath);
-		const client = createClient(env.TODOIST_API_TOKEN);
-		out(await sync(db, client, listProjectIds(rcPath), args.full ?? false));
+		const result = await syncAndPersist(
+			db,
+			client,
+			listProjectIds(),
+			args.full ?? false,
+		);
+		out(countSyncData(result));
 	},
 });
 
@@ -82,9 +66,27 @@ const projectsCmd = defineCommand({
 	subCommands: {
 		list: defineCommand({
 			meta: { description: "List all projects" },
-			run() {
-				using db = openDb(dbPath);
-				out(listProjects(db));
+			args: {
+				sync: {
+					type: "boolean",
+					description: "sync before listing",
+				},
+			},
+			async run({ args }) {
+				if (args.sync) {
+					const syncResult = await syncAndPersist(
+						db,
+						client,
+						listProjectIds(),
+						false,
+					);
+					out({
+						synced: countSyncData(syncResult),
+						projects: db.selectAllProjects(),
+					});
+				} else {
+					out(db.selectAllProjects());
+				}
 			},
 		}),
 		add: defineCommand({
@@ -98,7 +100,7 @@ const projectsCmd = defineCommand({
 				},
 			},
 			run({ args }) {
-				addProject(rcPath, { id: args.id, label: args.label });
+				addProject({ id: args.id, label: args.label });
 				out({ ok: true, added: { id: args.id, label: args.label } });
 			},
 		}),
@@ -108,7 +110,7 @@ const projectsCmd = defineCommand({
 				id: { type: "positional", description: "project id", required: true },
 			},
 			run({ args }) {
-				removeProject(rcPath, args.id);
+				removeProject(args.id);
 				out({ ok: true, removed: args.id });
 			},
 		}),
@@ -123,10 +125,30 @@ const sectionsCmd = defineCommand({
 			meta: { description: "List all sections" },
 			args: {
 				project: { type: "string", description: "filter by project id" },
+				sync: {
+					type: "boolean",
+					description: "sync before listing",
+				},
 			},
-			run({ args }) {
-				using db = openDb(dbPath);
-				out(listSections(db, args.project));
+			async run({ args }) {
+				const project = args.project
+					? resolveProject(db, args.project)
+					: undefined;
+				if (args.sync) {
+					const syncResult = await syncAndPersist(
+						db,
+						client,
+						listProjectIds(),
+						false,
+					);
+
+					out({
+						synced: countSyncData(syncResult),
+						sections: listSections(db, project),
+					});
+				} else {
+					out(listSections(db, project));
+				}
 			},
 		}),
 	},
@@ -138,9 +160,27 @@ const labelsCmd = defineCommand({
 	subCommands: {
 		list: defineCommand({
 			meta: { description: "List all labels" },
-			run() {
-				using db = openDb(dbPath);
-				out(listLabels(db));
+			args: {
+				sync: {
+					type: "boolean",
+					description: "sync before listing",
+				},
+			},
+			async run({ args }) {
+				if (args.sync) {
+					const syncResult = await syncAndPersist(
+						db,
+						client,
+						listProjectIds(),
+						false,
+					);
+					out({
+						synced: countSyncData(syncResult),
+						labels: db.selectAllLabels(),
+					});
+				} else {
+					out(db.selectAllLabels());
+				}
 			},
 		}),
 	},
@@ -165,9 +205,12 @@ const tasksCmd = defineCommand({
 					description: "maximum number of tasks to return",
 				},
 				offset: { type: "string", description: "number of tasks to skip" },
+				sync: {
+					type: "boolean",
+					description: "sync before listing",
+				},
 			},
-			run({ args }) {
-				using db = openDb(dbPath);
+			async run({ args }) {
 				const fields = parseListTask({
 					...args,
 					priority:
@@ -175,7 +218,20 @@ const tasksCmd = defineCommand({
 					limit: args.limit !== undefined ? Number(args.limit) : undefined,
 					offset: args.offset !== undefined ? Number(args.offset) : undefined,
 				});
-				out(listTasks(db, fields));
+				if (args.sync) {
+					const syncResult = await syncAndPersist(
+						db,
+						client,
+						listProjectIds(),
+						false,
+					);
+					out({
+						synced: countSyncData(syncResult),
+						tasks: db.selectTasksByFilters(fields),
+					});
+				} else {
+					out(db.selectTasksByFilters(fields));
+				}
 			},
 		}),
 		get: defineCommand({
@@ -184,8 +240,7 @@ const tasksCmd = defineCommand({
 				id: { type: "positional", description: "task id", required: true },
 			},
 			run({ args }) {
-				using db = openDb(dbPath);
-				const task = getTask(db, args.id);
+				const task = db.selectTaskById(args.id);
 				if (!task) {
 					throw new Error("task not found");
 				}
@@ -209,9 +264,7 @@ const tasksCmd = defineCommand({
 				id: { type: "positional", description: "task id", required: true },
 			},
 			async run({ args }) {
-				using db = openDb(dbPath);
-				const client = createClient(env.TODOIST_API_TOKEN);
-				out(await completeTask(db, client, rcPath, args.id));
+				out(await completeTask(db, client, args.id));
 			},
 		}),
 		update: defineCommand({
@@ -234,9 +287,7 @@ const tasksCmd = defineCommand({
 					addLabels: args.label ? [args.label] : undefined,
 					removeLabels: args.removeLabel ? [args.removeLabel] : undefined,
 				});
-				using db = openDb(dbPath);
-				const client = createClient(env.TODOIST_API_TOKEN);
-				out(await updateTask(db, client, rcPath, args.id, fields));
+				out(await updateTask(db, client, args.id, fields));
 			},
 		}),
 		add: defineCommand({
@@ -260,8 +311,6 @@ const tasksCmd = defineCommand({
 					...args,
 					labels: args.label ? [args.label] : undefined,
 				});
-				using db = openDb(dbPath);
-				const client = createClient(env.TODOIST_API_TOKEN);
 				out(await addTask(db, client, fields));
 			},
 		}),
@@ -283,4 +332,27 @@ const main = defineCommand({
 	},
 });
 
-runMain(main).catch(handleError);
+const executableName = basename(process.execPath);
+
+try {
+	await tracer.startActiveSpan(executableName, async (span) => {
+		try {
+			await runMain(main);
+		} catch (err) {
+			span.recordException(err as Error);
+			span.setAttribute(
+				ATTR_ERROR_TYPE,
+				err instanceof Error ? err.name : String(err),
+			);
+			const message = err instanceof Error ? err.message : String(err);
+			process.stderr.write(JSON.stringify({ error: message }) + "\n");
+			process.exitCode = 1;
+		} finally {
+			span.setAttribute(ATTR_EXITCODE, process.exitCode ?? 0);
+			span.end();
+		}
+	});
+} finally {
+	container.close();
+	await shutdown().catch(console.error);
+}

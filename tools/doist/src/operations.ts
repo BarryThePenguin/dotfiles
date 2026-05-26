@@ -1,95 +1,82 @@
-import * as v from "valibot";
-import { resolveProject } from "./commands/projects.ts";
-import { getTask, mergeLabelAdd, mergeLabelRemove } from "./commands/tasks.ts";
-import { listProjectIds } from "./config.ts";
-import {
-	type DbTask,
-	getSyncToken,
-	setSyncToken,
-	type SyncDb,
-	upsertTask,
-} from "./db.ts";
-import { sync } from "./sync.ts";
+import { Database } from "./db.ts";
+import { normalizeTask, type AppTask } from "./schema.ts";
+import { type AddTaskFields, type UpdateTaskFields } from "./schemas.ts";
+import { getToken, persistMutations } from "./sync-lifecycle.ts";
 import type { TodoistClient } from "./todoist.ts";
 
-export const PrioritySchema = v.optional(
-	v.pipe(
-		v.union([v.string(), v.number()]),
-		v.toNumber(),
-		v.integer(),
-		v.minValue(1),
-		v.maxValue(4),
-	),
-);
-
-export const UpdateTaskFieldsSchema = v.object({
-	title: v.optional(v.string()),
-	due: v.optional(v.string()),
-	priority: PrioritySchema,
-	addLabels: v.optional(v.array(v.string())),
-	removeLabels: v.optional(v.array(v.string())),
-	description: v.optional(v.string()),
-	section: v.optional(v.string()),
-});
-
-export const parseUpdateTaskFields = v.parser(UpdateTaskFieldsSchema);
-
-export type UpdateTaskFields = v.InferOutput<typeof UpdateTaskFieldsSchema>;
-
-export const AddTaskFieldsSchema = v.object({
-	title: v.string(),
-	project: v.optional(v.string()),
-	section: v.optional(v.string()),
-	due: v.optional(v.string()),
-	priority: PrioritySchema,
-	labels: v.optional(v.array(v.string())),
-});
-
-export const parseAddTaskFields = v.parser(AddTaskFieldsSchema);
-
-export type AddTaskFields = v.InferOutput<typeof AddTaskFieldsSchema>;
-
-async function syncAndCheck(
-	db: SyncDb,
-	client: TodoistClient,
-	rcPath: string,
-	id: string,
-): Promise<{ conflict: true; upstream: DbTask | null } | null> {
-	const projects = listProjectIds(rcPath);
-	const { updatedTaskIds } = await sync(db, client, projects);
-	return updatedTaskIds.has(id)
-		? { conflict: true, upstream: getTask(db, id) }
-		: null;
+/**
+ * Resolve a project name or ID.
+ * If the input matches exactly one project by name, return its ID.
+ * Otherwise, return the input as-is (assumed to be a raw ID).
+ */
+export function resolveProject(db: Database, nameOrId: string): string {
+	const rows = db.selectProjectByName(nameOrId);
+	const [firstRow] = rows;
+	if (firstRow && rows.length === 1) {
+		return firstRow.id;
+	}
+	return nameOrId;
 }
 
+export function listSections(db: Database, project?: string) {
+	const projectId = project ? resolveProject(db, project) : undefined;
+
+	if (projectId) {
+		return db.selectSectionsByProjectId(projectId);
+	} else {
+		return db.selectAllSections();
+	}
+}
+
+/**
+ * Add a label to the existing label set, avoiding duplicates.
+ */
+function mergeLabelAdd(stored: string[] | null, label: string): string[] {
+	const current = stored ?? [];
+	return current.includes(label) ? current : [...current, label];
+}
+
+/**
+ * Remove a label from the existing label set.
+ */
+function mergeLabelRemove(stored: string[] | null, label: string): string[] {
+	return (stored ?? []).filter((l) => l !== label);
+}
+
+export interface OperationResult<T> {
+	ok: boolean;
+	result?: T | undefined;
+}
+
+/**
+ * Complete a task by marking it as completed.
+ *
+ * @returns { ok: true, result: task } on success
+ */
 export async function completeTask(
-	db: SyncDb,
+	db: Database,
 	client: TodoistClient,
-	rcPath: string,
 	id: string,
-): Promise<{ conflict: true; upstream: DbTask | null } | { ok: true }> {
-	const conflict = await syncAndCheck(db, client, rcPath, id);
-	if (conflict) {
-		return conflict;
-	}
-	const { syncToken } = await client.completeTask(id, getSyncToken(db));
-	if (syncToken) {
-		setSyncToken(db, syncToken);
-	}
-	db.run(
-		db.q
-			.updateTable("tasks")
-			.set({ is_completed: 1, synced_at: new Date().toISOString() })
-			.where("id", "=", id)
-			.compile(),
-	);
-	return { ok: true };
+): Promise<OperationResult<AppTask>> {
+	const { syncToken } = await client.completeTask(id, getToken(db));
+	persistMutations(db, {
+		token: syncToken,
+		customOperations: (db) => {
+			db.updateTasksAsCompleted([id]);
+		},
+	});
+	const task = db.selectTaskById(id) ?? null;
+	return { ok: true, result: task ?? undefined };
 }
 
+/**
+ * Update a task with new field values.
+ *
+ * @returns { ok: true, result: updatedTask } on success
+ */
 export async function updateTask(
-	db: SyncDb,
+	db: Database,
 	client: TodoistClient,
-	rcPath: string,
 	id: string,
 	{
 		title,
@@ -100,29 +87,25 @@ export async function updateTask(
 		description,
 		section,
 	}: UpdateTaskFields,
-): Promise<{ conflict: true; upstream: DbTask | null } | DbTask> {
-	const conflict = await syncAndCheck(db, client, rcPath, id);
-	if (conflict) {
-		return conflict;
-	}
+): Promise<OperationResult<AppTask>> {
+	// Compute merged labels
 	let labels: string[] | undefined;
 	if (addLabels !== undefined || removeLabels !== undefined) {
-		const existing = getTask(db, id);
+		const existing = db.selectTaskById(id) ?? null;
 		let current = existing?.labels ?? null;
 		if (addLabels !== undefined) {
 			for (const l of addLabels) {
-				const added = mergeLabelAdd(current, l);
-				current = JSON.stringify(added);
+				current = mergeLabelAdd(current, l);
 			}
 		}
 		if (removeLabels !== undefined) {
 			for (const l of removeLabels) {
-				const removed = mergeLabelRemove(current, l);
-				current = JSON.stringify(removed);
+				current = mergeLabelRemove(current, l);
 			}
 		}
-		labels = JSON.parse(current ?? "[]") as string[];
+		labels = current ?? [];
 	}
+
 	const { task: updated, syncToken } = await client.updateTask(
 		id,
 		{
@@ -133,35 +116,51 @@ export async function updateTask(
 			labels,
 			sectionId: section,
 		},
-		getSyncToken(db),
+		getToken(db),
 	);
-	if (syncToken) {
-		setSyncToken(db, syncToken);
-	}
-	upsertTask(db, updated);
-	return updated;
+
+	persistMutations(db, {
+		token: syncToken,
+		tasks: [updated],
+	});
+	return { ok: true, result: normalizeTask(updated) };
 }
 
+/**
+ * Add a new task.
+ *
+ * Returns a promise with either:
+ * - { ok: true, result: newTask } on success
+ */
 export async function addTask(
-	db: SyncDb,
+	db: Database,
 	client: TodoistClient,
-	{ title, project, section, due, priority, labels }: AddTaskFields,
-): Promise<DbTask> {
+	{
+		title,
+		project,
+		section,
+		description,
+		due,
+		priority,
+		labels,
+	}: AddTaskFields,
+): Promise<OperationResult<AppTask>> {
 	const projectId = project ? resolveProject(db, project) : undefined;
 	const { task, syncToken } = await client.addTask(
 		{
 			title,
 			projectId,
 			sectionId: section,
+			description,
 			due,
 			priority,
 			labels,
 		},
-		getSyncToken(db),
+		getToken(db),
 	);
-	if (syncToken) {
-		setSyncToken(db, syncToken);
-	}
-	upsertTask(db, task);
-	return task;
+	persistMutations(db, {
+		token: syncToken,
+		tasks: [task],
+	});
+	return { ok: true, result: normalizeTask(task) };
 }

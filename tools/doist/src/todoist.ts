@@ -1,54 +1,60 @@
 import type { DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
-import type { SyncItem } from "./sdk.ts";
-import { createCommand, syncRequest, type SyncCommand } from "./sdk.ts";
-
-export type UpdateFields = {
-	title?: string | undefined;
-	due?: string | undefined;
-	priority?: number | undefined;
-	labels?: string[] | undefined;
-	description?: string | undefined;
-	sectionId?: string | undefined;
-};
-
-export type AddFields = {
-	title: string;
-	projectId?: string | undefined;
-	sectionId?: string | undefined;
-	due?: string | undefined;
-	priority?: number | undefined;
-	labels?: string[] | undefined;
-};
+import {
+	type ResourceType,
+	type ResourceTypes,
+	type UpdateFields,
+	type AddFields,
+	createUpdateCommand,
+	createAddCommand,
+	createItemCompleteCommand,
+	syncRequest,
+	type SyncCommand,
+} from "./sdk.ts";
+import {
+	prepareTaskForDB,
+	prepareProjectForDB,
+	prepareSectionForDB,
+	prepareLabelForDB,
+} from "./schema.ts";
 
 export type AllData = {
 	projects: DbProject[];
 	sections: DbSection[];
 	labels: DbLabel[];
 	tasks: DbTask[];
+	completedTaskIds: string[];
 	deletedTaskIds: string[];
-	syncToken: string | null;
+	syncToken: string;
 	tempIdMapping?: Record<string, string>;
 };
 
-function now(): string {
-	return new Date().toISOString();
+/**
+ * Determine resource types for a sync request based on command suggestions.
+ * Always includes core types needed for the application.
+ */
+function getResourceTypesForSync(commands?: SyncCommand[]): ResourceTypes {
+	const coreTypes: ResourceType[] = ["projects", "sections", "labels", "items"];
+
+	if (!commands || commands.length === 0) {
+		return coreTypes;
+	}
+
+	const typesSet = new Set<ResourceType>(coreTypes);
+	for (const cmd of commands) {
+		for (const type of cmd.suggestedResourceTypes) {
+			typesSet.add(type);
+		}
+	}
+
+	return Array.from(typesSet);
 }
 
-function taskToDb(t: SyncItem, syncedAt = now()): DbTask {
-	return {
-		id: t.id,
-		project_id: t.projectId,
-		section_id: t.sectionId,
-		content: t.content,
-		description: t.description,
-		priority: t.priority,
-		due_date: t.due?.date ?? null,
-		due_string: t.due?.string ?? null,
-		labels: JSON.stringify(t.labels),
-		is_completed: t.completed ? 1 : 0,
-		created_at: t.addedAt?.toISOString() ?? null,
-		synced_at: syncedAt,
-	};
+/**
+ * Get the current timestamp in ISO format.
+ * Used for API calls (e.g., completed_at in completeTask).
+ */
+function now(): string {
+	return new Date().toISOString();
 }
 
 export interface TodoistClient {
@@ -56,85 +62,67 @@ export interface TodoistClient {
 	completeTask(
 		id: string,
 		syncToken: string | null,
-	): Promise<{ syncToken: string | null }>;
+	): Promise<{ syncToken: string }>;
 	updateTask(
 		id: string,
 		fields: UpdateFields,
 		syncToken: string | null,
-	): Promise<{ task: DbTask; syncToken: string | null }>;
+	): Promise<{ task: DbTask; syncToken: string }>;
 	addTask(
 		fields: AddFields,
 		syncToken: string | null,
-	): Promise<{ task: DbTask; syncToken: string | null }>;
+	): Promise<{ task: DbTask; syncToken: string }>;
 }
-
-const resourceTypes = JSON.stringify([
-	"projects",
-	"sections",
-	"labels",
-	"items",
-]);
 
 export function createClient(token: string): TodoistClient {
 	async function sync(
 		syncToken?: string | null,
-		commands: SyncCommand[] = [],
+		...commands: SyncCommand[]
 	): Promise<AllData> {
-		const syncedAt = now();
-		const params: Record<string, string> = {
+		const response = await syncRequest(token, {
 			sync_token: syncToken ?? "*",
-			resource_types: resourceTypes,
-		};
-		if (commands.length > 0) {
-			params["commands"] = JSON.stringify(commands);
-		}
-		const response = await syncRequest(token, params);
+			resource_types: getResourceTypesForSync(commands),
+			commands,
+		});
 
 		const projects: DbProject[] = (response.projects ?? [])
-			.filter((p) => !p.isDeleted && !p.isArchived)
-			.map((p) => ({
-				id: p.id,
-				name: p.name,
-				color: p.color,
-				is_favorite: p.isFavorite ? 1 : 0,
-				is_inbox: p.inboxProject ? 1 : 0,
-				synced_at: syncedAt,
-			}));
+			.map((p) => prepareProjectForDB(p))
+			.filter((p) => p !== null);
 
 		const sections: DbSection[] = (response.sections ?? [])
-			.filter((s) => !s.isDeleted && !s.isArchived)
-			.map((s) => ({
-				id: s.id,
-				project_id: s.projectId,
-				name: s.name,
-				order_: s.sectionOrder,
-				synced_at: syncedAt,
-			}));
+			.map((s) => prepareSectionForDB(s))
+			.filter((s) => s !== null);
 
 		const labels: DbLabel[] = (response.labels ?? [])
-			.filter((l) => !l.isDeleted)
-			.map((l) => ({
-				id: l.id,
-				name: l.name,
-				color: l.color,
-				synced_at: syncedAt,
-			}));
+			.map((l) => prepareLabelForDB(l))
+			.filter((l) => l !== null);
 
 		const items = response.items ?? [];
 		const tasks: DbTask[] = items
-			.filter((t) => !t.isDeleted)
-			.map((t) => taskToDb(t, syncedAt));
-		const deletedTaskIds = items.filter((t) => t.isDeleted).map((t) => t.id);
+			.filter((t) => !t.is_deleted)
+			.map((t) => prepareTaskForDB(t));
+		const completedTaskIds = items
+			.filter((t) => t.checked && !t.is_deleted)
+			.map((t) => t.id);
+		const deletedTaskIds = items.filter((t) => t.is_deleted).map((t) => t.id);
+
+		// Invariant: sync_token must always be present
+		if (!response.sync_token) {
+			throw new Error(
+				"API sync response missing sync_token (invariant violated): token and data must stay synchronized",
+			);
+		}
 
 		return {
 			projects,
 			sections,
 			labels,
 			tasks,
+			completedTaskIds,
 			deletedTaskIds,
-			syncToken: response.syncToken,
-			...(response.tempIdMapping !== undefined && {
-				tempIdMapping: response.tempIdMapping,
+			syncToken: response.sync_token,
+			...(response.temp_id_mapping !== undefined && {
+				tempIdMapping: response.temp_id_mapping,
 			}),
 		};
 	}
@@ -143,72 +131,36 @@ export function createClient(token: string): TodoistClient {
 		sync: (syncToken) => sync(syncToken),
 
 		async completeTask(id, syncToken) {
-			const { syncToken: newToken } = await sync(syncToken, [
-				createCommand("item_complete", { id, completed_at: now() }),
-			]);
-			return { syncToken: newToken };
+			return sync(
+				syncToken,
+				createItemCompleteCommand({ id, completed_at: now() }),
+			);
 		},
 
 		async updateTask(id, fields, syncToken) {
-			const args: Record<string, unknown> = { id };
-			if (fields.title !== undefined) {
-				args["content"] = fields.title;
-			}
-			if (fields.description !== undefined) {
-				args["description"] = fields.description;
-			}
-			if (fields.priority !== undefined) {
-				args["priority"] = fields.priority;
-			}
-			if (fields.due !== undefined) {
-				args["due"] = { string: fields.due };
-			}
-			if (fields.labels !== undefined) {
-				args["labels"] = fields.labels;
-			}
-			if (fields.sectionId !== undefined) {
-				args["section_id"] = fields.sectionId;
-			}
-
-			const { tasks, syncToken: newToken } = await sync(syncToken, [
-				createCommand("item_update", args),
-			]);
-			const task = tasks.find((t) => t.id === id);
+			const response = await sync(syncToken, createUpdateCommand(id, fields));
+			const task = response.tasks.find((t) => t.id === id);
 			if (!task) {
-				throw new Error(`task ${id} not found after update`);
+				throw new Error(`updated task ${id} not in sync response`);
 			}
-			return { task, syncToken: newToken };
+			return { task, syncToken: response.syncToken };
 		},
 
 		async addTask(fields, syncToken) {
 			const tempId = crypto.randomUUID();
-			const args: Record<string, unknown> = { content: fields.title };
-			if (fields.projectId !== undefined) {
-				args["project_id"] = fields.projectId;
-			}
-			if (fields.sectionId !== undefined) {
-				args["section_id"] = fields.sectionId;
-			}
-			if (fields.priority !== undefined) {
-				args["priority"] = fields.priority;
-			}
-			if (fields.due !== undefined) {
-				args["due"] = { string: fields.due };
-			}
-			if (fields.labels !== undefined) {
-				args["labels"] = fields.labels;
-			}
 
-			const { tasks, tempIdMapping, syncToken: newToken } = await sync(syncToken, [
-				createCommand("item_add", args, tempId),
-			]);
+			const {
+				tasks,
+				tempIdMapping,
+				syncToken: newToken,
+			} = await sync(syncToken, createAddCommand(fields, tempId));
 			const realId = tempIdMapping?.[tempId];
 			if (!realId) {
 				throw new Error("failed to create task: no id returned");
 			}
 			const task = tasks.find((t) => t.id === realId);
 			if (!task) {
-				throw new Error(`task ${realId} not found after creation`);
+				throw new Error(`created task ${realId} not in sync response`);
 			}
 			return { task, syncToken: newToken };
 		},

@@ -1,0 +1,30 @@
+{
+	"servers": {
+		"todoist": {
+			"type": "stdio",
+			"command": "doist-mcp",
+			"args": [],
+			"env": {
+				"LOG_LEVEL": "debug",
+				"OTEL_DEBUG": "true",
+				"TODOIST_RC_DIR": "/Users/jonno/src/btp/dotfiles",
+			},
+			"dev": {
+				"watch": "src/**/*.ts",
+				"debug": {
+					"type": "node"
+				}
+			}
+		},
+		"signoz": {
+			"type": "stdio",
+			"command": "signoz-mcp-server",
+			"args": [],
+			"env": {
+				"LOG_LEVEL": "debug",
+				"SIGNOZ_URL": "http://localhost:8080"
+			}
+		}
+	},
+	"inputs": []
+}

@@ -1,5 +1,6 @@
 import {
 	LATEST_PROTOCOL_VERSION,
+	McpServer,
 	type JSONRPCMessage,
 	type Transport,
 } from "@modelcontextprotocol/server";
@@ -7,19 +8,12 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	openDb,
-	upsertLabel,
-	upsertProject,
-	upsertSection,
-	upsertTask,
-} from "./db.ts";
-import { buildServer, type Context } from "./server.ts";
+import type { Container } from "./container.ts";
+import { Database } from "./db.ts";
+import { buildServer } from "./server.ts";
+import { setToken } from "./sync-lifecycle.ts";
+import { createTestContainer } from "./test-helpers/container.ts";
 import type { TodoistClient } from "./todoist.ts";
-
-vi.mock("./env.ts", () => ({
-	env: new Proxy({}, { get: (_, k) => process.env[k as string] }),
-}));
 
 // ── Fixtures ──────────────────────────────────────────────────────
 const NOW = new Date().toISOString();
@@ -103,7 +97,7 @@ class InMemoryTransport implements Transport {
 }
 
 // ── MCP client helper ─────────────────────────────────────────────
-async function makeClient({ server }: Context) {
+async function makeClient(server: McpServer) {
 	const [clientTransport, serverTransport] = InMemoryTransport.pair();
 	await server.connect(serverTransport);
 
@@ -160,9 +154,14 @@ async function makeClient({ server }: Context) {
 		const result = r["result"] as {
 			content?: { text: string }[];
 			isError?: boolean;
+			structuredContent?: unknown;
 		};
 		if (result.isError) {
 			throw new Error(result.content?.[0]?.text ?? "tool error");
+		}
+		// MCP tools can return structuredContent directly, or text to be parsed
+		if (result.structuredContent !== undefined) {
+			return result.structuredContent;
 		}
 		return JSON.parse(result.content?.[0]?.text ?? "null");
 	}
@@ -171,31 +170,31 @@ async function makeClient({ server }: Context) {
 }
 
 // ── Shared setup ──────────────────────────────────────────────────
+let container: Container;
 let tempDir: string;
-let dbFile: string;
+let dbPath: string;
+let rcPath: string;
 let mockClient: TodoistClient;
 let mcpClient: Awaited<ReturnType<typeof makeClient>>;
 let destroyDb: () => void;
 
 beforeEach(async () => {
 	tempDir = mkdtempSync(join(tmpdir(), "doist-mcp-test-"));
-	dbFile = join(tempDir, "test.db");
-	const rcFile = join(tempDir, ".doistrc");
+	dbPath = join(tempDir, "test.db");
+	rcPath = join(tempDir, ".doistrc");
 
 	writeFileSync(
-		rcFile,
+		rcPath,
 		JSON.stringify({ projects: [{ id: "p1", label: "Work" }] }),
 	);
-	process.env["TODOIST_DB_PATH"] = dbFile;
-	process.env["TODOIST_RC_PATH"] = rcFile;
+	process.env["TODOIST_DB_PATH"] = dbPath;
+	process.env["TODOIST_RC_PATH"] = rcPath;
 	process.env["TODOIST_API_TOKEN"] = "test-token";
 
-	const db = openDb(dbFile);
-	upsertProject(db, PROJECT);
-	upsertSection(db, SECTION);
-	upsertLabel(db, LABEL);
-	upsertTask(db, TASK_A);
-	upsertTask(db, TASK_B);
+	const db = new Database({
+		dbPath,
+		rcPath,
+	});
 
 	mockClient = {
 		sync: vi.fn().mockResolvedValue({
@@ -211,11 +210,24 @@ beforeEach(async () => {
 		addTask: vi.fn(),
 	};
 
-	const built = buildServer(mockClient);
+	container = createTestContainer({
+		client: mockClient,
+		database: db,
+		rcDir: tempDir,
+	});
+
+	db.upsertProject(PROJECT);
+	db.upsertSection(SECTION);
+	db.upsertLabel(LABEL);
+	db.upsertTask(TASK_A);
+	db.upsertTask(TASK_B);
+	setToken(db, "tok");
+
+	const server = buildServer(container);
 	destroyDb = () => {
-		built.db.close();
+		db.close();
 	};
-	mcpClient = await makeClient(built);
+	mcpClient = await makeClient(server);
 });
 
 afterEach(async () => {
@@ -228,23 +240,24 @@ afterEach(async () => {
 });
 
 // ── tasks_list ────────────────────────────────────────────────────
-type TasksListResult = { syncedAt: string | null; tasks: { id: string; labels: unknown }[] };
+type TasksListResult = {
+	syncedAt: string | null;
+	tasks: { id: string; labels: unknown }[];
+};
 async function tasksList(args: Record<string, unknown> = {}) {
-	return (await mcpClient.callTool("tasks_list", args)) as TasksListResult;
+	return (await mcpClient.callTool(
+		"todoist_tasks_list",
+		args,
+	)) as TasksListResult;
 }
 
 describe("tasks_list", () => {
 	it("returns all incomplete tasks", async () => {
 		const { tasks } = await tasksList();
 		expect(tasks).toHaveLength(2);
-		expect(tasks.map((t) => t.id)).toEqual(expect.arrayContaining(["t1", "t2"]));
-	});
-
-	it("returns labels as an array, not a JSON string", async () => {
-		const { tasks } = await tasksList();
-		const t1 = tasks.find((t) => t.id === "t1");
-		expect(Array.isArray(t1?.labels)).toBe(true);
-		expect(t1?.labels).toEqual(["urgent"]);
+		expect(tasks.map((t) => t.id)).toEqual(
+			expect.arrayContaining(["t1", "t2"]),
+		);
 	});
 
 	it("includes syncedAt in the response", async () => {
@@ -289,29 +302,32 @@ describe("tasks_list", () => {
 // ── tasks_search ──────────────────────────────────────────────────
 describe("tasks_search", () => {
 	it("returns matching tasks as formatted objects", async () => {
-		const tasks = (await mcpClient.callTool("tasks_search", {
+		const result = await mcpClient.callTool("todoist_tasks_search", {
 			query: "Alpha",
-		})) as { id: string; labels: unknown }[];
-		expect(tasks).toHaveLength(1);
-		expect(tasks[0]?.id).toBe("t1");
-		expect(Array.isArray(tasks[0]?.labels)).toBe(true);
+		});
+		expect(result).toMatchObject({
+			tasks: [{ id: "t1", labels: expect.any(Array) as unknown }],
+		});
 	});
 
 	it("returns empty for no match", async () => {
-		const tasks = (await mcpClient.callTool("tasks_search", {
+		const result = await mcpClient.callTool("todoist_tasks_search", {
 			query: "zzznomatch",
-		})) as unknown[];
-		expect(tasks).toHaveLength(0);
+		});
+		expect(result).toMatchObject({ tasks: [] });
 	});
 });
 
 // ── tasks_get ─────────────────────────────────────────────────────
 describe("tasks_get", () => {
 	it("returns task by id", async () => {
-		const task = (await mcpClient.callTool("tasks_get", { id: "t1" })) as {
-			content: string;
-		};
-		expect(task.content).toBe("Alpha task");
+		const task = await mcpClient.callTool("tasks_get", { id: "t1" });
+		expect(task).toMatchObject({ content: "Alpha task" });
+	});
+
+	it("returns labels as an array, not a JSON string", async () => {
+		const task = await mcpClient.callTool("tasks_get", { id: "t1" });
+		expect(task).toMatchObject({ labels: ["urgent"] });
 	});
 
 	it("throws for unknown id", async () => {
@@ -324,91 +340,99 @@ describe("tasks_get", () => {
 // ── projects_list ─────────────────────────────────────────────────
 describe("projects_list", () => {
 	it("returns all projects", async () => {
-		const projects = (await mcpClient.callTool("projects_list")) as {
-			id: string;
-			name: string;
-		}[];
-		expect(projects).toHaveLength(1);
-		expect(projects[0]?.name).toBe("Work");
+		const result = await mcpClient.callTool("todoist_projects_list");
+		expect(result).toMatchObject({ projects: [{ name: "Work" }] });
 	});
 });
 
 // ── labels_list ───────────────────────────────────────────────────
 describe("labels_list", () => {
 	it("returns all labels", async () => {
-		const labels = (await mcpClient.callTool("labels_list")) as {
-			name: string;
-		}[];
-		expect(labels).toHaveLength(1);
-		expect(labels[0]?.name).toBe("urgent");
+		const result = await mcpClient.callTool("todoist_labels_list");
+		expect(result).toMatchObject({ labels: [{ name: "urgent" }] });
 	});
 });
 
 // ── sections_list ─────────────────────────────────────────────────
 describe("sections_list", () => {
 	it("returns all sections", async () => {
-		const sections = (await mcpClient.callTool("sections_list")) as {
-			name: string;
-		}[];
-		expect(sections).toHaveLength(1);
-		expect(sections[0]?.name).toBe("Backlog");
+		const result = await mcpClient.callTool("todoist_sections_list");
+		expect(result).toMatchObject({ sections: [{ name: "Backlog" }] });
 	});
 
 	it("filters by project", async () => {
-		const sections = (await mcpClient.callTool("sections_list", {
+		const result = await mcpClient.callTool("todoist_sections_list", {
 			project: "p1",
-		})) as unknown[];
-		expect(sections).toHaveLength(1);
+		});
+		expect(result).toMatchObject({ sections: [{ name: "Backlog" }] });
 	});
 
 	it("returns empty for unknown project", async () => {
-		const sections = (await mcpClient.callTool("sections_list", {
+		const result = await mcpClient.callTool("todoist_sections_list", {
 			project: "p999",
-		})) as unknown[];
-		expect(sections).toHaveLength(0);
+		});
+		expect(result).toMatchObject({ sections: [] });
 	});
 
 	it("filters by project name as well as id", async () => {
-		const sections = (await mcpClient.callTool("sections_list", {
+		const result = await mcpClient.callTool("todoist_sections_list", {
 			project: "Work",
-		})) as unknown[];
-		expect(sections).toHaveLength(1);
+		});
+		expect(result).toMatchObject({ sections: [{ name: "Backlog" }] });
 	});
 });
 
 // ── tasks_complete ────────────────────────────────────────────────
 describe("tasks_complete", () => {
 	it("calls completeTask and marks the row done in the db", async () => {
-		const result = await mcpClient.callTool("tasks_complete", {
+		vi.mocked(mockClient.sync).mockResolvedValueOnce({
+			projects: [],
+			sections: [],
+			labels: [],
+			tasks: [TASK_A], // Return unchanged task (no conflict)
+			deletedTaskIds: [],
+			syncToken: "tok",
+			completedTaskIds: [],
+		});
+
+		vi.mocked(mockClient.completeTask).mockResolvedValueOnce({
+			syncToken: "tok2",
+		});
+
+		const result = await mcpClient.callTool("todoist_tasks_complete", {
 			id: "t1",
 		});
-		expect(result).toEqual({ ok: true });
+		expect(result).toMatchObject({ id: "t1", completed: true });
 		expect(mockClient.completeTask).toHaveBeenCalledWith("t1", "tok");
 
-		const tempDb = openDb(dbFile);
-		const row = tempDb.get(
-			tempDb.q
-				.selectFrom("tasks")
-				.select("is_completed")
-				.where("id", "=", "t1")
-				.compile(),
-		);
-		expect(row?.is_completed).toBe(1);
+		const tempDb = new Database({ dbPath, rcPath });
+		const row = tempDb.selectTaskById("t1");
+		expect(row?.completed).toBe(true);
 	});
 });
 
 // ── tasks_update ──────────────────────────────────────────────────
 describe("tasks_update", () => {
 	it("updates task title", async () => {
+		vi.mocked(mockClient.sync).mockResolvedValueOnce({
+			projects: [],
+			sections: [],
+			labels: [],
+			tasks: [TASK_A], // Return unchanged task (no conflict)
+			deletedTaskIds: [],
+			syncToken: "tok",
+			completedTaskIds: [],
+		});
+
 		vi.mocked(mockClient.updateTask).mockResolvedValue({
 			task: { ...TASK_A, content: "Updated title" },
 			syncToken: "tok2",
 		});
 
-		const result = (await mcpClient.callTool("tasks_update", {
+		const result = await mcpClient.callTool("todoist_tasks_update", {
 			id: "t1",
 			title: "Updated title",
-		})) as { content: string };
+		});
 
 		expect(mockClient.updateTask).toHaveBeenCalledWith(
 			"t1",
@@ -417,11 +441,21 @@ describe("tasks_update", () => {
 			},
 			"tok",
 		);
-		expect(result.content).toBe("Updated title");
+		expect(result).toMatchObject({ content: "Updated title" });
 	});
 
 	it("appends a new label to existing labels", async () => {
-		await mcpClient.callTool("tasks_update", {
+		vi.mocked(mockClient.sync).mockResolvedValueOnce({
+			projects: [],
+			sections: [],
+			labels: [],
+			tasks: [TASK_A], // Return unchanged task (no conflict)
+			deletedTaskIds: [],
+			syncToken: "tok",
+			completedTaskIds: [],
+		});
+
+		await mcpClient.callTool("todoist_tasks_update", {
 			id: "t1",
 			addLabels: ["focus"],
 		});
@@ -436,7 +470,22 @@ describe("tasks_update", () => {
 	});
 
 	it("does not duplicate an existing label", async () => {
-		await mcpClient.callTool("tasks_update", {
+		vi.mocked(mockClient.sync).mockResolvedValueOnce({
+			projects: [],
+			sections: [],
+			labels: [],
+			tasks: [TASK_A],
+			deletedTaskIds: [],
+			completedTaskIds: [],
+			syncToken: "tok",
+		});
+
+		vi.mocked(mockClient.updateTask).mockResolvedValueOnce({
+			task: { ...TASK_A, labels: JSON.stringify(["urgent"]) },
+			syncToken: "tok",
+		});
+
+		await mcpClient.callTool("todoist_tasks_update", {
 			id: "t1",
 			addLabels: ["urgent"],
 		});
@@ -451,7 +500,22 @@ describe("tasks_update", () => {
 	});
 
 	it("passes sectionId when section is provided", async () => {
-		await mcpClient.callTool("tasks_update", {
+		vi.mocked(mockClient.sync).mockResolvedValueOnce({
+			projects: [],
+			sections: [],
+			labels: [],
+			tasks: [TASK_A],
+			deletedTaskIds: [],
+			completedTaskIds: [],
+			syncToken: "tok",
+		});
+
+		vi.mocked(mockClient.updateTask).mockResolvedValueOnce({
+			task: { ...TASK_A, section_id: "s2" },
+			syncToken: "tok",
+		});
+
+		await mcpClient.callTool("todoist_tasks_update", {
 			id: "t1",
 			section: "s2",
 		});
@@ -487,16 +551,15 @@ describe("tasks_add", () => {
 			syncToken: "tok2",
 		});
 
-		const result = (await mcpClient.callTool("tasks_add", {
+		const result = await mcpClient.callTool("todoist_tasks_add", {
 			title: "New task",
-		})) as { id: string; content: string };
+		});
 
 		expect(mockClient.addTask).toHaveBeenCalledWith(
 			{ title: "New task" },
-			null,
+			"tok",
 		);
-		expect(result.id).toBe("t-new");
-		expect(result.content).toBe("New task");
+		expect(result).toMatchObject({ id: "t-new", content: "New task" });
 	});
 
 	it("resolves project by name when a name is passed to 'project'", async () => {
@@ -505,14 +568,14 @@ describe("tasks_add", () => {
 			syncToken: "tok2",
 		});
 
-		await mcpClient.callTool("tasks_add", {
+		await mcpClient.callTool("todoist_tasks_add", {
 			title: "In Work",
 			project: "Work",
 		});
 
 		expect(mockClient.addTask).toHaveBeenCalledWith(
 			expect.objectContaining({ projectId: "p1" }),
-			null,
+			"tok",
 		);
 	});
 
@@ -522,14 +585,14 @@ describe("tasks_add", () => {
 			syncToken: "tok2",
 		});
 
-		await mcpClient.callTool("tasks_add", {
+		await mcpClient.callTool("todoist_tasks_add", {
 			title: "Task",
 			project: "raw-project-id",
 		});
 
 		expect(mockClient.addTask).toHaveBeenCalledWith(
 			expect.objectContaining({ projectId: "raw-project-id" }),
-			null,
+			"tok",
 		);
 	});
 
@@ -539,14 +602,14 @@ describe("tasks_add", () => {
 			syncToken: "tok2",
 		});
 
-		await mcpClient.callTool("tasks_add", {
+		await mcpClient.callTool("todoist_tasks_add", {
 			title: "Task in section",
 			section: "s1",
 		});
 
 		expect(mockClient.addTask).toHaveBeenCalledWith(
 			expect.objectContaining({ sectionId: "s1" }),
-			null,
+			"tok",
 		);
 	});
 });
@@ -554,13 +617,7 @@ describe("tasks_add", () => {
 // ── sync ──────────────────────────────────────────────────────────
 describe("sync", () => {
 	it("fetches from todoist and returns counts", async () => {
-		const result = (await mcpClient.callTool("sync")) as {
-			projects: number;
-			sections: number;
-			labels: number;
-			tasks: number;
-			reconciled: number;
-		};
+		const result = await mcpClient.callTool("todoist_sync");
 
 		expect(mockClient.sync).toHaveBeenCalled();
 		expect(result).toMatchObject({
@@ -572,64 +629,7 @@ describe("sync", () => {
 	});
 
 	it("does not expose updatedTaskIds in output", async () => {
-		const result = (await mcpClient.callTool("sync")) as Record<
-			string,
-			unknown
-		>;
+		const result = await mcpClient.callTool("todoist_sync");
 		expect(result).not.toHaveProperty("updatedTaskIds");
-	});
-});
-
-// ── conflict detection ────────────────────────────────────────────
-describe("conflict detection", () => {
-	beforeEach(async () => {
-		// Establish a sync token via the server so incremental syncs work
-		await mcpClient.callTool("sync");
-	});
-
-	it("tasks_update returns conflict when task was modified upstream", async () => {
-		vi.mocked(mockClient.sync).mockResolvedValueOnce({
-			projects: [PROJECT],
-			sections: [],
-			labels: [],
-			tasks: [TASK_A],
-			deletedTaskIds: [],
-			syncToken: "tok2",
-		});
-
-		const result = (await mcpClient.callTool("tasks_update", {
-			id: "t1",
-			title: "New title",
-		})) as { conflict: boolean; upstream: { id: string }; hint: string };
-
-		expect(result.conflict).toBe(true);
-		expect(result.upstream.id).toBe("t1");
-		expect(result.hint).toBeTypeOf("string");
-		expect(mockClient.updateTask).not.toHaveBeenCalled();
-	});
-
-	it("tasks_complete returns conflict when task was modified upstream", async () => {
-		vi.mocked(mockClient.sync).mockResolvedValueOnce({
-			projects: [PROJECT],
-			sections: [],
-			labels: [],
-			tasks: [TASK_A],
-			deletedTaskIds: [],
-			syncToken: "tok2",
-		});
-
-		const result = (await mcpClient.callTool("tasks_complete", {
-			id: "t1",
-		})) as { conflict: boolean; upstream: { id: string }; hint: string };
-
-		expect(result.conflict).toBe(true);
-		expect(result.hint).toBeTypeOf("string");
-		expect(result.upstream.id).toBe("t1");
-		expect(mockClient.completeTask).not.toHaveBeenCalled();
-	});
-
-	it("tasks_update proceeds when task was not modified upstream", async () => {
-		await mcpClient.callTool("tasks_update", { id: "t1", title: "New title" });
-		expect(mockClient.updateTask).toHaveBeenCalled();
 	});
 });

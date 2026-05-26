@@ -5,10 +5,12 @@
 		"@tsconfig/strictest/tsconfig.json"
 	],
 	"compilerOptions": {
+		"allowJs": true,
 		"composite": true
 	},
 	"include": [
 		"${configDir}/vitest.config.ts",
-		"${configDir}/src"
+		"${configDir}/src",
+		"${configDir}/package.json"
 	]
 }

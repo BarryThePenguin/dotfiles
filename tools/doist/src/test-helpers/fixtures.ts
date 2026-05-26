@@ -1,0 +1,181 @@
+/**
+ * Centralized test fixtures for db and operations tests.
+ */
+
+export const NOW = new Date().toISOString();
+
+// ── Project fixtures ────────────────────────────────────────────────
+
+export const PROJECT_IDS = {
+	work: "p-work",
+	personal: "p-personal",
+	inbox: "p-inbox",
+};
+
+export const PROJECT_WORK = {
+	id: PROJECT_IDS.work,
+	name: "Work",
+	color: null,
+	is_favorite: 0,
+	is_inbox: 0,
+	synced_at: NOW,
+};
+
+export const PROJECT_PERSONAL = {
+	id: PROJECT_IDS.personal,
+	name: "Personal",
+	color: null,
+	is_favorite: 0,
+	is_inbox: 0,
+	synced_at: NOW,
+};
+
+export const PROJECT_INBOX = {
+	id: PROJECT_IDS.inbox,
+	name: "Inbox",
+	color: "blue",
+	is_favorite: 0,
+	is_inbox: 1,
+	synced_at: NOW,
+};
+
+// ── Section fixtures ────────────────────────────────────────────────
+
+export const SECTION_IDS = {
+	backlog: "s-backlog",
+	inProgress: "s-in-progress",
+	someday: "s-someday",
+	thisWeek: "s-this-week",
+};
+
+export const SECTION_BACKLOG = {
+	id: SECTION_IDS.backlog,
+	project_id: PROJECT_IDS.work,
+	name: "Backlog",
+	order_: 2,
+	synced_at: NOW,
+};
+
+export const SECTION_IN_PROGRESS = {
+	id: SECTION_IDS.inProgress,
+	project_id: PROJECT_IDS.work,
+	name: "In Progress",
+	order_: 1,
+	synced_at: NOW,
+};
+
+export const SECTION_SOMEDAY = {
+	id: SECTION_IDS.someday,
+	project_id: PROJECT_IDS.personal,
+	name: "Someday",
+	order_: 1,
+	synced_at: NOW,
+};
+
+export const SECTION_THIS_WEEK = {
+	id: SECTION_IDS.thisWeek,
+	project_id: PROJECT_IDS.inbox,
+	name: "This Week",
+	order_: 1,
+	synced_at: NOW,
+};
+
+// ── Label fixtures ────────────────────────────────────────────────
+
+export const LABEL_IDS = {
+	urgent: "l-urgent",
+	work: "l-work",
+	home: "l-home",
+};
+
+export const LABEL_URGENT = {
+	id: LABEL_IDS.urgent,
+	name: "urgent",
+	color: "red",
+	synced_at: NOW,
+};
+
+export const LABEL_WORK = {
+	id: LABEL_IDS.work,
+	name: "work",
+	color: null,
+	synced_at: NOW,
+};
+
+export const LABEL_HOME = {
+	id: LABEL_IDS.home,
+	name: "home",
+	color: null,
+	synced_at: NOW,
+};
+
+// ── Task fixtures ────────────────────────────────────────────────
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+export const TASK_IDS = {
+	alpha: "t-alpha",
+	beta: "t-beta",
+	overdue: "t-overdue",
+	done: "t-done",
+};
+
+export const TASK_ALPHA = {
+	id: TASK_IDS.alpha,
+	project_id: PROJECT_IDS.work,
+	section_id: SECTION_IDS.inProgress,
+	content: "Alpha task",
+	description: null,
+	priority: 1,
+	due_date: TODAY,
+	due_string: "today",
+	labels: JSON.stringify([]),
+	is_completed: 0,
+	created_at: NOW,
+	synced_at: NOW,
+};
+
+export const TASK_BETA = {
+	id: TASK_IDS.beta,
+	project_id: PROJECT_IDS.work,
+	section_id: SECTION_IDS.backlog,
+	content: "Beta task",
+	description: null,
+	priority: 4,
+	due_date: "2030-01-01",
+	due_string: "Jan 1 2030",
+	labels: JSON.stringify([LABEL_IDS.urgent]),
+	is_completed: 0,
+	created_at: NOW,
+	synced_at: NOW,
+};
+
+export const TASK_OVERDUE = {
+	id: TASK_IDS.overdue,
+	project_id: PROJECT_IDS.work,
+	section_id: null,
+	content: "Overdue task",
+	description: null,
+	priority: 2,
+	due_date: "2020-01-01",
+	due_string: "Jan 1 2020",
+	labels: JSON.stringify([]),
+	is_completed: 0,
+	created_at: NOW,
+	synced_at: NOW,
+};
+
+export const TASK_DONE = {
+	id: TASK_IDS.done,
+	project_id: PROJECT_IDS.work,
+	section_id: null,
+	content: "Done task",
+	description: null,
+	priority: 1,
+	due_date: null,
+	due_string: null,
+	labels: JSON.stringify([]),
+	is_completed: 1,
+	created_at: NOW,
+	synced_at: NOW,
+};

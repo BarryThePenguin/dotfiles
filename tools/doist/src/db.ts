@@ -1,3 +1,9 @@
+import type { api } from "@opentelemetry/sdk-node";
+import {
+	ATTR_DB_OPERATION_NAME,
+	ATTR_DB_QUERY_TEXT,
+	ATTR_DB_SYSTEM_NAME,
+} from "@opentelemetry/semantic-conventions";
 import {
 	CompiledQuery,
 	DummyDriver,
@@ -5,14 +11,29 @@ import {
 	SqliteAdapter,
 	SqliteIntrospector,
 	SqliteQueryCompiler,
+	sql,
 	type Insertable,
 	type Selectable,
+	type SqlBool,
 } from "kysely";
 import {
 	DatabaseSync,
 	type SQLInputValue,
 	type StatementSync,
 } from "node:sqlite";
+import type { ConfigPaths } from "./paths.ts";
+import { SPAN_NAME_DB_QUERY, SPAN_NAME_DB_TRANSACTION } from "./semconv.ts";
+import { tracer } from "./telemetry.ts";
+import {
+	normalizeTask,
+	normalizeProject,
+	normalizeSection,
+	normalizeLabel,
+	type AppTask,
+	type AppProject,
+	type AppSection,
+	type AppLabel,
+} from "./schema.ts";
 
 interface ProjectTable {
 	id: string;
@@ -71,59 +92,63 @@ export type DbSection = Selectable<SectionTable>;
 export type DbLabel = Selectable<LabelTable>;
 export type DbTask = Selectable<TaskTable>;
 
-export class SyncDb implements Disposable {
+const SCHEMA_SQL = `
+  CREATE TABLE IF NOT EXISTS meta (
+	key   TEXT PRIMARY KEY,
+	value TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS projects (
+	id          TEXT PRIMARY KEY,
+	name        TEXT NOT NULL,
+	color       TEXT,
+	is_favorite INTEGER DEFAULT 0,
+	is_inbox    INTEGER DEFAULT 0,
+	synced_at   TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS sections (
+	id          TEXT PRIMARY KEY,
+	project_id  TEXT NOT NULL,
+	name        TEXT NOT NULL,
+	order_      INTEGER,
+	synced_at   TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS labels (
+	id          TEXT PRIMARY KEY,
+	name        TEXT NOT NULL,
+	color       TEXT,
+	synced_at   TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS tasks (
+	id            TEXT PRIMARY KEY,
+	project_id    TEXT,
+	section_id    TEXT,
+	content       TEXT NOT NULL,
+	description   TEXT,
+	priority      INTEGER,
+	due_date      TEXT,
+	due_string    TEXT,
+	labels        TEXT,
+	is_completed  INTEGER DEFAULT 0,
+	created_at    TEXT,
+	synced_at     TEXT NOT NULL
+  );
+`;
+
+export class Database {
 	readonly #raw: DatabaseSync;
 	readonly #stmts = new Map<string, StatementSync>();
-	readonly q: Kysely<Schema>;
+	readonly #q: Kysely<Schema>;
 
-	constructor(path: string) {
-		this.#raw = new DatabaseSync(path);
-		this.#raw.exec(`
-      CREATE TABLE IF NOT EXISTS meta (
-        key   TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
+	constructor({ dbPath }: ConfigPaths) {
+		this.#raw = new DatabaseSync(dbPath);
 
-      CREATE TABLE IF NOT EXISTS projects (
-        id          TEXT PRIMARY KEY,
-        name        TEXT NOT NULL,
-        color       TEXT,
-        is_favorite INTEGER DEFAULT 0,
-        is_inbox    INTEGER DEFAULT 0,
-        synced_at   TEXT NOT NULL
-      );
+		this.#raw.exec(SCHEMA_SQL);
 
-      CREATE TABLE IF NOT EXISTS sections (
-        id          TEXT PRIMARY KEY,
-        project_id  TEXT NOT NULL,
-        name        TEXT NOT NULL,
-        order_      INTEGER,
-        synced_at   TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS labels (
-        id          TEXT PRIMARY KEY,
-        name        TEXT NOT NULL,
-        color       TEXT,
-        synced_at   TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS tasks (
-        id            TEXT PRIMARY KEY,
-        project_id    TEXT,
-        section_id    TEXT,
-        content       TEXT NOT NULL,
-        description   TEXT,
-        priority      INTEGER,
-        due_date      TEXT,
-        due_string    TEXT,
-        labels        TEXT,
-        is_completed  INTEGER DEFAULT 0,
-        created_at    TEXT,
-        synced_at     TEXT NOT NULL
-      );
-    `);
-		this.q = new Kysely<Schema>({
+		this.#q = new Kysely<Schema>({
 			dialect: {
 				createAdapter: () => new SqliteAdapter(),
 				createDriver: () => new DummyDriver(),
@@ -133,13 +158,9 @@ export class SyncDb implements Disposable {
 		});
 	}
 
-	close(): void {
+	close() {
 		this.#stmts.clear();
 		this.#raw.close();
-	}
-
-	[Symbol.dispose](): void {
-		this.close();
 	}
 
 	#prepare(sql: string): StatementSync {
@@ -151,126 +172,360 @@ export class SyncDb implements Disposable {
 		return stmt;
 	}
 
+	#normalizeSql(sql: string) {
+		return sql.trim().replace(/\s+/g, " ");
+	}
+
+	#getDbOperation(sql: string) {
+		return (sql.trim().split(" ", 1)[0] ?? "query").toUpperCase();
+	}
+
+	#spanAttributes(query: CompiledQuery): api.Attributes {
+		const sql = this.#normalizeSql(query.sql);
+		const attributes: api.Attributes = {
+			[ATTR_DB_SYSTEM_NAME]: "sqlite",
+			[ATTR_DB_QUERY_TEXT]: sql,
+			[ATTR_DB_OPERATION_NAME]: this.#getDbOperation(sql),
+		};
+
+		const parameters = query.parameters as unknown;
+		if (Array.isArray(parameters)) {
+			for (const [index, value] of parameters.entries()) {
+				attributes[`db.query.parameter.${index}`] = String(value);
+			}
+		} else if (parameters && typeof parameters === "object") {
+			for (const [key, value] of Object.entries(parameters)) {
+				attributes[`db.query.parameter.${key}`] = String(value);
+			}
+		}
+
+		return attributes;
+	}
+
 	all<R>(query: CompiledQuery<R>): R[] {
-		const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
-		return this.#prepare(query.sql).all(...parameters) as R[];
+		return tracer.startActiveSpan(
+			SPAN_NAME_DB_QUERY,
+			{
+				attributes: this.#spanAttributes(query),
+			},
+			(span) => {
+				try {
+					const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
+					return this.#prepare(query.sql).all(...parameters) as R[];
+				} finally {
+					span.end();
+				}
+			},
+		);
 	}
 
 	get<R>(query: CompiledQuery<R>): R | undefined {
-		const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
-		return this.#prepare(query.sql).get(...parameters) as R | undefined;
+		return tracer.startActiveSpan(
+			SPAN_NAME_DB_QUERY,
+			{
+				attributes: this.#spanAttributes(query),
+			},
+			(span) => {
+				try {
+					const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
+				return this.#prepare(query.sql).get(...parameters) as R | undefined;
+				} finally {
+					span.end();
+				}
+			},
+		);
 	}
 
 	run(query: CompiledQuery): void {
-		const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
-		this.#prepare(query.sql).run(...parameters);
+		tracer.startActiveSpan(
+			SPAN_NAME_DB_QUERY,
+			{
+				attributes: this.#spanAttributes(query),
+			},
+			(span) => {
+				try {
+					const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
+					return this.#prepare(query.sql).run(...parameters);
+				} finally {
+					span.end();
+				}
+			},
+		);
 	}
 
-	transaction<T>(fn: () => T extends Promise<unknown> ? never : T): T {
-		this.#raw.exec("BEGIN");
-		try {
-			const result = fn();
-			this.#raw.exec("COMMIT");
-			return result;
-		} catch (e) {
-			this.#raw.exec("ROLLBACK");
-			throw e;
+	transaction<T>(fn: () => T): T {
+		return tracer.startActiveSpan(
+			SPAN_NAME_DB_TRANSACTION,
+			{
+				attributes: {
+					[ATTR_DB_SYSTEM_NAME]: "sqlite",
+					[ATTR_DB_OPERATION_NAME]: "TRANSACTION",
+				},
+			},
+			(span) => {
+				this.#raw.exec("BEGIN");
+				try {
+					const result = fn();
+					this.#raw.exec("COMMIT");
+					return result;
+				} catch (err) {
+					this.#raw.exec("ROLLBACK");
+					span.recordException(err as Error);
+					throw err;
+				} finally {
+					span.end();
+				}
+			},
+		);
+	}
+
+	// Task query builder
+	// Returns a Kysely query builder for composable task queries.
+	// Follows the "Splitting query building and execution" pattern from Kysely docs.
+	private tasks() {
+		return this.#q.selectFrom("tasks").selectAll();
+	}
+
+	// Task queries - built using composition
+	selectAllTasks(): AppTask[] {
+		return this.all(this.tasks().compile()).map(normalizeTask);
+	}
+
+	selectTaskById(id: string): AppTask | null {
+		const task = this.get(this.tasks().where("id", "=", id).compile());
+		return task ? normalizeTask(task) : null;
+	}
+
+	selectUncompletedTasks(): AppTask[] {
+		return this.all(
+			this.tasks().where("is_completed", "=", 0).compile(),
+		).map(normalizeTask);
+	}
+
+	selectUncompletedTasksByProjectIds(projectIds: string[]): AppTask[] {
+		if (projectIds.length === 0) {
+			return [];
+		}
+		return this.all(
+			this.tasks()
+				.where("is_completed", "=", 0)
+				.where("project_id", "in", projectIds)
+				.compile(),
+		).map(normalizeTask);
+	}
+
+	searchTasksByContent(query: string): AppTask[] {
+		return this.all(
+			this.tasks()
+				.where("is_completed", "=", 0)
+				.where("content", "like", `%${query}%`)
+				.orderBy("priority", "desc")
+				.compile(),
+		).map(normalizeTask);
+	}
+
+	selectTasksByFilters(filters: {
+		project?: string | undefined;
+		priority?: number | undefined;
+		label?: string | undefined;
+		due?: "today" | "overdue" | undefined;
+		limit?: number | undefined;
+		offset?: number | undefined;
+		includeCompleted?: boolean | undefined;
+	}): AppTask[] {
+		let query = this.tasks();
+
+		if (!filters.includeCompleted) {
+			query = query.where("is_completed", "=", 0);
+		}
+
+		if (filters.project) {
+			query = query.where("project_id", "=", filters.project);
+		}
+
+		if (filters.due === "today" || filters.due === "overdue") {
+			const today = new Date().toISOString().slice(0, 10);
+			if (filters.due === "today") {
+				query = query.where("due_date", "=", today);
+			} else {
+				query = query
+					.where("due_date", "is not", null)
+					.where("due_date", "<", today);
+			}
+		}
+
+		if (filters.priority !== undefined) {
+			query = query.where("priority", "=", filters.priority);
+		}
+
+		if (filters.label) {
+			query = query.where(
+				sql<SqlBool>`EXISTS (SELECT 1 FROM json_each(labels) WHERE value = ${filters.label})`,
+			);
+		}
+
+		query = query.orderBy("priority", "desc");
+
+		if (filters.limit !== undefined || filters.offset !== undefined) {
+			query = query.limit(filters.limit ?? -1);
+			if (filters.offset !== undefined) {
+				query = query.offset(filters.offset);
+			}
+		}
+
+		return this.all(query.compile()).map(normalizeTask);
+	}
+
+	// Project queries
+	selectAllProjects(): AppProject[] {
+		return this.all(
+			this.#q.selectFrom("projects").selectAll().orderBy("name").compile(),
+		).map(normalizeProject);
+	}
+
+	selectProjectByName(name: string): { id: string }[] {
+		return this.all(
+			this.#q
+				.selectFrom("projects")
+				.select("id")
+				.where("name", "=", name)
+				.compile(),
+		);
+	}
+
+	// Section queries
+	selectAllSections(): AppSection[] {
+		return this.all(
+			this.#q
+				.selectFrom("sections")
+				.selectAll()
+				.orderBy("project_id")
+				.orderBy("order_")
+				.compile(),
+		).map(normalizeSection);
+	}
+
+	selectSectionsByProjectId(projectId: string): AppSection[] {
+		return this.all(
+			this.#q
+				.selectFrom("sections")
+				.selectAll()
+				.where("project_id", "=", projectId)
+				.orderBy("order_")
+				.compile(),
+		).map(normalizeSection);
+	}
+
+	// Label queries
+	selectAllLabels(): AppLabel[] {
+		return this.all(
+			this.#q.selectFrom("labels").selectAll().orderBy("name").compile(),
+		).map(normalizeLabel);
+	}
+
+	// Write operations
+	upsertProject(project: Insertable<ProjectTable>): void {
+		this.run(
+			this.#q
+				.insertInto("projects")
+				.values(project)
+				.onConflict((oc) => oc.column("id").doUpdateSet(project))
+				.compile(),
+		);
+	}
+
+	upsertSection(section: Insertable<SectionTable>): void {
+		this.run(
+			this.#q
+				.insertInto("sections")
+				.values(section)
+				.onConflict((oc) => oc.column("id").doUpdateSet(section))
+				.compile(),
+		);
+	}
+
+	upsertLabel(label: Insertable<LabelTable>): void {
+		this.run(
+			this.#q
+				.insertInto("labels")
+				.values(label)
+				.onConflict((oc) => oc.column("id").doUpdateSet(label))
+				.compile(),
+		);
+	}
+
+	upsertTask(task: Insertable<TaskTable>): void {
+		this.run(
+			this.#q
+				.insertInto("tasks")
+				.values(task)
+				.onConflict((oc) => oc.column("id").doUpdateSet(task))
+				.compile(),
+		);
+	}
+
+	updateTasksAsCompleted(ids: string[]): void {
+		if (ids.length === 0) {
+			return;
+		}
+		const now = new Date().toISOString();
+		for (const id of ids) {
+			this.run(
+				this.#q
+					.updateTable("tasks")
+					.set({ is_completed: 1, synced_at: now })
+					.where("id", "=", id)
+					.compile(),
+			);
 		}
 	}
-}
 
-export function openDb(path: string): SyncDb {
-	return new SyncDb(path);
-}
+	// Metadata operations
+	getSyncToken(): string | null {
+		const row = this.get(
+			this.#q
+				.selectFrom("meta")
+				.select("value")
+				.where("key", "=", "sync_token")
+				.compile(),
+		);
+		return row?.value ?? null;
+	}
 
-export function resetSyncToken(db: SyncDb): void {
-	db.run(db.q.deleteFrom("meta").where("key", "=", "sync_token").compile());
-}
+	setSyncToken(token: string): void {
+		this.run(
+			this.#q
+				.insertInto("meta")
+				.values({ key: "sync_token", value: token })
+				.onConflict((oc) => oc.column("key").doUpdateSet({ value: token }))
+				.compile(),
+		);
+	}
 
-export function getSyncToken(db: SyncDb): string | null {
-	const row = db.get(
-		db.q
-			.selectFrom("meta")
-			.select("value")
-			.where("key", "=", "sync_token")
-			.compile(),
-	);
-	return row?.value ?? null;
-}
+	resetSyncToken(): void {
+		this.run(
+			this.#q.deleteFrom("meta").where("key", "=", "sync_token").compile(),
+		);
+	}
 
-export function setSyncToken(db: SyncDb, token: string): void {
-	db.run(
-		db.q
-			.insertInto("meta")
-			.values({ key: "sync_token", value: token })
-			.onConflict((oc) => oc.column("key").doUpdateSet({ value: token }))
-			.compile(),
-	);
-}
+	getLastSyncedAt(): string | null {
+		const row = this.get(
+			this.#q
+				.selectFrom("meta")
+				.select("value")
+				.where("key", "=", "last_synced_at")
+				.compile(),
+		);
+		return row?.value ?? null;
+	}
 
-export function getLastSyncedAt(db: SyncDb): string | null {
-	const row = db.get(
-		db.q
-			.selectFrom("meta")
-			.select("value")
-			.where("key", "=", "last_synced_at")
-			.compile(),
-	);
-	return row?.value ?? null;
-}
-
-export function setLastSyncedAt(db: SyncDb, timestamp: string): void {
-	db.run(
-		db.q
-			.insertInto("meta")
-			.values({ key: "last_synced_at", value: timestamp })
-			.onConflict((oc) => oc.column("key").doUpdateSet({ value: timestamp }))
-			.compile(),
-	);
-}
-
-export function upsertProject(
-	db: SyncDb,
-	project: Insertable<ProjectTable>,
-): void {
-	db.run(
-		db.q
-			.insertInto("projects")
-			.values(project)
-			.onConflict((oc) => oc.column("id").doUpdateSet(project))
-			.compile(),
-	);
-}
-
-export function upsertSection(
-	db: SyncDb,
-	section: Insertable<SectionTable>,
-): void {
-	db.run(
-		db.q
-			.insertInto("sections")
-			.values(section)
-			.onConflict((oc) => oc.column("id").doUpdateSet(section))
-			.compile(),
-	);
-}
-
-export function upsertLabel(db: SyncDb, label: Insertable<LabelTable>): void {
-	db.run(
-		db.q
-			.insertInto("labels")
-			.values(label)
-			.onConflict((oc) => oc.column("id").doUpdateSet(label))
-			.compile(),
-	);
-}
-
-export function upsertTask(db: SyncDb, task: Insertable<TaskTable>): void {
-	db.run(
-		db.q
-			.insertInto("tasks")
-			.values(task)
-			.onConflict((oc) => oc.column("id").doUpdateSet(task))
-			.compile(),
-	);
+	setLastSyncedAt(timestamp: string): void {
+		this.run(
+			this.#q
+				.insertInto("meta")
+				.values({ key: "last_synced_at", value: timestamp })
+				.onConflict((oc) => oc.column("key").doUpdateSet({ value: timestamp }))
+				.compile(),
+		);
+	}
 }

@@ -1,10 +1,11 @@
 {
 	"compilerOptions": {
+		"composite": true,
 		"tsBuildInfoFile": "${configDir}/dist/tsconfig.tsbuildinfo"
 	},
 	"files": [],
 	"references": [
-		{ "path": "tools/doist" },
-		{ "path": "tsconfig.repo-config-files.json" }
+		{ "path": "./tools/doist/tsconfig.json" },
+		{ "path": "./tsconfig.repo-config-files.json" }
 	]
 }
