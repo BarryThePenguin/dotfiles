@@ -40,10 +40,12 @@ zstyle ':prezto:load' pmodule \
 	'utility' \
 	'completion' \
 	'mise' \
+	'fnox' \
 	'atuin' \
 	'kubectl' \
 	'starship' \
 	'hk' \
+	'gh' \
 	'npm' \
 	'pulumi' \
 	'flux' \

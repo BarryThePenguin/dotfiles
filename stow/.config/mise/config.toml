@@ -4,7 +4,6 @@ DOTFILES = { required = true }
 EDITOR = "code"
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
-TODOIST_API_TOKEN = "{{ exec(command='op read \"op://Private/Todoist API token/password\"', cache_duration='8h') }}"
 
 [settings]
 trusted_config_paths = ["~/src/btp", "~/src/work"]
@@ -19,6 +18,8 @@ atuin = "18.16.1"
 cloudflared = "2026.5.1"
 cosign = "3.0.6"
 deno = "2.8.0"
+fnox = "1.25.1"
+gh = "2.92.0"
 go = "1.26.3"
 jq = "1.8.1"
 lima = "2.1.1"

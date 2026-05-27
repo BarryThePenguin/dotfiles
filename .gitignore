@@ -1,5 +1,6 @@
 Brewfile.lock.json
 
+age.txt
 coverage
 node_modules
 node_modules/
@@ -17,8 +18,6 @@ stow/.config/containers
 stow/.config/gpg/*
 !stow/.config/gpg/gpg-agent.conf
 !stow/.config/gpg/gpg.conf
-
-stow/.config/mise/age.txt
 
 stow/.config/op
 
