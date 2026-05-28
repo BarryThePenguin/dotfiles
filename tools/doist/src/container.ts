@@ -6,6 +6,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { cwd } from "node:process";
 import * as v from "valibot";
 import { Database } from "./db.ts";
@@ -37,14 +38,12 @@ const EnvSchema = v.object({
 
 const parseEnv = v.parser(EnvSchema);
 
-const env = parseEnv(process.env);
-
 /**
  * Container bundles dependencies and manages their lifecycle.
  */
 export interface Container {
-	readonly paths: ConfigPaths;
-	readonly db: Database;
+	readonly paths: ConfigPaths | null;
+	readonly db: Database | null;
 	readonly client: TodoistClient;
 
 	addProject: (ref: ProjectRef) => void;
@@ -76,20 +75,42 @@ export interface Container {
  * ```
  */
 export function createContainer(): Container {
+	const env = parseEnv(process.env);
 	const rcDir = env.TODOIST_RC_DIR ?? cwd();
-	const paths = findPaths(rcDir, { exists: existsSync });
-	const db = new Database(paths);
+	let paths = findPaths(rcDir, { exists: existsSync });
+	let db: Database | null = null;
 
 	// Create projects namespace with in-memory caching.
 	// Cache is invalidated only on add/remove (mutations we control).
 	let cachedProjects: ProjectRef[] | null = null;
 
+	function getPaths(): ConfigPaths | null {
+		return paths ??= findPaths(rcDir, { exists: existsSync });
+	}
+
+	function getRcPath(): string {
+		return getPaths()?.rcPath ?? join(rcDir, ".doistrc");
+	}
+
+	function getDb() {
+		const paths = getPaths();
+		if (paths) {
+			db ??= new Database(paths);
+		}
+
+		return db;
+	}
+
 	function readConfig(): Config {
-		return parseConfigSchema(readFileSync(paths.rcPath, "utf-8"));
+		if (existsSync(getRcPath())) {
+			return parseConfigSchema(readFileSync(getRcPath(), "utf-8"));
+		}
+
+		return { projects: [] };
 	}
 
 	function writeConfig(config: Config): void {
-		writeFileSync(paths.rcPath, JSON.stringify(config, null, 2), "utf-8");
+		writeFileSync(getRcPath(), JSON.stringify(config, null, 2), "utf-8");
 	}
 
 	function addProject(ref: ProjectRef) {
@@ -133,11 +154,18 @@ export function createContainer(): Container {
 		listProjects,
 		projectCount,
 		removeProject,
-		paths,
-		db,
+		get paths() {
+			return getPaths();
+		},
+		get db() {
+			return getDb();
+		},
 		client,
 		close() {
-			db.close();
+			if (db) {
+				db.close();
+				db = null;
+			}
 		},
 	};
 }

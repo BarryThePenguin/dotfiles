@@ -15,7 +15,16 @@ import { countSyncData, syncAndPersist } from "./sync.ts";
 import { tracer } from "./telemetry.ts";
 
 const container = createContainer();
-const { db, addProject, removeProject, listProjectIds, client } = container;
+const { addProject, removeProject, listProjects, listProjectIds, client } =
+	container;
+
+function requireDb() {
+	if (!container.db) {
+		throw new Error("no .doistrc found in this git repository");
+	}
+
+	return container.db;
+}
 
 const parseListTask = v.parser(
 	v.object({
@@ -50,6 +59,7 @@ const syncCmd = defineCommand({
 		},
 	},
 	async run({ args }) {
+		const db = requireDb();
 		const result = await syncAndPersist(
 			db,
 			client,
@@ -74,6 +84,7 @@ const projectsCmd = defineCommand({
 			},
 			async run({ args }) {
 				if (args.sync) {
+					const db = requireDb();
 					const syncResult = await syncAndPersist(
 						db,
 						client,
@@ -85,7 +96,7 @@ const projectsCmd = defineCommand({
 						projects: db.selectAllProjects(),
 					});
 				} else {
-					out(db.selectAllProjects());
+					out(listProjects());
 				}
 			},
 		}),
@@ -131,6 +142,7 @@ const sectionsCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
+				const db = requireDb();
 				const project = args.project
 					? resolveProject(db, args.project)
 					: undefined;
@@ -167,6 +179,7 @@ const labelsCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
+				const db = requireDb();
 				if (args.sync) {
 					const syncResult = await syncAndPersist(
 						db,
@@ -211,6 +224,7 @@ const tasksCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
+				const db = requireDb();
 				const fields = parseListTask({
 					...args,
 					priority:
@@ -240,6 +254,7 @@ const tasksCmd = defineCommand({
 				id: { type: "positional", description: "task id", required: true },
 			},
 			run({ args }) {
+				const db = requireDb();
 				const task = db.selectTaskById(args.id);
 				if (!task) {
 					throw new Error("task not found");
@@ -264,6 +279,7 @@ const tasksCmd = defineCommand({
 				id: { type: "positional", description: "task id", required: true },
 			},
 			async run({ args }) {
+				const db = requireDb();
 				out(await completeTask(db, client, args.id));
 			},
 		}),
@@ -282,6 +298,7 @@ const tasksCmd = defineCommand({
 				description: { type: "string", description: "task description" },
 			},
 			async run({ args }) {
+				const db = requireDb();
 				const fields = parseUpdateTaskFields({
 					...args,
 					addLabels: args.label ? [args.label] : undefined,
@@ -307,6 +324,7 @@ const tasksCmd = defineCommand({
 				label: { type: "string", description: "label name" },
 			},
 			async run({ args }) {
+				const db = requireDb();
 				const fields = parseAddTaskFields({
 					...args,
 					labels: args.label ? [args.label] : undefined,

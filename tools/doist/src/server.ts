@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
 import type { Container } from "./container.ts";
+import type { Database } from "./db.ts";
 import {
 	addTask,
 	completeTask,
@@ -96,6 +97,12 @@ const ConflictSchema = v.object({
 	reason: v.string(),
 });
 
+function requireDb(db: Database | null): asserts db is Database {
+	if (!db) {
+		throw new Error("no .doistrc found in this git repository");
+	}
+}
+
 export function buildServer({
 	paths,
 	db,
@@ -127,6 +134,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						span.setAttribute("sync.full", full);
 						logger.info({ operation: "todoist_sync", full }, "Starting sync");
 						const result = await syncAndPersist(
@@ -206,6 +214,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						let syncResult = undefined;
 						if (shouldSync) {
 							logger.info(
@@ -294,6 +303,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				(span) => {
 					try {
+						requireDb(db);
 						const task = db.selectTaskById(id);
 						if (!task) {
 							trackOperation("todoist_tasks_get", false, {
@@ -342,6 +352,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						if (!db.selectTaskById(id)) {
 							trackOperation("todoist_tasks_complete", false, {
 								"error.type": "not_found",
@@ -394,6 +405,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						if (!db.selectTaskById(id)) {
 							trackOperation("todoist_tasks_update", false, {
 								"error.type": "not_found",
@@ -454,6 +466,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						const result = await addTask(db, client, fields);
 						trackOperation("todoist_tasks_add", true, {
 							"task.project": fields.project ? 1 : 0,
@@ -506,6 +519,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						let syncResult = undefined;
 						if (shouldSync) {
 							logger.info(
@@ -571,6 +585,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						let syncResult = undefined;
 						if (shouldSync) {
 							logger.info(
@@ -639,6 +654,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
+						requireDb(db);
 						let syncResult = undefined;
 						if (shouldSync) {
 							logger.info(
@@ -705,6 +721,7 @@ export function buildServer({
 				propagateMeta(mcpReq._meta),
 				(span) => {
 					try {
+						requireDb(db);
 						const tasks = db.searchTasksByContent(query);
 						trackOperation("todoist_tasks_search", true, {
 							"result.count": tasks.length,
@@ -737,8 +754,8 @@ export function buildServer({
 			inputSchema: toStandardJsonSchema(EmptyInput),
 			outputSchema: toStandardJsonSchema(
 				v.object({
-					rcPath: v.string(),
-					dbPath: v.string(),
+					rcPath: v.optional(v.string()),
+					dbPath: v.optional(v.string()),
 					projects: v.array(v.string()),
 				}),
 			),
@@ -795,6 +812,7 @@ export function buildServer({
 		},
 		({ project: projectName }) => {
 			try {
+				requireDb(db);
 				const tasks = projectName
 					? db.selectTasksByFilters({
 							project: resolveProject(db, projectName),

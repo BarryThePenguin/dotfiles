@@ -7,13 +7,21 @@ import {
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	onTestFinished,
+	vi,
+} from "vitest";
 import type { Container } from "./container.ts";
 import { Database } from "./db.ts";
 import { buildServer } from "./server.ts";
 import { setToken } from "./sync-lifecycle.ts";
 import { createTestContainer } from "./test-helpers/container.ts";
-import type { TodoistClient } from "./todoist.ts";
+import { createClient, type TodoistClient } from "./todoist.ts";
 
 // ── Fixtures ──────────────────────────────────────────────────────
 const NOW = new Date().toISOString();
@@ -168,6 +176,32 @@ async function makeClient(server: McpServer) {
 
 	return { callTool, close: () => clientTransport.close() };
 }
+
+describe("buildServer", () => {
+	it("returns config but errors from db-backed tools when no .doistrc is present", async () => {
+		const server = buildServer({
+			paths: null,
+			db: null,
+			client: createClient("test-token"),
+			addProject: vi.fn(),
+			removeProject: vi.fn(),
+			listProjects: vi.fn().mockReturnValue([]),
+			listProjectIds: vi.fn().mockReturnValue([]),
+			projectCount: vi.fn().mockReturnValue(0),
+			close: vi.fn(),
+		});
+		const client = await makeClient(server);
+		onTestFinished(() => client.close());
+
+		await expect(client.callTool("todoist_config", {})).resolves.toEqual({
+			projects: [],
+		});
+
+		await expect(client.callTool("todoist_tasks_list", {})).rejects.toThrow(
+			"no .doistrc found in this git repository",
+		);
+	});
+});
 
 // ── Shared setup ──────────────────────────────────────────────────
 let container: Container;

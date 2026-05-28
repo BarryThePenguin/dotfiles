@@ -3,7 +3,6 @@ Brewfile.lock.json
 age.txt
 coverage
 node_modules
-node_modules/
 dist
 
 .env
