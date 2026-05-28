@@ -1,14 +1,13 @@
 import * as undici from "undici";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Container } from "./container.ts";
 import {
 	addTask,
-	completeTask,
+	completeTasks,
 	resolveProject,
 	updateTask,
 } from "./operations.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
-import { createTestContainer } from "./test-helpers/container.ts";
+import { createTestContainer, type TestContainer } from "./test-helpers/container.ts";
 import { openDb } from "./test-helpers/database.ts";
 import {
 	createMockApiTask,
@@ -24,6 +23,7 @@ import {
 	PROJECT_PERSONAL,
 	TASK_IDS,
 	TASK_ALPHA,
+	TASK_BETA,
 } from "./test-helpers/fixtures.ts";
 import { createClient } from "./todoist.ts";
 
@@ -46,7 +46,7 @@ describe("mock HTTP client", () => {
 	// ── updateTask tests ──────────────────────────────────────────────────────
 
 	describe("updateTask", () => {
-		let container: Container;
+		let container: TestContainer;
 
 		beforeEach(() => {
 			container = createTestContainer({
@@ -136,7 +136,7 @@ describe("mock HTTP client", () => {
 	// ── addTask tests ──────────────────────────────────────────────────────
 
 	describe("addTask", () => {
-		let container: Container;
+		let container: TestContainer;
 
 		beforeEach(() => {
 			container = createTestContainer({
@@ -264,10 +264,10 @@ describe("mock HTTP client", () => {
 		});
 	});
 
-	// ── completeTask tests ────────────────────────────────────────────────────
+	// ── completeTasks tests ──────────────────────────────────────────────────
 
-	describe("completeTask", () => {
-		let container: Container;
+	describe("completeTasks", () => {
+		let container: TestContainer;
 
 		beforeEach(() => {
 			container = createTestContainer({
@@ -286,29 +286,54 @@ describe("mock HTTP client", () => {
 			container.db.close();
 		});
 
-		it("happy path: completes task when no conflict detected", async () => {
-			// task marked completed
+		it("completes multiple tasks in batch", async () => {
+			// Add second task to container
+			container.db.upsertTask(TASK_BETA);
+
+			// Set up mock response for sync with two completed tasks
 			interceptSync(
 				mockAgent,
 				createMockSyncResponse({
 					sync_token: "tok-1",
-					items: [createMockApiTask({ id: TASK_IDS.alpha, completed: true })],
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							completed_at: "2026-05-24T10:00:00Z",
+						}),
+						createMockApiTask({
+							id: TASK_IDS.beta,
+							completed_at: "2026-05-24T10:00:00Z",
+						}),
+					],
 				}),
 			);
 
 			const client = createClient("test-token");
-			const result = await completeTask(container.db, client, TASK_IDS.alpha);
+			const result = await completeTasks(container.db, client, [
+				TASK_IDS.alpha,
+				TASK_IDS.beta,
+			]);
 
 			// Verify result
 			expect(result.ok).toBe(true);
-			expect(result.result?.completed).toBe(true);
+			expect(result.result).toBe(2);
 
 			// Verify persistence
-			const persisted = container.db.selectTaskById(TASK_IDS.alpha);
-			expect(persisted?.completed).toBe(true);
+			const alpha = container.db.selectTaskById(TASK_IDS.alpha);
+			expect(alpha?.completed).toBe(true);
+			const beta = container.db.selectTaskById(TASK_IDS.beta);
+			expect(beta?.completed).toBe(true);
 
 			// Verify sync token advanced
 			expect(getToken(container.db)).toBe("tok-1");
+		});
+
+		it("handles empty array case", async () => {
+			const client = createClient("test-token");
+			const result = await completeTasks(container.db, client, []);
+
+			expect(result.ok).toBe(true);
+			expect(result.result).toBe(0);
 		});
 	});
 });

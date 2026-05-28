@@ -432,3 +432,58 @@ export async function syncRequest(
 
 	return data;
 }
+
+// ============================================================================
+// REST API - Projects Discovery
+// ============================================================================
+
+const RestApiProjectSchema = v.object({
+	id: v.string(),
+	name: v.string(),
+	color: v.optional(v.nullable(v.string())),
+	is_favorite: v.optional(v.boolean(), false),
+	inbox_project: v.optional(v.boolean(), false),
+	is_archived: v.optional(v.boolean(), false),
+	is_deleted: v.optional(v.boolean(), false),
+});
+
+const RestApiProjectsResponseSchema = v.object({
+	results: v.array(RestApiProjectSchema),
+	next_cursor: v.optional(v.nullable(v.string())),
+});
+
+const parseProjectsResponse = v.parser(RestApiProjectsResponseSchema);
+
+export type RestApiProject = v.InferOutput<typeof RestApiProjectSchema>;
+
+/**
+ * Fetch a page of projects from the Todoist REST API.
+ * Callers can use the returned next_cursor to fetch subsequent pages.
+ */
+export async function fetchProjectsFromApi(
+	token: string,
+	limit: number = 200,
+	cursor?: string | null,
+): Promise<{ projects: RestApiProject[]; nextCursor: string | null }> {
+	const params = new URLSearchParams({ limit: limit.toString() });
+	if (cursor) {
+		params.set("cursor", cursor);
+	}
+
+	const res = await fetch(`https://api.todoist.com/api/v1/projects?${params}`, {
+		method: "GET",
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	});
+
+	if (!res.ok) {
+		throw new Error(`Todoist API failed: ${res.status} ${res.statusText}`);
+	}
+
+	const data = parseProjectsResponse(await res.json());
+	return {
+		projects: data.results,
+		nextCursor: data.next_cursor ?? null,
+	};
+}

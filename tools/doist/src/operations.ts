@@ -3,6 +3,7 @@ import { normalizeTask, type AppTask } from "./schema.ts";
 import { type AddTaskFields, type UpdateTaskFields } from "./schemas.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
 import type { TodoistClient } from "./todoist.ts";
+import { createItemCompleteCommand } from "./sdk.ts";
 
 /**
  * Resolve a project name or ID.
@@ -46,27 +47,6 @@ function mergeLabelRemove(stored: string[] | null, label: string): string[] {
 export interface OperationResult<T> {
 	ok: boolean;
 	result?: T | undefined;
-}
-
-/**
- * Complete a task by marking it as completed.
- *
- * @returns { ok: true, result: task } on success
- */
-export async function completeTask(
-	db: Database,
-	client: TodoistClient,
-	id: string,
-): Promise<OperationResult<AppTask>> {
-	const { syncToken } = await client.completeTask(id, getToken(db));
-	persistMutations(db, {
-		token: syncToken,
-		customOperations: (db) => {
-			db.updateTasksAsCompleted([id]);
-		},
-	});
-	const task = db.selectTaskById(id) ?? null;
-	return { ok: true, result: task ?? undefined };
 }
 
 /**
@@ -163,4 +143,37 @@ export async function addTask(
 		tasks: [task],
 	});
 	return { ok: true, result: normalizeTask(task) };
+}
+
+/**
+ * Complete multiple tasks in a single API call.
+ *
+ * Batches all complete commands and sends them to Todoist atomically.
+ *
+ * @returns { ok: true, count: number of completed tasks } on success
+ */
+export async function completeTasks(
+	db: Database,
+	client: TodoistClient,
+	ids: string[],
+): Promise<OperationResult<number>> {
+	if (ids.length === 0) {
+		return { ok: true, result: 0 };
+	}
+
+	const now = new Date().toISOString();
+	const commands = ids.map((id) =>
+		createItemCompleteCommand({ id, completed_at: now }),
+	);
+
+	const { syncToken } = await client.sync(getToken(db), ...commands);
+
+	persistMutations(db, {
+		token: syncToken,
+		customOperations: (db) => {
+			db.updateTasksAsCompleted(ids);
+		},
+	});
+
+	return { ok: true, result: ids.length };
 }

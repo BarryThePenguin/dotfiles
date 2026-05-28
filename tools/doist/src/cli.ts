@@ -6,7 +6,7 @@ import { defineCommand, runMain } from "citty";
 import { basename } from "node:path";
 import * as v from "valibot";
 import { createContainer } from "./container.ts";
-import { addTask, completeTask, updateTask } from "./index.ts";
+import { addTask, completeTasks, updateTask } from "./index.ts";
 import { listSections, resolveProject } from "./operations.ts";
 import { out } from "./output.ts";
 import { parseAddTaskFields, parseUpdateTaskFields } from "./schemas.ts";
@@ -276,11 +276,15 @@ const tasksCmd = defineCommand({
 		complete: defineCommand({
 			meta: { description: "Mark a task complete in Todoist" },
 			args: {
-				id: { type: "positional", description: "task id", required: true },
+				id: {
+					type: "positional",
+					description: "task id",
+					required: true,
+				},
 			},
 			async run({ args }) {
 				const db = requireDb();
-				out(await completeTask(db, client, args.id));
+				out(await completeTasks(db, client, [args.id]));
 			},
 		}),
 		update: defineCommand({

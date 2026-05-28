@@ -1,6 +1,6 @@
 export {
 	addTask,
-	completeTask,
+	completeTasks,
 	updateTask,
 	type OperationResult
 } from "./operations.ts";

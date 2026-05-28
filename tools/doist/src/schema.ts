@@ -119,35 +119,6 @@ export function normalizeTask(t: DbTask): AppTask {
 }
 
 /**
- * Convert an app-facing task back to database format (snake_case).
- *
- * Inverse of normalizeTask(). Transforms:
- * - due object → due_date and due_string
- * - labels array → JSON string
- * - completed boolean → is_completed (0/1)
- * - addedAt → created_at
- * - camelCase → snake_case
- *
- * Used for conflict detection when comparing AppTask against remote DbTask.
- */
-export function denormalizeTask(t: AppTask): DbTask {
-	return {
-		id: t.id,
-		project_id: t.projectId,
-		section_id: t.sectionId,
-		content: t.content,
-		description: t.description,
-		priority: t.priority,
-		due_date: t.due?.date ?? null,
-		due_string: t.due?.string ?? null,
-		labels: JSON.stringify(t.labels),
-		is_completed: t.completed ? 1 : 0,
-		created_at: t.addedAt,
-		synced_at: "", // Not set when denormalizing for comparison
-	};
-}
-
-/**
  * Prepare a Todoist project for database storage.
  *
  * Filters deleted/archived projects.

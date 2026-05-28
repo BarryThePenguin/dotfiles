@@ -4,10 +4,12 @@ import {
 	type ResourceTypes,
 	type UpdateFields,
 	type AddFields,
+	type RestApiProject,
 	createUpdateCommand,
 	createAddCommand,
 	createItemCompleteCommand,
 	syncRequest,
+	fetchProjectsFromApi,
 	type SyncCommand,
 } from "./sdk.ts";
 import {
@@ -58,7 +60,7 @@ function now(): string {
 }
 
 export interface TodoistClient {
-	sync(syncToken?: string | null): Promise<AllData>;
+	sync(syncToken?: string | null, ...commands: SyncCommand[]): Promise<AllData>;
 	completeTask(
 		id: string,
 		syncToken: string | null,
@@ -72,6 +74,10 @@ export interface TodoistClient {
 		fields: AddFields,
 		syncToken: string | null,
 	): Promise<{ task: DbTask; syncToken: string }>;
+	fetchProjects(
+		limit?: number,
+		cursor?: string | null,
+	): Promise<{ projects: RestApiProject[]; nextCursor: string | null }>;
 }
 
 export function createClient(token: string): TodoistClient {
@@ -128,7 +134,7 @@ export function createClient(token: string): TodoistClient {
 	}
 
 	return {
-		sync: (syncToken) => sync(syncToken),
+		sync: (syncToken, ...commands) => sync(syncToken, ...commands),
 
 		async completeTask(id, syncToken) {
 			return sync(
@@ -163,6 +169,10 @@ export function createClient(token: string): TodoistClient {
 				throw new Error(`created task ${realId} not in sync response`);
 			}
 			return { task, syncToken: newToken };
+		},
+
+		fetchProjects(limit, cursor) {
+			return fetchProjectsFromApi(token, limit, cursor);
 		},
 	};
 }

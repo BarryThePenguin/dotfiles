@@ -10,7 +10,6 @@ import { describe, it, expect } from "vitest";
 import {
 	prepareTaskForDB,
 	normalizeTask,
-	denormalizeTask,
 	prepareProjectForDB,
 	normalizeProject,
 	prepareSectionForDB,
@@ -163,77 +162,6 @@ describe("normalizeTask", () => {
 		const task = dbTask({ labels: "[]" });
 		const normalized = normalizeTask(task);
 		expect(normalized.labels).toEqual([]);
-	});
-});
-
-// ── denormalizeTask ────────────────────────────────────────────────────────
-
-describe("denormalizeTask", () => {
-	it("converts AppTask back to DbTask format", () => {
-		const appTask = normalizeTask(dbTask());
-		const denormalized = denormalizeTask(appTask);
-
-		expect(denormalized.id).toBe("t1");
-		expect(denormalized.project_id).toBe("p1");
-		expect(denormalized.section_id).toBe("s1");
-		expect(denormalized.content).toBe("Task content");
-		expect(denormalized.description).toBe("Task description");
-		expect(denormalized.priority).toBe(2);
-		expect(denormalized.due_date).toBe("2026-05-24");
-		expect(denormalized.due_string).toBe("May 24");
-		expect(denormalized.labels).toBe(JSON.stringify(["urgent", "work"]));
-		expect(denormalized.is_completed).toBe(0);
-		expect(denormalized.created_at).toBe("2026-05-23T10:00:00Z");
-	});
-
-	it("round-trip: denormalizeTask(normalizeTask(dbTask)) preserves fields", () => {
-		const original = dbTask();
-		const normalized = normalizeTask(original);
-		const denormalized = denormalizeTask(normalized);
-
-		// Check all fields match (except synced_at which is set to "")
-		expect(denormalized.id).toBe(original.id);
-		expect(denormalized.project_id).toBe(original.project_id);
-		expect(denormalized.section_id).toBe(original.section_id);
-		expect(denormalized.content).toBe(original.content);
-		expect(denormalized.description).toBe(original.description);
-		expect(denormalized.priority).toBe(original.priority);
-		expect(denormalized.due_date).toBe(original.due_date);
-		expect(denormalized.due_string).toBe(original.due_string);
-		expect(denormalized.labels).toBe(original.labels);
-		expect(denormalized.is_completed).toBe(original.is_completed);
-		expect(denormalized.created_at).toBe(original.created_at);
-	});
-
-	it("converts is_completed=1 (true) correctly", () => {
-		const appTask = normalizeTask(dbTask({ is_completed: 1 }));
-		const denormalized = denormalizeTask(appTask);
-		expect(denormalized.is_completed).toBe(1);
-	});
-
-	it("converts is_completed=0 (false) correctly", () => {
-		const appTask = normalizeTask(dbTask({ is_completed: 0 }));
-		const denormalized = denormalizeTask(appTask);
-		expect(denormalized.is_completed).toBe(0);
-	});
-
-	it("handles null due fields", () => {
-		const appTask = normalizeTask(dbTask({ due_date: null, due_string: null }));
-		const denormalized = denormalizeTask(appTask);
-		expect(denormalized.due_date).toBeNull();
-		expect(denormalized.due_string).toBeNull();
-	});
-
-	it("handles null section_id", () => {
-		const appTask = normalizeTask(dbTask({ section_id: null }));
-		const denormalized = denormalizeTask(appTask);
-		expect(denormalized.section_id).toBeNull();
-	});
-
-	it("handles empty labels array", () => {
-		const appTask = normalizeTask(dbTask({ labels: "[]" }));
-		const denormalized = denormalizeTask(appTask);
-		expect(denormalized.labels).toBe("[]");
 	});
 });
 

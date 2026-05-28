@@ -418,7 +418,7 @@ describe("sections_list", () => {
 
 // ── tasks_complete ────────────────────────────────────────────────
 describe("tasks_complete", () => {
-	it("calls completeTask and marks the row done in the db", async () => {
+	it("calls completeTasks and marks the row done in the db", async () => {
 		vi.mocked(mockClient.sync).mockResolvedValueOnce({
 			projects: [],
 			sections: [],
@@ -429,15 +429,11 @@ describe("tasks_complete", () => {
 			completedTaskIds: [],
 		});
 
-		vi.mocked(mockClient.completeTask).mockResolvedValueOnce({
-			syncToken: "tok2",
-		});
-
 		const result = await mcpClient.callTool("todoist_tasks_complete", {
 			id: "t1",
 		});
-		expect(result).toMatchObject({ id: "t1", completed: true });
-		expect(mockClient.completeTask).toHaveBeenCalledWith("t1", "tok");
+		expect(result).toMatchObject({ ok: true, completed: 1 });
+		expect(mockClient.sync).toHaveBeenCalled();
 
 		const tempDb = new Database({ dbPath, rcPath });
 		const row = tempDb.selectTaskById("t1");

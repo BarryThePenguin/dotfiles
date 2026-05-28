@@ -6,11 +6,25 @@
  */
 
 import { vi } from "vitest";
-import type { Container, ProjectRef } from "../container.ts";
+import type { ProjectRef } from "../container.ts";
 import { Database } from "../db.ts";
-import { findPaths } from "../paths.ts";
+import { findPaths, type ConfigPaths } from "../paths.ts";
 import { createClient, type TodoistClient } from "../todoist.ts";
 import { openDb } from "./database.ts";
+
+export interface TestContainer {
+	readonly paths: ConfigPaths | null;
+	readonly db: Database;
+	readonly client: TodoistClient;
+
+	addProject: (ref: ProjectRef) => void;
+	removeProject: (id: string) => void;
+	listProjects: () => ProjectRef[];
+	listProjectIds: () => string[];
+	projectCount: () => number;
+
+	close(): void;
+}
 
 /**
  * Create a test container with injectable dependencies.
@@ -43,7 +57,7 @@ export function createTestContainer(overrides?: {
 	rcDir?: string;
 	cwdPath?: string;
 	projects?: string[];
-}): Container {
+}): TestContainer {
 	// Use temp directory or provided path
 	const testDir = overrides?.cwdPath ?? ":memory:";
 
