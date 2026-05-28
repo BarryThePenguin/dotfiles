@@ -85,7 +85,7 @@ importers:
         version: 1.41.1
       '@valibot/to-json-schema':
         specifier: ^1.7.0
-        version: 1.7.0(valibot@1.4.0(typescript@6.0.3))
+        version: 1.7.0(valibot@1.4.1(typescript@6.0.3))
       citty:
         specifier: ^0.2.2
         version: 0.2.2
@@ -100,7 +100,7 @@ importers:
         version: 3.0.0(@opentelemetry/api@1.9.1)(pino@10.3.1)
       valibot:
         specifier: ^1.4.0
-        version: 1.4.0(typescript@6.0.3)
+        version: 1.4.1(typescript@6.0.3)
     devDependencies:
       '@cfworker/json-schema':
         specifier: 4.1.1
@@ -1350,8 +1350,8 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
-  valibot@1.4.0:
-    resolution: {integrity: sha512-iC/x7fVcSyOwlm/VSt7RlHnzNGLGvR9GnxdifUeWoCJo0q4ZZvrVkIHC6faTlkxG47I2Y4UrFquPuVHCrOnrLg==}
+  valibot@1.4.1:
+    resolution: {integrity: sha512-klCmFTz2jeDluy9RwX+F884TCiogtdBJ/YaxSx1EOBYXa3NXNWj8kR1jjN8rzluwojJVWWaHJ4r1U5LfICnM3g==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
@@ -2126,9 +2126,9 @@ snapshots:
       '@typescript-eslint/types': 8.59.4
       eslint-visitor-keys: 5.0.1
 
-  '@valibot/to-json-schema@1.7.0(valibot@1.4.0(typescript@6.0.3))':
+  '@valibot/to-json-schema@1.7.0(valibot@1.4.1(typescript@6.0.3))':
     dependencies:
-      valibot: 1.4.0(typescript@6.0.3)
+      valibot: 1.4.1(typescript@6.0.3)
 
   '@vitest/coverage-v8@4.1.7(vitest@4.1.7)':
     dependencies:
@@ -2762,7 +2762,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  valibot@1.4.0(typescript@6.0.3):
+  valibot@1.4.1(typescript@6.0.3):
     optionalDependencies:
       typescript: 6.0.3
 
