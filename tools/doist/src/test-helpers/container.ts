@@ -5,17 +5,19 @@
  * and database initialization overhead.
  */
 
-import { vi } from "vitest";
+import { vi, type Mocked } from "vitest";
 import type { ProjectRef } from "../container.ts";
 import { Database } from "../db.ts";
-import { findPaths, type ConfigPaths } from "../paths.ts";
+import { type ConfigPaths } from "../paths.ts";
 import { createClient, type TodoistClient } from "../todoist.ts";
-import { openDb } from "./database.ts";
+import { mkdtempDisposableSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 export interface TestContainer {
-	readonly paths: ConfigPaths | null;
+	readonly paths: ConfigPaths;
 	readonly db: Database;
-	readonly client: TodoistClient;
+	readonly client: Mocked<TodoistClient>;
 
 	addProject: (ref: ProjectRef) => void;
 	removeProject: (id: string) => void;
@@ -53,24 +55,21 @@ export interface TestContainer {
  */
 export function createTestContainer(overrides?: {
 	database?: Database;
-	client?: TodoistClient;
-	rcDir?: string;
-	cwdPath?: string;
 	projects?: string[];
 }): TestContainer {
 	// Use temp directory or provided path
-	const testDir = overrides?.cwdPath ?? ":memory:";
-
-	// Find paths (uses provided cwdPath or :memory: for DB)
-	const paths = findPaths(overrides?.rcDir ?? testDir, {
-		exists: () => true, // Mock filesystem check for tests
-	});
+	const testDir = mkdtempDisposableSync(
+		join(tmpdir(), "doist-container-test-"),
+	);
+	const rcPath = join(testDir.path, ".doistrc");
+	const dbPath = ":memory:";
+	const paths = { rcPath, dbPath };
 
 	// Use provided database or create in-memory one
-	const db = overrides?.database ?? openDb();
+	const db = overrides?.database ?? new Database(paths);
 
 	// Use provided client or mock
-	const client = overrides?.client ?? vi.mockObject(createClient("test-token"));
+	const client = vi.mockObject(createClient("test-token"));
 
 	// Mock Projects with memory store
 	const projects: Map<string, ProjectRef> = overrides?.projects
@@ -99,6 +98,7 @@ export function createTestContainer(overrides?: {
 		db,
 		client,
 		close() {
+			testDir.remove();
 			db.close();
 		},
 	};

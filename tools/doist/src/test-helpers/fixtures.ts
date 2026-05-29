@@ -2,6 +2,9 @@
  * Centralized test fixtures for db and operations tests.
  */
 
+import type { DbProject, DbSection, DbTask } from "../db.ts";
+import type { AllData } from "../todoist.ts";
+
 export const NOW = new Date().toISOString();
 
 // ── Project fixtures ────────────────────────────────────────────────
@@ -179,3 +182,41 @@ export const TASK_DONE = {
 	created_at: NOW,
 	synced_at: NOW,
 };
+
+export function makeData(overrides: Partial<AllData> = {}): AllData {
+	return {
+		projects: [],
+		sections: [],
+		labels: [],
+		tasks: [],
+		completedTaskIds: [],
+		deletedTaskIds: [],
+		syncToken: "sync-token",
+		...overrides,
+	};
+}
+
+export function makeProject(id: string, name: string): DbProject {
+	return { id, name, color: null, is_favorite: 0, is_inbox: 0, synced_at: NOW };
+}
+
+export function makeSection(id: string, projectId: string): DbSection {
+	return { id, project_id: projectId, name: "S", order_: 0, synced_at: NOW };
+}
+
+export function makeTask(id: string, projectId: string): DbTask {
+	return {
+		id,
+		project_id: projectId,
+		section_id: null,
+		content: "T",
+		description: null,
+		priority: 1,
+		due_date: null,
+		due_string: null,
+		labels: "[]",
+		is_completed: 0,
+		created_at: null,
+		synced_at: NOW,
+	};
+}

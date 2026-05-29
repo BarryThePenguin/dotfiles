@@ -1,6 +1,8 @@
 import { fetch } from "undici";
 import * as v from "valibot";
 
+const TODOIST_API_BASE_URL = "https://api.todoist.com/api/v1/";
+
 // ============================================================================
 // Resource Types
 // ============================================================================
@@ -395,6 +397,7 @@ export async function syncRequest(
 		commands?: SyncCommand[];
 	},
 ): Promise<SyncResponse> {
+	const url = new URL("sync", TODOIST_API_BASE_URL);
 	const requestParams: Record<string, string> = {
 		sync_token: params.sync_token,
 		resource_types: JSON.stringify(params.resource_types),
@@ -405,7 +408,7 @@ export async function syncRequest(
 		requestParams["commands"] = JSON.stringify(apiCommands);
 	}
 
-	const res = await fetch("https://api.todoist.com/api/v1/sync", {
+	const res = await fetch(url, {
 		method: "POST",
 		headers: {
 			Authorization: `Bearer ${token}`,
@@ -437,7 +440,7 @@ export async function syncRequest(
 // REST API - Projects Discovery
 // ============================================================================
 
-const RestApiProjectSchema = v.object({
+export const RestApiProjectSchema = v.object({
 	id: v.string(),
 	name: v.string(),
 	color: v.optional(v.nullable(v.string())),
@@ -465,12 +468,15 @@ export async function fetchProjectsFromApi(
 	limit: number = 200,
 	cursor?: string | null,
 ): Promise<{ projects: RestApiProject[]; nextCursor: string | null }> {
-	const params = new URLSearchParams({ limit: limit.toString() });
+	const url = new URL("projects", TODOIST_API_BASE_URL);
+
+	url.searchParams.set("limit", limit.toString());
+
 	if (cursor) {
-		params.set("cursor", cursor);
+		url.searchParams.set("cursor", cursor);
 	}
 
-	const res = await fetch(`https://api.todoist.com/api/v1/projects?${params}`, {
+	const res = await fetch(url, {
 		method: "GET",
 		headers: {
 			Authorization: `Bearer ${token}`,

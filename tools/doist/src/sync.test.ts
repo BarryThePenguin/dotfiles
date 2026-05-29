@@ -3,44 +3,14 @@ import { filterToAllowedProjects } from "./filtering.ts";
 import { syncAndPersist } from "./sync.ts";
 import type { AllData, TodoistClient } from "./todoist.ts";
 import { openDb } from "./test-helpers/database.ts";
-
-const NOW = new Date().toISOString();
-
-function makeProject(id: string, name: string) {
-	return { id, name, color: null, is_favorite: 0, is_inbox: 0, synced_at: NOW };
-}
-function makeSection(id: string, projectId: string) {
-	return { id, project_id: projectId, name: "S", order_: 0, synced_at: NOW };
-}
-function makeTask(id: string, projectId: string) {
-	return {
-		id,
-		project_id: projectId,
-		section_id: null,
-		content: "T",
-		description: null,
-		priority: 1,
-		due_date: null,
-		due_string: null,
-		labels: "[]",
-		is_completed: 0,
-		created_at: null,
-		synced_at: NOW,
-	};
-}
-
-function makeData(overrides: Partial<AllData> = {}): AllData {
-	return {
-		projects: [],
-		sections: [],
-		labels: [],
-		tasks: [],
-		completedTaskIds: [],
-		deletedTaskIds: [],
-		syncToken: "sync-token",
-		...overrides,
-	};
-}
+import { createTestContainer } from "./test-helpers/container.ts";
+import {
+	makeData,
+	makeProject,
+	makeSection,
+	makeTask,
+	NOW,
+} from "./test-helpers/fixtures.ts";
 
 function makeMockClient(data: Partial<AllData> = {}): TodoistClient {
 	return {
@@ -48,6 +18,7 @@ function makeMockClient(data: Partial<AllData> = {}): TodoistClient {
 		completeTask: vi.fn(),
 		updateTask: vi.fn(),
 		addTask: vi.fn(),
+		fetchProjects: vi.fn(),
 	};
 }
 
@@ -129,12 +100,14 @@ describe("filterToAllowedProjects", () => {
 
 describe("sync", () => {
 	it("returns counts of synced items", async () => {
-		const db = openDb();
-		const client = makeMockClient({
-			projects: [makeProject("p1", "Work")],
-			tasks: [makeTask("t1", "p1")],
-			syncToken: "tok1",
-		});
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValue(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				tasks: [makeTask("t1", "p1")],
+				syncToken: "tok1",
+			}),
+		);
 
 		const result = await syncAndPersist(db, client);
 		expect(result.data.projects).toHaveLength(1);

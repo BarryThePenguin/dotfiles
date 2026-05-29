@@ -4,9 +4,7 @@ import {
 	type JSONRPCMessage,
 	type Transport,
 } from "@modelcontextprotocol/server";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { writeFileSync } from "node:fs";
 import {
 	afterEach,
 	beforeEach,
@@ -16,12 +14,14 @@ import {
 	onTestFinished,
 	vi,
 } from "vitest";
-import type { Container } from "./container.ts";
-import { Database } from "./db.ts";
 import { buildServer } from "./server.ts";
 import { setToken } from "./sync-lifecycle.ts";
-import { createTestContainer } from "./test-helpers/container.ts";
-import { createClient, type TodoistClient } from "./todoist.ts";
+import {
+	createTestContainer,
+	type TestContainer,
+} from "./test-helpers/container.ts";
+import { makeData } from "./test-helpers/fixtures.ts";
+import { createClient } from "./todoist.ts";
 
 // ── Fixtures ──────────────────────────────────────────────────────
 const NOW = new Date().toISOString();
@@ -204,73 +204,33 @@ describe("buildServer", () => {
 });
 
 // ── Shared setup ──────────────────────────────────────────────────
-let container: Container;
-let tempDir: string;
-let dbPath: string;
-let rcPath: string;
-let mockClient: TodoistClient;
+let container: TestContainer;
 let mcpClient: Awaited<ReturnType<typeof makeClient>>;
-let destroyDb: () => void;
 
 beforeEach(async () => {
-	tempDir = mkdtempSync(join(tmpdir(), "doist-mcp-test-"));
-	dbPath = join(tempDir, "test.db");
-	rcPath = join(tempDir, ".doistrc");
-
-	writeFileSync(
-		rcPath,
-		JSON.stringify({ projects: [{ id: "p1", label: "Work" }] }),
-	);
-	process.env["TODOIST_DB_PATH"] = dbPath;
-	process.env["TODOIST_RC_PATH"] = rcPath;
 	process.env["TODOIST_API_TOKEN"] = "test-token";
 
-	const db = new Database({
-		dbPath,
-		rcPath,
-	});
+	container = createTestContainer();
 
-	mockClient = {
-		sync: vi.fn().mockResolvedValue({
-			projects: [],
-			sections: [],
-			labels: [],
-			tasks: [],
-			deletedTaskIds: [],
-			syncToken: "tok",
-		}),
-		completeTask: vi.fn().mockResolvedValue({ syncToken: "tok2" }),
-		updateTask: vi.fn().mockResolvedValue({ task: TASK_A, syncToken: "tok2" }),
-		addTask: vi.fn(),
-	};
+	writeFileSync(
+		container.paths.rcPath,
+		JSON.stringify({ projects: [{ id: "p1", label: "Work" }] }),
+	);
 
-	container = createTestContainer({
-		client: mockClient,
-		database: db,
-		rcDir: tempDir,
-	});
-
-	db.upsertProject(PROJECT);
-	db.upsertSection(SECTION);
-	db.upsertLabel(LABEL);
-	db.upsertTask(TASK_A);
-	db.upsertTask(TASK_B);
-	setToken(db, "tok");
+	container.db.upsertProject(PROJECT);
+	container.db.upsertSection(SECTION);
+	container.db.upsertLabel(LABEL);
+	container.db.upsertTask(TASK_A);
+	container.db.upsertTask(TASK_B);
+	setToken(container.db, "tok");
 
 	const server = buildServer(container);
-	destroyDb = () => {
-		db.close();
-	};
 	mcpClient = await makeClient(server);
 });
 
 afterEach(async () => {
 	await mcpClient.close();
-	destroyDb();
-	rmSync(tempDir, { recursive: true });
-	delete process.env["TODOIST_DB_PATH"];
-	delete process.env["TODOIST_RC_PATH"];
-	delete process.env["TODOIST_API_TOKEN"];
+	container.close();
 });
 
 // ── tasks_list ────────────────────────────────────────────────────
@@ -374,6 +334,21 @@ describe("tasks_get", () => {
 // ── projects_list ─────────────────────────────────────────────────
 describe("projects_list", () => {
 	it("returns all projects", async () => {
+		container.client.fetchProjects.mockResolvedValueOnce({
+			nextCursor: null,
+			projects: [
+				{
+					id: "p1",
+					inbox_project: false,
+					is_archived: false,
+					is_deleted: false,
+					name: "Work",
+					color: null,
+					is_favorite: false,
+				},
+			],
+		});
+
 		const result = await mcpClient.callTool("todoist_projects_list");
 		expect(result).toMatchObject({ projects: [{ name: "Work" }] });
 	});
@@ -419,24 +394,19 @@ describe("sections_list", () => {
 // ── tasks_complete ────────────────────────────────────────────────
 describe("tasks_complete", () => {
 	it("calls completeTasks and marks the row done in the db", async () => {
-		vi.mocked(mockClient.sync).mockResolvedValueOnce({
-			projects: [],
-			sections: [],
-			labels: [],
-			tasks: [TASK_A], // Return unchanged task (no conflict)
-			deletedTaskIds: [],
-			syncToken: "tok",
-			completedTaskIds: [],
-		});
+		container.client.sync.mockResolvedValueOnce(
+			makeData({
+				tasks: [TASK_A], // Return unchanged task (no conflict)
+			}),
+		);
 
 		const result = await mcpClient.callTool("todoist_tasks_complete", {
 			id: "t1",
 		});
 		expect(result).toMatchObject({ ok: true, completed: 1 });
-		expect(mockClient.sync).toHaveBeenCalled();
+		expect(container.client.sync).toHaveBeenCalled();
 
-		const tempDb = new Database({ dbPath, rcPath });
-		const row = tempDb.selectTaskById("t1");
+		const row = container.db.selectTaskById("t1");
 		expect(row?.completed).toBe(true);
 	});
 });
@@ -444,17 +414,13 @@ describe("tasks_complete", () => {
 // ── tasks_update ──────────────────────────────────────────────────
 describe("tasks_update", () => {
 	it("updates task title", async () => {
-		vi.mocked(mockClient.sync).mockResolvedValueOnce({
-			projects: [],
-			sections: [],
-			labels: [],
-			tasks: [TASK_A], // Return unchanged task (no conflict)
-			deletedTaskIds: [],
-			syncToken: "tok",
-			completedTaskIds: [],
-		});
+		container.client.sync.mockResolvedValueOnce(
+			makeData({
+				tasks: [TASK_A], // Return unchanged task (no conflict)
+			}),
+		);
 
-		vi.mocked(mockClient.updateTask).mockResolvedValue({
+		container.client.updateTask.mockResolvedValue({
 			task: { ...TASK_A, content: "Updated title" },
 			syncToken: "tok2",
 		});
@@ -464,7 +430,7 @@ describe("tasks_update", () => {
 			title: "Updated title",
 		});
 
-		expect(mockClient.updateTask).toHaveBeenCalledWith(
+		expect(container.client.updateTask).toHaveBeenCalledWith(
 			"t1",
 			{
 				title: "Updated title",
@@ -475,14 +441,15 @@ describe("tasks_update", () => {
 	});
 
 	it("appends a new label to existing labels", async () => {
-		vi.mocked(mockClient.sync).mockResolvedValueOnce({
-			projects: [],
-			sections: [],
-			labels: [],
-			tasks: [TASK_A], // Return unchanged task (no conflict)
-			deletedTaskIds: [],
-			syncToken: "tok",
-			completedTaskIds: [],
+		container.client.sync.mockResolvedValueOnce(
+			makeData({
+				tasks: [TASK_A], // Return unchanged task (no conflict)
+			}),
+		);
+
+		container.client.updateTask.mockResolvedValueOnce({
+			task: TASK_A,
+			syncToken: "tok2",
 		});
 
 		await mcpClient.callTool("todoist_tasks_update", {
@@ -490,7 +457,7 @@ describe("tasks_update", () => {
 			addLabels: ["focus"],
 		});
 
-		expect(mockClient.updateTask).toHaveBeenCalledWith(
+		expect(container.client.updateTask).toHaveBeenCalledWith(
 			"t1",
 			expect.objectContaining({
 				labels: expect.arrayContaining(["urgent", "focus"]) as unknown,
@@ -500,17 +467,13 @@ describe("tasks_update", () => {
 	});
 
 	it("does not duplicate an existing label", async () => {
-		vi.mocked(mockClient.sync).mockResolvedValueOnce({
-			projects: [],
-			sections: [],
-			labels: [],
-			tasks: [TASK_A],
-			deletedTaskIds: [],
-			completedTaskIds: [],
-			syncToken: "tok",
-		});
+		container.client.sync.mockResolvedValueOnce(
+			makeData({
+				tasks: [TASK_A],
+			}),
+		);
 
-		vi.mocked(mockClient.updateTask).mockResolvedValueOnce({
+		container.client.updateTask.mockResolvedValueOnce({
 			task: { ...TASK_A, labels: JSON.stringify(["urgent"]) },
 			syncToken: "tok",
 		});
@@ -520,7 +483,7 @@ describe("tasks_update", () => {
 			addLabels: ["urgent"],
 		});
 
-		expect(mockClient.updateTask).toHaveBeenCalledWith(
+		expect(container.client.updateTask).toHaveBeenCalledWith(
 			"t1",
 			expect.objectContaining({
 				labels: ["urgent"],
@@ -530,17 +493,13 @@ describe("tasks_update", () => {
 	});
 
 	it("passes sectionId when section is provided", async () => {
-		vi.mocked(mockClient.sync).mockResolvedValueOnce({
-			projects: [],
-			sections: [],
-			labels: [],
-			tasks: [TASK_A],
-			deletedTaskIds: [],
-			completedTaskIds: [],
-			syncToken: "tok",
-		});
+		container.client.sync.mockResolvedValueOnce(
+			makeData({
+				tasks: [TASK_A],
+			}),
+		);
 
-		vi.mocked(mockClient.updateTask).mockResolvedValueOnce({
+		container.client.updateTask.mockResolvedValueOnce({
 			task: { ...TASK_A, section_id: "s2" },
 			syncToken: "tok",
 		});
@@ -550,7 +509,7 @@ describe("tasks_update", () => {
 			section: "s2",
 		});
 
-		expect(mockClient.updateTask).toHaveBeenCalledWith(
+		expect(container.client.updateTask).toHaveBeenCalledWith(
 			"t1",
 			expect.objectContaining({ sectionId: "s2" }),
 			"tok",
@@ -576,7 +535,7 @@ describe("tasks_add", () => {
 	};
 
 	it("creates a new task", async () => {
-		vi.mocked(mockClient.addTask).mockResolvedValue({
+		container.client.addTask.mockResolvedValue({
 			task: NEW_TASK,
 			syncToken: "tok2",
 		});
@@ -585,7 +544,7 @@ describe("tasks_add", () => {
 			title: "New task",
 		});
 
-		expect(mockClient.addTask).toHaveBeenCalledWith(
+		expect(container.client.addTask).toHaveBeenCalledWith(
 			{ title: "New task" },
 			"tok",
 		);
@@ -593,7 +552,7 @@ describe("tasks_add", () => {
 	});
 
 	it("resolves project by name when a name is passed to 'project'", async () => {
-		vi.mocked(mockClient.addTask).mockResolvedValue({
+		container.client.addTask.mockResolvedValue({
 			task: NEW_TASK,
 			syncToken: "tok2",
 		});
@@ -603,14 +562,14 @@ describe("tasks_add", () => {
 			project: "Work",
 		});
 
-		expect(mockClient.addTask).toHaveBeenCalledWith(
+		expect(container.client.addTask).toHaveBeenCalledWith(
 			expect.objectContaining({ projectId: "p1" }),
 			"tok",
 		);
 	});
 
 	it("passes project as-is when it does not match any project name", async () => {
-		vi.mocked(mockClient.addTask).mockResolvedValue({
+		container.client.addTask.mockResolvedValue({
 			task: NEW_TASK,
 			syncToken: "tok2",
 		});
@@ -620,14 +579,14 @@ describe("tasks_add", () => {
 			project: "raw-project-id",
 		});
 
-		expect(mockClient.addTask).toHaveBeenCalledWith(
+		expect(container.client.addTask).toHaveBeenCalledWith(
 			expect.objectContaining({ projectId: "raw-project-id" }),
 			"tok",
 		);
 	});
 
 	it("passes sectionId when section is provided", async () => {
-		vi.mocked(mockClient.addTask).mockResolvedValue({
+		container.client.addTask.mockResolvedValue({
 			task: NEW_TASK,
 			syncToken: "tok2",
 		});
@@ -637,7 +596,7 @@ describe("tasks_add", () => {
 			section: "s1",
 		});
 
-		expect(mockClient.addTask).toHaveBeenCalledWith(
+		expect(container.client.addTask).toHaveBeenCalledWith(
 			expect.objectContaining({ sectionId: "s1" }),
 			"tok",
 		);
@@ -647,9 +606,10 @@ describe("tasks_add", () => {
 // ── sync ──────────────────────────────────────────────────────────
 describe("sync", () => {
 	it("fetches from todoist and returns counts", async () => {
+		container.client.sync.mockResolvedValue(makeData());
 		const result = await mcpClient.callTool("todoist_sync");
 
-		expect(mockClient.sync).toHaveBeenCalled();
+		expect(container.client.sync).toHaveBeenCalled();
 		expect(result).toMatchObject({
 			projects: 0,
 			sections: 0,
@@ -659,6 +619,7 @@ describe("sync", () => {
 	});
 
 	it("does not expose updatedTaskIds in output", async () => {
+		container.client.sync.mockResolvedValue(makeData());
 		const result = await mcpClient.callTool("todoist_sync");
 		expect(result).not.toHaveProperty("updatedTaskIds");
 	});

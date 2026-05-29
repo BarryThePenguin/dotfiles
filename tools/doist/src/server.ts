@@ -24,6 +24,7 @@ import {
 	tracer,
 	trackOperation,
 } from "./telemetry.ts";
+import { RestApiProjectSchema } from "./sdk.ts";
 
 function formatResult(result: OperationResult<AppTask>) {
 	if (!result.ok) {
@@ -73,13 +74,6 @@ const FormattedTaskSchema = v.object({
 const ListTaskItemSchema = v.pick(FormattedTaskSchema, ["id", "content"]);
 
 // ── Database object schemas ───────────────────────────────────
-const DbProjectSchema = v.object({
-	id: v.string(),
-	name: v.string(),
-	color: v.nullable(v.string()),
-	isFavorite: v.boolean(),
-	isInbox: v.boolean(),
-});
 
 const ListLabelSchema = v.object({
 	id: v.string(),
@@ -367,7 +361,10 @@ export function buildServer({
 											: `Completed ${result.result} tasks`,
 								},
 							],
-							structuredContent: { ok: result.ok, completed: result.result ?? 0 },
+							structuredContent: {
+								ok: result.ok,
+								completed: result.result ?? 0,
+							},
 						};
 					} catch (err) {
 						if (!String(err).includes("not_found")) {
@@ -477,57 +474,72 @@ export function buildServer({
 	mcp.registerTool(
 		"todoist_projects_list",
 		{
-			description: "List all projects from the local database",
-			inputSchema: toStandardJsonSchema(EmptyInput),
+			description:
+				"Discover all projects available in your Todoist account (for .doistrc configuration). Fetches all projects by default, or optionally returns paginated results.",
+			inputSchema: toStandardJsonSchema(
+				v.optional(
+					v.object({
+						limit: v.optional(v.number()),
+						cursor: v.optional(v.nullable(v.string())),
+					}),
+				),
+			),
 			outputSchema: toStandardJsonSchema(
 				v.object({
-					sync: v.optional(
-						v.object({
-							projects: v.number(),
-							sections: v.number(),
-							labels: v.number(),
-							tasks: v.number(),
-							reconciled: v.number(),
-						}),
-					),
-					projects: v.array(DbProjectSchema),
+					projects: v.array(RestApiProjectSchema),
+					nextCursor: v.optional(v.nullable(v.string())),
 				}),
 			),
 		},
-		async ({ sync: shouldSync }, { mcpReq }) =>
+		async (params, { mcpReq }) =>
 			tracer.startActiveSpan(
 				"todoist_projects_list",
 				{},
 				propagateMeta(mcpReq._meta),
 				async (span) => {
 					try {
-						requireDb(db);
-						let syncResult = undefined;
-						if (shouldSync) {
-							logger.info(
-								{
-									operation: "todoist_projects_list",
-									sync: true,
-								},
-								"Syncing before list",
-							);
-							const result = await syncAndPersist(
-								db,
-								client,
-								listProjectIds(),
-								false,
-							);
-							syncResult = countSyncData(result);
+						const limit = params?.limit ?? 200;
+						const cursor = params?.cursor ?? null;
+
+						if (!cursor) {
+							const allProjects = [];
+							let nextCursor: string | null = null;
+
+							do {
+								const { projects, nextCursor: nc } = await client.fetchProjects(
+									limit,
+									nextCursor,
+								);
+								allProjects.push(...projects);
+								nextCursor = nc;
+							} while (nextCursor);
+
+							trackOperation("todoist_projects_list", true, {
+								"result.count": allProjects.length,
+								paginated: false,
+							});
+							return {
+								content: [
+									{ type: "text" as const, text: "Available projects" },
+								],
+								structuredContent: { projects: allProjects },
+							};
 						}
 
-						const projectList = db.selectAllProjects();
+						const { projects, nextCursor } = await client.fetchProjects(
+							limit,
+							cursor,
+						);
+
 						trackOperation("todoist_projects_list", true, {
-							"result.count": projectList.length,
-							"sync.performed": shouldSync ? 1 : 0,
+							"result.count": projects.length,
+							paginated: true,
 						});
 						return {
-							content: [{ type: "text" as const, text: "Projects" }],
-							structuredContent: { sync: syncResult, projects: projectList },
+							content: [
+								{ type: "text" as const, text: "Available projects (page)" },
+							],
+							structuredContent: { projects, nextCursor },
 						};
 					} catch (err) {
 						recordException(span, err);
@@ -598,20 +610,27 @@ export function buildServer({
 								paginated: false,
 							});
 							return {
-								content: [{ type: "text" as const, text: "Available projects" }],
+								content: [
+									{ type: "text" as const, text: "Available projects" },
+								],
 								structuredContent: { projects: allProjects },
 							};
 						}
 
 						// If cursor provided, return just that page
-						const { projects, nextCursor } = await client.fetchProjects(limit, cursor);
+						const { projects, nextCursor } = await client.fetchProjects(
+							limit,
+							cursor,
+						);
 
 						trackOperation("todoist_projects_discover", true, {
 							"result.count": projects.length,
 							paginated: true,
 						});
 						return {
-							content: [{ type: "text" as const, text: "Available projects (page)" }],
+							content: [
+								{ type: "text" as const, text: "Available projects (page)" },
+							],
 							structuredContent: { projects, nextCursor },
 						};
 					} catch (err) {
