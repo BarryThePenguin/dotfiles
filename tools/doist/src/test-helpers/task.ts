@@ -28,7 +28,7 @@ export type TestTask = {
 	is_completed: number;
 	due_date: string | null;
 	due_string: string | null;
-	labels: string | null;
+	labels: string[] | null;
 	priority: number;
 	content: string;
 };
@@ -63,7 +63,7 @@ export function createTask(
 		is_completed: 0,
 		due_date: null,
 		due_string: null,
-		labels: JSON.stringify([]),
+		labels: [],
 		priority: 1,
 		content: "",
 	};
@@ -83,7 +83,7 @@ export const TASK_BETA = createTask(TASK_IDS.beta, {
 	priority: 4,
 	due_date: "2030-01-01",
 	due_string: "Jan 1 2030",
-	labels: JSON.stringify(["urgent"]),
+	labels: ["urgent"],
 });
 
 export const TASK_OVERDUE = createTask(TASK_IDS.overdue, {

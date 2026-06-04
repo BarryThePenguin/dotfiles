@@ -12,6 +12,8 @@ import {
 	SqliteIntrospector,
 	SqliteQueryCompiler,
 	sql,
+	type Expression,
+	type ExpressionBuilder,
 	type Insertable,
 	type Selectable,
 	type SqlBool,
@@ -22,18 +24,18 @@ import {
 	type StatementSync,
 } from "node:sqlite";
 import type { ConfigPaths } from "./paths.ts";
-import { SPAN_NAME_DB_QUERY, SPAN_NAME_DB_TRANSACTION } from "./semconv.ts";
-import { tracer } from "./telemetry.ts";
 import {
-	normalizeTask,
+	normalizeLabel,
 	normalizeProject,
 	normalizeSection,
-	normalizeLabel,
-	type AppTask,
+	normalizeTask,
+	type AppLabel,
 	type AppProject,
 	type AppSection,
-	type AppLabel,
+	type AppTask,
 } from "./schema.ts";
+import { SPAN_NAME_DB_QUERY, SPAN_NAME_DB_TRANSACTION } from "./semconv.ts";
+import { tracer } from "./telemetry.ts";
 
 interface ProjectTable {
 	id: string;
@@ -48,7 +50,7 @@ interface SectionTable {
 	id: string;
 	project_id: string;
 	name: string;
-	order_: number | null;
+	section_order: number | null;
 	synced_at: string;
 }
 
@@ -63,6 +65,10 @@ interface TaskTable {
 	id: string;
 	project_id: string | null;
 	section_id: string | null;
+	parent_id: string | null;
+	child_order: number | null;
+	note_count: number | null;
+	updated_at: string | null;
 	content: string;
 	description: string | null;
 	priority: number | null;
@@ -108,11 +114,11 @@ const SCHEMA_SQL = `
   );
 
   CREATE TABLE IF NOT EXISTS sections (
-	id          TEXT PRIMARY KEY,
-	project_id  TEXT NOT NULL,
-	name        TEXT NOT NULL,
-	order_      INTEGER,
-	synced_at   TEXT NOT NULL
+	id         		TEXT PRIMARY KEY,
+	project_id  	TEXT NOT NULL,
+	name        	TEXT NOT NULL,
+	section_order   INTEGER,
+	synced_at   	TEXT NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS labels (
@@ -126,6 +132,10 @@ const SCHEMA_SQL = `
 	id            TEXT PRIMARY KEY,
 	project_id    TEXT,
 	section_id    TEXT,
+	parent_id     TEXT,
+	child_order   INTEGER,
+	note_count    INTEGER,
+	updated_at    TEXT,
 	content       TEXT NOT NULL,
 	description   TEXT,
 	priority      INTEGER,
@@ -137,6 +147,63 @@ const SCHEMA_SQL = `
 	synced_at     TEXT NOT NULL
   );
 `;
+
+// Expression builder helper for building reusable filter expressions
+function buildProjectIdFilter(
+	eb: ExpressionBuilder<Schema, "tasks">,
+	projectId: string | string[] | undefined,
+): Expression<SqlBool> | null {
+	if (!projectId) {
+		return null;
+	}
+
+	if (Array.isArray(projectId)) {
+		return eb("project_id", "in", projectId);
+	}
+	return eb("project_id", "=", projectId);
+}
+
+function buildCompletedFilter(
+	eb: ExpressionBuilder<Schema, "tasks">,
+	isCompleted: boolean | undefined,
+): Expression<SqlBool> | null {
+	if (isCompleted === undefined) {
+		return null;
+	}
+	return eb("is_completed", "=", isCompleted ? 1 : 0);
+}
+
+function buildContentFilter(
+	eb: ExpressionBuilder<Schema, "tasks">,
+	content: string | undefined,
+): Expression<SqlBool> | null {
+	if (!content) {
+		return null;
+	}
+	return eb("content", "like", `%${content}%`);
+}
+
+function buildLabelFilter(label: string): Expression<SqlBool> {
+	return sql<SqlBool>`EXISTS (SELECT 1 FROM json_each(labels) WHERE value = ${label})`;
+}
+
+function buildDueDateFilter(
+	eb: ExpressionBuilder<Schema, "tasks">,
+	due: "today" | "overdue",
+): Expression<SqlBool> {
+	const today = new Date().toISOString().slice(0, 10);
+	if (due === "today") {
+		return eb("due_date", "=", today);
+	}
+	return eb.and([eb("due_date", "is not", null), eb("due_date", "<", today)]);
+}
+
+function buildPriorityFilter(
+	eb: ExpressionBuilder<Schema, "tasks">,
+	priority: number,
+): Expression<SqlBool> {
+	return eb("priority", "=", priority);
+}
 
 export class Database {
 	readonly #raw: DatabaseSync;
@@ -228,7 +295,7 @@ export class Database {
 			(span) => {
 				try {
 					const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
-				return this.#prepare(query.sql).get(...parameters) as R | undefined;
+					return this.#prepare(query.sql).get(...parameters) as R | undefined;
 				} finally {
 					span.end();
 				}
@@ -279,141 +346,166 @@ export class Database {
 		);
 	}
 
-	// Task query builder
-	// Returns a Kysely query builder for composable task queries.
-	// Follows the "Splitting query building and execution" pattern from Kysely docs.
+	private projects() {
+		return this.#q.selectFrom("projects").selectAll();
+	}
+
 	private tasks() {
 		return this.#q.selectFrom("tasks").selectAll();
 	}
 
-	// Task queries - built using composition
-	selectAllTasks(): AppTask[] {
-		return this.all(this.tasks().compile()).map(normalizeTask);
-	}
-
-	selectTaskById(id: string): AppTask | null {
+	getTaskById(id: string): AppTask | null {
 		const task = this.get(this.tasks().where("id", "=", id).compile());
 		return task ? normalizeTask(task) : null;
 	}
 
-	selectUncompletedTasks(): AppTask[] {
-		return this.all(
-			this.tasks().where("is_completed", "=", 0).compile(),
-		).map(normalizeTask);
-	}
-
-	selectUncompletedTasksByProjectIds(projectIds: string[]): AppTask[] {
-		if (projectIds.length === 0) {
-			return [];
-		}
-		return this.all(
-			this.tasks()
-				.where("is_completed", "=", 0)
-				.where("project_id", "in", projectIds)
-				.compile(),
-		).map(normalizeTask);
-	}
-
-	searchTasksByContent(query: string): AppTask[] {
-		return this.all(
-			this.tasks()
-				.where("is_completed", "=", 0)
-				.where("content", "like", `%${query}%`)
-				.orderBy("priority", "desc")
-				.compile(),
-		).map(normalizeTask);
-	}
-
-	selectTasksByFilters(filters: {
-		project?: string | undefined;
+	selectTasks(criteria?: {
+		content?: string;
+		completed?: "any" | "completed" | "incomplete";
+		projectId?: string[] | string | undefined;
 		priority?: number | undefined;
-		label?: string | undefined;
-		due?: "today" | "overdue" | undefined;
-		limit?: number | undefined;
-		offset?: number | undefined;
-		includeCompleted?: boolean | undefined;
+		label?: string;
+		due?: "today" | "overdue";
+		limit?: number;
+		offset?: number;
+		orderBy?: {
+			field: "created_at" | "updated_at" | "due_date" | "priority";
+			direction: "asc" | "desc";
+		};
 	}): AppTask[] {
 		let query = this.tasks();
 
-		if (!filters.includeCompleted) {
-			query = query.where("is_completed", "=", 0);
-		}
+		// Build where clause using expression builder for type-safe filters
+		query = query.where((eb) => {
+			const filterExpressions: Expression<SqlBool>[] = [];
 
-		if (filters.project) {
-			query = query.where("project_id", "=", filters.project);
-		}
-
-		if (filters.due === "today" || filters.due === "overdue") {
-			const today = new Date().toISOString().slice(0, 10);
-			if (filters.due === "today") {
-				query = query.where("due_date", "=", today);
-			} else {
-				query = query
-					.where("due_date", "is not", null)
-					.where("due_date", "<", today);
+			// Content filter
+			const contentFilter = buildContentFilter(eb, criteria?.content);
+			if (contentFilter) {
+				filterExpressions.push(contentFilter);
 			}
+
+			// Completion status filter
+			if (criteria?.completed === "completed") {
+				const completedFilter = buildCompletedFilter(eb, true);
+				if (completedFilter) {
+					filterExpressions.push(completedFilter);
+				}
+			} else if (criteria?.completed !== "any") {
+				// Default to 'incomplete': exclude completed unless explicitly 'any'
+				const completedFilter = buildCompletedFilter(eb, false);
+				if (completedFilter) {
+					filterExpressions.push(completedFilter);
+				}
+			}
+
+			// Project filter
+			if (criteria?.projectId) {
+				const projectFilter = buildProjectIdFilter(eb, criteria.projectId);
+				if (projectFilter) {
+					filterExpressions.push(projectFilter);
+				}
+			}
+
+			// Priority filter
+			if (criteria?.priority !== undefined) {
+				filterExpressions.push(buildPriorityFilter(eb, criteria.priority));
+			}
+
+			// Due date filter
+			if (criteria?.due) {
+				filterExpressions.push(buildDueDateFilter(eb, criteria.due));
+			}
+
+			// Label filter
+			if (criteria?.label) {
+				filterExpressions.push(buildLabelFilter(criteria.label));
+			}
+
+			return filterExpressions.length > 0
+				? eb.and(filterExpressions)
+				: eb.lit(true);
+		});
+
+		// Apply ordering
+		if (criteria?.orderBy) {
+			query = query.orderBy(criteria.orderBy.field, criteria.orderBy.direction);
 		}
 
-		if (filters.priority !== undefined) {
-			query = query.where("priority", "=", filters.priority);
-		}
-
-		if (filters.label) {
-			query = query.where(
-				sql<SqlBool>`EXISTS (SELECT 1 FROM json_each(labels) WHERE value = ${filters.label})`,
+		// Apply pagination
+		if (criteria?.limit !== undefined) {
+			query = query.limit(
+				criteria.limit === -1 ? -1 : Math.max(1, criteria.limit),
 			);
 		}
 
-		query = query.orderBy("priority", "desc");
-
-		if (filters.limit !== undefined || filters.offset !== undefined) {
-			query = query.limit(filters.limit ?? -1);
-			if (filters.offset !== undefined) {
-				query = query.offset(filters.offset);
+		if (criteria?.offset !== undefined) {
+			// SQLite requires a LIMIT before OFFSET; use -1 for unlimited
+			if (criteria.limit === undefined) {
+				query = query.limit(-1);
 			}
+			query = query.offset(criteria.offset);
 		}
 
 		return this.all(query.compile()).map(normalizeTask);
 	}
 
-	// Project queries
-	selectAllProjects(): AppProject[] {
-		return this.all(
-			this.#q.selectFrom("projects").selectAll().orderBy("name").compile(),
-		).map(normalizeProject);
+	getProjectById(id: string): AppProject | null {
+		const project = this.get(this.projects().where("id", "=", id).compile());
+		return project ? normalizeProject(project) : null;
+
 	}
 
-	selectProjectByName(name: string): { id: string }[] {
-		return this.all(
-			this.#q
-				.selectFrom("projects")
-				.select("id")
-				.where("name", "=", name)
-				.compile(),
-		);
+	selectProjects(criteria?: {
+		id?: string;
+		isInbox?: boolean;
+		name?: string;
+	}): AppProject[] {
+		let query = this.projects();
+
+		query = query.where((eb) => {
+			if (criteria?.id) {
+				return eb("id", "=", criteria.id);
+			}
+
+			if (criteria?.isInbox !== undefined) {
+				return eb("is_inbox", "=", criteria.isInbox ? 1 : 0);
+			}
+
+			if (criteria?.name) {
+				return eb("name", "like", `%${criteria.name}%`);
+			}
+
+			return eb.lit(true);
+		});
+
+		query = query.orderBy("name");
+
+		return this.all(query.compile()).map(normalizeProject);
 	}
 
 	// Section queries
+	selectSections(projectId?: string): AppSection[] {
+		let query = this.#q.selectFrom("sections").selectAll();
+
+		if (projectId) {
+			query = query.where("project_id", "=", projectId);
+			query = query.orderBy("section_order");
+		} else {
+			query = query.orderBy("project_id");
+			query = query.orderBy("section_order");
+		}
+
+		return this.all(query.compile()).map(normalizeSection);
+	}
+
+	// Backward compatibility wrappers
 	selectAllSections(): AppSection[] {
-		return this.all(
-			this.#q
-				.selectFrom("sections")
-				.selectAll()
-				.orderBy("project_id")
-				.orderBy("order_")
-				.compile(),
-		).map(normalizeSection);
+		return this.selectSections();
 	}
 
 	selectSectionsByProjectId(projectId: string): AppSection[] {
-		return this.all(
-			this.#q
-				.selectFrom("sections")
-				.selectAll()
-				.where("project_id", "=", projectId)
-				.orderBy("order_")
-				.compile(),
-		).map(normalizeSection);
+		return this.selectSections(projectId);
 	}
 
 	// Label queries
@@ -424,44 +516,34 @@ export class Database {
 	}
 
 	// Write operations
+	private upsert<T extends keyof Schema>(
+		table: T,
+		column: keyof Schema[T] & string,
+		values: Insertable<Schema[T]>,
+	): void {
+		const compiled = this.#q
+			.insertInto(table)
+			.values(values)
+			.onConflict((oc) => oc.column(column).doUpdateSet(values))
+			.compile();
+
+		this.run(compiled);
+	}
+
 	upsertProject(project: Insertable<ProjectTable>): void {
-		this.run(
-			this.#q
-				.insertInto("projects")
-				.values(project)
-				.onConflict((oc) => oc.column("id").doUpdateSet(project))
-				.compile(),
-		);
+		this.upsert("projects", "id", project);
 	}
 
 	upsertSection(section: Insertable<SectionTable>): void {
-		this.run(
-			this.#q
-				.insertInto("sections")
-				.values(section)
-				.onConflict((oc) => oc.column("id").doUpdateSet(section))
-				.compile(),
-		);
+		this.upsert("sections", "id", section);
 	}
 
 	upsertLabel(label: Insertable<LabelTable>): void {
-		this.run(
-			this.#q
-				.insertInto("labels")
-				.values(label)
-				.onConflict((oc) => oc.column("id").doUpdateSet(label))
-				.compile(),
-		);
+		this.upsert("labels", "id", label);
 	}
 
 	upsertTask(task: Insertable<TaskTable>): void {
-		this.run(
-			this.#q
-				.insertInto("tasks")
-				.values(task)
-				.onConflict((oc) => oc.column("id").doUpdateSet(task))
-				.compile(),
-		);
+		this.upsert("tasks", "id", task);
 	}
 
 	updateTasksAsCompleted(ids: string[]): void {
@@ -469,63 +551,80 @@ export class Database {
 			return;
 		}
 		const now = new Date().toISOString();
-		for (const id of ids) {
-			this.run(
-				this.#q
-					.updateTable("tasks")
-					.set({ is_completed: 1, synced_at: now })
-					.where("id", "=", id)
-					.compile(),
-			);
+		this.run(
+			this.#q
+				.updateTable("tasks")
+				.set({ is_completed: 1, synced_at: now })
+				.where("id", "in", ids)
+				.compile(),
+		);
+	}
+
+	updateTasksAsIncomplete(ids: string[]): void {
+		if (ids.length === 0) {
+			return;
 		}
+		const now = new Date().toISOString();
+		this.run(
+			this.#q
+				.updateTable("tasks")
+				.set({ is_completed: 0, synced_at: now })
+				.where("id", "in", ids)
+				.compile(),
+		);
+	}
+
+	deleteTasksByIds(ids: string[]): void {
+		if (ids.length === 0) {
+			return;
+		}
+		this.run(this.#q.deleteFrom("tasks").where("id", "in", ids).compile());
 	}
 
 	// Metadata operations
-	getSyncToken(): string | null {
+	getMeta(key: string): string | null {
 		const row = this.get(
 			this.#q
 				.selectFrom("meta")
 				.select("value")
-				.where("key", "=", "sync_token")
+				.where("key", "=", key)
 				.compile(),
 		);
 		return row?.value ?? null;
+	}
+
+	setMeta(key: string, value: string): void {
+		this.run(
+			this.#q
+				.insertInto("meta")
+				.values({ key, value })
+				.onConflict((oc) => oc.column("key").doUpdateSet({ value }))
+				.compile(),
+		);
+	}
+
+	deleteMeta(key: string): void {
+		this.run(this.#q.deleteFrom("meta").where("key", "=", key).compile());
+	}
+
+	// Backward compatibility wrappers
+	getSyncToken(): string | null {
+		return this.getMeta("sync_token");
 	}
 
 	setSyncToken(token: string): void {
-		this.run(
-			this.#q
-				.insertInto("meta")
-				.values({ key: "sync_token", value: token })
-				.onConflict((oc) => oc.column("key").doUpdateSet({ value: token }))
-				.compile(),
-		);
+		this.setMeta("sync_token", token);
 	}
 
 	resetSyncToken(): void {
-		this.run(
-			this.#q.deleteFrom("meta").where("key", "=", "sync_token").compile(),
-		);
+		this.deleteMeta("sync_token");
 	}
 
 	getLastSyncedAt(): string | null {
-		const row = this.get(
-			this.#q
-				.selectFrom("meta")
-				.select("value")
-				.where("key", "=", "last_synced_at")
-				.compile(),
-		);
-		return row?.value ?? null;
+		return this.getMeta("last_synced_at");
 	}
 
 	setLastSyncedAt(timestamp: string): void {
-		this.run(
-			this.#q
-				.insertInto("meta")
-				.values({ key: "last_synced_at", value: timestamp })
-				.onConflict((oc) => oc.column("key").doUpdateSet({ value: timestamp }))
-				.compile(),
-		);
+		this.setMeta("last_synced_at", timestamp);
 	}
 }

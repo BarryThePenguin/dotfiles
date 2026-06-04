@@ -1,6 +1,6 @@
 import { api } from "@opentelemetry/sdk-node";
 import { ATTR_OPERATION, ATTR_SYNCLATENCY } from "./semconv.ts";
-import type { RequestMeta } from "@modelcontextprotocol/server";
+import type { ServerContext } from "@modelcontextprotocol/server";
 
 export const tracer = api.trace.getTracer("doist");
 
@@ -46,6 +46,6 @@ export function recordException(span: api.Span, error: unknown) {
 	span.setStatus({ code: api.SpanStatusCode.ERROR });
 }
 
-export function propagateMeta(meta?: RequestMeta): api.Context {
-	return api.propagation.extract(api.context.active(), meta);
+export function propagateContext({ mcpReq }: ServerContext): api.Context {
+	return api.propagation.extract(api.context.active(), mcpReq._meta);
 }

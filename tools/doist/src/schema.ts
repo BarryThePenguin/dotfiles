@@ -9,20 +9,24 @@
  */
 
 import type { DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
-import type { SyncItem, SyncProject, SyncSection, SyncLabel } from "./sdk.ts";
+import type { SyncItem, SyncLabel, SyncProject, SyncSection } from "./sdk.ts";
 
 // App-facing types (camelCase)
 export type AppTask = {
 	id: string;
 	projectId: string | null;
 	sectionId: string | null;
+	parentId: string | null;
+	childOrder: number | null;
+	noteCount: number | null;
+	updatedAt: string | null;
 	content: string;
 	description: string | null;
 	priority: number | null;
 	due: { date: string; string: string; isRecurring: boolean } | null;
 	labels: string[];
-	completed: boolean;
-	addedAt: string | null;
+	isCompleted: boolean;
+	createdAt: string | null;
 };
 
 export type AppProject = {
@@ -37,7 +41,7 @@ export type AppSection = {
 	id: string;
 	projectId: string;
 	name: string;
-	order: number | null;
+	sectionOrder: number | null;
 };
 
 export type AppLabel = {
@@ -70,6 +74,10 @@ export function prepareTaskForDB(
 		id: t.id,
 		project_id: t.project_id,
 		section_id: t.section_id,
+		parent_id: t.parent_id ?? null,
+		child_order: t.child_order ?? 0,
+		note_count: t.note_count ?? 0,
+		updated_at: t.updated_at ?? null,
 		content: t.content,
 		description: t.description,
 		priority: t.priority,
@@ -89,7 +97,7 @@ export function prepareTaskForDB(
  * - due_date + due_string → due object
  * - labels (JSON string) → array
  * - is_completed (0/1) → completed (boolean)
- * - created_at → addedAt
+ * - created_at → createdAt
  * - snake_case → camelCase
  */
 export function normalizeTask(t: DbTask): AppTask {
@@ -108,13 +116,17 @@ export function normalizeTask(t: DbTask): AppTask {
 		id: t.id,
 		projectId: t.project_id,
 		sectionId: t.section_id,
+		parentId: t.parent_id,
+		childOrder: t.child_order,
+		noteCount: t.note_count,
+		updatedAt: t.updated_at,
 		content: t.content,
 		description: t.description,
 		priority: t.priority,
 		due,
 		labels: t.labels ? (JSON.parse(t.labels) as string[]) : [],
-		completed: t.is_completed === 1,
-		addedAt: t.created_at,
+		isCompleted: t.is_completed === 1,
+		createdAt: t.created_at,
 	};
 }
 
@@ -167,7 +179,6 @@ export function normalizeProject(p: DbProject): AppProject {
  * Filters deleted/archived sections.
  * Transforms:
  * - project_id stays as-is
- * - section_order → order_
  */
 export function prepareSectionForDB(
 	s: SyncSection,
@@ -180,7 +191,7 @@ export function prepareSectionForDB(
 		id: s.id,
 		project_id: s.project_id,
 		name: s.name,
-		order_: s.section_order,
+		section_order: s.section_order,
 		synced_at: syncedAt,
 	};
 }
@@ -189,7 +200,7 @@ export function prepareSectionForDB(
  * Normalize a database section to app-facing format (camelCase).
  *
  * Transforms:
- * - order_ → order
+ * - section_order → sectionOrder
  * - project_id → projectId
  */
 export function normalizeSection(s: DbSection): AppSection {
@@ -197,7 +208,7 @@ export function normalizeSection(s: DbSection): AppSection {
 		id: s.id,
 		projectId: s.project_id,
 		name: s.name,
-		order: s.order_,
+		sectionOrder: s.section_order,
 	};
 }
 

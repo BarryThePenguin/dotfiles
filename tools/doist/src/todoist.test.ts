@@ -1,15 +1,15 @@
-import { afterEach, describe, it, expect } from "vitest";
 import * as undici from "undici";
-import { createClient } from "./todoist.ts";
+import { afterEach, describe, expect, it } from "vitest";
 import {
-	createMockApiTask,
+	createMockApiLabel,
 	createMockApiProject,
 	createMockApiSection,
-	createMockApiLabel,
+	createMockApiTask,
 	createMockSyncResponse,
 	interceptSync,
 	interceptSyncDynamic,
 } from "./test-helpers/api-mocks.ts";
+import { createClient } from "./todoist.ts";
 
 // ── MockAgent setup ───────────────────────────────────────────────────────────
 
@@ -25,13 +25,16 @@ afterEach(() => {
 
 describe("createClient.sync", () => {
 	it("returns parsed projects, sections, labels, and tasks", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({
-			sync_token: "tok",
-			projects: [createMockApiProject()],
-			sections: [createMockApiSection()],
-			labels: [createMockApiLabel()],
-			items: [createMockApiTask()],
-		}));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				projects: [createMockApiProject()],
+				sections: [createMockApiSection()],
+				labels: [createMockApiLabel()],
+				items: [createMockApiTask()],
+			}),
+		);
 
 		const client = createClient("mytoken");
 		const data = await client.sync("*");
@@ -46,10 +49,16 @@ describe("createClient.sync", () => {
 	});
 
 	it("separates deleted items into deletedTaskIds", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({
-			sync_token: "tok",
-			items: [createMockApiTask({ id: "t1" }), createMockApiTask({ id: "t2", is_deleted: true })],
-		}));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				items: [
+					createMockApiTask({ id: "t1" }),
+					createMockApiTask({ id: "t2", is_deleted: true }),
+				],
+			}),
+		);
 
 		const client = createClient("mytoken");
 		const data = await client.sync();
@@ -59,14 +68,17 @@ describe("createClient.sync", () => {
 	});
 
 	it("filters out deleted and archived projects", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({
-			sync_token: "tok",
-			projects: [
-				createMockApiProject({ id: "p1" }),
-				createMockApiProject({ id: "p2", is_deleted: true }),
-				createMockApiProject({ id: "p3", is_archived: true }),
-			],
-		}));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				projects: [
+					createMockApiProject({ id: "p1" }),
+					createMockApiProject({ id: "p2", is_deleted: true }),
+					createMockApiProject({ id: "p3", is_archived: true }),
+				],
+			}),
+		);
 
 		const client = createClient("mytoken");
 		const data = await client.sync();
@@ -75,10 +87,13 @@ describe("createClient.sync", () => {
 	});
 
 	it("stores labels as a JSON string in tasks", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({
-			sync_token: "tok",
-			items: [createMockApiTask({ labels: ["work", "urgent"] })],
-		}));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				items: [createMockApiTask({ labels: ["work", "urgent"] })],
+			}),
+		);
 
 		const client = createClient("mytoken");
 		const data = await client.sync();
@@ -87,10 +102,15 @@ describe("createClient.sync", () => {
 	});
 
 	it("maps due date fields to due_date and due_string", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({
-			sync_token: "tok",
-			items: [createMockApiTask({ due: { date: "2026-05-15", string: "May 15" } })],
-		}));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				items: [
+					createMockApiTask({ due: { date: "2026-05-15", string: "May 15" } }),
+				],
+			}),
+		);
 
 		const client = createClient("mytoken");
 		const data = await client.sync();
@@ -104,7 +124,13 @@ describe("createClient.sync", () => {
 
 describe("createClient.completeTask", () => {
 	it("returns the new sync token on success", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({ sync_token: "tok", sync_status: { "any-uuid": "ok" } }));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				sync_status: { "any-uuid": "ok" },
+			}),
+		);
 
 		const client = createClient("mytoken");
 		await expect(client.completeTask("t1", null)).resolves.toMatchObject({
@@ -117,11 +143,20 @@ describe("createClient.completeTask", () => {
 
 describe("createClient.updateTask", () => {
 	it("returns the updated task and new sync token", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({
-			sync_token: "tok",
-			sync_status: { "any-uuid": "ok" },
-			items: [createMockApiTask({ id: "t1", content: "Updated title", priority: 3 })],
-		}));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				sync_status: { "any-uuid": "ok" },
+				items: [
+					createMockApiTask({
+						id: "t1",
+						content: "Updated title",
+						priority: 3,
+					}),
+				],
+			}),
+		);
 
 		const client = createClient("mytoken");
 		const { task, syncToken } = await client.updateTask(
@@ -137,7 +172,10 @@ describe("createClient.updateTask", () => {
 	});
 
 	it("throws when the updated task is not in the response", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({ sync_token: "tok", items: [] }));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({ sync_token: "tok", items: [] }),
+		);
 
 		const client = createClient("mytoken");
 		await expect(client.updateTask("t1", {}, null)).rejects.toThrow(
@@ -175,8 +213,46 @@ describe("createClient.addTask", () => {
 		expect(syncToken).toBe("tok");
 	});
 
+	it("includes parent_id when creating a subtask", async () => {
+		interceptSyncDynamic(mockAgent, (reqBody) => {
+			const params = new URLSearchParams(reqBody);
+			const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
+				args?: { parent_id?: string };
+				temp_id?: string;
+			}>;
+			const tempId = commands[0]?.temp_id ?? "temp-subtask";
+			expect(commands[0]?.args?.parent_id).toBe("parent-task-id");
+			return {
+				sync_token: "tok",
+				temp_id_mapping: { [tempId]: "t-subtask" },
+				items: [
+					createMockApiTask({
+						id: "t-subtask",
+						content: "Nested task",
+						parent_id: "parent-task-id",
+					}),
+				],
+			};
+		});
+
+		const client = createClient("mytoken");
+		const { task } = await client.addTask(
+			{ title: "Nested task", parentId: "parent-task-id" },
+			null,
+		);
+
+		expect(task.parent_id).toBe("parent-task-id");
+	});
+
 	it("throws when no id is returned in temp_id_mapping", async () => {
-		interceptSync(mockAgent, createMockSyncResponse({ sync_token: "tok", temp_id_mapping: {}, items: [] }));
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				temp_id_mapping: {},
+				items: [],
+			}),
+		);
 
 		const client = createClient("mytoken");
 		await expect(client.addTask({ title: "Task" }, null)).rejects.toThrow(

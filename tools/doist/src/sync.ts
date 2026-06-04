@@ -2,7 +2,7 @@ import type { Database } from "./db.ts";
 import { filterToAllowedProjects } from "./filtering.ts";
 import { logger } from "./logger.ts";
 import { markDeleted, reconcileCompleted } from "./reconciliation.ts";
-import { getToken, resetToken, persistSync } from "./sync-lifecycle.ts";
+import { getToken, persistSync, resetToken } from "./sync-lifecycle.ts";
 import type { AllData, TodoistClient } from "./todoist.ts";
 
 export type SyncResult = {
@@ -44,9 +44,8 @@ export function countSyncData(
 /**
  * Fetch and filter sync response without persisting.
  *
- * Returns the raw sync data (filtered to allowed projects) for inspection
- * (e.g., explicit conflict detection before mutations). Does NOT update the
- * sync token; the next sync will include the same data.
+ * Returns the raw sync data (filtered to allowed projects) for inspection.
+ * Does NOT update the sync token; the next sync will include the same data.
  *
  * @param db Database instance
  * @param client TodoistClient for API calls
@@ -96,7 +95,8 @@ export async function syncAndFetch(
  * Sync, reconcile, and persist atomically.
  *
  * Fetches changes from Todoist, filters to allowed projects,
- * marks remotely-deleted tasks as completed, and persists all changes
+ * removes remotely-deleted tasks, marks remotely-completed tasks as completed,
+ * and persists all changes
  * (including sync token) in a single atomic transaction.
  * On full sync, reconciles completed tasks.
  *
@@ -120,34 +120,41 @@ export async function syncAndPersist(
 	const raw = await client.sync(token);
 	const filtered = filterToAllowedProjects(raw, allowedProjects);
 
-	const { projects, sections, labels, tasks, deletedTaskIds } = filtered;
+	const {
+		projects,
+		sections,
+		labels,
+		tasks,
+		deletedTaskIds,
+		completedTaskIds,
+	} = filtered;
 
-	const reconciled = persistSync(
-		db,
-		raw.syncToken,
-		() => {
-			for (const p of projects) {
-				db.upsertProject(p);
-			}
-			for (const s of sections) {
-				db.upsertSection(s);
-			}
-			for (const l of labels) {
-				db.upsertLabel(l);
-			}
-			for (const t of tasks) {
-				db.upsertTask(t);
-			}
-			markDeleted(db, deletedTaskIds);
-			return isFullSync
-				? reconcileCompleted(
-						db,
-						projects.map((p) => p.id),
-						new Set(tasks.map((t) => t.id)),
-					)
-				: 0;
-		},
-	);
+	const reconciled = persistSync(db, raw.syncToken, () => {
+		for (const p of projects) {
+			db.upsertProject(p);
+		}
+		for (const s of sections) {
+			db.upsertSection(s);
+		}
+		for (const l of labels) {
+			db.upsertLabel(l);
+		}
+		for (const t of tasks) {
+			db.upsertTask(t);
+		}
+
+		// Some incremental sync responses report closures via completedTaskIds
+		// without returning full item payloads.
+		db.updateTasksAsCompleted(completedTaskIds);
+		markDeleted(db, deletedTaskIds);
+		return isFullSync
+			? reconcileCompleted(
+					db,
+					projects.map((p) => p.id),
+					new Set(tasks.map((t) => t.id)),
+				)
+			: 0;
+	});
 
 	if (reconciled > 0) {
 		logger.info(

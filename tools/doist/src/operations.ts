@@ -1,32 +1,45 @@
 import { Database } from "./db.ts";
 import { normalizeTask, type AppTask } from "./schema.ts";
 import { type AddTaskFields, type UpdateTaskFields } from "./schemas.ts";
+import {
+	createItemCompleteCommand,
+	createItemUncompleteCommand,
+} from "./sdk.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
 import type { TodoistClient } from "./todoist.ts";
-import { createItemCompleteCommand } from "./sdk.ts";
 
 /**
  * Resolve a project name or ID.
  * If the input matches exactly one project by name, return its ID.
- * Otherwise, return the input as-is (assumed to be a raw ID).
+ * If the input matches an allowed project ID, return it as-is.
+ * Otherwise, return undefined.
  */
-export function resolveProject(db: Database, nameOrId: string): string {
-	const rows = db.selectProjectByName(nameOrId);
+export function resolveProject(
+	db: Database,
+	nameOrId: string,
+): string | undefined {
+	const rows = db.selectProjects({ name: nameOrId });
 	const [firstRow] = rows;
 	if (firstRow && rows.length === 1) {
 		return firstRow.id;
 	}
-	return nameOrId;
+	if (db.getProjectById(nameOrId)) {
+		return nameOrId;
+	}
+	return undefined;
 }
 
 export function listSections(db: Database, project?: string) {
-	const projectId = project ? resolveProject(db, project) : undefined;
-
-	if (projectId) {
-		return db.selectSectionsByProjectId(projectId);
-	} else {
+	if (!project) {
 		return db.selectAllSections();
 	}
+
+	const projectId = resolveProject(db, project);
+	if (!projectId) {
+		return [];
+	}
+
+	return db.selectSectionsByProjectId(projectId);
 }
 
 /**
@@ -60,6 +73,7 @@ export async function updateTask(
 	id: string,
 	{
 		title,
+		project,
 		due,
 		priority,
 		addLabels,
@@ -71,7 +85,7 @@ export async function updateTask(
 	// Compute merged labels
 	let labels: string[] | undefined;
 	if (addLabels !== undefined || removeLabels !== undefined) {
-		const existing = db.selectTaskById(id) ?? null;
+		const existing = db.getTaskById(id);
 		let current = existing?.labels ?? null;
 		if (addLabels !== undefined) {
 			for (const l of addLabels) {
@@ -86,11 +100,16 @@ export async function updateTask(
 		labels = current ?? [];
 	}
 
+	const projectId = project ? resolveProject(db, project) : undefined;
+	if (project && projectId === undefined) {
+		throw new Error(`project not found in .doistrc: ${project}`);
+	}
 	const { task: updated, syncToken } = await client.updateTask(
 		id,
 		{
 			title,
 			description,
+			projectId,
 			due,
 			priority,
 			labels,
@@ -107,6 +126,34 @@ export async function updateTask(
 }
 
 /**
+ * Move a task to a different project.
+ *
+ * @returns { ok: true, result: movedTask } on success
+ */
+export async function moveTask(
+	db: Database,
+	client: TodoistClient,
+	id: string,
+	project: string,
+): Promise<OperationResult<AppTask>> {
+	const projectId = resolveProject(db, project);
+	if (!projectId) {
+		throw new Error(`project not found in .doistrc: ${project}`);
+	}
+	const { task: moved, syncToken } = await client.moveTask(
+		id,
+		projectId,
+		getToken(db),
+	);
+
+	persistMutations(db, {
+		token: syncToken,
+		tasks: [moved],
+	});
+	return { ok: true, result: normalizeTask(moved) };
+}
+
+/**
  * Add a new task.
  *
  * Returns a promise with either:
@@ -118,6 +165,7 @@ export async function addTask(
 	{
 		title,
 		project,
+		parentId,
 		section,
 		description,
 		due,
@@ -125,11 +173,14 @@ export async function addTask(
 		labels,
 	}: AddTaskFields,
 ): Promise<OperationResult<AppTask>> {
-	const projectId = project ? resolveProject(db, project) : undefined;
+	const projectId = project
+		? (resolveProject(db, project) ?? project)
+		: undefined;
 	const { task, syncToken } = await client.addTask(
 		{
 			title,
 			projectId,
+			parentId,
 			sectionId: section,
 			description,
 			due,
@@ -172,6 +223,36 @@ export async function completeTasks(
 		token: syncToken,
 		customOperations: (db) => {
 			db.updateTasksAsCompleted(ids);
+		},
+	});
+
+	return { ok: true, result: ids.length };
+}
+
+/**
+ * Reopen multiple completed tasks in a single API call.
+ *
+ * Batches all uncomplete commands and sends them to Todoist atomically.
+ *
+ * @returns { ok: true, count: number of reopened tasks } on success
+ */
+export async function uncompleteTasks(
+	db: Database,
+	client: TodoistClient,
+	ids: string[],
+): Promise<OperationResult<number>> {
+	if (ids.length === 0) {
+		return { ok: true, result: 0 };
+	}
+
+	const commands = ids.map((id) => createItemUncompleteCommand({ id }));
+
+	const { syncToken } = await client.sync(getToken(db), ...commands);
+
+	persistMutations(db, {
+		token: syncToken,
+		customOperations: (db) => {
+			db.updateTasksAsIncomplete(ids);
 		},
 	});
 

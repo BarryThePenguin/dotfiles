@@ -1,10 +1,11 @@
 export {
 	addTask,
 	completeTasks,
+	moveTask,
+	uncompleteTasks,
 	updateTask,
 	type OperationResult
 } from "./operations.ts";
-export type { AppTask } from "./schema.ts";
 export * as Reconciliation from "./reconciliation.ts";
 export {
 	AddTaskFieldsSchema,

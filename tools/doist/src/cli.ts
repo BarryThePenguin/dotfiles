@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import { shutdown } from "./instrumentation/cli.ts";
 import { ATTR_ERROR_TYPE } from "@opentelemetry/semantic-conventions";
 import { defineCommand, runMain } from "citty";
 import { basename } from "node:path";
 import * as v from "valibot";
 import { createContainer } from "./container.ts";
 import { addTask, completeTasks, updateTask } from "./index.ts";
+import { shutdown } from "./instrumentation/cli.ts";
 import { listSections, resolveProject } from "./operations.ts";
 import { out } from "./output.ts";
 import { parseAddTaskFields, parseUpdateTaskFields } from "./schemas.ts";
@@ -28,9 +28,9 @@ function requireDb() {
 
 const parseListTask = v.parser(
 	v.object({
-		project: v.optional(v.string()),
-		due: v.optional(v.picklist(["today", "overdue"] as const)),
-		priority: v.optional(
+		project: v.exactOptional(v.string()),
+		due: v.exactOptional(v.picklist(["today", "overdue"] as const)),
+		priority: v.exactOptional(
 			v.pipe(
 				v.string(),
 				v.toNumber(),
@@ -39,11 +39,11 @@ const parseListTask = v.parser(
 				v.maxValue(4),
 			),
 		),
-		label: v.optional(v.string()),
-		limit: v.optional(
+		label: v.exactOptional(v.string()),
+		limit: v.exactOptional(
 			v.pipe(v.string(), v.toNumber(), v.integer(), v.minValue(1)),
 		),
-		offset: v.optional(
+		offset: v.exactOptional(
 			v.pipe(v.string(), v.toNumber(), v.integer(), v.minValue(0)),
 		),
 	}),
@@ -93,7 +93,7 @@ const projectsCmd = defineCommand({
 					);
 					out({
 						synced: countSyncData(syncResult),
-						projects: db.selectAllProjects(),
+						projects: db.selectProjects(),
 					});
 				} else {
 					out(listProjects());
@@ -143,9 +143,7 @@ const sectionsCmd = defineCommand({
 			},
 			async run({ args }) {
 				const db = requireDb();
-				const project = args.project
-					? resolveProject(db, args.project)
-					: undefined;
+				const sections = listSections(db, args.project);
 				if (args.sync) {
 					const syncResult = await syncAndPersist(
 						db,
@@ -156,10 +154,10 @@ const sectionsCmd = defineCommand({
 
 					out({
 						synced: countSyncData(syncResult),
-						sections: listSections(db, project),
+						sections,
 					});
 				} else {
-					out(listSections(db, project));
+					out(sections);
 				}
 			},
 		}),
@@ -225,13 +223,10 @@ const tasksCmd = defineCommand({
 			},
 			async run({ args }) {
 				const db = requireDb();
-				const fields = parseListTask({
-					...args,
-					priority:
-						args.priority !== undefined ? Number(args.priority) : undefined,
-					limit: args.limit !== undefined ? Number(args.limit) : undefined,
-					offset: args.offset !== undefined ? Number(args.offset) : undefined,
-				});
+				const { project, ...fields } = parseListTask(args);
+				const projectId = project ? resolveProject(db, project) : undefined;
+				const tasks =
+					project && !projectId ? [] : db.selectTasks({ ...fields, projectId });
 				if (args.sync) {
 					const syncResult = await syncAndPersist(
 						db,
@@ -241,10 +236,10 @@ const tasksCmd = defineCommand({
 					);
 					out({
 						synced: countSyncData(syncResult),
-						tasks: db.selectTasksByFilters(fields),
+						tasks,
 					});
 				} else {
-					out(db.selectTasksByFilters(fields));
+					out(tasks);
 				}
 			},
 		}),
@@ -255,7 +250,7 @@ const tasksCmd = defineCommand({
 			},
 			run({ args }) {
 				const db = requireDb();
-				const task = db.selectTaskById(args.id);
+				const task = db.getTaskById(args.id);
 				if (!task) {
 					throw new Error("task not found");
 				}

@@ -20,14 +20,14 @@ import type { Database } from "./db.ts";
  */
 export function reconcileCompleted(
 	db: Database,
-	projectIds: string[],
+	projectId: string[],
 	returnedTaskIds: Set<string>,
 ): number {
-	if (projectIds.length === 0) {
+	if (projectId.length === 0) {
 		return 0;
 	}
 
-	const stale = db.selectUncompletedTasksByProjectIds(projectIds);
+	const stale = db.selectTasks({ projectId });
 	const missing = stale.filter((r) => !returnedTaskIds.has(r.id));
 	if (missing.length === 0) {
 		return 0;
@@ -38,11 +38,11 @@ export function reconcileCompleted(
 }
 
 /**
- * Mark deleted tasks as completed in the database.
+ * Remove remotely deleted tasks from the local database.
  *
- * Todoist returns a list of task IDs that were deleted. We mark them as completed
- * locally rather than actually deleting them (preserves audit trail).
+ * Todoist returns a list of task IDs that were deleted.
+ * These should be removed from local storage.
  */
 export function markDeleted(db: Database, ids: string[]): void {
-	db.updateTasksAsCompleted(ids);
+	db.deleteTasksByIds(ids);
 }

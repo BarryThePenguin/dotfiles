@@ -6,20 +6,20 @@
  * - User mutation types → Todoist API request args
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import type { DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
 import {
-	prepareTaskForDB,
-	normalizeTask,
-	prepareProjectForDB,
-	normalizeProject,
-	prepareSectionForDB,
-	normalizeSection,
-	prepareLabelForDB,
 	normalizeLabel,
+	normalizeProject,
+	normalizeSection,
+	normalizeTask,
+	prepareLabelForDB,
+	prepareProjectForDB,
+	prepareSectionForDB,
+	prepareTaskForDB,
 } from "./schema.ts";
-import type { SyncItem, SyncProject, SyncSection, SyncLabel } from "./sdk.ts";
-import { encodeUpdateFields, encodeAddFields } from "./sdk.ts";
-import type { DbTask, DbProject, DbSection, DbLabel } from "./db.ts";
+import type { SyncItem, SyncLabel, SyncProject, SyncSection } from "./sdk.ts";
+import { encodeAddFields, encodeUpdateFields } from "./sdk.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +35,8 @@ function syncItem(overrides: Partial<SyncItem> = {}): SyncItem {
 		labels: ["urgent", "work"],
 		checked: false,
 		added_at: "2026-05-23T10:00:00Z",
+		updated_at: "2026-05-23T11:00:00Z",
+		child_order: 1,
 		is_deleted: false,
 		...overrides,
 	};
@@ -45,6 +47,10 @@ function dbTask(overrides: Partial<DbTask> = {}): DbTask {
 		id: "t1",
 		project_id: "p1",
 		section_id: "s1",
+		parent_id: null,
+		child_order: 1,
+		note_count: 0,
+		updated_at: "2026-05-23T11:00:00Z",
 		content: "Task content",
 		description: "Task description",
 		priority: 2,
@@ -76,6 +82,10 @@ describe("prepareTaskForDB", () => {
 		expect(task.labels).toBe(JSON.stringify(["urgent", "work"]));
 		expect(task.is_completed).toBe(0);
 		expect(task.created_at).toBe("2026-05-23T10:00:00Z");
+		expect(task.updated_at).toBe("2026-05-23T11:00:00Z");
+		expect(task.parent_id).toBeNull();
+		expect(task.note_count).toBe(0);
+		expect(task.child_order).toBe(1);
 		expect(typeof task.synced_at).toBe("string");
 	});
 
@@ -130,14 +140,18 @@ describe("normalizeTask", () => {
 			isRecurring: false,
 		});
 		expect(normalized.labels).toEqual(["urgent", "work"]);
-		expect(normalized.completed).toBe(false);
-		expect(normalized.addedAt).toBe("2026-05-23T10:00:00Z");
+		expect(normalized.isCompleted).toBe(false);
+		expect(normalized.createdAt).toBe("2026-05-23T10:00:00Z");
+		expect(normalized.updatedAt).toBe("2026-05-23T11:00:00Z");
+		expect(normalized.parentId).toBeNull();
+		expect(normalized.noteCount).toBe(0);
+		expect(normalized.childOrder).toBe(1);
 	});
 
 	it("converts is_completed=1 to completed=true", () => {
 		const task = dbTask({ is_completed: 1 });
 		const normalized = normalizeTask(task);
-		expect(normalized.completed).toBe(true);
+		expect(normalized.isCompleted).toBe(true);
 	});
 
 	it("handles null due fields", () => {
@@ -287,7 +301,7 @@ describe("prepareSectionForDB", () => {
 		expect(decoded?.id).toBe("s1");
 		expect(decoded?.project_id).toBe("p1");
 		expect(decoded?.name).toBe("Todo");
-		expect(decoded?.order_).toBe(1);
+		expect(decoded?.section_order).toBe(1);
 		expect(typeof decoded?.synced_at).toBe("string");
 	});
 
@@ -326,7 +340,7 @@ describe("normalizeSection", () => {
 			id: "s1",
 			project_id: "p1",
 			name: "Todo",
-			order_: 1,
+			section_order: 1,
 			synced_at: "2026-05-23T12:00:00Z",
 		};
 		const normalized = normalizeSection(section);
@@ -334,7 +348,7 @@ describe("normalizeSection", () => {
 		expect(normalized.id).toBe("s1");
 		expect(normalized.projectId).toBe("p1");
 		expect(normalized.name).toBe("Todo");
-		expect(normalized.order).toBe(1);
+		expect(normalized.sectionOrder).toBe(1);
 	});
 });
 

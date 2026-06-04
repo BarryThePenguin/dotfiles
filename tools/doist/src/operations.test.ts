@@ -3,12 +3,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	addTask,
 	completeTasks,
+	moveTask,
 	resolveProject,
+	uncompleteTasks,
 	updateTask,
 } from "./operations.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
-import { createTestContainer, type TestContainer } from "./test-helpers/container.ts";
-import { openDb } from "./test-helpers/database.ts";
 import {
 	createMockApiTask,
 	createMockSyncResponse,
@@ -16,14 +16,20 @@ import {
 	interceptSyncDynamic,
 } from "./test-helpers/api-mocks.ts";
 import {
+	createTestContainer,
+	type TestContainer,
+} from "./test-helpers/container.ts";
+import { openDb } from "./test-helpers/database.ts";
+import {
 	NOW,
 	PROJECT_IDS,
 	PROJECT_INBOX,
-	PROJECT_WORK,
 	PROJECT_PERSONAL,
-	TASK_IDS,
+	PROJECT_WORK,
 	TASK_ALPHA,
 	TASK_BETA,
+	TASK_DONE,
+	TASK_IDS,
 } from "./test-helpers/fixtures.ts";
 import { createClient } from "./todoist.ts";
 
@@ -50,11 +56,12 @@ describe("mock HTTP client", () => {
 
 		beforeEach(() => {
 			container = createTestContainer({
-				projects: [PROJECT_IDS.inbox],
+				projects: [PROJECT_IDS.inbox, PROJECT_IDS.personal],
 			});
 
 			// Pre-populate: project and task in DB
 			container.db.upsertProject(PROJECT_INBOX);
+			container.db.upsertProject(PROJECT_PERSONAL);
 			container.db.upsertTask(TASK_ALPHA);
 
 			// Set initial sync token so sync doesn't do a full sync
@@ -65,7 +72,7 @@ describe("mock HTTP client", () => {
 			container.db.close();
 		});
 
-		it("happy path: updates task when no conflict detected", async () => {
+		it("updates task", async () => {
 			// updateTask command succeeds
 			interceptSync(
 				mockAgent,
@@ -90,7 +97,7 @@ describe("mock HTTP client", () => {
 			expect(result.result?.content).toBe("Updated via API");
 
 			// Verify persistence
-			const persisted = container.db.selectTaskById(TASK_IDS.alpha);
+			const persisted = container.db.getTaskById(TASK_IDS.alpha);
 			expect(persisted?.content).toBe("Updated via API");
 
 			// Verify sync token advanced
@@ -128,8 +135,43 @@ describe("mock HTTP client", () => {
 			expect(result.result?.labels).toEqual(["urgent", "high"]);
 
 			// Verify persisted with merged labels
-			const persisted = container.db.selectTaskById(TASK_IDS.alpha);
+			const persisted = container.db.getTaskById(TASK_IDS.alpha);
 			expect(persisted?.labels).toEqual(["urgent", "high"]);
+		});
+
+		it("moves task to another project", async () => {
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					type?: string;
+					args?: { project_id?: string };
+				}>;
+
+				expect(commands[0]?.type).toBe("item_move");
+				expect(commands[0]?.args?.project_id).toBe(PROJECT_IDS.personal);
+
+				return {
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							content: "Updated via API",
+							project_id: PROJECT_IDS.personal,
+						}),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await moveTask(
+				container.db,
+				client,
+				TASK_IDS.alpha,
+				"Personal",
+			);
+
+			expect(result.ok).toBe(true);
+			expect(result.result?.projectId).toBe(PROJECT_IDS.personal);
 		});
 	});
 
@@ -187,7 +229,7 @@ describe("mock HTTP client", () => {
 			expect(result.result?.content).toBe("Buy groceries");
 			expect(result.result?.priority).toBe(2);
 
-			const persisted = container.db.selectTaskById("t-new-real");
+			const persisted = container.db.getTaskById("t-new-real");
 			expect(persisted?.content).toBe("Buy groceries");
 
 			expect(getToken(container.db)).toBe("tok-1");
@@ -262,6 +304,41 @@ describe("mock HTTP client", () => {
 			expect(result.result?.due?.date).toBe("2026-05-25");
 			expect(result.result?.labels).toEqual(["urgent"]);
 		});
+
+		it("passes parentId through when creating a subtask", async () => {
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					temp_id?: string;
+					args?: { parent_id?: string };
+				}>;
+				const command = commands[0];
+				const tempId = command?.temp_id ?? "temp-subtask";
+
+				expect(command?.args?.parent_id).toBe("parent-task-id");
+
+				return {
+					sync_token: "tok-1",
+					temp_id_mapping: { [tempId]: "t-subtask" },
+					items: [
+						createMockApiTask({
+							id: "t-subtask",
+							content: "Nested task",
+							parent_id: "parent-task-id",
+						}),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await addTask(container.db, client, {
+				title: "Nested task",
+				parentId: "parent-task-id",
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.result?.parentId).toBe("parent-task-id");
+		});
 	});
 
 	// ── completeTasks tests ──────────────────────────────────────────────────
@@ -319,10 +396,10 @@ describe("mock HTTP client", () => {
 			expect(result.result).toBe(2);
 
 			// Verify persistence
-			const alpha = container.db.selectTaskById(TASK_IDS.alpha);
-			expect(alpha?.completed).toBe(true);
-			const beta = container.db.selectTaskById(TASK_IDS.beta);
-			expect(beta?.completed).toBe(true);
+			const alpha = container.db.getTaskById(TASK_IDS.alpha);
+			expect(alpha?.isCompleted).toBe(true);
+			const beta = container.db.getTaskById(TASK_IDS.beta);
+			expect(beta?.isCompleted).toBe(true);
 
 			// Verify sync token advanced
 			expect(getToken(container.db)).toBe("tok-1");
@@ -331,6 +408,52 @@ describe("mock HTTP client", () => {
 		it("handles empty array case", async () => {
 			const client = createClient("test-token");
 			const result = await completeTasks(container.db, client, []);
+
+			expect(result.ok).toBe(true);
+			expect(result.result).toBe(0);
+		});
+	});
+
+	describe("uncompleteTasks", () => {
+		let container: TestContainer;
+
+		beforeEach(() => {
+			container = createTestContainer({
+				projects: [PROJECT_IDS.inbox],
+			});
+
+			container.db.upsertProject(PROJECT_INBOX);
+			container.db.upsertTask(TASK_DONE);
+			setToken(container.db, "tok-0");
+		});
+
+		afterEach(() => {
+			container.db.close();
+		});
+
+		it("reopens completed tasks in batch", async () => {
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-2",
+					items: [createMockApiTask({ id: TASK_IDS.done, checked: false })],
+				}),
+			);
+
+			const client = createClient("test-token");
+			const result = await uncompleteTasks(container.db, client, [
+				TASK_IDS.done,
+			]);
+
+			expect(result.ok).toBe(true);
+			expect(result.result).toBe(1);
+			expect(container.db.getTaskById(TASK_IDS.done)?.isCompleted).toBe(false);
+			expect(getToken(container.db)).toBe("tok-2");
+		});
+
+		it("handles empty array case", async () => {
+			const client = createClient("test-token");
+			const result = await uncompleteTasks(container.db, client, []);
 
 			expect(result.ok).toBe(true);
 			expect(result.result).toBe(0);
@@ -358,12 +481,18 @@ describe("resolveProject", () => {
 		expect(id).toBe(PROJECT_IDS.work);
 	});
 
-	it("returns the input as-is when no project name matches", () => {
-		const id = resolveProject(db, "raw-id-xyz");
-		expect(id).toBe("raw-id-xyz");
+	it("returns undefined when no project name matches", () => {
+		expect(resolveProject(db, "raw-id-xyz")).toBeUndefined();
 	});
 
-	it("returns the input as-is when multiple projects share the name", () => {
+	it("returns the input as-is when the project id is allowed", () => {
+		db.upsertProject(PROJECT_WORK);
+		db.upsertProject(PROJECT_PERSONAL);
+		const resolved = resolveProject(db, PROJECT_IDS.work);
+		expect(resolved).toBe(PROJECT_IDS.work);
+	});
+
+	it("returns undefined when multiple projects share the name", () => {
 		const PROJECT_WORK_DUP = {
 			id: "p-work-dup",
 			name: "Work",
@@ -375,7 +504,6 @@ describe("resolveProject", () => {
 		db.upsertProject(PROJECT_WORK);
 		db.upsertProject(PROJECT_PERSONAL);
 		db.upsertProject(PROJECT_WORK_DUP);
-		const resolved = resolveProject(db, "Work");
-		expect(resolved).toBe("Work");
+		expect(resolveProject(db, "Work")).toBeUndefined();
 	});
 });

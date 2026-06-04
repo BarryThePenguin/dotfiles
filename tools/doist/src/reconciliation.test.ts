@@ -16,6 +16,10 @@ describe("Reconciliation", () => {
 				id: `task-${i}`,
 				project_id: "proj-1",
 				section_id: null,
+				parent_id: null,
+				child_order: 0,
+				note_count: 0,
+				updated_at: "2026-05-23T00:00:00Z",
 				content: `Task ${i}`,
 				description: null,
 				priority: 1,
@@ -39,8 +43,8 @@ describe("Reconciliation", () => {
 			// task-2 should be marked as completed
 			expect(reconciled).toBe(1);
 
-			const task2 = db.selectTaskById("task-2");
-			expect(task2?.completed).toBe(true);
+			const task2 = db.getTaskById("task-2");
+			expect(task2?.isCompleted).toBe(true);
 		});
 
 		it("returns 0 when all tasks are returned", () => {
@@ -48,6 +52,10 @@ describe("Reconciliation", () => {
 				id: "task-keep",
 				project_id: "proj-1",
 				section_id: null,
+				parent_id: null,
+				child_order: 0,
+				note_count: 0,
+				updated_at: "2026-05-23T00:00:00Z",
 				content: "Keep this",
 				description: null,
 				priority: 1,
@@ -67,17 +75,21 @@ describe("Reconciliation", () => {
 			expect(reconciled).toBe(0);
 
 			// Task should still be incomplete
-			const result = db.selectTaskById("task-keep");
-			expect(result?.completed).toBe(false);
+			const result = db.getTaskById("task-keep");
+			expect(result?.isCompleted).toBe(false);
 		});
 	});
 
 	describe("markDeleted", () => {
-		it("marks deleted task IDs as completed", () => {
+		it("removes deleted task IDs from local database", () => {
 			const task: DbTask = {
 				id: "task-deleted",
 				project_id: "proj-1",
 				section_id: null,
+				parent_id: null,
+				child_order: 0,
+				note_count: 0,
+				updated_at: "2026-05-23T00:00:00Z",
 				content: "Will be deleted",
 				description: null,
 				priority: 1,
@@ -93,8 +105,8 @@ describe("Reconciliation", () => {
 
 			markDeleted(db, ["task-deleted"]);
 
-			const result = db.selectTaskById("task-deleted");
-			expect(result?.completed).toBe(true);
+			const result = db.getTaskById("task-deleted");
+			expect(result).toBeNull();
 		});
 
 		it("handles empty list gracefully", () => {

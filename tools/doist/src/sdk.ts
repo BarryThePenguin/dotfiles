@@ -56,8 +56,12 @@ const ItemSchema = v.object({
 	priority: v.number(),
 	due: DueSchema,
 	labels: v.array(v.string()),
-	checked: v.optional(v.boolean(), false),
+	checked: v.optional(v.boolean()),
 	added_at: v.optional(v.nullable(v.string())),
+	updated_at: v.optional(v.nullable(v.string())),
+	parent_id: v.optional(v.nullable(v.string())),
+	child_order: v.optional(v.number()),
+	note_count: v.optional(v.number()),
 	is_deleted: v.boolean(),
 });
 
@@ -65,7 +69,7 @@ const ProjectSchema = v.object({
 	id: v.string(),
 	name: v.string(),
 	color: v.optional(v.nullable(v.string())),
-	is_favorite: v.optional(v.boolean(), false),
+	is_favorite: v.optional(v.boolean()),
 	inbox_project: v.optional(v.boolean()),
 	is_deleted: v.boolean(),
 	is_archived: v.boolean(),
@@ -118,6 +122,7 @@ export const AddItemArgsSchema = v.object({
 	content: v.string(),
 	description: v.optional(v.string()),
 	project_id: v.optional(v.string()),
+	parent_id: v.optional(v.string()),
 	due: v.optional(v.nullable(v.any())), // Can be null or date object
 	priority: v.optional(v.number()),
 	labels: v.optional(v.array(v.string())),
@@ -135,6 +140,19 @@ export const UpdateItemArgsSchema = v.object({
 	section_id: v.optional(v.string()),
 });
 export type UpdateItemArgs = v.InferOutput<typeof UpdateItemArgsSchema>;
+
+export const MoveItemArgsSchema = v.object({
+	id: v.string(),
+	parent_id: v.optional(v.string()),
+	section_id: v.optional(v.string()),
+	project_id: v.optional(v.string()),
+});
+export type MoveItemArgs = v.InferOutput<typeof MoveItemArgsSchema>;
+
+export const UncompleteItemArgsSchema = v.object({
+	id: v.string(),
+});
+export type UncompleteItemArgs = v.InferOutput<typeof UncompleteItemArgsSchema>;
 
 export const CompleteItemArgsSchema = v.object({
 	id: v.string(),
@@ -161,6 +179,13 @@ export type ItemUpdateCommand = {
 	suggestedResourceTypes: readonly ["items"];
 };
 
+export type ItemMoveCommand = {
+	type: "item_move";
+	uuid: string;
+	args: MoveItemArgs;
+	suggestedResourceTypes: readonly ["items"];
+};
+
 export type ItemCompleteCommand = {
 	type: "item_complete";
 	uuid: string;
@@ -168,10 +193,19 @@ export type ItemCompleteCommand = {
 	suggestedResourceTypes: readonly ["items"];
 };
 
+export type ItemUncompleteCommand = {
+	type: "item_uncomplete";
+	uuid: string;
+	args: UncompleteItemArgs;
+	suggestedResourceTypes: readonly ["items"];
+};
+
 export type SyncCommand =
 	| ItemAddCommand
 	| ItemUpdateCommand
-	| ItemCompleteCommand;
+	| ItemMoveCommand
+	| ItemCompleteCommand
+	| ItemUncompleteCommand;
 
 // ============================================================================
 // Command Failures & Errors
@@ -223,11 +257,31 @@ export function createItemUpdateCommand(
 	};
 }
 
+export function createItemMoveCommand(args: MoveItemArgs): ItemMoveCommand {
+	return {
+		type: "item_move",
+		uuid: crypto.randomUUID(),
+		args,
+		suggestedResourceTypes: ["items"],
+	};
+}
+
 export function createItemCompleteCommand(
 	args: CompleteItemArgs,
 ): ItemCompleteCommand {
 	return {
 		type: "item_complete",
+		uuid: crypto.randomUUID(),
+		args,
+		suggestedResourceTypes: ["items"],
+	};
+}
+
+export function createItemUncompleteCommand(
+	args: UncompleteItemArgs,
+): ItemUncompleteCommand {
+	return {
+		type: "item_uncomplete",
 		uuid: crypto.randomUUID(),
 		args,
 		suggestedResourceTypes: ["items"],
@@ -240,6 +294,7 @@ export function createItemCompleteCommand(
 
 export type UpdateFields = {
 	title?: string | undefined;
+	projectId?: string | undefined;
 	due?: string | undefined;
 	priority?: number | undefined;
 	labels?: string[] | undefined;
@@ -250,6 +305,7 @@ export type UpdateFields = {
 export type AddFields = {
 	title: string;
 	projectId?: string | undefined;
+	parentId?: string | undefined;
 	sectionId?: string | undefined;
 	description?: string | undefined;
 	due?: string | undefined;
@@ -315,6 +371,9 @@ export function encodeAddFields(fields: AddFields): AddItemArgs {
 
 	if (fields.projectId !== undefined) {
 		args["project_id"] = fields.projectId;
+	}
+	if (fields.parentId !== undefined) {
+		args["parent_id"] = fields.parentId;
 	}
 	if (fields.sectionId !== undefined) {
 		args["section_id"] = fields.sectionId;

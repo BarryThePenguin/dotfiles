@@ -8,8 +8,8 @@ import {
 	LABEL_IDS,
 	LABEL_URGENT,
 	LABEL_WORK,
-	PROJECT_INBOX,
 	PROJECT_IDS,
+	PROJECT_INBOX,
 	PROJECT_PERSONAL,
 	PROJECT_WORK,
 	SECTION_BACKLOG,
@@ -68,7 +68,7 @@ describe("database initialization", () => {
 
 	it("openDb creates all four tables", () => {
 		// Verify that the four main tables exist by checking if we can query them
-		const projects = db.selectAllProjects();
+		const projects = db.selectProjects();
 		const sections = db.selectAllSections();
 		const labels = db.selectAllLabels();
 		expect(projects).toEqual([]);
@@ -93,7 +93,7 @@ describe("CRUD operations", () => {
 	describe("projects", () => {
 		it("upsertProject inserts a project", () => {
 			db.upsertProject(PROJECT_INBOX);
-			const rows = db.selectAllProjects();
+			const rows = db.selectProjects();
 			expect(rows).toHaveLength(1);
 			expect(rows[0]).toMatchObject({
 				name: "Inbox",
@@ -104,7 +104,7 @@ describe("CRUD operations", () => {
 		it("upsertProject is idempotent — running twice yields one row with updated values", () => {
 			db.upsertProject(PROJECT_INBOX);
 			db.upsertProject({ ...PROJECT_INBOX, name: "Updated Inbox" });
-			const rows = db.selectAllProjects();
+			const rows = db.selectProjects();
 			expect(rows).toHaveLength(1);
 			expect(rows[0]?.name).toBe("Updated Inbox");
 		});
@@ -113,7 +113,7 @@ describe("CRUD operations", () => {
 			db.upsertProject(PROJECT_INBOX);
 			db.upsertProject(PROJECT_WORK);
 			db.upsertProject(PROJECT_PERSONAL);
-			const rows = db.selectAllProjects();
+			const rows = db.selectProjects();
 			expect(rows).toHaveLength(3);
 		});
 	});
@@ -166,16 +166,16 @@ describe("CRUD operations", () => {
 			db.upsertLabel(LABEL_HOME);
 			const rows = db.selectAllLabels();
 			expect(rows).toHaveLength(2);
-			expect(rows.every((l) => l.id === LABEL_IDS.work || l.id === LABEL_IDS.home)).toBe(
-				true,
-			);
+			expect(
+				rows.every((l) => l.id === LABEL_IDS.work || l.id === LABEL_IDS.home),
+			).toBe(true);
 		});
 	});
 
 	describe("tasks", () => {
 		it("upsertTask inserts a task", () => {
 			db.upsertTask(TASK_ALPHA);
-			const row = db.selectTaskById(TASK_IDS.alpha);
+			const row = db.getTaskById(TASK_IDS.alpha);
 			expect(row).toMatchObject({
 				content: "Alpha task",
 				priority: 1,
@@ -185,22 +185,34 @@ describe("CRUD operations", () => {
 		it("upsertTask is idempotent", () => {
 			db.upsertTask(TASK_ALPHA);
 			db.upsertTask({ ...TASK_ALPHA, content: "Updated alpha task" });
-			const rows = db.selectTasksByFilters({});
+			const rows = db.selectTasks();
 			expect(rows).toHaveLength(1);
 			expect(rows[0]?.content).toBe("Updated alpha task");
 		});
 
-		it("upsertTask stores labels as JSON and parses on retrieval", () => {
+		it("upsertTask preserves task metadata fields on retrieval", () => {
 			db.upsertTask(TASK_BETA);
-			const row = db.selectTaskById(TASK_IDS.beta);
+			const row = db.getTaskById(TASK_IDS.beta);
 			expect(row?.labels).toEqual([LABEL_IDS.urgent]);
 		});
 
 		it("upsertTask stores tasks with and without sections", () => {
 			db.upsertTask(TASK_ALPHA); // has section
 			db.upsertTask(TASK_OVERDUE); // section_id is null
-			const rows = db.selectTasksByFilters({});
+			const rows = db.selectTasks();
 			expect(rows).toHaveLength(2);
+		});
+
+		it("upsertTask stores labels as JSON and parses on retrieval", () => {
+			db.upsertTask(TASK_BETA);
+			const row = db.getTaskById(TASK_IDS.beta);
+			expect(row?.labels).toEqual([LABEL_IDS.urgent]);
+			expect(row).toMatchObject({
+				parentId: null,
+				childOrder: 2,
+				noteCount: 1,
+				updatedAt: expect.any(String) as unknown,
+			});
 		});
 	});
 });
@@ -224,7 +236,7 @@ describe("listTasks", () => {
 		db.upsertTask(TASK_BETA);
 		db.upsertTask(TASK_OVERDUE);
 		db.upsertTask(TASK_DONE);
-		const results = db.selectTasksByFilters({});
+		const results = db.selectTasks();
 		expect(results).toHaveLength(3);
 		expect(results.map((t) => t.id)).toEqual(
 			expect.arrayContaining([TASK_IDS.alpha, TASK_IDS.beta, TASK_IDS.overdue]),
@@ -236,13 +248,13 @@ describe("listTasks", () => {
 		it("returns tasks for the specified project", () => {
 			db.upsertTask(TASK_ALPHA);
 			db.upsertTask(TASK_BETA);
-			const results = db.selectTasksByFilters({ project: PROJECT_IDS.work });
+			const results = db.selectTasks({ projectId: PROJECT_IDS.work });
 			expect(results).toHaveLength(2);
 		});
 
 		it("returns empty array for unknown project", () => {
 			db.upsertTask(TASK_ALPHA);
-			const results = db.selectTasksByFilters({ project: "proj-unknown" });
+			const results = db.selectTasks({ projectId: "proj-unknown" });
 			expect(results).toHaveLength(0);
 		});
 	});
@@ -252,7 +264,7 @@ describe("listTasks", () => {
 			db.upsertTask(TASK_ALPHA);
 			db.upsertTask(TASK_BETA);
 			db.upsertTask(TASK_DONE);
-			const results = db.selectTasksByFilters({ due: "today" });
+			const results = db.selectTasks({ due: "today" });
 			expect(results).toHaveLength(1);
 			expect(results[0]?.id).toBe(TASK_IDS.alpha);
 		});
@@ -260,7 +272,7 @@ describe("listTasks", () => {
 		it("returns only incomplete tasks that are overdue when due=overdue", () => {
 			db.upsertTask(TASK_OVERDUE);
 			db.upsertTask(TASK_BETA);
-			const results = db.selectTasksByFilters({ due: "overdue" });
+			const results = db.selectTasks({ due: "overdue" });
 			expect(results).toHaveLength(1);
 			expect(results[0]?.id).toBe(TASK_IDS.overdue);
 		});
@@ -270,21 +282,21 @@ describe("listTasks", () => {
 		it("returns only tasks with the specified label", () => {
 			db.upsertTask(TASK_ALPHA);
 			db.upsertTask(TASK_BETA);
-			const results = db.selectTasksByFilters({ label: LABEL_IDS.urgent });
+			const results = db.selectTasks({ label: LABEL_IDS.urgent });
 			expect(results).toHaveLength(1);
 			expect(results[0]?.id).toBe(TASK_IDS.beta);
 		});
 
 		it("returns empty array for unknown label", () => {
 			db.upsertTask(TASK_ALPHA);
-			const results = db.selectTasksByFilters({ label: "nonexistent" });
+			const results = db.selectTasks({ label: "nonexistent" });
 			expect(results).toHaveLength(0);
 		});
 
 		it("requires exact label match, no partial matching", () => {
 			db.upsertTask(TASK_ALPHA);
 			db.upsertTask(TASK_BETA);
-			const results = db.selectTasksByFilters({ label: "urg" });
+			const results = db.selectTasks({ label: "urg" });
 			expect(results).toHaveLength(0);
 		});
 	});
@@ -293,7 +305,7 @@ describe("listTasks", () => {
 		it("returns only tasks with the specified priority", () => {
 			db.upsertTask(TASK_ALPHA);
 			db.upsertTask(TASK_BETA);
-			const results = db.selectTasksByFilters({ priority: 4 });
+			const results = db.selectTasks({ priority: 4 });
 			expect(results).toHaveLength(1);
 			expect(results[0]?.id).toBe(TASK_IDS.beta);
 		});
@@ -305,7 +317,7 @@ describe("listTasks", () => {
 			db.upsertTask(TASK_BETA);
 			db.upsertTask(TASK_OVERDUE);
 			db.upsertTask(TASK_DONE);
-			const results = db.selectTasksByFilters({ limit: 2 });
+			const results = db.selectTasks({ limit: 2 });
 			expect(results).toHaveLength(2);
 		});
 
@@ -313,8 +325,8 @@ describe("listTasks", () => {
 			db.upsertTask(TASK_ALPHA);
 			db.upsertTask(TASK_BETA);
 			db.upsertTask(TASK_OVERDUE);
-			const all = db.selectTasksByFilters({});
-			const paged = db.selectTasksByFilters({ offset: 1 });
+			const all = db.selectTasks();
+			const paged = db.selectTasks({ offset: 1 });
 			expect(paged).toHaveLength(all.length - 1);
 			expect(paged[0]?.id).toBe(all[1]?.id);
 		});
@@ -337,7 +349,11 @@ describe("searchTasks", () => {
 		db.upsertTask(TASK_ALPHA);
 		db.upsertTask(TASK_BETA);
 		db.upsertTask(TASK_DONE);
-		const results = db.searchTasksByContent("Alpha");
+		const results = db.selectTasks({
+			content: "Alpha",
+			completed: "incomplete",
+			orderBy: { field: "priority", direction: "desc" },
+		});
 		expect(results).toHaveLength(1);
 		expect(results[0]?.id).toBe(TASK_IDS.alpha);
 	});
@@ -346,35 +362,69 @@ describe("searchTasks", () => {
 		db.upsertTask(TASK_ALPHA);
 		db.upsertTask(TASK_BETA);
 		db.upsertTask(TASK_DONE);
-		expect(db.searchTasksByContent("alpha")).toHaveLength(1);
-		expect(db.searchTasksByContent("ALPHA")).toHaveLength(1);
+		expect(
+			db.selectTasks({
+				content: "alpha",
+				completed: "incomplete",
+				orderBy: { field: "priority", direction: "desc" },
+			}),
+		).toHaveLength(1);
+		expect(
+			db.selectTasks({
+				content: "ALPHA",
+				completed: "incomplete",
+				orderBy: { field: "priority", direction: "desc" },
+			}),
+		).toHaveLength(1);
 	});
 
 	it("supports partial string matching in task content", () => {
 		db.upsertTask(TASK_ALPHA);
 		db.upsertTask(TASK_BETA);
 		db.upsertTask(TASK_DONE);
-		expect(db.searchTasksByContent("task")).toHaveLength(2);
+		expect(
+			db.selectTasks({
+				content: "task",
+				completed: "incomplete",
+				orderBy: { field: "priority", direction: "desc" },
+			}),
+		).toHaveLength(2);
 	});
 
 	it("excludes completed tasks from search results", () => {
 		db.upsertTask(TASK_ALPHA);
 		db.upsertTask(TASK_BETA);
 		db.upsertTask(TASK_DONE);
-		expect(db.searchTasksByContent("Done")).toHaveLength(0);
+		expect(
+			db.selectTasks({
+				content: "Done",
+				completed: "incomplete",
+				orderBy: { field: "priority", direction: "desc" },
+			}),
+		).toHaveLength(0);
 	});
 
 	it("returns empty array when no tasks match the query", () => {
 		db.upsertTask(TASK_ALPHA);
 		db.upsertTask(TASK_BETA);
 		db.upsertTask(TASK_DONE);
-		expect(db.searchTasksByContent("zzznomatch")).toHaveLength(0);
+		expect(
+			db.selectTasks({
+				content: "zzznomatch",
+				completed: "incomplete",
+				orderBy: { field: "priority", direction: "desc" },
+			}),
+		).toHaveLength(0);
 	});
 
 	it("handles empty search string gracefully", () => {
 		db.upsertTask(TASK_ALPHA);
 		db.upsertTask(TASK_BETA);
-		const results = db.searchTasksByContent("");
+		const results = db.selectTasks({
+			content: "",
+			completed: "incomplete",
+			orderBy: { field: "priority", direction: "desc" },
+		});
 		expect(Array.isArray(results)).toBe(true);
 	});
 });
@@ -393,19 +443,19 @@ describe("getTask", () => {
 
 	it("returns the task for a known id", () => {
 		db.upsertTask(TASK_ALPHA);
-		const result = db.selectTaskById(TASK_IDS.alpha);
+		const result = db.getTaskById(TASK_IDS.alpha);
 		expect(result).not.toBeNull();
 		expect(result?.content).toBe("Alpha task");
 	});
 
 	it("returns null for an unknown task id", () => {
-		const result = db.selectTaskById("task-missing");
+		const result = db.getTaskById("task-missing");
 		expect(result).toBeNull();
 	});
 
 	it("returns task with parsed labels array", () => {
 		db.upsertTask(TASK_BETA);
-		const result = db.selectTaskById(TASK_IDS.beta);
+		const result = db.getTaskById(TASK_IDS.beta);
 		expect(result?.labels).toEqual([LABEL_IDS.urgent]);
 	});
 });

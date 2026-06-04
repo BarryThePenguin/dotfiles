@@ -1,23 +1,24 @@
 import type { DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
 import {
-	type ResourceType,
-	type ResourceTypes,
-	type UpdateFields,
-	type AddFields,
-	type RestApiProject,
-	createUpdateCommand,
-	createAddCommand,
-	createItemCompleteCommand,
-	syncRequest,
-	fetchProjectsFromApi,
-	type SyncCommand,
-} from "./sdk.ts";
-import {
-	prepareTaskForDB,
+	prepareLabelForDB,
 	prepareProjectForDB,
 	prepareSectionForDB,
-	prepareLabelForDB,
+	prepareTaskForDB,
 } from "./schema.ts";
+import {
+	createAddCommand,
+	createItemCompleteCommand,
+	createItemMoveCommand,
+	createUpdateCommand,
+	fetchProjectsFromApi,
+	syncRequest,
+	type AddFields,
+	type ResourceType,
+	type ResourceTypes,
+	type RestApiProject,
+	type SyncCommand,
+	type UpdateFields,
+} from "./sdk.ts";
 
 export type AllData = {
 	projects: DbProject[];
@@ -70,6 +71,11 @@ export interface TodoistClient {
 		fields: UpdateFields,
 		syncToken: string | null,
 	): Promise<{ task: DbTask; syncToken: string }>;
+	moveTask(
+		id: string,
+		projectId: string,
+		syncToken: string | null,
+	): Promise<{ task: DbTask; syncToken: string }>;
 	addTask(
 		fields: AddFields,
 		syncToken: string | null,
@@ -91,18 +97,18 @@ export function createClient(token: string): TodoistClient {
 			commands,
 		});
 
-		const projects: DbProject[] = (response.projects ?? [])
-			.map((p) => prepareProjectForDB(p))
-			.filter((p) => p !== null);
-
-		const sections: DbSection[] = (response.sections ?? [])
-			.map((s) => prepareSectionForDB(s))
-			.filter((s) => s !== null);
-
-		const labels: DbLabel[] = (response.labels ?? [])
-			.map((l) => prepareLabelForDB(l))
-			.filter((l) => l !== null);
-
+		const projects: DbProject[] =
+			response.projects
+				?.map((p) => prepareProjectForDB(p))
+				.filter((p): p is DbProject => p !== null) ?? [];
+		const sections: DbSection[] =
+			response.sections
+				?.map((s) => prepareSectionForDB(s))
+				.filter((s): s is DbSection => s !== null) ?? [];
+		const labels: DbLabel[] =
+			response.labels
+				?.map((l) => prepareLabelForDB(l))
+				.filter((l): l is DbLabel => l !== null) ?? [];
 		const items = response.items ?? [];
 		const tasks: DbTask[] = items
 			.filter((t) => !t.is_deleted)
@@ -144,10 +150,37 @@ export function createClient(token: string): TodoistClient {
 		},
 
 		async updateTask(id, fields, syncToken) {
-			const response = await sync(syncToken, createUpdateCommand(id, fields));
+			const commands: SyncCommand[] = [];
+			if (fields.projectId !== undefined) {
+				commands.push(
+					createItemMoveCommand({
+						id,
+						project_id: fields.projectId,
+					}),
+				);
+			}
+			const updateFields = { ...fields };
+			delete updateFields.projectId;
+			if (Object.keys(updateFields).length > 0) {
+				commands.push(createUpdateCommand(id, updateFields));
+			}
+
+			const response = await sync(syncToken, ...commands);
 			const task = response.tasks.find((t) => t.id === id);
 			if (!task) {
 				throw new Error(`updated task ${id} not in sync response`);
+			}
+			return { task, syncToken: response.syncToken };
+		},
+
+		async moveTask(id, projectId, syncToken) {
+			const response = await sync(
+				syncToken,
+				createItemMoveCommand({ id, project_id: projectId }),
+			);
+			const task = response.tasks.find((t) => t.id === id);
+			if (!task) {
+				throw new Error(`moved task ${id} not in sync response`);
 			}
 			return { task, syncToken: response.syncToken };
 		},

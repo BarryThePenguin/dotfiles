@@ -55,7 +55,7 @@ export const SECTION_BACKLOG = {
 	id: SECTION_IDS.backlog,
 	project_id: PROJECT_IDS.work,
 	name: "Backlog",
-	order_: 2,
+	section_order: 2,
 	synced_at: NOW,
 };
 
@@ -63,7 +63,7 @@ export const SECTION_IN_PROGRESS = {
 	id: SECTION_IDS.inProgress,
 	project_id: PROJECT_IDS.work,
 	name: "In Progress",
-	order_: 1,
+	section_order: 1,
 	synced_at: NOW,
 };
 
@@ -71,7 +71,7 @@ export const SECTION_SOMEDAY = {
 	id: SECTION_IDS.someday,
 	project_id: PROJECT_IDS.personal,
 	name: "Someday",
-	order_: 1,
+	section_order: 1,
 	synced_at: NOW,
 };
 
@@ -79,7 +79,7 @@ export const SECTION_THIS_WEEK = {
 	id: SECTION_IDS.thisWeek,
 	project_id: PROJECT_IDS.inbox,
 	name: "This Week",
-	order_: 1,
+	section_order: 1,
 	synced_at: NOW,
 };
 
@@ -127,12 +127,16 @@ export const TASK_ALPHA = {
 	id: TASK_IDS.alpha,
 	project_id: PROJECT_IDS.work,
 	section_id: SECTION_IDS.inProgress,
+	parent_id: null,
+	child_order: 1,
+	note_count: 0,
+	updated_at: NOW,
 	content: "Alpha task",
 	description: null,
 	priority: 1,
 	due_date: TODAY,
 	due_string: "today",
-	labels: JSON.stringify([]),
+	labels: "[]",
 	is_completed: 0,
 	created_at: NOW,
 	synced_at: NOW,
@@ -142,6 +146,10 @@ export const TASK_BETA = {
 	id: TASK_IDS.beta,
 	project_id: PROJECT_IDS.work,
 	section_id: SECTION_IDS.backlog,
+	parent_id: null,
+	child_order: 2,
+	note_count: 1,
+	updated_at: NOW,
 	content: "Beta task",
 	description: null,
 	priority: 4,
@@ -157,12 +165,16 @@ export const TASK_OVERDUE = {
 	id: TASK_IDS.overdue,
 	project_id: PROJECT_IDS.work,
 	section_id: null,
+	parent_id: null,
+	child_order: 3,
+	note_count: 0,
+	updated_at: NOW,
 	content: "Overdue task",
 	description: null,
 	priority: 2,
 	due_date: "2020-01-01",
 	due_string: "Jan 1 2020",
-	labels: JSON.stringify([]),
+	labels: "[]",
 	is_completed: 0,
 	created_at: NOW,
 	synced_at: NOW,
@@ -172,12 +184,16 @@ export const TASK_DONE = {
 	id: TASK_IDS.done,
 	project_id: PROJECT_IDS.work,
 	section_id: null,
+	parent_id: null,
+	child_order: 4,
+	note_count: 0,
+	updated_at: NOW,
 	content: "Done task",
 	description: null,
 	priority: 1,
 	due_date: null,
 	due_string: null,
-	labels: JSON.stringify([]),
+	labels: "[]",
 	is_completed: 1,
 	created_at: NOW,
 	synced_at: NOW,
@@ -197,11 +213,24 @@ export function makeData(overrides: Partial<AllData> = {}): AllData {
 }
 
 export function makeProject(id: string, name: string): DbProject {
-	return { id, name, color: null, is_favorite: 0, is_inbox: 0, synced_at: NOW };
+	return {
+		id,
+		name,
+		color: null,
+		is_favorite: 0,
+		is_inbox: 0,
+		synced_at: NOW,
+	};
 }
 
 export function makeSection(id: string, projectId: string): DbSection {
-	return { id, project_id: projectId, name: "S", order_: 0, synced_at: NOW };
+	return {
+		id,
+		project_id: projectId,
+		name: "S",
+		section_order: 0,
+		synced_at: NOW,
+	};
 }
 
 export function makeTask(id: string, projectId: string): DbTask {
@@ -209,6 +238,10 @@ export function makeTask(id: string, projectId: string): DbTask {
 		id,
 		project_id: projectId,
 		section_id: null,
+		parent_id: null,
+		child_order: 0,
+		note_count: 0,
+		updated_at: NOW,
 		content: "T",
 		description: null,
 		priority: 1,

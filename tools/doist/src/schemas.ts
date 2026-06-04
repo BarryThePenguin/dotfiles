@@ -21,6 +21,7 @@ const PrioritySchema = v.optional(
 // ── Update task fields ──
 export const UpdateTaskFieldsSchema = v.object({
 	title: v.optional(v.string()),
+	project: v.optional(v.string()),
 	due: v.optional(v.string()),
 	priority: PrioritySchema,
 	addLabels: v.optional(v.array(v.string())),
@@ -36,6 +37,7 @@ export type UpdateTaskFields = v.InferOutput<typeof UpdateTaskFieldsSchema>;
 export const AddTaskFieldsSchema = v.object({
 	title: v.string(),
 	project: v.optional(v.string()),
+	parentId: v.optional(v.string()),
 	section: v.optional(v.string()),
 	description: v.optional(v.string()),
 	due: v.optional(v.string()),
@@ -56,12 +58,13 @@ export type TasksUpdateInput = v.InferOutput<typeof TasksUpdateInputSchema>;
 
 // ── List/filter tasks ──
 export const ListTaskSchema = v.object({
-	project: v.optional(v.string()),
-	due: v.optional(v.picklist(["today", "overdue"] as const)),
-	priority: v.optional(PrioritySchema),
-	label: v.optional(v.string()),
-	limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
-	offset: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
+	project: v.exactOptional(v.string()),
+	due: v.exactOptional(v.picklist(["today", "overdue"] as const)),
+	priority: v.exactOptional(PrioritySchema),
+	label: v.exactOptional(v.string()),
+	details: v.exactOptional(v.boolean()),
+	limit: v.exactOptional(v.pipe(v.number(), v.integer(), v.minValue(1))),
+	offset: v.exactOptional(v.pipe(v.number(), v.integer(), v.minValue(0))),
 	sync: v.exactOptional(v.boolean()),
 });
 
