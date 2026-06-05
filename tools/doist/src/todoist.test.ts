@@ -7,9 +7,9 @@ import {
 	createMockApiTask,
 	createMockSyncResponse,
 	interceptSync,
-	interceptSyncDynamic,
 } from "./test-helpers/api-mocks.ts";
-import { createClient } from "./todoist.ts";
+import { TASK_ALPHA, TASK_IDS } from "./test-helpers/fixtures.ts";
+import { createClient, resolveCreated, type AllData } from "./todoist.ts";
 
 // ── MockAgent setup ───────────────────────────────────────────────────────────
 
@@ -120,163 +120,52 @@ describe("createClient.sync", () => {
 	});
 });
 
-// ── completeTask ──────────────────────────────────────────────────────────────
+// ── resolveCreated ────────────────────────────────────────────────────────────
 
-describe("createClient.completeTask", () => {
-	it("returns the new sync token on success", async () => {
-		interceptSync(
-			mockAgent,
-			createMockSyncResponse({
-				sync_token: "tok",
-				sync_status: { "any-uuid": "ok" },
-			}),
-		);
+function makeAllData(overrides: Partial<AllData> = {}): AllData {
+	return {
+		projects: [],
+		sections: [],
+		labels: [],
+		tasks: [],
+		completedTaskIds: [],
+		deletedTaskIds: [],
+		syncToken: "tok",
+		...overrides,
+	};
+}
 
-		const client = createClient("mytoken");
-		await expect(client.completeTask("t1", null)).resolves.toMatchObject({
-			syncToken: "tok",
+describe("resolveCreated", () => {
+	it("returns the task matching the temp id mapping", () => {
+		const data = makeAllData({
+			tasks: [TASK_ALPHA],
+			tempIdMapping: { "temp-123": TASK_IDS.alpha },
 		});
-	});
-});
-
-// ── updateTask ────────────────────────────────────────────────────────────────
-
-describe("createClient.updateTask", () => {
-	it("returns the updated task and new sync token", async () => {
-		interceptSync(
-			mockAgent,
-			createMockSyncResponse({
-				sync_token: "tok",
-				sync_status: { "any-uuid": "ok" },
-				items: [
-					createMockApiTask({
-						id: "t1",
-						content: "Updated title",
-						priority: 3,
-					}),
-				],
-			}),
-		);
-
-		const client = createClient("mytoken");
-		const { task, syncToken } = await client.updateTask(
-			"t1",
-			{ title: "Updated title", priority: 3 },
-			null,
-		);
-
-		expect(task.id).toBe("t1");
-		expect(task.content).toBe("Updated title");
-		expect(task.priority).toBe(3);
-		expect(syncToken).toBe("tok");
+		const task = resolveCreated(data, "temp-123");
+		expect(task.id).toBe(TASK_IDS.alpha);
 	});
 
-	it("throws when the updated task is not in the response", async () => {
-		interceptSync(
-			mockAgent,
-			createMockSyncResponse({ sync_token: "tok", items: [] }),
-		);
-
-		const client = createClient("mytoken");
-		await expect(client.updateTask("t1", {}, null)).rejects.toThrow(
-			"updated task t1 not in sync response",
+	it("throws when temp id is not in the mapping", () => {
+		const data = makeAllData({ tempIdMapping: {} });
+		expect(() => resolveCreated(data, "temp-123")).toThrow(
+			"failed to create task: no id returned",
 		);
 	});
-});
 
-// ── addTask ───────────────────────────────────────────────────────────────────
+	it("throws when temp id mapping is absent", () => {
+		const data = makeAllData();
+		expect(() => resolveCreated(data, "temp-123")).toThrow(
+			"failed to create task: no id returned",
+		);
+	});
 
-describe("createClient.addTask", () => {
-	it("returns the created task using temp_id mapping", async () => {
-		// Reply dynamically to capture the temp_id from the request body
-		interceptSyncDynamic(mockAgent, (reqBody) => {
-			const params = new URLSearchParams(reqBody);
-			const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
-				temp_id?: string;
-			}>;
-			const tempId = commands[0]?.temp_id ?? "";
-			return {
-				sync_token: "tok",
-				temp_id_mapping: { [tempId]: "t-real" },
-				items: [createMockApiTask({ id: "t-real", content: "New task" })],
-			};
+	it("throws when the resolved task is not in the response", () => {
+		const data = makeAllData({
+			tasks: [],
+			tempIdMapping: { "temp-123": TASK_IDS.alpha },
 		});
-
-		const client = createClient("mytoken");
-		const { task, syncToken } = await client.addTask(
-			{ title: "New task" },
-			null,
-		);
-
-		expect(task.id).toBe("t-real");
-		expect(task.content).toBe("New task");
-		expect(syncToken).toBe("tok");
-	});
-
-	it("includes parent_id when creating a subtask", async () => {
-		interceptSyncDynamic(mockAgent, (reqBody) => {
-			const params = new URLSearchParams(reqBody);
-			const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
-				args?: { parent_id?: string };
-				temp_id?: string;
-			}>;
-			const tempId = commands[0]?.temp_id ?? "temp-subtask";
-			expect(commands[0]?.args?.parent_id).toBe("parent-task-id");
-			return {
-				sync_token: "tok",
-				temp_id_mapping: { [tempId]: "t-subtask" },
-				items: [
-					createMockApiTask({
-						id: "t-subtask",
-						content: "Nested task",
-						parent_id: "parent-task-id",
-					}),
-				],
-			};
-		});
-
-		const client = createClient("mytoken");
-		const { task } = await client.addTask(
-			{ title: "Nested task", parentId: "parent-task-id" },
-			null,
-		);
-
-		expect(task.parent_id).toBe("parent-task-id");
-	});
-
-	it("throws when no id is returned in temp_id_mapping", async () => {
-		interceptSync(
-			mockAgent,
-			createMockSyncResponse({
-				sync_token: "tok",
-				temp_id_mapping: {},
-				items: [],
-			}),
-		);
-
-		const client = createClient("mytoken");
-		await expect(client.addTask({ title: "Task" }, null)).rejects.toThrow(
-			"failed to create task",
-		);
-	});
-
-	it("throws when the created task is not in the response", async () => {
-		interceptSyncDynamic(mockAgent, (reqBody) => {
-			const params = new URLSearchParams(reqBody);
-			const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
-				temp_id?: string;
-			}>;
-			const tempId = commands[0]?.temp_id ?? "";
-			return {
-				sync_token: "tok",
-				temp_id_mapping: { [tempId]: "t-real" },
-				items: [], // Empty items array: created task not in response
-			};
-		});
-
-		const client = createClient("mytoken");
-		await expect(client.addTask({ title: "Task" }, null)).rejects.toThrow(
-			"created task t-real not in sync response",
+		expect(() => resolveCreated(data, "temp-123")).toThrow(
+			`created task ${TASK_IDS.alpha} not in sync response`,
 		);
 	});
 });

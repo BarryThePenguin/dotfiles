@@ -15,12 +15,10 @@ import {
 	ListTaskSchema,
 	TasksUpdateInputSchema,
 } from "../schemas.ts";
-import { trackOperation } from "../telemetry.ts";
 import {
 	FormattedTaskSchema,
 	ListTaskItemSchema,
 	maybeSyncSummary,
-	requireDb,
 	SyncSummarySchema,
 	type ListTaskItem,
 } from "./shared.ts";
@@ -28,7 +26,7 @@ import { registerTool } from "./traced-tool.ts";
 
 export function registerTaskTools(
 	mcp: McpServer,
-	{ db, client, listProjectIds }: Container,
+	container: Container,
 ): void {
 	registerTool({
 		mcp,
@@ -47,7 +45,7 @@ export function registerTaskTools(
 		},
 		spanOptions: ({ project }) => ({ attributes: { project } }),
 		callback: async ({ project, details, sync: shouldSync, ...rest }) => {
-			requireDb(db);
+			const { db, client, listProjectIds } = container;
 			const syncResult = await maybeSyncSummary(
 				db,
 				client,
@@ -68,17 +66,17 @@ export function registerTaskTools(
 					);
 
 			const syncedAt = db.getLastSyncedAt();
-			trackOperation("todoist_tasks_list", true, {
-				"result.count": tasks.length,
-				"filter.project": project ? 1 : 0,
-				"filter.priority": rest.priority ? 1 : 0,
-				"filter.label": rest.label ? 1 : 0,
-				"filter.due": rest.due ? 1 : 0,
-				"sync.performed": shouldSync ? 1 : 0,
-			});
 			return {
-				content: [{ type: "text", text: `Last synced at ${syncedAt}` }],
-				structuredContent: { sync: syncResult, tasks, syncedAt },
+				data: { sync: syncResult, tasks, syncedAt },
+				text: `Last synced at ${syncedAt}`,
+				track: {
+					"result.count": tasks.length,
+					"filter.project": project ? 1 : 0,
+					"filter.priority": rest.priority ? 1 : 0,
+					"filter.label": rest.label ? 1 : 0,
+					"filter.due": rest.due ? 1 : 0,
+					"sync.performed": shouldSync ? 1 : 0,
+				},
 			};
 		},
 	});
@@ -93,20 +91,15 @@ export function registerTaskTools(
 		},
 		spanOptions: ({ id }) => ({ attributes: { id } }),
 		callback: ({ id }) => {
-			requireDb(db);
+			const { db } = container;
 			const task = db.getTaskById(id);
 			if (!task) {
-				trackOperation("todoist_tasks_get", false, {
-					"error.type": "not_found",
-				});
 				throw new Error(`task not found: ${id}`);
 			}
-			trackOperation("todoist_tasks_get", true, {
-				"task.priority": task.priority || 0,
-			});
 			return {
-				content: [{ type: "text", text: `Task ${id}` }],
-				structuredContent: task,
+				data: task,
+				text: `Task ${id}`,
+				track: { "task.priority": task.priority || 0 },
 			};
 		},
 	});
@@ -127,26 +120,15 @@ export function registerTaskTools(
 			attributes: { id: Array.isArray(id) ? id.join(",") : id },
 		}),
 		callback: async ({ id }) => {
-			requireDb(db);
+			const { db, client } = container;
 			const taskIds = Array.isArray(id) ? id : [id];
 			const result = await completeTasks(db, client, taskIds);
-			trackOperation("todoist_tasks_complete", result.ok, {
-				"result.count": result.result ?? 0,
-			});
 			return {
-				content: [
-					{
-						type: "text",
-						text:
-							taskIds.length === 1
-								? `Completed task ${taskIds[0]}`
-								: `Completed ${result.result} tasks`,
-					},
-				],
-				structuredContent: {
-					ok: result.ok,
-					completed: result.result ?? 0,
-				},
+				data: { ok: result.ok, completed: result.result },
+				text: taskIds.length === 1
+					? `Completed task ${taskIds[0]}`
+					: `Completed ${result.result} tasks`,
+				track: { "result.count": result.result },
 			};
 		},
 	});
@@ -167,26 +149,15 @@ export function registerTaskTools(
 			attributes: { id: Array.isArray(id) ? id.join(",") : id },
 		}),
 		callback: async ({ id }) => {
-			requireDb(db);
+			const { db, client } = container;
 			const taskIds = Array.isArray(id) ? id : [id];
 			const result = await uncompleteTasks(db, client, taskIds);
-			trackOperation("todoist_tasks_uncomplete", result.ok, {
-				"result.count": result.result ?? 0,
-			});
 			return {
-				content: [
-					{
-						type: "text",
-						text:
-							taskIds.length === 1
-								? `Reopened task ${taskIds[0]}`
-								: `Reopened ${result.result} tasks`,
-					},
-				],
-				structuredContent: {
-					ok: result.ok,
-					reopened: result.result ?? 0,
-				},
+				data: { ok: result.ok, reopened: result.result },
+				text: taskIds.length === 1
+					? `Reopened task ${taskIds[0]}`
+					: `Reopened ${result.result} tasks`,
+				track: { "result.count": result.result },
 			};
 		},
 	});
@@ -201,26 +172,23 @@ export function registerTaskTools(
 		},
 		spanOptions: ({ id }) => ({ attributes: { id } }),
 		callback: async ({ id, ...fields }) => {
-			requireDb(db);
+			const { db, client } = container;
 			if (!db.getTaskById(id)) {
-				trackOperation("todoist_tasks_update", false, {
-					"error.type": "not_found",
-				});
 				throw new Error(`task not found: ${id}`);
 			}
 			const result = await updateTask(db, client, id, fields);
 			const fieldsChanged = Object.keys(fields);
-			trackOperation("todoist_tasks_update", result.ok, {
-				"fields.changed": fieldsChanged.length,
-				"field.content": fieldsChanged.includes("content") ? 1 : 0,
-				"field.priority": fieldsChanged.includes("priority") ? 1 : 0,
-				"field.labels": fieldsChanged.includes("labels") ? 1 : 0,
-				"field.due": fieldsChanged.includes("due") ? 1 : 0,
-				"field.description": fieldsChanged.includes("description") ? 1 : 0,
-			});
 			return {
-				content: [{ type: "text", text: `Updated task ${id}` }],
-				structuredContent: result.result ? result.result : { ok: true },
+				data: result.result,
+				text: `Updated task ${id}`,
+				track: {
+					"fields.changed": fieldsChanged.length,
+					"field.content": fieldsChanged.includes("content") ? 1 : 0,
+					"field.priority": fieldsChanged.includes("priority") ? 1 : 0,
+					"field.labels": fieldsChanged.includes("labels") ? 1 : 0,
+					"field.due": fieldsChanged.includes("due") ? 1 : 0,
+					"field.description": fieldsChanged.includes("description") ? 1 : 0,
+				},
 			};
 		},
 	});
@@ -240,18 +208,14 @@ export function registerTaskTools(
 		},
 		spanOptions: ({ id, project }) => ({ attributes: { id, project } }),
 		callback: async ({ id, project }) => {
-			requireDb(db);
+			const { db, client } = container;
 			if (!db.getTaskById(id)) {
-				trackOperation("todoist_tasks_move", false, {
-					"error.type": "not_found",
-				});
 				throw new Error(`task not found: ${id}`);
 			}
 			const result = await moveTask(db, client, id, project);
-			trackOperation("todoist_tasks_move", result.ok);
 			return {
-				content: [{ type: "text", text: `Moved task ${id}` }],
-				structuredContent: result.result ? result.result : { ok: true },
+				data: result.result,
+				text: `Moved task ${id}`,
 			};
 		},
 	});
@@ -266,18 +230,18 @@ export function registerTaskTools(
 		},
 		spanOptions: {},
 		callback: async (fields) => {
-			requireDb(db);
+			const { db, client } = container;
 			const result = await addTask(db, client, fields);
-			trackOperation("todoist_tasks_add", true, {
-				"task.project": fields.project ? 1 : 0,
-				"task.priority": fields.priority || 0,
-				"task.labels": fields.labels ? Object.keys(fields.labels).length : 0,
-				"task.hasDescription": fields.description ? 1 : 0,
-				"task.hasDue": fields.due ? 1 : 0,
-			});
 			return {
-				content: [{ type: "text", text: "Added task" }],
-				structuredContent: result.result ? result.result : { ok: true },
+				data: result.result,
+				text: "Added task",
+				track: {
+					"task.project": fields.project ? 1 : 0,
+					"task.priority": fields.priority || 0,
+					"task.labels": fields.labels ? Object.keys(fields.labels).length : 0,
+					"task.hasDescription": fields.description ? 1 : 0,
+					"task.hasDue": fields.due ? 1 : 0,
+				},
 			};
 		},
 	});
@@ -294,24 +258,19 @@ export function registerTaskTools(
 		},
 		spanOptions: ({ query }) => ({ attributes: { query } }),
 		callback: ({ query }) => {
-			requireDb(db);
+			const { db } = container;
 			const tasks = db.selectTasks({
 				content: query,
 				completed: "incomplete",
 				orderBy: { field: "priority", direction: "desc" },
 			});
-			trackOperation("todoist_tasks_search", true, {
-				"result.count": tasks.length,
-				"query.length": query.length,
-			});
 			return {
-				content: [
-					{
-						type: "text",
-						text: `Search results for "${query}"`,
-					},
-				],
-				structuredContent: { tasks },
+				data: { tasks },
+				text: `Search results for "${query}"`,
+				track: {
+					"result.count": tasks.length,
+					"query.length": query.length,
+				},
 			};
 		},
 	});

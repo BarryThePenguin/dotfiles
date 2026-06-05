@@ -43,7 +43,7 @@ const parseEnv = v.parser(EnvSchema);
  */
 export interface Container {
 	readonly paths: ConfigPaths | null;
-	readonly db: Database | null;
+	readonly db: Database;
 	readonly client: TodoistClient;
 
 	addProject: (ref: ProjectRef) => void;
@@ -96,6 +96,10 @@ export function createContainer(): Container {
 		const paths = getPaths();
 		if (paths) {
 			db ??= new Database(paths);
+		}
+
+		if (!db) {
+			throw new Error("no .doistrc found in this git repository");
 		}
 
 		return db;

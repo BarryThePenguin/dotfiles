@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 
 export interface TestContainer {
 	readonly paths: ConfigPaths;
-	readonly db: Database;
+	readonly db: Mocked<Database>;
 	readonly client: Mocked<TodoistClient>;
 
 	addProject: (ref: ProjectRef) => void;
@@ -95,7 +95,7 @@ export function createTestContainer(overrides?: {
 			return projects.size;
 		},
 		paths,
-		db,
+		db: vi.mocked(db),
 		client,
 		close() {
 			testDir.remove();

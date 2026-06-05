@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createClient } from "../todoist.ts";
 import { createDefaultHarness, makeClient } from "../test-helpers/server.ts";
 import { buildServer } from "../server.ts";
+import { createTestContainer } from "../test-helpers/container.ts";
 
 let harness: Awaited<ReturnType<typeof createDefaultHarness>>;
 
@@ -126,21 +126,17 @@ describe("sections_list", () => {
 
 describe("config", () => {
 	it("returns config when no db is present", async () => {
-		const server = buildServer({
-			paths: null,
-			db: null,
-			client: createClient("test-token"),
-			addProject: vi.fn(),
-			removeProject: vi.fn(),
-			listProjects: vi.fn().mockReturnValue([]),
-			listProjectIds: vi.fn().mockReturnValue([]),
-			projectCount: vi.fn().mockReturnValue(0),
-			close: vi.fn(),
-		});
+		const container = createTestContainer();
+		vi.spyOn(container, "db", "get").mockThrow(new Error("No database"));
+
+		const server = buildServer(container);
 		const client = await makeClient(server);
 		try {
 			await expect(client.callTool("todoist_config", {})).resolves.toEqual({
+				cwd: expect.any(String) as unknown,
+				dbPath: expect.any(String) as unknown,
 				projects: [],
+				rcPath: expect.any(String) as unknown,
 			});
 		} finally {
 			await client.close();

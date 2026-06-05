@@ -6,11 +6,9 @@ import {
 	findStaleCandidates,
 } from "../analysis/index.ts";
 import type { Container } from "../container.ts";
-import { trackOperation } from "../telemetry.ts";
 import {
 	FormattedTaskSchema,
 	maybeSyncSummary,
-	requireDb,
 	SyncSummarySchema,
 } from "./shared.ts";
 import { registerTool } from "./traced-tool.ts";
@@ -75,7 +73,7 @@ const DuplicateAnalysisOutputSchema = toStandardJsonSchema(
 
 export function registerAnalysisTools(
 	mcp: McpServer,
-	{ db, client, listProjectIds }: Container,
+	container: Container,
 ): void {
 	registerTool({
 		mcp,
@@ -90,7 +88,7 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			requireDb(db);
+			const { db, client, listProjectIds } = container;
 			const syncResult = await maybeSyncSummary(
 				db,
 				client,
@@ -98,19 +96,14 @@ export function registerAnalysisTools(
 				shouldSync,
 			);
 			const analysis = findDuplicateCandidates(db.selectTasks());
-			trackOperation("todoist_find_duplicates", true, {
-				"result.groups": analysis.groups.length,
-				"result.fuzzyGroups": analysis.fuzzyGroups,
-				"sync.performed": shouldSync ? 1 : 0,
-			});
 			return {
-				content: [
-					{
-						type: "text",
-						text: `Found ${analysis.groups.length} duplicate groups`,
-					},
-				],
-				structuredContent: { sync: syncResult, ...analysis },
+				data: { sync: syncResult, ...analysis },
+				text: `Found ${analysis.groups.length} duplicate groups`,
+				track: {
+					"result.groups": analysis.groups.length,
+					"result.fuzzyGroups": analysis.fuzzyGroups,
+					"sync.performed": shouldSync ? 1 : 0,
+				},
 			};
 		},
 	});
@@ -133,26 +126,25 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			requireDb(db);
+			const { db, client, listProjectIds } = container;
 			const syncResult = await maybeSyncSummary(
 				db,
 				client,
 				listProjectIds,
 				shouldSync,
 			);
-			const analysis = findStaleCandidates(db);
-			trackOperation("todoist_find_stale_tasks", true, {
-				"result.count": analysis.candidates.length,
-				"sync.performed": shouldSync ? 1 : 0,
+			const tasks = db.selectTasks({
+				orderBy: { field: "updated_at", direction: "asc" },
 			});
+			const [inboxProject] = db.selectProjects({ isInbox: true });
+			const analysis = findStaleCandidates(tasks, inboxProject?.id ?? null);
 			return {
-				content: [
-					{
-						type: "text",
-						text: `Found ${analysis.candidates.length} stale candidates`,
-					},
-				],
-				structuredContent: { sync: syncResult, ...analysis },
+				data: { sync: syncResult, ...analysis },
+				text: `Found ${analysis.candidates.length} stale candidates`,
+				track: {
+					"result.count": analysis.candidates.length,
+					"sync.performed": shouldSync ? 1 : 0,
+				},
 			};
 		},
 	});

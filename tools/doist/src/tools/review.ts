@@ -6,7 +6,6 @@ import type { AppTask } from "../schema.ts";
 import {
 	FormattedTaskSchema,
 	maybeSyncSummary,
-	requireDb,
 	SyncSummarySchema,
 } from "./shared.ts";
 import { registerTool } from "./traced-tool.ts";
@@ -25,6 +24,8 @@ const ReviewRecommendationSchema = v.picklist([
 	"complete",
 ] as const);
 
+type ReviewRecommendation = v.InferOutput<typeof ReviewRecommendationSchema>;
+
 const ReviewCandidateSchema = v.object({
 	task: FormattedTaskSchema,
 	recommendationCode: ReviewRecommendationSchema,
@@ -42,7 +43,7 @@ const ReviewAnalysisOutputSchema = toStandardJsonSchema(
 	}),
 );
 
-function recommendAction(task: AppTask): { code: string; text: string } {
+function recommendAction(task: AppTask): { code: ReviewRecommendation; text: string } {
 	// Simple heuristics: if task has only label, suggest clarify; if overdue, promote; else defer
 	if (task.due && !task.isCompleted) {
 		return { code: "promote", text: "Promote to next action" };
@@ -55,7 +56,7 @@ function recommendAction(task: AppTask): { code: string; text: string } {
 
 export function registerReviewTool(
 	mcp: McpServer,
-	{ db, client, listProjectIds }: Container,
+	container: Container,
 ): void {
 	registerTool({
 		mcp,
@@ -71,7 +72,7 @@ export function registerReviewTool(
 		},
 		spanOptions: {},
 		callback: async ({ label, sync: shouldSync }) => {
-			requireDb(db);
+			const { db, client, listProjectIds } = container;
 			const sync = await maybeSyncSummary(
 				db,
 				client,
@@ -88,8 +89,12 @@ export function registerReviewTool(
 				};
 			});
 			return {
-				content: [{ type: "text", text: "" }],
-				structuredContent: { sync, candidates },
+				data: { sync, candidates },
+				text: `Found ${candidates.length} tasks to review`,
+				track: {
+					"result.count": candidates.length,
+					"sync.performed": shouldSync ? 1 : 0,
+				},
 			};
 		},
 	});

@@ -165,9 +165,7 @@ describe("tasks_update", () => {
 			id: "t1",
 			addLabels: ["urgent"],
 		});
-		expect(harness.container.db.getTaskById("t1")?.labels).toEqual([
-			"urgent",
-		]);
+		expect(harness.container.db.getTaskById("t1")?.labels).toEqual(["urgent"]);
 	});
 
 	it("passes sectionId when section is provided", async () => {
@@ -175,9 +173,7 @@ describe("tasks_update", () => {
 			id: "t2",
 			section: "Backlog",
 		});
-		expect(harness.container.db.getTaskById("t2")?.sectionId).toBe(
-			"Backlog",
-		);
+		expect(harness.container.db.getTaskById("t2")?.sectionId).toBe("Backlog");
 	});
 });
 
@@ -205,9 +201,12 @@ describe("tasks_add", () => {
 			title: "Named project task",
 			project: "Work",
 		});
-		expect(harness.container.client.addTask).toHaveBeenCalledWith(
-			expect.objectContaining({ projectId: "p1" }),
+		expect(harness.container.client.sync).toHaveBeenCalledWith(
 			expect.anything(),
+			expect.objectContaining({
+				type: "item_add",
+				args: expect.objectContaining({ project_id: "p1" }) as unknown,
+			}),
 		);
 	});
 
@@ -216,9 +215,12 @@ describe("tasks_add", () => {
 			title: "Literal project task",
 			project: "literal-id",
 		});
-		expect(harness.container.client.addTask).toHaveBeenCalledWith(
-			expect.objectContaining({ projectId: "literal-id" }),
+		expect(harness.container.client.sync).toHaveBeenCalledWith(
 			expect.anything(),
+			expect.objectContaining({
+				type: "item_add",
+				args: expect.objectContaining({ project_id: "literal-id" }) as unknown,
+			}),
 		);
 	});
 
@@ -227,9 +229,12 @@ describe("tasks_add", () => {
 			title: "Sectioned task",
 			section: "Backlog",
 		});
-		expect(harness.container.client.addTask).toHaveBeenCalledWith(
-			expect.objectContaining({ sectionId: "Backlog" }),
+		expect(harness.container.client.sync).toHaveBeenCalledWith(
 			expect.anything(),
+			expect.objectContaining({
+				type: "item_add",
+				args: expect.objectContaining({ section_id: "Backlog" }) as unknown,
+			}),
 		);
 	});
 
@@ -238,9 +243,12 @@ describe("tasks_add", () => {
 			title: "Subtask",
 			parentId: "parent-task-id",
 		});
-		expect(harness.container.client.addTask).toHaveBeenCalledWith(
-			expect.objectContaining({ parentId: "parent-task-id" }),
+		expect(harness.container.client.sync).toHaveBeenCalledWith(
 			expect.anything(),
+			expect.objectContaining({
+				type: "item_add",
+				args: expect.objectContaining({ parent_id: "parent-task-id" }) as unknown,
+			}),
 		);
 	});
 });

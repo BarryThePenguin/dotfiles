@@ -1,16 +1,15 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import { cwd } from "node:process";
 import * as v from "valibot";
 import type { Container } from "../container.ts";
 import { listSections } from "../operations.ts";
 import { RestApiProjectSchema } from "../sdk.ts";
-import { trackOperation } from "../telemetry.ts";
 import {
-	SectionSchema,
 	EmptyInput,
 	ListLabelSchema,
 	maybeSyncSummary,
-	requireDb,
+	SectionSchema,
 	SectionsListInput,
 	SyncSummarySchema,
 } from "./shared.ts";
@@ -18,7 +17,7 @@ import { registerTool } from "./traced-tool.ts";
 
 export function registerProjectTools(
 	mcp: McpServer,
-	{ db, client, listProjectIds, projectCount, paths }: Container,
+	container: Container,
 ): void {
 	registerTool({
 		mcp,
@@ -43,26 +42,20 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async (params) => {
+			const { client } = container;
 			const limit = params?.limit ?? 200;
 			const cursor = params?.cursor ?? null;
-
 			const { projects, nextCursor } = await client.fetchProjects(
 				limit,
 				cursor,
 			);
-
-			trackOperation("todoist_projects_list", true, {
-				"result.count": projects.length,
-				paginated: Boolean(cursor),
-			});
 			return {
-				content: [
-					{
-						type: "text",
-						text: cursor ? "Available projects (page)" : "Available projects",
-					},
-				],
-				structuredContent: { projects, nextCursor },
+				data: { projects, nextCursor },
+				text: cursor ? "Available projects (page)" : "Available projects",
+				track: {
+					"result.count": projects.length,
+					paginated: Boolean(cursor),
+				},
 			};
 		},
 	});
@@ -99,6 +92,7 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async (params) => {
+			const { client } = container;
 			const limit = params?.limit ?? 200;
 			const cursor = params?.cursor ?? null;
 
@@ -115,13 +109,13 @@ export function registerProjectTools(
 					nextCursor = nc;
 				} while (nextCursor);
 
-				trackOperation("todoist_projects_discover", true, {
-					"result.count": allProjects.length,
-					paginated: false,
-				});
 				return {
-					content: [{ type: "text", text: "Available projects" }],
-					structuredContent: { projects: allProjects },
+					data: { projects: allProjects },
+					text: "Available projects",
+					track: {
+						"result.count": allProjects.length,
+						paginated: false,
+					},
 				};
 			}
 
@@ -129,14 +123,13 @@ export function registerProjectTools(
 				limit,
 				cursor,
 			);
-
-			trackOperation("todoist_projects_discover", true, {
-				"result.count": projects.length,
-				paginated: true,
-			});
 			return {
-				content: [{ type: "text", text: "Available projects (page)" }],
-				structuredContent: { projects, nextCursor },
+				data: { projects, nextCursor },
+				text: "Available projects (page)",
+				track: {
+					"result.count": projects.length,
+					paginated: true,
+				},
 			};
 		},
 	});
@@ -156,22 +149,21 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			requireDb(db);
+			const { db, client, listProjectIds } = container;
 			const syncResult = await maybeSyncSummary(
 				db,
 				client,
 				listProjectIds,
 				shouldSync,
 			);
-
 			const labels = db.selectAllLabels().map(({ id, name }) => ({ id, name }));
-			trackOperation("todoist_labels_list", true, {
-				"result.count": labels.length,
-				"sync.performed": shouldSync ? 1 : 0,
-			});
 			return {
-				content: [{ type: "text", text: "Labels" }],
-				structuredContent: { sync: syncResult, labels },
+				data: { sync: syncResult, labels },
+				text: "Labels",
+				track: {
+					"result.count": labels.length,
+					"sync.performed": shouldSync ? 1 : 0,
+				},
 			};
 		},
 	});
@@ -192,23 +184,22 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async ({ project, sync: shouldSync }) => {
-			requireDb(db);
+			const { db, client, listProjectIds } = container;
 			const syncResult = await maybeSyncSummary(
 				db,
 				client,
 				listProjectIds,
 				shouldSync,
 			);
-
 			const sections = listSections(db, project);
-			trackOperation("todoist_sections_list", true, {
-				"result.count": sections.length,
-				"filter.project": project ? 1 : 0,
-				"sync.performed": shouldSync ? 1 : 0,
-			});
 			return {
-				content: [{ type: "text", text: `Sections for project ${project}` }],
-				structuredContent: { sync: syncResult, sections },
+				data: { sync: syncResult, sections },
+				text: `Sections for project ${project}`,
+				track: {
+					"result.count": sections.length,
+					"filter.project": project ? 1 : 0,
+					"sync.performed": shouldSync ? 1 : 0,
+				},
 			};
 		},
 	});
@@ -221,6 +212,7 @@ export function registerProjectTools(
 			inputSchema: toStandardJsonSchema(EmptyInput),
 			outputSchema: toStandardJsonSchema(
 				v.object({
+					cwd: v.string(),
 					rcPath: v.optional(v.string()),
 					dbPath: v.optional(v.string()),
 					projects: v.array(v.string()),
@@ -229,15 +221,11 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: () => {
-			trackOperation("todoist_config", true, {
-				"config.projects": projectCount(),
-			});
+			const { paths, listProjectIds, projectCount } = container;
 			return {
-				content: [{ type: "text", text: "Active configuration" }],
-				structuredContent: {
-					...paths,
-					projects: listProjectIds(),
-				},
+				data: { cwd: cwd(), ...paths, projects: listProjectIds() },
+				text: "Active configuration",
+				track: { "config.projects": projectCount() },
 			};
 		},
 	});

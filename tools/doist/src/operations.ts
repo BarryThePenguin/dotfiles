@@ -2,11 +2,15 @@ import { Database } from "./db.ts";
 import { normalizeTask, type AppTask } from "./schema.ts";
 import { type AddTaskFields, type UpdateTaskFields } from "./schemas.ts";
 import {
+	createAddCommand,
 	createItemCompleteCommand,
+	createItemMoveCommand,
 	createItemUncompleteCommand,
+	createUpdateCommand,
+	type SyncCommand,
 } from "./sdk.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
-import type { TodoistClient } from "./todoist.ts";
+import { resolveCreated, type TodoistClient } from "./todoist.ts";
 
 /**
  * Resolve a project name or ID.
@@ -18,7 +22,7 @@ export function resolveProject(
 	db: Database,
 	nameOrId: string,
 ): string | undefined {
-	const rows = db.selectProjects({ name: nameOrId });
+	const rows = db.selectProjects({ name: { value: nameOrId, match: "like" } });
 	const [firstRow] = rows;
 	if (firstRow && rows.length === 1) {
 		return firstRow.id;
@@ -59,7 +63,7 @@ function mergeLabelRemove(stored: string[] | null, label: string): string[] {
 
 export interface OperationResult<T> {
 	ok: boolean;
-	result?: T | undefined;
+	result: T;
 }
 
 /**
@@ -104,24 +108,37 @@ export async function updateTask(
 	if (project && projectId === undefined) {
 		throw new Error(`project not found in .doistrc: ${project}`);
 	}
-	const { task: updated, syncToken } = await client.updateTask(
-		id,
-		{
-			title,
-			description,
-			projectId,
-			due,
-			priority,
-			labels,
-			sectionId: section,
-		},
-		getToken(db),
-	);
 
-	persistMutations(db, {
-		token: syncToken,
-		tasks: [updated],
-	});
+	const commands: SyncCommand[] = [];
+	if (projectId !== undefined) {
+		commands.push(createItemMoveCommand({ id, project_id: projectId }));
+	}
+	const updateFields = {
+		title,
+		description,
+		due,
+		priority,
+		labels,
+		sectionId: section,
+	};
+	const hasUpdateFields =
+		title !== undefined ||
+		description !== undefined ||
+		due !== undefined ||
+		priority !== undefined ||
+		labels !== undefined ||
+		section !== undefined;
+	if (hasUpdateFields) {
+		commands.push(createUpdateCommand(id, updateFields));
+	}
+
+	const allData = await client.sync(getToken(db), ...commands);
+	const updated = allData.tasks.find((t) => t.id === id);
+	if (!updated) {
+		throw new Error(`updated task ${id} not in sync response`);
+	}
+
+	persistMutations(db, { token: allData.syncToken, tasks: [updated] });
 	return { ok: true, result: normalizeTask(updated) };
 }
 
@@ -140,16 +157,17 @@ export async function moveTask(
 	if (!projectId) {
 		throw new Error(`project not found in .doistrc: ${project}`);
 	}
-	const { task: moved, syncToken } = await client.moveTask(
-		id,
-		projectId,
-		getToken(db),
-	);
 
-	persistMutations(db, {
-		token: syncToken,
-		tasks: [moved],
-	});
+	const allData = await client.sync(
+		getToken(db),
+		createItemMoveCommand({ id, project_id: projectId }),
+	);
+	const moved = allData.tasks.find((t) => t.id === id);
+	if (!moved) {
+		throw new Error(`moved task ${id} not in sync response`);
+	}
+
+	persistMutations(db, { token: allData.syncToken, tasks: [moved] });
 	return { ok: true, result: normalizeTask(moved) };
 }
 
@@ -176,23 +194,25 @@ export async function addTask(
 	const projectId = project
 		? (resolveProject(db, project) ?? project)
 		: undefined;
-	const { task, syncToken } = await client.addTask(
-		{
-			title,
-			projectId,
-			parentId,
-			sectionId: section,
-			description,
-			due,
-			priority,
-			labels,
-		},
+	const tempId = crypto.randomUUID();
+	const allData = await client.sync(
 		getToken(db),
+		createAddCommand(
+			{
+				title,
+				projectId,
+				parentId,
+				sectionId: section,
+				description,
+				due,
+				priority,
+				labels,
+			},
+			tempId,
+		),
 	);
-	persistMutations(db, {
-		token: syncToken,
-		tasks: [task],
-	});
+	const task = resolveCreated(allData, tempId);
+	persistMutations(db, { token: allData.syncToken, tasks: [task] });
 	return { ok: true, result: normalizeTask(task) };
 }
 

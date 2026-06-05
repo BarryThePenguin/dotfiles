@@ -87,9 +87,3 @@ export async function maybeSyncSummary(
 	const result = await syncAndPersist(db, client, listProjectIds(), false);
 	return countSyncData(result);
 }
-
-export function requireDb(db: Database | null): asserts db is Database {
-	if (!db) {
-		throw new Error("no .doistrc found in this git repository");
-	}
-}

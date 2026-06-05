@@ -6,18 +6,12 @@ import {
 	prepareTaskForDB,
 } from "./schema.ts";
 import {
-	createAddCommand,
-	createItemCompleteCommand,
-	createItemMoveCommand,
-	createUpdateCommand,
 	fetchProjectsFromApi,
 	syncRequest,
-	type AddFields,
 	type ResourceType,
 	type ResourceTypes,
 	type RestApiProject,
 	type SyncCommand,
-	type UpdateFields,
 } from "./sdk.ts";
 
 export type AllData = {
@@ -31,10 +25,6 @@ export type AllData = {
 	tempIdMapping?: Record<string, string>;
 };
 
-/**
- * Determine resource types for a sync request based on command suggestions.
- * Always includes core types needed for the application.
- */
 function getResourceTypesForSync(commands?: SyncCommand[]): ResourceTypes {
 	const coreTypes: ResourceType[] = ["projects", "sections", "labels", "items"];
 
@@ -52,38 +42,32 @@ function getResourceTypesForSync(commands?: SyncCommand[]): ResourceTypes {
 	return Array.from(typesSet);
 }
 
-/**
- * Get the current timestamp in ISO format.
- * Used for API calls (e.g., completed_at in completeTask).
- */
-function now(): string {
-	return new Date().toISOString();
-}
-
 export interface TodoistClient {
 	sync(syncToken?: string | null, ...commands: SyncCommand[]): Promise<AllData>;
-	completeTask(
-		id: string,
-		syncToken: string | null,
-	): Promise<{ syncToken: string }>;
-	updateTask(
-		id: string,
-		fields: UpdateFields,
-		syncToken: string | null,
-	): Promise<{ task: DbTask; syncToken: string }>;
-	moveTask(
-		id: string,
-		projectId: string,
-		syncToken: string | null,
-	): Promise<{ task: DbTask; syncToken: string }>;
-	addTask(
-		fields: AddFields,
-		syncToken: string | null,
-	): Promise<{ task: DbTask; syncToken: string }>;
 	fetchProjects(
 		limit?: number,
 		cursor?: string | null,
 	): Promise<{ projects: RestApiProject[]; nextCursor: string | null }>;
+}
+
+/**
+ * Resolve a created task from a sync response using the temp ID that was sent
+ * with the item_add command.
+ *
+ * The Todoist sync API returns a temp_id_mapping when items are created;
+ * this maps each temp ID to the real server-assigned ID. Use this whenever
+ * you create a task and need to return the created entity.
+ */
+export function resolveCreated(data: AllData, tempId: string): DbTask {
+	const realId = data.tempIdMapping?.[tempId];
+	if (!realId) {
+		throw new Error("failed to create task: no id returned");
+	}
+	const task = data.tasks.find((t) => t.id === realId);
+	if (!task) {
+		throw new Error(`created task ${realId} not in sync response`);
+	}
+	return task;
 }
 
 export function createClient(token: string): TodoistClient {
@@ -141,68 +125,6 @@ export function createClient(token: string): TodoistClient {
 
 	return {
 		sync: (syncToken, ...commands) => sync(syncToken, ...commands),
-
-		async completeTask(id, syncToken) {
-			return sync(
-				syncToken,
-				createItemCompleteCommand({ id, completed_at: now() }),
-			);
-		},
-
-		async updateTask(id, fields, syncToken) {
-			const commands: SyncCommand[] = [];
-			if (fields.projectId !== undefined) {
-				commands.push(
-					createItemMoveCommand({
-						id,
-						project_id: fields.projectId,
-					}),
-				);
-			}
-			const updateFields = { ...fields };
-			delete updateFields.projectId;
-			if (Object.keys(updateFields).length > 0) {
-				commands.push(createUpdateCommand(id, updateFields));
-			}
-
-			const response = await sync(syncToken, ...commands);
-			const task = response.tasks.find((t) => t.id === id);
-			if (!task) {
-				throw new Error(`updated task ${id} not in sync response`);
-			}
-			return { task, syncToken: response.syncToken };
-		},
-
-		async moveTask(id, projectId, syncToken) {
-			const response = await sync(
-				syncToken,
-				createItemMoveCommand({ id, project_id: projectId }),
-			);
-			const task = response.tasks.find((t) => t.id === id);
-			if (!task) {
-				throw new Error(`moved task ${id} not in sync response`);
-			}
-			return { task, syncToken: response.syncToken };
-		},
-
-		async addTask(fields, syncToken) {
-			const tempId = crypto.randomUUID();
-
-			const {
-				tasks,
-				tempIdMapping,
-				syncToken: newToken,
-			} = await sync(syncToken, createAddCommand(fields, tempId));
-			const realId = tempIdMapping?.[tempId];
-			if (!realId) {
-				throw new Error("failed to create task: no id returned");
-			}
-			const task = tasks.find((t) => t.id === realId);
-			if (!task) {
-				throw new Error(`created task ${realId} not in sync response`);
-			}
-			return { task, syncToken: newToken };
-		},
 
 		fetchProjects(limit, cursor) {
 			return fetchProjectsFromApi(token, limit, cursor);

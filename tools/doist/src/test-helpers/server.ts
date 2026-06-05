@@ -6,8 +6,10 @@ import {
 } from "@modelcontextprotocol/server";
 import { writeFileSync } from "node:fs";
 import { buildServer } from "../server.ts";
+import type { SyncCommand } from "../sdk.ts";
 import { setToken } from "../sync-lifecycle.ts";
 import { createTestContainer } from "./container.ts";
+import type { DbTask } from "../db.ts";
 
 export const NOW = new Date().toISOString();
 export const TODAY = new Date().toISOString().slice(0, 10);
@@ -199,15 +201,78 @@ export async function createDefaultHarness() {
 	setToken(container.db, "tok");
 	container.db.setLastSyncedAt(NOW);
 
-	container.client.sync.mockResolvedValue({
-		projects: [PROJECT, PROJECT_PERSONAL],
-		sections: [SECTION],
-		labels: [LABEL],
-		tasks: [TASK_A, TASK_B],
-		completedTaskIds: [],
-		deletedTaskIds: [],
-		syncToken: "tok-sync",
-	});
+	container.client.sync.mockImplementation(
+		(_syncToken, ...commands: SyncCommand[]) => {
+			let tasks: DbTask[] = [TASK_A, TASK_B];
+			const tempIdMapping: Record<string, string> = {};
+
+			for (const cmd of commands) {
+				switch (cmd.type) {
+					case "item_update":
+						tasks = tasks.map((t) =>
+							t.id !== cmd.args.id
+								? t
+								: {
+										...t,
+										content: cmd.args.content ?? t.content,
+										description: cmd.args.description ?? t.description,
+										priority: cmd.args.priority ?? t.priority,
+										labels:
+											cmd.args.labels !== undefined
+												? JSON.stringify(cmd.args.labels)
+												: t.labels,
+										section_id: cmd.args.section_id ?? t.section_id,
+									},
+						);
+						break;
+					case "item_move":
+						tasks = tasks.map((t) =>
+							t.id !== cmd.args.id
+								? t
+								: {
+										...t,
+										project_id: cmd.args.project_id ?? t.project_id,
+										section_id: cmd.args.section_id ?? t.section_id,
+										parent_id: cmd.args.parent_id ?? t.parent_id,
+									},
+						);
+						break;
+					case "item_add": {
+						const newId = "new-task";
+						if (cmd.temp_id) {
+							tempIdMapping[cmd.temp_id] = newId;
+						}
+						tasks = [
+							...tasks,
+							{
+								...TASK_A,
+								id: newId,
+								content: cmd.args.content,
+								project_id: cmd.args.project_id ?? TASK_A.project_id,
+								parent_id: cmd.args.parent_id ?? null,
+								section_id: cmd.args.section_id ?? null,
+								description: cmd.args.description ?? null,
+								priority: cmd.args.priority ?? TASK_A.priority,
+								labels: JSON.stringify(cmd.args.labels ?? []),
+							},
+						];
+						break;
+					}
+				}
+			}
+
+			return Promise.resolve({
+				projects: [PROJECT, PROJECT_PERSONAL],
+				sections: [SECTION],
+				labels: [LABEL],
+				tasks,
+				completedTaskIds: [],
+				deletedTaskIds: [],
+				syncToken: "tok-sync",
+				...(Object.keys(tempIdMapping).length > 0 && { tempIdMapping }),
+			});
+		},
+	);
 	container.client.fetchProjects.mockResolvedValue({
 		projects: [
 			{
@@ -231,52 +296,6 @@ export async function createDefaultHarness() {
 		],
 		nextCursor: null,
 	});
-	container.client.completeTask.mockResolvedValue({
-		syncToken: "tok-complete",
-	});
-	container.client.updateTask.mockImplementation((id, fields, _syncToken) => {
-		const currentLabels = JSON.parse(TASK_A.labels) as string[];
-		const mergedLabels = fields.labels ?? currentLabels;
-
-		return Promise.resolve({
-			task: {
-				...TASK_A,
-				id,
-				content: fields.title ?? TASK_A.content,
-				description: fields.description ?? TASK_A.description,
-				priority: fields.priority ?? TASK_A.priority,
-				labels: JSON.stringify(mergedLabels),
-				section_id: fields.sectionId ?? TASK_A.section_id,
-			},
-			syncToken: "tok-update",
-		});
-	});
-	container.client.moveTask.mockImplementation((id, projectId, _syncToken) =>
-		Promise.resolve({
-			task: {
-				...TASK_A,
-				id,
-				project_id: projectId,
-			},
-			syncToken: "tok-move",
-		}),
-	);
-	container.client.addTask.mockImplementation((fields, _syncToken) =>
-		Promise.resolve({
-			task: {
-				...TASK_A,
-				id: "new-task",
-				content: fields.title,
-				project_id: fields.projectId ?? TASK_A.project_id,
-				parent_id: fields.parentId ?? null,
-				section_id: fields.sectionId ?? null,
-				description: fields.description ?? null,
-				priority: fields.priority ?? TASK_A.priority,
-				labels: JSON.stringify(fields.labels ?? []),
-			},
-			syncToken: "tok-add",
-		}),
-	);
 
 	const server = buildServer(container);
 	const client = await makeClient(server);

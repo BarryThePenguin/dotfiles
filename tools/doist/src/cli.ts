@@ -18,14 +18,6 @@ const container = createContainer();
 const { addProject, removeProject, listProjects, listProjectIds, client } =
 	container;
 
-function requireDb() {
-	if (!container.db) {
-		throw new Error("no .doistrc found in this git repository");
-	}
-
-	return container.db;
-}
-
 const parseListTask = v.parser(
 	v.object({
 		project: v.exactOptional(v.string()),
@@ -59,7 +51,7 @@ const syncCmd = defineCommand({
 		},
 	},
 	async run({ args }) {
-		const db = requireDb();
+		const { db } = container;
 		const result = await syncAndPersist(
 			db,
 			client,
@@ -84,7 +76,7 @@ const projectsCmd = defineCommand({
 			},
 			async run({ args }) {
 				if (args.sync) {
-					const db = requireDb();
+					const { db } = container;
 					const syncResult = await syncAndPersist(
 						db,
 						client,
@@ -142,7 +134,7 @@ const sectionsCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
-				const db = requireDb();
+				const { db } = container;
 				const sections = listSections(db, args.project);
 				if (args.sync) {
 					const syncResult = await syncAndPersist(
@@ -177,7 +169,7 @@ const labelsCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
-				const db = requireDb();
+				const { db } = container;
 				if (args.sync) {
 					const syncResult = await syncAndPersist(
 						db,
@@ -222,7 +214,7 @@ const tasksCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
-				const db = requireDb();
+				const { db } = container;
 				const { project, ...fields } = parseListTask(args);
 				const projectId = project ? resolveProject(db, project) : undefined;
 				const tasks =
@@ -249,7 +241,7 @@ const tasksCmd = defineCommand({
 				id: { type: "positional", description: "task id", required: true },
 			},
 			run({ args }) {
-				const db = requireDb();
+				const { db } = container;
 				const task = db.getTaskById(args.id);
 				if (!task) {
 					throw new Error("task not found");
@@ -278,7 +270,7 @@ const tasksCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
-				const db = requireDb();
+				const { db } = container;
 				out(await completeTasks(db, client, [args.id]));
 			},
 		}),
@@ -297,7 +289,7 @@ const tasksCmd = defineCommand({
 				description: { type: "string", description: "task description" },
 			},
 			async run({ args }) {
-				const db = requireDb();
+				const { db } = container;
 				const fields = parseUpdateTaskFields({
 					...args,
 					addLabels: args.label ? [args.label] : undefined,
@@ -323,7 +315,7 @@ const tasksCmd = defineCommand({
 				label: { type: "string", description: "label name" },
 			},
 			async run({ args }) {
-				const db = requireDb();
+				const { db } = container;
 				const fields = parseAddTaskFields({
 					...args,
 					labels: args.label ? [args.label] : undefined,

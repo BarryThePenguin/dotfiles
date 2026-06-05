@@ -453,13 +453,12 @@ export class Database {
 	getProjectById(id: string): AppProject | null {
 		const project = this.get(this.projects().where("id", "=", id).compile());
 		return project ? normalizeProject(project) : null;
-
 	}
 
 	selectProjects(criteria?: {
 		id?: string;
 		isInbox?: boolean;
-		name?: string;
+		name?: string | { value: string; match: "exact" | "like" };
 	}): AppProject[] {
 		let query = this.projects();
 
@@ -473,7 +472,13 @@ export class Database {
 			}
 
 			if (criteria?.name) {
-				return eb("name", "like", `%${criteria.name}%`);
+				const { name } = criteria;
+				if (typeof name === "string") {
+					return eb("name", "=", name);
+				}
+				return name.match === "like"
+					? eb("name", "like", `%${name.value}%`)
+					: eb("name", "=", name.value);
 			}
 
 			return eb.lit(true);

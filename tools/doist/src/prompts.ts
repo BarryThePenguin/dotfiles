@@ -2,11 +2,10 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
 import type { Container } from "./container.ts";
-import { requireDb } from "./tools/shared.ts";
 import { logger } from "./logger.ts";
 import { resolveProject } from "./operations.ts";
 
-export function registerPrompts(mcp: McpServer, { db }: Container): void {
+export function registerPrompts(mcp: McpServer, container: Container): void {
 	mcp.registerPrompt(
 		"todoist_next_task",
 		{
@@ -26,7 +25,7 @@ export function registerPrompts(mcp: McpServer, { db }: Container): void {
 		},
 		({ project: projectName }) => {
 			try {
-				requireDb(db);
+				const { db } = container;
 				const projectId = projectName
 					? resolveProject(db, projectName)
 					: undefined;

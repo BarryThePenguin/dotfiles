@@ -1,4 +1,3 @@
-import type { Database } from "../db.ts";
 import type { AppTask } from "../schema.ts";
 import { dueAgeDays, isVagueTask, taskAgeDays } from "./shared.ts";
 
@@ -35,17 +34,10 @@ function recommendationForStale(score: number): {
 	return { code: "keep", text: "Keep for now." };
 }
 
-export function findStaleCandidates(db: Database): StaleAnalysis {
-	const tasks = db.selectTasks({
-		orderBy: { field: "updated_at", direction: "asc" },
-	});
-	const inboxProjectIds = new Set(
-		db
-			.selectProjects({
-				isInbox: true,
-			})
-			.map((p) => p.id),
-	);
+export function findStaleCandidates(
+	tasks: AppTask[],
+	inboxProjectId: string | null,
+): StaleAnalysis {
 	const today = new Date();
 
 	const candidates = tasks
@@ -79,7 +71,7 @@ export function findStaleCandidates(db: Database): StaleAnalysis {
 				signals.push("no due date");
 			}
 
-			if (inboxProjectIds.has(task.projectId ?? "") && (ageDays ?? 0) > 7) {
+			if (task.projectId === inboxProjectId && inboxProjectId !== null && (ageDays ?? 0) > 7) {
 				score += 3;
 				signals.push(`stuck in inbox for ${Math.round(ageDays ?? 0)} days`);
 			}

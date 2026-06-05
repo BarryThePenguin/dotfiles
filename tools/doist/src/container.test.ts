@@ -41,7 +41,7 @@ describe("createContainer", () => {
 			container.close();
 		});
 
-		expect(container.db).toBeNull();
+		expect(() => container.db).toThrow("no .doistrc found in this git repository");
 		expect(container.paths).toBeNull();
 		expect(existsSync(join(tempDir.path, "todoist.db"))).toBe(false);
 	});

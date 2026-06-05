@@ -49,10 +49,16 @@ export const parseAddTaskFields = v.parser(AddTaskFieldsSchema);
 export type AddTaskFields = v.InferOutput<typeof AddTaskFieldsSchema>;
 
 // ── MCP input: tasks update ──
-export const TasksUpdateInputSchema = v.object({
-	id: v.string(),
-	...UpdateTaskFieldsSchema.entries,
-});
+export const TasksUpdateInputSchema = v.pipe(
+	v.object({
+		id: v.string(),
+		...UpdateTaskFieldsSchema.entries,
+	}),
+	v.check(
+		({ id: _id, ...fields }) => Object.values(fields).some((v) => v !== undefined),
+		"at least one field must be provided",
+	),
+);
 
 export type TasksUpdateInput = v.InferOutput<typeof TasksUpdateInputSchema>;
 

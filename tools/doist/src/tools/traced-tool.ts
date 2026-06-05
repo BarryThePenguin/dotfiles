@@ -1,5 +1,6 @@
 import {
 	McpServer,
+	type CallToolResult,
 	type RegisteredTool,
 	type ServerContext,
 	type StandardSchemaWithJSON,
@@ -14,34 +15,49 @@ import {
 	trackOperation,
 } from "../telemetry.ts";
 
+export type ToolResult<Schema extends StandardSchemaWithJSON> = {
+	data: StandardSchemaWithJSON.InferOutput<Schema>;
+	text?: string;
+	track?: Record<string, string | number | boolean>;
+};
+
 type SpanOptionsCallback<InputArgs extends StandardSchemaWithJSON> = (
 	args: StandardSchemaWithJSON.InferOutput<InputArgs>,
 	context: ServerContext,
 ) => api.SpanOptions;
 
-interface ToolConfiguration<InputArgs extends StandardSchemaWithJSON> {
+interface ToolConfiguration<
+	OutputArgs extends StandardSchemaWithJSON,
+	InputArgs extends StandardSchemaWithJSON,
+> {
 	mcp: McpServer;
 	name: string;
 	config: {
 		title?: string;
 		description?: string;
 		inputSchema?: InputArgs;
-		outputSchema?: StandardSchemaWithJSON;
+		outputSchema?: OutputArgs;
 		annotations?: ToolAnnotations;
 		_meta?: Record<string, unknown>;
 	};
 	spanOptions?: api.SpanOptions | SpanOptionsCallback<InputArgs>;
-	callback: ToolCallback<InputArgs>;
+	callback: (
+		args: StandardSchemaWithJSON.InferOutput<InputArgs>,
+		context: ServerContext,
+	) => ToolResult<OutputArgs> | Promise<ToolResult<OutputArgs>>;
 }
 
-export function registerTool<InputArgs extends StandardSchemaWithJSON>({
+export function registerTool<
+	OutputArgs extends StandardSchemaWithJSON,
+	InputArgs extends StandardSchemaWithJSON,
+>({
 	mcp,
 	name,
 	config,
 	spanOptions,
 	callback,
-}: ToolConfiguration<InputArgs>): RegisteredTool {
-	const toolCallback: ToolCallback<StandardSchemaWithJSON | undefined> = (
+}: ToolConfiguration<OutputArgs, InputArgs>): RegisteredTool {
+	const toolCallback: ToolCallback<StandardSchemaWithJSON> = (
 		inputArgs,
 		context,
 	) => {
@@ -57,7 +73,11 @@ export function registerTool<InputArgs extends StandardSchemaWithJSON>({
 			async (span) => {
 				try {
 					const result = await callback(inputArgs, context);
-					return result;
+					trackOperation(name, true, result.track);
+					return {
+						content: [{ type: "text" as const, text: result.text ?? name }],
+						structuredContent: result.data,
+					} as CallToolResult;
 				} catch (err) {
 					recordException(span, err);
 					trackOperation(name, false);
