@@ -9,12 +9,13 @@ HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 trusted_config_paths = ["~/src/btp", "~/src/work"]
 
 [tools]
-"http:signoz-mcp-server" = { version = "0.4.0", url = "https://github.com/SigNoz/signoz-mcp-server/releases/latest/download/signoz-mcp-server_darwin_arm64.tar.gz" }
+"github:SigNoz/signoz-mcp-server" = "0.4.2"
 "npm:corepack" = "0.35.0"
 "npm:@typespec/compiler" = "1.12.0"
 "npm:@earendil-works/pi-coding-agent" = "0.78.1"
 age = "1.3.1"
 atuin = "18.16.1"
+aube = "1.18.2"
 cloudflared = "2026.5.2"
 cosign = "3.1.1"
 deno = "2.8.2"
