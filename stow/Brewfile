@@ -1,9 +1,8 @@
 tap 'mongodb/brew'
-tap 'stripe/stripe-cli'
+tap "chmouel/lazyworktree", "https://github.com/chmouel/lazyworktree"
 
 brew 'cloudflared'
 brew 'cosign'
-brew 'docker'
 brew 'git'
 brew 'glab'
 brew 'jj'
@@ -11,7 +10,6 @@ brew 'mas'
 brew 'mise'
 brew 'mprocs'
 brew 'stow'
-brew 'stripe/stripe-cli/stripe'
 brew 'terminal-notifier'
 brew 'watchman'
 brew 'xorriso'
