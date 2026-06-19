@@ -14,6 +14,7 @@ import type { SyncItem, SyncLabel, SyncProject, SyncSection } from "./sdk.ts";
 // App-facing types (camelCase)
 export type AppTask = {
 	id: string;
+	url: string;
 	projectId: string | null;
 	sectionId: string | null;
 	parentId: string | null;
@@ -83,6 +84,7 @@ export function prepareTaskForDB(
 		priority: t.priority,
 		due_date: t.due?.date ?? null,
 		due_string: t.due?.string ?? null,
+		is_recurring: t.due?.is_recurring ? 1 : 0,
 		labels: JSON.stringify(t.labels),
 		is_completed: t.checked ? 1 : 0,
 		created_at: t.added_at ?? null,
@@ -108,12 +110,13 @@ export function normalizeTask(t: DbTask): AppTask {
 			? {
 					date: dueDate ?? "",
 					string: dueString ?? "",
-					isRecurring: false,
+					isRecurring: t.is_recurring === 1,
 				}
 			: null;
 
 	return {
 		id: t.id,
+		url: `https://app.todoist.com/app/task/${t.id}`,
 		projectId: t.project_id,
 		sectionId: t.section_id,
 		parentId: t.parent_id,

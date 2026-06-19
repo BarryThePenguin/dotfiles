@@ -3,7 +3,7 @@ import { normalizeTask, type AppTask } from "./schema.ts";
 import { type AddTaskFields, type UpdateTaskFields } from "./schemas.ts";
 import {
 	createAddCommand,
-	createItemCompleteCommand,
+	createItemCloseCommand,
 	createItemMoveCommand,
 	createItemUncompleteCommand,
 	createUpdateCommand,
@@ -232,18 +232,12 @@ export async function completeTasks(
 		return { ok: true, result: 0 };
 	}
 
-	const now = new Date().toISOString();
-	const commands = ids.map((id) =>
-		createItemCompleteCommand({ id, completed_at: now }),
-	);
-
-	const { syncToken } = await client.sync(getToken(db), ...commands);
+	const commands = ids.map((id) => createItemCloseCommand({ id }));
+	const allData = await client.sync(getToken(db), ...commands);
 
 	persistMutations(db, {
-		token: syncToken,
-		customOperations: (db) => {
-			db.updateTasksAsCompleted(ids);
-		},
+		token: allData.syncToken,
+		tasks: allData.tasks,
 	});
 
 	return { ok: true, result: ids.length };

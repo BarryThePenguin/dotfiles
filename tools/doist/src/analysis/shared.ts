@@ -75,7 +75,7 @@ export function similarity(a: string, b: string): number {
 }
 
 export function taskAgeDays(task: AppTask): number | null {
-	const source = task.createdAt ?? task.updatedAt;
+	const source = task.updatedAt ?? task.createdAt;
 	if (!source) {
 		return null;
 	}

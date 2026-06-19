@@ -27,6 +27,7 @@ describe("Reconciliation", () => {
 				due_string: null,
 				labels: "[]",
 				is_completed: 0,
+				is_recurring: 0,
 				created_at: "2026-05-23T00:00:00Z",
 				synced_at: "2026-05-23T00:00:00Z",
 			}));
@@ -63,6 +64,7 @@ describe("Reconciliation", () => {
 				due_string: null,
 				labels: "[]",
 				is_completed: 0,
+				is_recurring: 0,
 				created_at: "2026-05-23T00:00:00Z",
 				synced_at: "2026-05-23T00:00:00Z",
 			};
@@ -97,6 +99,7 @@ describe("Reconciliation", () => {
 				due_string: null,
 				labels: "[]",
 				is_completed: 0,
+				is_recurring: 0,
 				created_at: "2026-05-23T00:00:00Z",
 				synced_at: "2026-05-23T00:00:00Z",
 			};

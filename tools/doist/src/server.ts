@@ -3,7 +3,8 @@ import type { Container } from "./container.ts";
 import { registerPrompts } from "./prompts.ts";
 import { registerAnalysisTools } from "./tools/analysis.ts";
 import { registerProjectTools } from "./tools/projects.ts";
-import { registerReviewTool } from "./tools/review.ts";
+import { registerResources } from "./tools/resources.ts";
+import { registerSessionTools } from "./tools/session.ts";
 import { registerSyncTools } from "./tools/sync.ts";
 import { registerTaskTools } from "./tools/tasks.ts";
 
@@ -13,7 +14,8 @@ export function buildServer(container: Container): McpServer {
 	registerAnalysisTools(mcp, container);
 	registerProjectTools(mcp, container);
 	registerPrompts(mcp, container);
-	registerReviewTool(mcp, container);
+	registerResources(mcp, container);
+	registerSessionTools(mcp, container);
 	registerSyncTools(mcp, container);
 	registerTaskTools(mcp, container);
 

@@ -95,28 +95,6 @@ describe("tasks_search", () => {
 	});
 });
 
-describe("todoist_tasks_get", () => {
-	it("returns task by id", async () => {
-		const result = (await harness.client.callTool("todoist_tasks_get", {
-			id: "t1",
-		})) as Record<string, unknown>;
-		expect(result).toMatchObject({ id: "t1", content: "Alpha task" });
-	});
-
-	it("returns labels as an array, not a JSON string", async () => {
-		const result = (await harness.client.callTool("todoist_tasks_get", {
-			id: "t1",
-		})) as { labels: unknown[] };
-		expect(Array.isArray(result.labels)).toBe(true);
-	});
-
-	it("throws for unknown id", async () => {
-		await expect(
-			harness.client.callTool("todoist_tasks_get", { id: "missing" }),
-		).rejects.toThrow("task not found: missing");
-	});
-});
-
 describe("tasks_complete", () => {
 	it("calls completeTasks and marks the row done in the db", async () => {
 		const result = (await harness.client.callTool("todoist_tasks_complete", {

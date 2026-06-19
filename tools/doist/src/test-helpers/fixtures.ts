@@ -140,6 +140,7 @@ export const TASK_ALPHA = {
 	is_completed: 0,
 	created_at: NOW,
 	synced_at: NOW,
+	is_recurring: 0,
 };
 
 export const TASK_BETA = {
@@ -157,6 +158,7 @@ export const TASK_BETA = {
 	due_string: "Jan 1 2030",
 	labels: JSON.stringify([LABEL_IDS.urgent]),
 	is_completed: 0,
+	is_recurring: 0,
 	created_at: NOW,
 	synced_at: NOW,
 };
@@ -178,6 +180,7 @@ export const TASK_OVERDUE = {
 	is_completed: 0,
 	created_at: NOW,
 	synced_at: NOW,
+	is_recurring: 0,
 };
 
 export const TASK_DONE = {
@@ -197,6 +200,7 @@ export const TASK_DONE = {
 	is_completed: 1,
 	created_at: NOW,
 	synced_at: NOW,
+	is_recurring: 0,
 };
 
 export function makeData(overrides: Partial<AllData> = {}): AllData {
@@ -251,5 +255,6 @@ export function makeTask(id: string, projectId: string): DbTask {
 		is_completed: 0,
 		created_at: null,
 		synced_at: NOW,
+		is_recurring: 0,
 	};
 }

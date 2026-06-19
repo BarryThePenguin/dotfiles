@@ -59,6 +59,7 @@ export const TASK_A = {
 	is_completed: 0,
 	created_at: NOW,
 	synced_at: NOW,
+	is_recurring: 0,
 };
 
 export const TASK_B = {
@@ -78,6 +79,7 @@ export const TASK_B = {
 	is_completed: 0,
 	created_at: NOW,
 	synced_at: NOW,
+	is_recurring: 0,
 };
 
 export class InMemoryTransport implements Transport {
@@ -235,6 +237,11 @@ export async function createDefaultHarness() {
 										section_id: cmd.args.section_id ?? t.section_id,
 										parent_id: cmd.args.parent_id ?? t.parent_id,
 									},
+						);
+						break;
+					case "item_close":
+						tasks = tasks.map((t) =>
+							t.id !== cmd.args.id ? t : { ...t, is_completed: 1 },
 						);
 						break;
 					case "item_add": {

@@ -83,29 +83,6 @@ export function registerTaskTools(
 
 	registerTool({
 		mcp,
-		name: "todoist_tasks_get",
-		config: {
-			description: "Get a single task by ID from the local database",
-			inputSchema: toStandardJsonSchema(v.object({ id: v.string() })),
-			outputSchema: toStandardJsonSchema(FormattedTaskSchema),
-		},
-		spanOptions: ({ id }) => ({ attributes: { id } }),
-		callback: ({ id }) => {
-			const { db } = container;
-			const task = db.getTaskById(id);
-			if (!task) {
-				throw new Error(`task not found: ${id}`);
-			}
-			return {
-				data: task,
-				text: `Task ${id}`,
-				track: { "task.priority": task.priority || 0 },
-			};
-		},
-	});
-
-	registerTool({
-		mcp,
 		name: "todoist_tasks_complete",
 		config: {
 			description: "Mark one or more tasks complete in Todoist",
@@ -173,6 +150,9 @@ export function registerTaskTools(
 		spanOptions: ({ id }) => ({ attributes: { id } }),
 		callback: async ({ id, ...fields }) => {
 			const { db, client } = container;
+			if (Object.values(fields).every((v) => v === undefined)) {
+				throw new Error("at least one field must be provided");
+			}
 			if (!db.getTaskById(id)) {
 				throw new Error(`task not found: ${id}`);
 			}

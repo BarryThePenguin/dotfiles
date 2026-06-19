@@ -41,6 +41,28 @@ function recommendationForDuplicate(matchType: DuplicateMatchType): {
 	return { code: "review", text: "Review before merging." };
 }
 
+function filterDuplicateCandidates(tasks: AppTask[]): AppTask[] {
+	const nonRecurring = tasks.filter((t) => !t.due?.isRecurring);
+	const recurring = tasks.filter((t) => t.due?.isRecurring);
+	const recurringBySchedule = new Map<string, AppTask[]>();
+	for (const task of recurring) {
+		const key = task.due?.string;
+
+		if (key) {
+			const bucket = recurringBySchedule.get(key) ?? [];
+			bucket.push(task);
+			recurringBySchedule.set(key, bucket);
+		}
+	}
+	const result = [...nonRecurring];
+	for (const bucket of recurringBySchedule.values()) {
+		if (bucket.length >= 2 || nonRecurring.length > 0) {
+			result.push(...bucket);
+		}
+	}
+	return result;
+}
+
 export function findDuplicateCandidates(tasks: AppTask[]): DuplicateAnalysis {
 	const normalized: NormalizedTask[] = tasks.map((task) => ({
 		task,
@@ -61,7 +83,16 @@ export function findDuplicateCandidates(tasks: AppTask[]): DuplicateAnalysis {
 		if (group.length < 2 || title.length === 0) {
 			continue;
 		}
-		const tasksInGroup = group.map((entry) => entry.task);
+		const allTasks = group.map((entry) => entry.task);
+		// Mark all tasks in this title group as handled so the fuzzy pass
+		// never re-examines recurring tasks that differ only by schedule.
+		for (const task of allTasks) {
+			used.add(task.id);
+		}
+		const tasksInGroup = filterDuplicateCandidates(allTasks);
+		if (tasksInGroup.length < 2) {
+			continue;
+		}
 		const canonicalTask = chooseCanonical(tasksInGroup);
 		const recommendation = recommendationForDuplicate("exact");
 		const matches = tasksInGroup
@@ -76,9 +107,6 @@ export function findDuplicateCandidates(tasks: AppTask[]): DuplicateAnalysis {
 			recommendationCode: recommendation.code,
 			recommendationText: recommendation.text,
 		});
-		for (const task of tasksInGroup) {
-			used.add(task.id);
-		}
 	}
 
 	const remaining = normalized.filter((entry) => !used.has(entry.task.id));

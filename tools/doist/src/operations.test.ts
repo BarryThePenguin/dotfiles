@@ -94,7 +94,7 @@ describe("mock HTTP client", () => {
 
 			// Verify result
 			expect(result.ok).toBe(true);
-			expect(result.result?.content).toBe("Updated via API");
+			expect(result.result.content).toBe("Updated via API");
 
 			// Verify persistence
 			const persisted = container.db.getTaskById(TASK_IDS.alpha);
@@ -132,7 +132,7 @@ describe("mock HTTP client", () => {
 
 			// Verify result
 			expect(result.ok).toBe(true);
-			expect(result.result?.labels).toEqual(["urgent", "high"]);
+			expect(result.result.labels).toEqual(["urgent", "high"]);
 
 			// Verify persisted with merged labels
 			const persisted = container.db.getTaskById(TASK_IDS.alpha);
@@ -171,7 +171,7 @@ describe("mock HTTP client", () => {
 			);
 
 			expect(result.ok).toBe(true);
-			expect(result.result?.projectId).toBe(PROJECT_IDS.personal);
+			expect(result.result.projectId).toBe(PROJECT_IDS.personal);
 		});
 	});
 
@@ -225,9 +225,9 @@ describe("mock HTTP client", () => {
 			});
 
 			expect(result.ok).toBe(true);
-			expect(result.result?.id).toBe("t-new-real");
-			expect(result.result?.content).toBe("Buy groceries");
-			expect(result.result?.priority).toBe(2);
+			expect(result.result.id).toBe("t-new-real");
+			expect(result.result.content).toBe("Buy groceries");
+			expect(result.result.priority).toBe(2);
 
 			const persisted = container.db.getTaskById("t-new-real");
 			expect(persisted?.content).toBe("Buy groceries");
@@ -263,8 +263,8 @@ describe("mock HTTP client", () => {
 			});
 
 			expect(result.ok).toBe(true);
-			expect(result.result?.id).toBe("t-new");
-			expect(result.result?.projectId).toBe(PROJECT_IDS.inbox);
+			expect(result.result.id).toBe("t-new");
+			expect(result.result.projectId).toBe(PROJECT_IDS.inbox);
 		});
 
 		it("includes optional fields when provided", async () => {
@@ -299,10 +299,10 @@ describe("mock HTTP client", () => {
 			});
 
 			expect(result.ok).toBe(true);
-			expect(result.result?.content).toBe("Complete task");
-			expect(result.result?.priority).toBe(3);
-			expect(result.result?.due?.date).toBe("2026-05-25");
-			expect(result.result?.labels).toEqual(["urgent"]);
+			expect(result.result.content).toBe("Complete task");
+			expect(result.result.priority).toBe(3);
+			expect(result.result.due?.date).toBe("2026-05-25");
+			expect(result.result.labels).toEqual(["urgent"]);
 		});
 
 		it("passes parentId through when creating a subtask", async () => {
@@ -337,7 +337,7 @@ describe("mock HTTP client", () => {
 			});
 
 			expect(result.ok).toBe(true);
-			expect(result.result?.parentId).toBe("parent-task-id");
+			expect(result.result.parentId).toBe("parent-task-id");
 		});
 	});
 
@@ -373,14 +373,8 @@ describe("mock HTTP client", () => {
 				createMockSyncResponse({
 					sync_token: "tok-1",
 					items: [
-						createMockApiTask({
-							id: TASK_IDS.alpha,
-							completed_at: "2026-05-24T10:00:00Z",
-						}),
-						createMockApiTask({
-							id: TASK_IDS.beta,
-							completed_at: "2026-05-24T10:00:00Z",
-						}),
+						createMockApiTask({ id: TASK_IDS.alpha, checked: true }),
+						createMockApiTask({ id: TASK_IDS.beta, checked: true }),
 					],
 				}),
 			);

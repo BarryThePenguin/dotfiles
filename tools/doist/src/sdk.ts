@@ -160,6 +160,11 @@ export const CompleteItemArgsSchema = v.object({
 });
 export type CompleteItemArgs = v.InferOutput<typeof CompleteItemArgsSchema>;
 
+export const CloseItemArgsSchema = v.object({
+	id: v.string(),
+});
+export type CloseItemArgs = v.InferOutput<typeof CloseItemArgsSchema>;
+
 // ============================================================================
 // Discriminated Union: SyncCommand
 // ============================================================================
@@ -193,6 +198,13 @@ export type ItemCompleteCommand = {
 	suggestedResourceTypes: readonly ["items"];
 };
 
+export type ItemCloseCommand = {
+	type: "item_close";
+	uuid: string;
+	args: CloseItemArgs;
+	suggestedResourceTypes: readonly ["items"];
+};
+
 export type ItemUncompleteCommand = {
 	type: "item_uncomplete";
 	uuid: string;
@@ -205,6 +217,7 @@ export type SyncCommand =
 	| ItemUpdateCommand
 	| ItemMoveCommand
 	| ItemCompleteCommand
+	| ItemCloseCommand
 	| ItemUncompleteCommand;
 
 // ============================================================================
@@ -271,6 +284,15 @@ export function createItemCompleteCommand(
 ): ItemCompleteCommand {
 	return {
 		type: "item_complete",
+		uuid: crypto.randomUUID(),
+		args,
+		suggestedResourceTypes: ["items"],
+	};
+}
+
+export function createItemCloseCommand(args: CloseItemArgs): ItemCloseCommand {
+	return {
+		type: "item_close",
 		uuid: crypto.randomUUID(),
 		args,
 		suggestedResourceTypes: ["items"],

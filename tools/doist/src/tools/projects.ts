@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
-import { cwd } from "node:process";
 import * as v from "valibot";
 import type { Container } from "../container.ts";
 import { listSections } from "../operations.ts";
@@ -200,32 +199,6 @@ export function registerProjectTools(
 					"filter.project": project ? 1 : 0,
 					"sync.performed": shouldSync ? 1 : 0,
 				},
-			};
-		},
-	});
-
-	registerTool({
-		mcp,
-		name: "todoist_config",
-		config: {
-			description: "Show the active server configuration",
-			inputSchema: toStandardJsonSchema(EmptyInput),
-			outputSchema: toStandardJsonSchema(
-				v.object({
-					cwd: v.string(),
-					rcPath: v.optional(v.string()),
-					dbPath: v.optional(v.string()),
-					projects: v.array(v.string()),
-				}),
-			),
-		},
-		spanOptions: {},
-		callback: () => {
-			const { paths, listProjectIds, projectCount } = container;
-			return {
-				data: { cwd: cwd(), ...paths, projects: listProjectIds() },
-				text: "Active configuration",
-				track: { "config.projects": projectCount() },
 			};
 		},
 	});

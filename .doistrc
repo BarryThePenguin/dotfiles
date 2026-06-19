@@ -1,0 +1,10 @@
+{
+  "projects": [
+    { "id": "6PRwV3855G6jQqJw", "label": "Inbox" },
+    { "id": "6PRwV38Q3Qhr3g9Q", "label": "Personal" },
+    { "id": "6QcMp3f9HM6PhfmG", "label": "Routines" },
+    { "id": "6fvfQffWggQr2r6m", "label": "Doist" },
+    { "id": "6fQFChv9h8fp35g9", "label": "Weekly Review" },
+    { "id": "6gF6WHhXcG7CMQWx", "label": "Homelab" }
+  ]
+}

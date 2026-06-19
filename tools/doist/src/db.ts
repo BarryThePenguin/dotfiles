@@ -74,6 +74,7 @@ interface TaskTable {
 	priority: number | null;
 	due_date: string | null;
 	due_string: string | null;
+	is_recurring: number;
 	labels: string | null;
 	is_completed: number;
 	created_at: string | null;
@@ -141,6 +142,7 @@ const SCHEMA_SQL = `
 	priority      INTEGER,
 	due_date      TEXT,
 	due_string    TEXT,
+	is_recurring  INTEGER DEFAULT 0,
 	labels        TEXT,
 	is_completed  INTEGER DEFAULT 0,
 	created_at    TEXT,

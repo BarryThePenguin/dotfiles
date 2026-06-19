@@ -58,6 +58,7 @@ function dbTask(overrides: Partial<DbTask> = {}): DbTask {
 		due_string: "May 24",
 		labels: JSON.stringify(["urgent", "work"]),
 		is_completed: 0,
+		is_recurring: 0,
 		created_at: "2026-05-23T10:00:00Z",
 		synced_at: "2026-05-23T12:00:00Z",
 		...overrides,
@@ -129,6 +130,7 @@ describe("normalizeTask", () => {
 		const normalized = normalizeTask(task);
 
 		expect(normalized.id).toBe("t1");
+		expect(normalized.url).toBe("https://app.todoist.com/app/task/t1");
 		expect(normalized.projectId).toBe("p1");
 		expect(normalized.sectionId).toBe("s1");
 		expect(normalized.content).toBe("Task content");

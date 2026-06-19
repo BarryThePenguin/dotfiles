@@ -123,23 +123,3 @@ describe("sections_list", () => {
 		expect(result.sections).toHaveLength(1);
 	});
 });
-
-describe("config", () => {
-	it("returns config when no db is present", async () => {
-		const container = createTestContainer();
-		vi.spyOn(container, "db", "get").mockThrow(new Error("No database"));
-
-		const server = buildServer(container);
-		const client = await makeClient(server);
-		try {
-			await expect(client.callTool("todoist_config", {})).resolves.toEqual({
-				cwd: expect.any(String) as unknown,
-				dbPath: expect.any(String) as unknown,
-				projects: [],
-				rcPath: expect.any(String) as unknown,
-			});
-		} finally {
-			await client.close();
-		}
-	});
-});

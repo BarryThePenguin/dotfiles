@@ -2,11 +2,13 @@ instance_eval(File.read(File.join(File.dirname(__FILE__), "Brewfile")))
 
 tap "showpad/gitlab", "git@gitlab.com:showpad-code/devops/homebrew.git"
 
-brew 'awscli'
+brew "awscli"
+brew "bash"
+brew "fzf"
 brew "showpad/gitlab/assume-it"
 brew "showpad/gitlab/connect-it"
 
-cask 'claude-code'
+cask "claude-code"
 cask "session-manager-plugin"
 
 mas "Okta Verify", id: 490179405

@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import type { Database } from "../db.ts";
+import type { AppProject } from "../schema.ts";
 import { countSyncData, syncAndPersist } from "../sync.ts";
 import type { TodoistClient } from "../todoist.ts";
 
@@ -27,6 +28,7 @@ export const SectionsListInput = v.object({
 
 export const FormattedTaskSchema = v.object({
 	id: v.string(),
+	url: v.string(),
 	projectId: v.nullable(v.string()),
 	sectionId: v.nullable(v.string()),
 	parentId: v.nullable(v.string()),
@@ -46,6 +48,7 @@ export const FormattedTaskSchema = v.object({
 	labels: v.array(v.string()),
 	priority: v.nullable(v.number()),
 	description: v.nullable(v.string()),
+	projectName: v.optional(v.nullable(v.string())),
 });
 
 export const ListTaskItemSchema = v.union([
@@ -74,6 +77,10 @@ export const SyncSummarySchema = v.object({
 	tasks: v.number(),
 	reconciled: v.number(),
 });
+
+export function buildProjectMap(projects: AppProject[]): Map<string, string> {
+	return new Map(projects.map((p) => [p.id, p.name]));
+}
 
 export async function maybeSyncSummary(
 	db: Database,

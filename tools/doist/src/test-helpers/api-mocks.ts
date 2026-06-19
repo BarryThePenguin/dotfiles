@@ -24,7 +24,7 @@ export function createMockApiTask(overrides: Record<string, unknown> = {}) {
 		priority: 1,
 		due: null,
 		labels: [] as string[],
-		completed: false,
+		checked: false,
 		added_at: null,
 		is_deleted: false,
 		...overrides,
