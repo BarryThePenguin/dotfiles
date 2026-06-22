@@ -15,6 +15,7 @@ keybind = cmd+opt+right=unbind
 
 initial-window = false
 macos-hidden = always
+macos-option-as-alt = true
 quick-terminal-size = 600px
 
 shell-integration = detect

@@ -1,0 +1,6 @@
+agent: opencode
+merge_strategy: rebase
+mode: window
+nerdfont: true
+worktree_dir: <project>.worktrees/
+worktree_naming: basename

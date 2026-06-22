@@ -51,6 +51,7 @@ zstyle ':prezto:load' pmodule \
 	'flux' \
 	'op' \
 	'jj' \
+	'workmux' \
 	'podman' \
   	'history-substring-search' \
 	'autosuggestions' \
