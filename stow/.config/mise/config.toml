@@ -6,6 +6,7 @@ HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 
 [settings]
+env_shell_expand = true
 trusted_config_paths = ["~/src/btp", "~/src/work"]
 
 [tools]
@@ -13,12 +14,15 @@ trusted_config_paths = ["~/src/btp", "~/src/work"]
 "npm:corepack" = "0.35.0"
 "npm:@typespec/compiler" = "1.13.0"
 "npm:@earendil-works/pi-coding-agent" = "0.79.3"
+"dotnet:dotnet-ef" = "10.0.2"
 age = "1.3.1"
 atuin = "18.16.1"
 aube = "1.22.0"
 cloudflared = "2026.6.0"
 cosign = "3.1.1"
 deno = "2.8.3"
+docker-cli = "29.5.3"
+dotnet = "10.0.102"
 fnox = "1.27.1"
 gh = "2.94.0"
 go = "1.26.4"

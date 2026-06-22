@@ -46,8 +46,8 @@ zstyle ':prezto:load' pmodule \
 	'starship' \
 	'hk' \
 	'gh' \
+	'aube' \
 	'npm' \
-	'pulumi' \
 	'flux' \
 	'op' \
 	'jj' \
