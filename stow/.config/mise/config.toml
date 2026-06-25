@@ -10,7 +10,7 @@ env_shell_expand = true
 trusted_config_paths = ["~/src/btp", "~/src/work"]
 
 [tools]
-"github:SigNoz/signoz-mcp-server" = "0.5.1"
+"github:SigNoz/signoz-mcp-server" = "0.6.0"
 "npm:corepack" = "0.35.0"
 "npm:@typespec/compiler" = "1.13.0"
 "npm:@earendil-works/pi-coding-agent" = "0.79.10"
