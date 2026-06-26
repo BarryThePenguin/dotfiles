@@ -37,7 +37,7 @@ sops = "3.13.1"
 starship = "1.25.1"
 uv = "0.11.24"
 zellij = "0.44.3"
-workmux = "0.1.213"
+workmux = "0.1.215"
 
 [task_config]
 includes = [".config/mise/tasks/dotfiles.toml"]
