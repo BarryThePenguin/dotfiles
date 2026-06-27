@@ -2,6 +2,7 @@
 _.file = "~/.config/mise/.env"
 DOTFILES = { required = true }
 EDITOR = "code"
+SOPS_AGE_KEY_FILE = "/Users/jonno/.config/mise/age.txt"
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 
@@ -10,6 +11,7 @@ env_shell_expand = true
 trusted_config_paths = ["~/src/btp", "~/src/work"]
 
 [tools]
+"github:anomalyco/opencode" = "1.17.8"
 "github:SigNoz/signoz-mcp-server" = "0.6.0"
 "npm:corepack" = "0.35.0"
 "npm:@typespec/compiler" = "1.13.0"

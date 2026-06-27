@@ -9,3 +9,6 @@
 [submodule "stow/.config/ghostty/themes"]
 	path = stow/.config/ghostty/themes
 	url = https://github.com/dracula/ghostty.git
+[submodule "stow/.config/opencode/themes"]
+	path = stow/.config/opencode/themes
+	url = https://github.com/dracula/opencode.git
