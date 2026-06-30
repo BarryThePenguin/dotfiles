@@ -37,7 +37,7 @@ shellcheck = "0.11.0"
 slsa-verifier = "2.7.1"
 sops = "3.13.2"
 starship = "1.26.0"
-uv = "0.11.25"
+uv = "0.11.26"
 zellij = "0.44.3"
 workmux = "0.1.217"
 
