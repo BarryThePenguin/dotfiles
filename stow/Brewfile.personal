@@ -1,0 +1,9 @@
+instance_eval(File.read(File.join(File.dirname(__FILE__), "Brewfile")))
+
+brew 'cloudflared'
+
+cask 'copilot-cli'
+cask 'headlamp'
+cask 'notion'
+cask 'utm'
+cask 'zed'

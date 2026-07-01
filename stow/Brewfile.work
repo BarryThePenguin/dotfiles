@@ -1,12 +1,12 @@
 instance_eval(File.read(File.join(File.dirname(__FILE__), "Brewfile")))
 
-tap "showpad/gitlab", "git@gitlab.com:showpad-code/devops/homebrew.git"
+tap "showpad/gitlab", "git@gitlab.com:showpad-code/devops/homebrew.git", trusted: true
 
 brew "awscli"
 brew "bash"
 brew "fzf"
-brew "showpad/gitlab/assume-it"
-brew "showpad/gitlab/connect-it"
+brew "showpad/gitlab/assume-it", trusted: true
+brew "showpad/gitlab/connect-it", trusted: true
 
 cask "claude-code"
 cask "session-manager-plugin"

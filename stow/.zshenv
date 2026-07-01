@@ -1,5 +1,16 @@
 username="btp"
 
+case "$HOST" in
+  JYC54J2T9F*)
+    export MISE_PROFILE=work
+    export HOMEBREW_BUNDLE_FILE="$HOME/Brewfile.work"
+    ;;
+  *)
+    export MISE_PROFILE=personal
+    export HOMEBREW_BUNDLE_FILE="$HOME/Brewfile.personal"
+    ;;
+esac
+
 # utf-8 & screen
 export LC_ALL="en_US.UTF-8"
 

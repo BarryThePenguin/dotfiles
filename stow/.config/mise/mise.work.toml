@@ -1,0 +1,16 @@
+[settings]
+trusted_config_paths = ["~/src/btp", "~/src/work"]
+
+[env]
+OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:47300"
+OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
+CI_JOB_TOKEN = "${GITLAB_TOKEN:-}"
+NPM_TOKEN = "${GITLAB_TOKEN:-}"
+
+[tools]
+"dotnet:csharp-ls" = "0.25.0"
+"dotnet:dotnet-ef" = "10.0.2"
+docker-cli = "29.6.1"
+dotnet = "10.0.102"
+git-lfs = "3.6.0"
+glab = "1.105.0"

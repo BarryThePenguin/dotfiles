@@ -1,0 +1,15 @@
+[settings]
+trusted_config_paths = ["~/src/btp"]
+
+[env]
+HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
+HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
+
+[tools]
+"github:anomalyco/opencode" = "1.17.12"
+"github:SigNoz/signoz-mcp-server" = "0.6.0"
+"npm:@earendil-works/pi-coding-agent" = "0.80.2"
+cloudflared = "2026.6.1"
+cosign = "3.1.1"
+deno = "2.9.0"
+slsa-verifier = "2.7.1"
