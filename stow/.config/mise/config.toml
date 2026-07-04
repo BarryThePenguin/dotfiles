@@ -32,6 +32,7 @@ starship = "1.26.0"
 uv = "0.11.26"
 workmux = "0.1.218"
 zellij = "0.44.3"
+usage = "3.2.0"
 
 [task_config]
 includes = [".config/mise/tasks/dotfiles.toml"]

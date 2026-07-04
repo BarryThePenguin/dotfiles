@@ -4,7 +4,6 @@ tap "chmouel/lazyworktree", "https://github.com/chmouel/lazyworktree"
 brew 'git'
 brew 'jj'
 brew 'mas'
-brew 'mise'
 brew 'mprocs'
 brew 'stow'
 brew 'terminal-notifier'

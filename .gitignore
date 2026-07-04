@@ -1,13 +1,18 @@
-Brewfile.lock.json
-
 age.txt
 coverage
-node_modules
 dist
+node_modules
+todoist.db
 
 .env
 .zsh_history
 .zsh_sessions
+
+stow/.agents/*
+!stow/.agents/model-routing
+!stow/.agents/todoist-check-in
+!stow/.agents/todoist-process-inbox
+!stow/.agents/todoist-triage
 
 stow/.augment/*
 !stow/.augment/commands
@@ -26,8 +31,6 @@ stow/.claude/plugins/*
 
 stow/.config/.wrangler
 stow/.config/zed
-
-todoist.db
 
 stow/.pi/agent/*
 !stow/.pi/agent/settings.json

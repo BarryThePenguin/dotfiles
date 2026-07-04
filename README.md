@@ -5,6 +5,7 @@ OS X configuration files. There's no place like ~/.
 ## Installation
 
 ```shell
+$ curl https://mise.run | sh
 $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 $ mkdir -p ~/src/btp
 $ git clone https://github.com/BarryThePenguin/dotfiles.git ~/src/btp/dotfiles
