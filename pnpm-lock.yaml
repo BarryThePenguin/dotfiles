@@ -52,7 +52,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: ^2.0.0-alpha.2
-        version: 2.0.0-alpha.3
+        version: 2.0.0-beta.1
       '@opentelemetry/exporter-logs-otlp-grpc':
         specifier: ^0.219.0
         version: 0.219.0(@opentelemetry/api@1.9.1)
@@ -231,8 +231,8 @@ packages:
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
-  '@modelcontextprotocol/server@2.0.0-alpha.3':
-    resolution: {integrity: sha512-PYdVDA6x3joCy/rw1mGdMSvqisPKlmt5QN/ILcT8R7efgvmhij14L87lJrWAm4pszaThzwpV49BmBBTZWtlY3A==}
+  '@modelcontextprotocol/server@2.0.0-beta.1':
+    resolution: {integrity: sha512-83scKauajX9fWbSIC4NBYdnvXajH+cqvX8QqsrPH0XNgqtMmym1kWucMO7YyNkrBD9C7/R+FRCmkjC9kgEKXlQ==}
     engines: {node: '>=20'}
 
   '@napi-rs/wasm-runtime@1.1.6':
@@ -1248,6 +1248,10 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
+  picomatch@4.0.5:
+    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
+    engines: {node: '>=12'}
+
   pino-abstract-transport@3.0.0:
     resolution: {integrity: sha512-wlfUczU+n7Hy/Ha5j9a/gZNy7We5+cXp8YL+X+PG8S0KXxw7n/JXA3c46Y0zQznIJ83URJiwy7Lh56WLokNuxg==}
 
@@ -1655,7 +1659,7 @@ snapshots:
 
   '@js-sdsl/ordered-map@4.4.2': {}
 
-  '@modelcontextprotocol/server@2.0.0-alpha.3':
+  '@modelcontextprotocol/server@2.0.0-beta.1':
     dependencies:
       zod: 4.4.3
 
@@ -2493,9 +2497,9 @@ snapshots:
 
   fast-levenshtein@2.0.6: {}
 
-  fdir@6.5.0(picomatch@4.0.4):
+  fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
-      picomatch: 4.0.4
+      picomatch: 4.0.5
 
   file-entry-cache@8.0.0:
     dependencies:
@@ -2708,6 +2712,8 @@ snapshots:
 
   picomatch@4.0.4: {}
 
+  picomatch@4.0.5: {}
+
   pino-abstract-transport@3.0.0:
     dependencies:
       split2: 4.2.0
@@ -2848,8 +2854,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
 
   tinyrainbow@3.1.0: {}
 
@@ -2892,7 +2898,7 @@ snapshots:
   vite@8.0.16(@types/node@24.13.2)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.32.0
-      picomatch: 4.0.4
+      picomatch: 4.0.5
       postcss: 8.5.16
       rolldown: 1.0.3
       tinyglobby: 0.2.17
