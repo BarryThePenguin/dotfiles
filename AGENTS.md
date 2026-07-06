@@ -13,7 +13,6 @@ stow/             → Dotfiles symlinked into $HOME via GNU Stow
   .config/        → XDG config files (mise, git, fnox, yazi, zellij, etc.)
   .agents/        → Claude Code agent skills and configuration
   .claude/        → Claude Code settings, plugins, MCP config
-  .augment/       → Augment configuration
   .pi/            → Pi coding agent config
 scripts/          → Utility scripts for dev workflows
 tools/            → Internal tooling packages (TypeScript monorepo)
