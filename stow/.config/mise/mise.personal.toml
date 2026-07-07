@@ -6,7 +6,7 @@ HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 
 [tools]
-"github:SigNoz/signoz-mcp-server" = "0.6.0"
+"github:SigNoz/signoz-mcp-server" = "0.7.0"
 cloudflared = "2026.6.1"
 cosign = "3.1.1"
 deno = "2.9.1"
