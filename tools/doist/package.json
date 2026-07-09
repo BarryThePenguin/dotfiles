@@ -42,6 +42,6 @@
   "devDependencies": {
     "@cfworker/json-schema": "4.1.1",
     "@types/node": "24.13.2",
-    "undici": "8.6.0"
+    "undici": "8.7.0"
   }
 }
