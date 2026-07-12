@@ -10,14 +10,6 @@ env_shell_expand = true
 node.corepack = true
 node.npm_shim = false
 
-[bootstrap.packages]
-"apt:build-essential" = "latest"
-"apt:git" = "latest"
-"apt:curl" = "latest"
-"apt:ca-certificates" = "latest"
-"apt:gnupg" = "latest"
-"apt:openssh-client" = "latest"
-
 [bootstrap.repos]
 "~/.config/zsh/.zprezto" = { url = "https://github.com/sorin-ionescu/prezto.git", ref = "master" }
 "~/.config/ghostty/themes" = { url = "https://github.com/dracula/ghostty.git", ref = "main" }
@@ -46,6 +38,7 @@ run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 "~/.config/kube/config" = { mode = "symlink" }
 "~/.config/mise/mise.personal.toml" = { mode = "symlink" }
 "~/.config/mise/mise.work.toml" = { mode = "symlink" }
+"~/.config/mise/mise.devcontainer.toml" = { mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
 "~/.claude/skills" = "~/src/btp/dotfiles/.agents/skills"
 "~/.config/git/ignore" = { mode = "copy" }
@@ -56,34 +49,3 @@ run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 "~/.config/opencode" = { mode = "symlink-each" }
 "~/.config/zsh" = { mode = "symlink-each" }
 "~/.config/mise/tasks" = { mode = "symlink-each" }
-
-[tools]
-"npm:@typespec/compiler" = "1.13.0"
-"npm:corepack" = "0.35.0"
-"npm:typescript-language-server" = "5.3.0"
-"npm:typescript" = "6.0.3"
-age = "1.3.1"
-atuin = "18.17.0"
-aube = "1.26.0"
-fnox = "1.30.0"
-gh = "2.96.0"
-go = "1.26.5"
-helm = "4.2.3"
-hk = "1.50.0"
-jq = "1.8.2"
-lima = "2.1.4"
-node = "24"
-podman = "6.0.1"
-python = "3.14.6"
-ripgrep = "15.1.0"
-shellcheck = "0.11.0"
-sops = "3.13.2"
-starship = "1.26.0"
-usage = "3.5.4"
-uv = "0.11.28"
-workmux = "0.1.218"
-yq = "4.53.3"
-zellij = "0.44.3"
-
-[task_config]
-includes = [".config/mise/tasks/dotfiles.toml"]

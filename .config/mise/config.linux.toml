@@ -1,1 +1,7 @@
-[tools]
+[bootstrap.packages]
+"apt:build-essential" = "latest"
+"apt:git" = "latest"
+"apt:curl" = "latest"
+"apt:ca-certificates" = "latest"
+"apt:gnupg" = "latest"
+"apt:openssh-client" = "latest"
