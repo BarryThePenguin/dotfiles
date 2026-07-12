@@ -37,9 +37,6 @@ run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 "~/.config/zellij" = { mode = "symlink" }
 "~/.config/opencode/tui.json" = { mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
-"~/.config/opencode/agents" = { mode = "symlink" }
-"~/.config/opencode/plugins" = { mode = "symlink" }
-"~/.config/opencode/package.json" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/gpg/gpg.conf" = { mode = "symlink" }
 "~/.config/gpg/gpg-agent.conf" = { mode = "symlink" }
