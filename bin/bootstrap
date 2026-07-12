@@ -4,6 +4,8 @@ set -euo pipefail
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/src/btp/dotfiles}"
 MISE_CONFIG="$DOTFILES_DIR/.config/mise/config.toml"
 
+export DOTFILES="$DOTFILES_DIR"
+
 if ! command -v mise &>/dev/null; then
   echo "Installing mise..."
   curl https://mise.run | sh
