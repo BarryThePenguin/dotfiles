@@ -1,8 +1,8 @@
 {
 	"search.exclude": {
-		"stow/.config/base16-shell": true,
-		"stow/.config/dracula": true,
-		"stow/.config/zsh/.zprezto": true,
-		"stow/.zprezto-contrib/zsh-notify": true
+		".config/base16-shell": true,
+		".config/dracula": true,
+		".config/zsh/.zprezto": true,
+		".zprezto-contrib/zsh-notify": true
 	}
 }

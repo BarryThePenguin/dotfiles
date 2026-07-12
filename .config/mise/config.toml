@@ -20,32 +20,30 @@ node.npm_shim = false
 [bootstrap.hooks.post-repos]
 run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 
+[bootstrap.user]
+login_shell = "/bin/zsh"
+
 [dotfiles]
-"~/.zshenv" = { mode = "symlink" }
-"~/.zprezto-contrib" = { mode = "symlink" }
-"~/.config/gh" = { mode = "symlink" }
-"~/.config/starship/starship.toml" = { mode = "symlink" }
-"~/.config/jj/config.toml" = { mode = "symlink" }
-"~/.config/zellij" = { mode = "symlink" }
-"~/.config/opencode/tui.json" = { mode = "symlink" }
-"~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
-"~/.config/workmux/config.yaml" = { mode = "symlink" }
-"~/.config/gpg/gpg.conf" = { mode = "symlink" }
-"~/.config/gpg/gpg-agent.conf" = { mode = "symlink" }
-"~/.config/1Password" = { mode = "symlink" }
-"~/.config/atuin/config.toml" = { mode = "symlink" }
-"~/.config/ghostty/config" = { mode = "symlink" }
-"~/.config/kube/config" = { mode = "symlink" }
-"~/.config/mise/mise.personal.toml" = { mode = "symlink" }
-"~/.config/mise/mise.work.toml" = { mode = "symlink" }
-"~/.config/mise/mise.devcontainer.toml" = { mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
 "~/.claude/skills" = "~/src/btp/dotfiles/.agents/skills"
-"~/.config/git/ignore" = { mode = "copy" }
+"~/.config/1Password" = { mode = "symlink" }
+"~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "copy" }
-"~/.config/mise/config.toml" = { mode = "copy" }
-"~/.config/mise/miserc.toml" = { mode = "copy" }
+"~/.config/gh" = { mode = "symlink" }
+"~/.config/ghostty/config" = { mode = "symlink" }
 "~/.config/git" = { mode = "symlink-each" }
+"~/.config/git/ignore" = { mode = "copy" }
+"~/.config/gpg/gpg-agent.conf" = { mode = "symlink" }
+"~/.config/gpg/gpg.conf" = { mode = "symlink" }
+"~/.config/jj/config.toml" = { mode = "symlink" }
+"~/.config/kube/config" = { mode = "symlink" }
+"~/.config/mise" = { mode = "symlink-each"}
 "~/.config/opencode" = { mode = "symlink-each" }
+"~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
+"~/.config/opencode/tui.json" = { mode = "symlink" }
+"~/.config/starship/starship.toml" = { mode = "symlink" }
+"~/.config/workmux/config.yaml" = { mode = "symlink" }
+"~/.config/zellij" = { mode = "symlink" }
 "~/.config/zsh" = { mode = "symlink-each" }
-"~/.config/mise/tasks" = { mode = "symlink-each" }
+"~/.zprezto-contrib" = { mode = "symlink" }
+"~/.zshenv" = { mode = "symlink" }
