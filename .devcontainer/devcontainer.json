@@ -1,0 +1,14 @@
+{
+	"name": "Portable Dev Env",
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+	"features": {
+		"ghcr.io/devcontainers-extra/features/mise:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": ["hverlin.mise-vscode"]
+		}
+	},
+	"remoteUser": "vscode",
+	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/btp/dotfiles/main/bin/bootstrap | bash"
+}

@@ -13,7 +13,7 @@ fi
 if [[ ! -d "$DOTFILES_DIR" ]]; then
   echo "Cloning dotfiles..."
   mkdir -p "$(dirname "$DOTFILES_DIR")"
-  git clone git@github.com:btp/dotfiles.git "$DOTFILES_DIR"
+  git clone https://github.com/btp/dotfiles.git "$DOTFILES_DIR"
 fi
 
 echo "Trusting config..."
