@@ -1,0 +1,46 @@
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=1 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+	tab name="btp" cwd="~/src/btp" {
+		pane name="btp"
+	}
+
+	tab name="homelab" cwd="~/src/btp/homelab" {
+		pane stacked=true {
+			pane command="opencode"
+			pane name="homelab"
+		}
+	}
+
+	tab name="hono" cwd="~/src/honojs" {
+		pane stacked=true {
+			pane name="honojs/hono" cwd="hono"
+			pane name="honojs/middleware" cwd="middleware"
+		}
+	}
+
+	// tab name="kanban" {
+	// 	pane split_direction="vertical" {
+	// 		pane name="todo" command="kanban" {
+	// 			args "todo"
+	// 		}
+	// 		pane name="in-progress" command="kanban" {
+	// 			args "in-progress"
+	// 		}
+	// 		pane name="review" command="kanban" {
+	// 			args "review"
+	// 		}
+	// 		pane name="done" command="kanban" {
+	// 			args "done"
+	// 		}
+	// 	}
+	// }
+}
