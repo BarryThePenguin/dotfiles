@@ -10,5 +10,5 @@
 		}
 	},
 	"remoteUser": "vscode",
-	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/btp/dotfiles/main/bin/bootstrap | bash"
+	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/barrythepenguin/dotfiles/main/bin/bootstrap | bash"
 }
