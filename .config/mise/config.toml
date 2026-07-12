@@ -50,11 +50,11 @@ run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 "~/.config/mise/mise.personal.toml" = { mode = "symlink" }
 "~/.config/mise/mise.work.toml" = { mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
-"~/.claude/skills" = { mode = "symlink" }
+"~/.claude/skills" = "~/src/btp/dotfiles/.agents/skills"
 "~/.config/git/ignore" = { mode = "copy" }
 "~/.config/fnox/config.toml" = { mode = "copy" }
-"~/.config/mise/config.toml" = { mode = "template" }
-"~/.config/mise/miserc.toml" = { mode = "template" }
+"~/.config/mise/config.toml" = { mode = "copy" }
+"~/.config/mise/miserc.toml" = { mode = "copy" }
 "~/.config/git" = { mode = "symlink-each" }
 "~/.config/opencode" = { mode = "symlink-each" }
 "~/.config/zsh" = { mode = "symlink-each" }
