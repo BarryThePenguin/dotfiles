@@ -8,8 +8,8 @@ todoist.db
 .zsh_history
 .zsh_sessions
 
-stow/.agents/*
-!stow/.agents/model-routing
-!stow/.agents/todoist-check-in
-!stow/.agents/todoist-process-inbox
-!stow/.agents/todoist-triage
+.agents/*
+!.agents/skills/model-routing
+!.agents/skills/todoist-check-in
+!.agents/skills/todoist-process-inbox
+!.agents/skills/todoist-triage

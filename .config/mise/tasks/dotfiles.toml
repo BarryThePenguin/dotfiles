@@ -1,0 +1,56 @@
+#:schema https://mise.jdx.dev/schema/mise-task.json
+
+["brew:bundle"]
+description = "Install Homebrew packages from Brewfile"
+dir = "{{env.DOTFILES}}"
+run = ["brew bundle", "brew bundle cleanup"]
+
+["brew:cleanup"]
+description = "Uninstall Homebrew packages removed from Brewfile"
+dir = "{{env.DOTFILES}}"
+run = "brew bundle cleanup --force"
+
+["dotfiles:clean"]
+description = "Show managed dotfiles that would be removed"
+run = "mise dotfiles status"
+
+["dotfiles:install"]
+description = "Install dotfiles via mise bootstrap"
+run = "mise bootstrap --only dotfiles,repos,tools --yes"
+
+["dotfiles:update"]
+description = "Update stowed dotfiles"
+dir = "{{env.DOTFILES}}"
+run = ["brew update", "brew upgrade", "zprezto-update"]
+
+["devenv:bootstrap"]
+description = "Bootstrap this machine for development"
+run = "mise bootstrap --yes --force-dotfiles"
+
+["devenv:bootstrap:status"]
+description = "Check bootstrap status"
+run = "mise bootstrap status --missing"
+
+["bootstrap"]
+description = "Project-specific setup (run by mise bootstrap)"
+run = "mise run devenv:secrets"
+
+["devenv:secrets"]
+description = "Provision age key from 1Password"
+env = { AGE_KEY = "$HOME/.config/sops/age/keys.txt" }
+run = """
+[ -f "$AGE_KEY" ] && echo "Age key already exists" && exit 0
+op document get "age.key" --out-file "$AGE_KEY"
+"""
+
+["devenv:lima"]
+description = "Start Lima instance with Podman"
+run = "limactl start --name=podman --cpus=4 --memory=8 template:podman"
+
+["devenv:lima:stop"]
+description = "Stop Lima instance"
+run = "limactl stop podman"
+
+["devenv:lima:rm"]
+description = "Remove Lima instance"
+run = "limactl remove podman"

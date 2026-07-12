@@ -19,18 +19,19 @@ export XDG_CACHE_HOME="$HOME/.cache"
 export DOTNET_CLI_HOME="$XDG_CONFIG_HOME/dotnet"
 export GNUPGHOME="$XDG_CONFIG_HOME/gpg"
 export KUBECONFIG="$XDG_CONFIG_HOME/kube/config"
-export FNOX_AGE_KEY_FILE="$XDG_CONFIG_HOME/fnox/age.txt"
-export MISE_SOPS_AGE_KEY_FILE="$XDG_CONFIG_HOME/mise/age.txt"
+export MISE_SOPS_AGE_KEY_FILE="$XDG_CONFIG_HOME/sops/age/keys.txt"
 export PULUMI_HOME="$XDG_CONFIG_HOME/pulumi"
 export STARSHIP_CONFIG="$XDG_CONFIG_HOME/starship/starship.toml"
 export STARSHIP_CACHE="$XDG_CACHE_HOME/starship"
 export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 export ASPIRE_CONTAINER_RUNTIME="podman"
 
-# brew shellenv
-export HOMEBREW_PREFIX="/opt/homebrew";
-export HOMEBREW_CELLAR="/opt/homebrew/Cellar";
-export HOMEBREW_REPOSITORY="/opt/homebrew";
+# brew shellenv — only on macOS with Homebrew installed
+if type brew &>/dev/null; then
+  export HOMEBREW_PREFIX="/opt/homebrew";
+	export HOMEBREW_CELLAR="/opt/homebrew/Cellar";
+	export HOMEBREW_REPOSITORY="/opt/homebrew";
+fi
 
 # Ensure that a non-login, non-interactive shell has a defined environment.
 if [[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "${ZDOTDIR}/.zprofile" ]]; then

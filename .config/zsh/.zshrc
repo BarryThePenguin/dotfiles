@@ -51,12 +51,12 @@ function timezsh() {
 #  Source Prezto
 ###########################
 if [[ -n $INTELLIJ_ENVIRONMENT_READER ]]; then
-	eval "$(/Users/jonno/.local/bin/mise activate zsh --shims)"
+	eval "$($HOME/.local/bin/mise activate zsh --shims)"
 elif [[ "$TERM" == "xterm-ghostty" ]]; then
-	eval "$(/Users/jonno/.local/bin/mise activate zsh --shims)"
+	eval "$($HOME/.local/bin/mise activate zsh --shims)"
 	source "$ZDOTDIR/.zprezto/init.zsh"
 else
-	eval "$(/Users/jonno/.local/bin/mise activate zsh --shims)"
+	eval "$($HOME/.local/bin/mise activate zsh --shims)"
 	source "$ZDOTDIR/.zprezto/init.zsh"
 fi
 

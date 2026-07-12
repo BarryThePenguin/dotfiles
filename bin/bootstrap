@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES_DIR="${DOTFILES_DIR:-$HOME/src/btp/dotfiles}"
+MISE_CONFIG="$DOTFILES_DIR/.config/mise/config.toml"
+
+if ! command -v mise &>/dev/null; then
+  echo "Installing mise..."
+  curl https://mise.run | sh
+  eval "$(mise activate bash)"
+fi
+
+if [[ ! -d "$DOTFILES_DIR" ]]; then
+  echo "Cloning dotfiles..."
+  mkdir -p "$(dirname "$DOTFILES_DIR")"
+  git clone git@github.com:btp/dotfiles.git "$DOTFILES_DIR"
+fi
+
+echo "Trusting config..."
+mise trust "$MISE_CONFIG"
+
+echo "Bootstrapping..."
+MISE_CONFIG_FILE="$MISE_CONFIG" mise bootstrap --yes

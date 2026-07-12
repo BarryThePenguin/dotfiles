@@ -2,6 +2,7 @@ default_provider = "op"
 
 [providers.age]
 type = "age"
+key_file = "~/.config/sops/age/keys.txt"
 recipients = ["age1mwrj95qnl4vcpmcafenkp6zpunkrmcsefpfhgfpaf92qhkzeafaqlxgaz0"]
 
 [providers.op]
