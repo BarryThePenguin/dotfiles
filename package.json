@@ -10,7 +10,7 @@
 		"@tsconfig/node24": "24.0.4",
 		"@tsconfig/strictest": "2.0.8",
 		"@vitest/coverage-v8": "4.1.10",
-		"@vitest/eslint-plugin": "1.6.21",
+		"@vitest/eslint-plugin": "1.6.22",
 		"doist": "workspace:*",
 		"eslint": "10.6.0",
 		"globals": "17.7.0",
