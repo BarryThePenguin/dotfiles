@@ -52,7 +52,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/server':
         specifier: ^2.0.0-alpha.2
-        version: 2.0.0-beta.2
+        version: 2.0.0-beta.3
       '@opentelemetry/exporter-logs-otlp-grpc':
         specifier: ^0.220.0
         version: 0.220.0(@opentelemetry/api@1.9.1)
@@ -231,8 +231,8 @@ packages:
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
-  '@modelcontextprotocol/server@2.0.0-beta.2':
-    resolution: {integrity: sha512-XK+sgFntT5ZzeqtTGpT9uti+Sqmq7YJZdx/N76eLJv9UA9vKvP04Qh9Hc45LCeIHGfTKRwDG6eh4C1Hs4omyIg==}
+  '@modelcontextprotocol/server@2.0.0-beta.3':
+    resolution: {integrity: sha512-EQxVIWf2XMAgjR38ZRZnX1iiOWH42tT/YJG8N4dVjAnrEGSEfPirR6FYfDC72yuNSvVYbPDTD1H3KHLLHPd18A==}
     engines: {node: '>=20'}
 
   '@napi-rs/wasm-runtime@1.1.6':
@@ -1609,7 +1609,7 @@ snapshots:
 
   '@js-sdsl/ordered-map@4.4.2': {}
 
-  '@modelcontextprotocol/server@2.0.0-beta.2':
+  '@modelcontextprotocol/server@2.0.0-beta.3':
     dependencies:
       zod: 4.4.3
 
