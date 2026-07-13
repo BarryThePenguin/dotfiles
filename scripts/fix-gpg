@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 
-chown -R "$(whoami)" "$DOTFILES/stow/.config/gpg/"
+chown -R "$(whoami)" "$DOTFILES/.config/gpg/"
 
-find "$DOTFILES/stow/.config/gpg" -type f -exec chmod 600 {} \;
-find "$DOTFILES/stow/.config/gpg" -type d -exec chmod 700 {} \;
+find "$DOTFILES/.config/gpg" -type f -exec chmod 600 {} \;
+find "$DOTFILES/.config/gpg" -type d -exec chmod 700 {} \;
