@@ -1,7 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createDefaultHarness, makeClient } from "../test-helpers/server.ts";
-import { buildServer } from "../server.ts";
-import { createTestContainer } from "../test-helpers/container.ts";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { createDefaultHarness } from "../test-helpers/server.ts";
 
 let harness: Awaited<ReturnType<typeof createDefaultHarness>>;
 

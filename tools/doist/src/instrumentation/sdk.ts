@@ -36,7 +36,9 @@ export function start(serviceName: string) {
 	sdk = new NodeSDK({
 		instrumentations: [new PinoInstrumentation(), new UndiciInstrumentation()],
 		logRecordProcessors: [
-			new logs.BatchLogRecordProcessor(new OTLPLogExporter()),
+			new logs.BatchLogRecordProcessor({
+				exporter: new OTLPLogExporter(),
+			}),
 		],
 		metricReaders: [
 			new metrics.PeriodicExportingMetricReader({

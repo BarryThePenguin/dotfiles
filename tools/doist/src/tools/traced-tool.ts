@@ -1,6 +1,5 @@
 import {
 	McpServer,
-	type CallToolResult,
 	type RegisteredTool,
 	type ServerContext,
 	type StandardSchemaWithJSON,
@@ -77,7 +76,7 @@ export function registerTool<
 					return {
 						content: [{ type: "text" as const, text: result.text ?? name }],
 						structuredContent: result.data,
-					} as CallToolResult;
+					};
 				} catch (err) {
 					recordException(span, err);
 					trackOperation(name, false);

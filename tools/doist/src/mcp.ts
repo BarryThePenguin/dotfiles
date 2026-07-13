@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { shutdown } from "./instrumentation/mcp.ts";
-import { StdioServerTransport } from "@modelcontextprotocol/server";
+import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import { buildServer } from "./server.ts";
 import { createContainer } from "./container.ts";
 
