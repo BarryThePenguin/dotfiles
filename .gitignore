@@ -4,6 +4,8 @@ dist
 node_modules
 todoist.db
 
+.config/fnox/config.work.toml
+
 .env
 .zsh_history
 .zsh_sessions
