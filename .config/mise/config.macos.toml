@@ -1,3 +1,13 @@
+[bootstrap.macos.keyboard]
+key_repeat = 2
+initial_key_repeat = 15
+
+[bootstrap.macos.finder]
+show_pathbar = true
+
+[bootstrap.macos.defaults]
+"com.apple.Finder" = { AppleShowAllFiles = true }
+
 [tools]
 "npm:@typespec/compiler" = "1.13.0"
 "npm:corepack" = "0.35.0"

@@ -24,14 +24,19 @@ run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 login_shell = "/bin/zsh"
 
 [dotfiles]
+"~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
+"~/Brewfile" = { mode = "symlink" }
+"~/CLAUDE.md" = { mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
-"~/.claude/skills" = "~/src/btp/dotfiles/.agents/skills"
+"~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.config/1Password" = { mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "copy" }
+"~/.config/fnox/config.work.toml" = { mode = "copy" }
 "~/.config/gh" = { mode = "symlink" }
 "~/.config/ghostty/config" = { mode = "symlink" }
 "~/.config/git" = { mode = "symlink-each" }
+"~/.config/git/config" = { mode = "template" }
 "~/.config/git/ignore" = { mode = "copy" }
 "~/.config/gpg/gpg-agent.conf" = { mode = "symlink" }
 "~/.config/gpg/gpg.conf" = { mode = "symlink" }
@@ -39,8 +44,6 @@ login_shell = "/bin/zsh"
 "~/.config/kube/config" = { mode = "symlink" }
 "~/.config/mise" = { mode = "symlink-each"}
 "~/.config/opencode" = { mode = "symlink-each" }
-"~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
-"~/.config/opencode/tui.json" = { mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }

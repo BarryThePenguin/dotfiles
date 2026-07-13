@@ -1,16 +1,5 @@
 username="btp"
 
-case "$HOST" in
-  JYC54J2T9F*)
-    export MISE_PROFILE=work
-    export HOMEBREW_BUNDLE_FILE="$HOME/Brewfile.work"
-    ;;
-  *)
-    export MISE_PROFILE=personal
-    export HOMEBREW_BUNDLE_FILE="$HOME/Brewfile.personal"
-    ;;
-esac
-
 # utf-8 & screen
 export LC_ALL="en_US.UTF-8"
 
@@ -26,6 +15,13 @@ export STARSHIP_CONFIG="$XDG_CONFIG_HOME/starship/starship.toml"
 export STARSHIP_CACHE="$XDG_CACHE_HOME/starship"
 export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 export ASPIRE_CONTAINER_RUNTIME="podman"
+
+path=("$HOME/.local/bin" $path)
+
+if [[ -f "$HOME/.config/mise/.env" ]]; then
+  source "$HOME/.config/mise/.env"
+fi
+export MISE_PROFILE="${MISE_PROFILE:-personal}"
 
 # brew shellenv — only on macOS with Homebrew installed
 if type brew &>/dev/null; then

@@ -6,6 +6,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:47300"
 OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
 CI_JOB_TOKEN = "${GITLAB_TOKEN:-}"
 NPM_TOKEN = "${GITLAB_TOKEN:-}"
+FNOX_PROFILE = "work"
 
 [tools]
 "dotnet:csharp-ls" = "0.25.0"

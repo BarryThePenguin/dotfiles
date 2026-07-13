@@ -21,11 +21,11 @@ run = "mise bootstrap --only dotfiles,repos,tools --yes"
 ["dotfiles:update"]
 description = "Update stowed dotfiles"
 dir = "{{env.DOTFILES}}"
-run = ["brew update", "brew upgrade", "zprezto-update"]
+run = ["mise self-update", "brew update", "brew upgrade", "zprezto-update"]
 
 ["devenv:bootstrap"]
 description = "Bootstrap this machine for development"
-run = "mise bootstrap --yes --force-dotfiles"
+run = "mise bootstrap --yes"
 
 ["devenv:bootstrap:status"]
 description = "Check bootstrap status"
@@ -40,7 +40,8 @@ description = "Provision age key from 1Password"
 env = { AGE_KEY = "$HOME/.config/sops/age/keys.txt" }
 run = """
 [ -f "$AGE_KEY" ] && echo "Age key already exists" && exit 0
-op document get "age.key" --out-file "$AGE_KEY"
+mkdir -p "$(dirname "$AGE_KEY")"
+op document get --vault Private "age.key" --out-file "$AGE_KEY"
 """
 
 ["devenv:lima"]

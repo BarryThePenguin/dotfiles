@@ -52,11 +52,7 @@ function timezsh() {
 ###########################
 if [[ -n $INTELLIJ_ENVIRONMENT_READER ]]; then
 	eval "$($HOME/.local/bin/mise activate zsh --shims)"
-elif [[ "$TERM" == "xterm-ghostty" ]]; then
-	eval "$($HOME/.local/bin/mise activate zsh --shims)"
-	source "$ZDOTDIR/.zprezto/init.zsh"
 else
-	eval "$($HOME/.local/bin/mise activate zsh --shims)"
 	source "$ZDOTDIR/.zprezto/init.zsh"
 fi
 
@@ -64,7 +60,7 @@ if [[ "$TERM" == "xterm-ghostty" ]] && [[ -z "$ZELLIJ" ]]; then
     if [[ "$ZELLIJ_AUTO_ATTACH" == "true" ]]; then
         zellij attach -c
     else
-        zellij -l main
+        zellij -l "$MISE_PROFILE"
     fi
 
     if [[ "$ZELLIJ_AUTO_EXIT" == "true" ]]; then

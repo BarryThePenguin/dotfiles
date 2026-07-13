@@ -1,0 +1,39 @@
+layout {
+	cwd "$HOME/src"
+
+	default_tab_template {
+		pane size=1 borderless=true {
+			plugin location="zellij:tab-bar"
+		}
+		children
+		pane size=1 borderless=true {
+			plugin location="zellij:status-bar"
+		}
+	}
+
+	tab cwd="work/assistant" name="Assistant" focus=false hide_floating_panes=true {
+		pane split_direction="vertical" {
+            pane command="claude"
+	        pane split_direction="horizontal" stacked=true {
+                pane name="Files" command="yazi"
+                pane name="Terminal" focus=true
+				pane name="Tasks" command="mprocs"
+            }
+        }
+	}
+
+    tab cwd="work/genie-ai-platform" name="Work" focus=true hide_floating_panes=true {
+        pane split_direction="vertical" {
+            pane name="Genie" command="claude"
+			pane split_direction="horizontal" stacked=true {
+				pane name="Terminal" focus=true
+			}
+        }
+
+		floating_panes {
+			pane cwd="work/genie-ai-platform" name="Workmux" command="workmux" {
+				args "dashboard"
+			}
+		}
+    }
+}

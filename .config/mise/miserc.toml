@@ -1,2 +1,1 @@
 auto_env = true
-env = ["{{ env.MISE_PROFILE | default(value='personal') }}"]

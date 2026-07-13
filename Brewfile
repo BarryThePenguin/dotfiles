@@ -36,3 +36,29 @@ mas "HazeOver", id: 430798174
 mas "Magnet", id: 441258766
 mas "The Unarchiver", id: 425424353
 mas "Xcode", id: 497799835
+
+profile = ENV.fetch("MISE_PROFILE", "personal")
+
+if profile == "personal"
+  cask 'copilot-cli'
+  cask 'headlamp'
+  cask 'notion'
+  cask 'opencode-desktop'
+  cask 'utm'
+  cask 'zed'
+end
+
+if profile == "work"
+  tap "showpad/gitlab", "git@gitlab.com:showpad-code/devops/homebrew.git", trusted: true
+
+  brew "awscli"
+  brew "bash"
+  brew "fzf"
+  brew "showpad/gitlab/assume-it", trusted: true
+  brew "showpad/gitlab/connect-it", trusted: true
+
+  cask "claude-code"
+  cask "session-manager-plugin"
+
+  mas "Okta Verify", id: 490179405
+end
