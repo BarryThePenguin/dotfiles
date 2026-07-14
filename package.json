@@ -11,7 +11,7 @@
 		"@tsconfig/strictest": "2.0.8",
 		"@typescript/native": "npm:typescript@7.0.2",
 		"@vitest/coverage-v8": "4.1.10",
-		"@vitest/eslint-plugin": "1.6.22",
+		"@vitest/eslint-plugin": "1.6.23",
 		"doist": "workspace:*",
 		"eslint": "10.6.0",
 		"globals": "17.7.0",
