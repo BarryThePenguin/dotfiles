@@ -2,7 +2,6 @@
 _.file = "~/.config/mise/.env"
 DOTFILES = { required = true }
 EDITOR = "code"
-HOMEBREW_BUNDLE_FILE = { default = "{{ env.HOME }}/src/btp/dotfiles/Brewfile" }
 
 [settings]
 dotfiles.root = "~/src/btp/dotfiles"
@@ -23,11 +22,52 @@ run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 [bootstrap.user]
 login_shell = "/bin/zsh"
 
+[bootstrap.packages]
+"brew:git" = "latest"
+"brew:jj" = "latest"
+"brew:mas" = "latest"
+"brew:mprocs" = "latest"
+"brew:terminal-notifier" = "latest"
+"brew:watchman" = "latest"
+"brew:xorriso" = "latest"
+"brew:yazi" = "latest"
+"brew:zsh" = "latest"
+
+"brew-cask:1password-cli" = "latest"
+"brew-cask:1password" = "latest"
+"brew-cask:atuin-desktop" = "latest"
+"brew-cask:bruno" = "latest"
+# "brew-cask:cyberduck" = "latest"
+"brew-cask:dbeaver-community" = "latest"
+"brew-cask:firefox@developer-edition" = "latest"
+"brew-cask:flux-app" = "latest"
+"brew-cask:font-fira-code-nerd-font" = "latest"
+"brew-cask:ghostty" = "latest"
+"brew-cask:github" = "latest"
+# "brew-cask:gpg-suite-no-mail" = "latest"
+# "brew-cask:keybase" = "latest"
+"brew-cask:macpass" = "latest"
+"brew-cask:podman-desktop" = "latest"
+"brew-cask:todoist-app" = "latest"
+"brew-cask:visual-studio-code" = "latest"
+
+"mas:1518425043" = "latest" # Boop
+"mas:6454431289" = "latest" # CrystalFetch
+"mas:411643860" = "latest" # DaisyDisk
+"mas:430798174" = "latest" # HazeOver
+"mas:441258766" = "latest" # Magnet
+"mas:425424353" = "latest" # The Unarchiver
+"mas:497799835" = "latest" # Xcode
+
+[bootstrap.brew.taps]
+"showpad/gitlab" = "git@gitlab.com:showpad-code/devops/homebrew.git"
+
+
 [dotfiles]
 "~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
-"~/Brewfile" = { mode = "symlink" }
 "~/CLAUDE.md" = { mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
+"~/.claude" = { mode = "symlink-each" }
 "~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.config/1Password" = { mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
@@ -40,6 +80,7 @@ login_shell = "/bin/zsh"
 "~/.config/git/work.gitconfig" = { mode = "symlink" }
 "~/.config/gpg/gpg-agent.conf" = { mode = "symlink" }
 "~/.config/gpg/gpg.conf" = { mode = "symlink" }
+"~/.config/homebrew/Brewfile" = { mode = "symlink" }
 "~/.config/jj/config.toml" = { mode = "symlink" }
 "~/.config/kube/config" = { mode = "symlink" }
 "~/.config/mise" = { mode = "symlink-each"}

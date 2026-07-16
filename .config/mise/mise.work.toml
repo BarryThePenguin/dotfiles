@@ -1,6 +1,20 @@
 [settings]
 trusted_config_paths = ["~/src/btp", "~/src/work"]
 
+[bootstrap.packages]
+"brew:awscli" = "latest"
+"brew:bash" = "latest"
+"brew:fzf" = "latest"
+# "brew:showpad/gitlab/assume-it" = "latest"
+# "brew:showpad/gitlab/connect-it" = "latest"
+"brew-cask:claude-code" = "latest"
+"brew-cask:session-manager-plugin" = "latest"
+
+"mas:490179405" = "latest" # Okta Verify
+
+# [bootstrap.brew.taps]
+# "showpad/gitlab" = "git@gitlab.com:showpad-code/devops/homebrew.git"
+
 [env]
 OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:47300"
 OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"

@@ -1,0 +1,8 @@
+cask 'cyberduck'
+cask 'gpg-suite-no-mail'
+cask 'keybase'
+
+tap "showpad/gitlab", "git@gitlab.com:showpad-code/devops/homebrew.git", trusted: true
+
+brew "showpad/gitlab/assume-it", trusted: true
+brew "showpad/gitlab/connect-it", trusted: true

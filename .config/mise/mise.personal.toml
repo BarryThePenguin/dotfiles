@@ -5,6 +5,14 @@ trusted_config_paths = ["~/src/btp"]
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 
+[bootstrap.packages]
+"brew-cask:copilot-cli" = "latest"
+"brew-cask:headlamp" = "latest"
+"brew-cask:notion" = "latest"
+"brew-cask:opencode-desktop" = "latest"
+"brew-cask:utm" = "latest"
+"brew-cask:zed" = "latest"
+
 [tools]
 "github:SigNoz/signoz-mcp-server" = "0.7.0"
 cloudflared = "2026.7.2"
