@@ -14,7 +14,7 @@ HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 "brew-cask:zed" = "latest"
 
 [tools]
-"github:SigNoz/signoz-mcp-server" = "0.7.0"
+"github:SigNoz/signoz-mcp-server" = "0.8.0"
 cloudflared = "2026.7.2"
 cosign = "3.1.1"
 deno = "2.9.3"
