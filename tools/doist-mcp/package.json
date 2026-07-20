@@ -1,0 +1,28 @@
+{
+	"name": "doist-mcp",
+	"version": "0.1.0",
+	"description": "MCP server for Todoist — exposes tasks, projects, and analysis via the Model Context Protocol",
+	"type": "module",
+	"bin": {
+		"doist-mcp": "src/mcp.ts"
+	},
+	"scripts": {
+		"build": "tsc",
+		"test": "vitest"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/server": "^2.0.0-alpha.2",
+		"@opentelemetry/sdk-node": "^0.220.0",
+		"@valibot/to-json-schema": "^1.7.0",
+		"doist-core": "workspace:*",
+		"pino": "^10.0.0",
+		"valibot": "^1.4.0"
+	},
+	"devDependencies": {
+		"@types/node": "24.13.3",
+		"vitest": "^4.1.10"
+	}
+}

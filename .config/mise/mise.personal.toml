@@ -4,9 +4,10 @@ trusted_config_paths = ["~/src/btp"]
 [env]
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
+OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4317"
+OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
 
 [bootstrap.packages]
-"brew-cask:copilot-cli" = "latest"
 "brew-cask:headlamp" = "latest"
 "brew-cask:notion" = "latest"
 "brew-cask:opencode-desktop" = "latest"
@@ -17,6 +18,7 @@ HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 "github:SigNoz/signoz-mcp-server" = "0.8.0"
 cloudflared = "2026.7.2"
 cosign = "3.1.2"
+copilot = "1.0.71"
 deno = "2.9.3"
 flux2 = "2.9.2"
 flux-operator = "0.55.0"

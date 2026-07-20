@@ -7,7 +7,7 @@
 			"env": {
 				"LOG_LEVEL": "debug",
 				"OTEL_DEBUG": "true",
-				"TODOIST_RC_DIR": "/Users/jonno/src/btp/dotfiles",
+				"TODOIST_RC_DIR": "/Users/jonno/src/btp/dotfiles"
 			},
 			"dev": {
 				"watch": "src/**/*.ts",

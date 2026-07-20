@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 import vitest from "@vitest/eslint-plugin";
 
 export default defineConfig([
-	globalIgnores(["**/coverage", "**/dist", "**/stow"]),
+	globalIgnores(["**/coverage", "**/dist"]),
 	{
 		files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
 		plugins: { js },

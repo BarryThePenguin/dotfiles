@@ -1,0 +1,26 @@
+{
+	"name": "doist-cli",
+	"version": "0.1.0",
+	"description": "CLI for Todoist sync — manage projects, tasks, sections, and labels",
+	"type": "module",
+	"bin": {
+		"doist": "src/cli.ts"
+	},
+	"scripts": {
+		"build": "tsc",
+		"test": "vitest"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"dependencies": {
+		"@opentelemetry/semantic-conventions": "^1.40.0",
+		"citty": "^0.2.2",
+		"doist-core": "workspace:*",
+		"valibot": "^1.4.0"
+	},
+	"devDependencies": {
+		"@types/node": "24.13.3",
+		"vitest": "^4.1.10"
+	}
+}

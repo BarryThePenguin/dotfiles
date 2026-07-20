@@ -2,10 +2,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
 	test: {
-		coverage: {
-			enabled: true,
-			provider: "v8",
-		},
-		projects: ["tools/*"],
+		globals: true,
+		environment: "node",
+		include: ["src/**/*.test.ts"],
 	},
 });
