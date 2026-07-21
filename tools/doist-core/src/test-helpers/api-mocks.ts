@@ -82,6 +82,26 @@ export function createMockApiLabel(overrides: Record<string, unknown> = {}) {
 	};
 }
 
+/**
+ * Create a mock Todoist API filter response.
+ *
+ * @param overrides - Property overrides for the base filter
+ * @returns Filter object matching Todoist API sync format
+ */
+export function createMockApiFilter(overrides: Record<string, unknown> = {}) {
+	return {
+		id: "f1",
+		name: "My Filter",
+		query: "today & #Work",
+		color: "blue",
+		item_order: 1,
+		is_deleted: false,
+		is_favorite: false,
+		is_frozen: false,
+		...overrides,
+	};
+}
+
 // ── Sync Response Builders ────────────────────────────────────────────────
 
 /**
@@ -96,6 +116,7 @@ export function createMockSyncResponse(
 		projects?: unknown[];
 		sections?: unknown[];
 		labels?: unknown[];
+		filters?: unknown[];
 		items?: unknown[];
 		temp_id_mapping?: Record<string, unknown>;
 		sync_status?: Record<string, unknown>;
@@ -107,6 +128,7 @@ export function createMockSyncResponse(
 		projects: [],
 		sections: [],
 		labels: [],
+		filters: [],
 		items: [],
 		temp_id_mapping: {},
 		sync_status: {},

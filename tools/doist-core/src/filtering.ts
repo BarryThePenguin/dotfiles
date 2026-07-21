@@ -61,6 +61,7 @@ export function filterToAllowedProjects(
 		projects: allowedProjects,
 		sections: data.sections.filter((s) => resolvedIds.has(s.project_id)),
 		labels: data.labels,
+		filters: data.filters,
 		tasks: filteredTasks,
 		completedTaskIds: data.completedTaskIds,
 		deletedTaskIds: data.deletedTaskIds,

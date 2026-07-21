@@ -96,6 +96,17 @@ const SyncStatusValueSchema = v.union([
 	v.object({ error: v.string(), error_code: v.optional(v.number()) }),
 ]);
 
+const FilterSchema = v.object({
+	id: v.string(),
+	name: v.string(),
+	query: v.string(),
+	color: v.optional(v.nullable(v.string())),
+	item_order: v.optional(v.number()),
+	is_deleted: v.boolean(),
+	is_favorite: v.optional(v.boolean(), false),
+	is_frozen: v.optional(v.boolean(), false),
+});
+
 const SyncResponseSchema = v.object({
 	sync_token: v.string(),
 	sync_status: v.optional(v.record(v.string(), SyncStatusValueSchema)),
@@ -103,6 +114,7 @@ const SyncResponseSchema = v.object({
 	projects: v.optional(v.array(ProjectSchema)),
 	sections: v.optional(v.array(SectionSchema)),
 	labels: v.optional(v.array(LabelSchema)),
+	filters: v.optional(v.array(FilterSchema)),
 	temp_id_mapping: v.optional(v.record(v.string(), v.string())),
 });
 
@@ -113,6 +125,7 @@ export type SyncItem = v.InferOutput<typeof ItemSchema>;
 export type SyncProject = v.InferOutput<typeof ProjectSchema>;
 export type SyncSection = v.InferOutput<typeof SectionSchema>;
 export type SyncLabel = v.InferOutput<typeof LabelSchema>;
+export type SyncFilter = v.InferOutput<typeof FilterSchema>;
 
 // ============================================================================
 // Command Argument Schemas
@@ -166,6 +179,41 @@ export const CloseItemArgsSchema = v.object({
 export type CloseItemArgs = v.InferOutput<typeof CloseItemArgsSchema>;
 
 // ============================================================================
+// Filter Command Argument Schemas
+// ============================================================================
+
+export const AddFilterArgsSchema = v.object({
+	name: v.string(),
+	query: v.string(),
+	color: v.optional(v.nullable(v.string())),
+	item_order: v.optional(v.number()),
+	is_favorite: v.optional(v.boolean()),
+});
+export type AddFilterArgs = v.InferOutput<typeof AddFilterArgsSchema>;
+
+export const UpdateFilterArgsSchema = v.object({
+	id: v.string(),
+	name: v.optional(v.string()),
+	query: v.optional(v.string()),
+	color: v.optional(v.nullable(v.string())),
+	item_order: v.optional(v.number()),
+	is_favorite: v.optional(v.boolean()),
+});
+export type UpdateFilterArgs = v.InferOutput<typeof UpdateFilterArgsSchema>;
+
+export const DeleteFilterArgsSchema = v.object({
+	id: v.string(),
+});
+export type DeleteFilterArgs = v.InferOutput<typeof DeleteFilterArgsSchema>;
+
+export const UpdateFilterOrdersArgsSchema = v.object({
+	id_order_mapping: v.record(v.string(), v.number()),
+});
+export type UpdateFilterOrdersArgs = v.InferOutput<
+	typeof UpdateFilterOrdersArgsSchema
+>;
+
+// ============================================================================
 // Discriminated Union: SyncCommand
 // ============================================================================
 
@@ -212,13 +260,46 @@ export type ItemUncompleteCommand = {
 	suggestedResourceTypes: readonly ["items"];
 };
 
+export type FilterAddCommand = {
+	type: "filter_add";
+	uuid: string;
+	args: AddFilterArgs;
+	temp_id?: string | undefined;
+	suggestedResourceTypes: readonly ["filters"];
+};
+
+export type FilterUpdateCommand = {
+	type: "filter_update";
+	uuid: string;
+	args: UpdateFilterArgs;
+	suggestedResourceTypes: readonly ["filters"];
+};
+
+export type FilterDeleteCommand = {
+	type: "filter_delete";
+	uuid: string;
+	args: DeleteFilterArgs;
+	suggestedResourceTypes: readonly ["filters"];
+};
+
+export type FilterUpdateOrdersCommand = {
+	type: "filter_update_orders";
+	uuid: string;
+	args: UpdateFilterOrdersArgs;
+	suggestedResourceTypes: readonly ["filters"];
+};
+
 export type SyncCommand =
 	| ItemAddCommand
 	| ItemUpdateCommand
 	| ItemMoveCommand
 	| ItemCompleteCommand
 	| ItemCloseCommand
-	| ItemUncompleteCommand;
+	| ItemUncompleteCommand
+	| FilterAddCommand
+	| FilterUpdateCommand
+	| FilterDeleteCommand
+	| FilterUpdateOrdersCommand;
 
 // ============================================================================
 // Command Failures & Errors
@@ -307,6 +388,45 @@ export function createItemUncompleteCommand(
 		uuid: crypto.randomUUID(),
 		args,
 		suggestedResourceTypes: ["items"],
+	};
+}
+
+// ============================================================================
+// Filter Command Constructors
+// ============================================================================
+
+export function createFilterAddCommand(
+	args: AddFilterArgs,
+	tempId?: string,
+): FilterAddCommand {
+	return {
+		type: "filter_add",
+		uuid: crypto.randomUUID(),
+		args,
+		temp_id: tempId,
+		suggestedResourceTypes: ["filters"],
+	};
+}
+
+export function createFilterUpdateCommand(
+	args: UpdateFilterArgs,
+): FilterUpdateCommand {
+	return {
+		type: "filter_update",
+		uuid: crypto.randomUUID(),
+		args,
+		suggestedResourceTypes: ["filters"],
+	};
+}
+
+export function createFilterDeleteCommand(
+	args: DeleteFilterArgs,
+): FilterDeleteCommand {
+	return {
+		type: "filter_delete",
+		uuid: crypto.randomUUID(),
+		args,
+		suggestedResourceTypes: ["filters"],
 	};
 }
 
@@ -571,6 +691,82 @@ export async function fetchProjectsFromApi(
 	const data = parseProjectsResponse(await res.json());
 	return {
 		projects: data.results,
+		nextCursor: data.next_cursor ?? null,
+	};
+}
+
+// ============================================================================
+// REST API - Tasks by Filter
+// ============================================================================
+
+const TaskByFilterSchema = v.object({
+	id: v.string(),
+	content: v.string(),
+	description: v.string(),
+	priority: v.number(),
+	due: DueSchema,
+	labels: v.array(v.string()),
+	checked: v.optional(v.boolean()),
+	added_at: v.optional(v.nullable(v.string())),
+	updated_at: v.optional(v.nullable(v.string())),
+	parent_id: v.optional(v.nullable(v.string())),
+	child_order: v.optional(v.nullable(v.number())),
+	note_count: v.optional(v.nullable(v.number())),
+	project_id: v.nullable(v.string()),
+	section_id: v.nullable(v.string()),
+	is_deleted: v.boolean(),
+});
+
+const TasksByFilterResponseSchema = v.object({
+	results: v.array(TaskByFilterSchema),
+	next_cursor: v.optional(v.nullable(v.string())),
+});
+
+export type RestApiTaskByFilter = v.InferOutput<typeof TaskByFilterSchema>;
+
+/**
+ * Fetch tasks matching a filter query string via the Todoist REST API.
+ *
+ * Executes a filter query (e.g. "today", "overdue & #Work", "priority 1")
+ * on Todoist's servers and returns the matching tasks.
+ *
+ * @param token - Todoist API token
+ * @param query - Filter query string (Todoist filter syntax)
+ * @param limit - Max tasks to return (1-200, default 50)
+ * @param cursor - Pagination cursor
+ * @returns Matching tasks and optional next cursor
+ */
+export async function fetchTasksByFilter(
+	token: string,
+	query: string,
+	limit: number = 50,
+	cursor?: string | null,
+): Promise<{ tasks: RestApiTaskByFilter[]; nextCursor: string | null }> {
+	const url = new URL("tasks/filter", TODOIST_API_BASE_URL);
+
+	url.searchParams.set("query", query);
+	url.searchParams.set("limit", limit.toString());
+
+	if (cursor) {
+		url.searchParams.set("cursor", cursor);
+	}
+
+	const res = await fetch(url, {
+		method: "GET",
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	});
+
+	if (!res.ok) {
+		throw new Error(
+			`Todoist filter query failed: ${res.status} ${res.statusText}`,
+		);
+	}
+
+	const data = v.parse(TasksByFilterResponseSchema, await res.json());
+	return {
+		tasks: data.results,
 		nextCursor: data.next_cursor ?? null,
 	};
 }

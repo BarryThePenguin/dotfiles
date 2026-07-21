@@ -4,7 +4,7 @@ import * as v from "valibot";
 import type { Container } from "doist-core";
 import { logger } from "doist-core";
 
-export function registerPrompts(mcp: McpServer, container: Container): void {
+export function registerPrompts(mcp: McpServer, _: Container): void {
 	mcp.registerPrompt(
 		"todoist_next_task",
 		{

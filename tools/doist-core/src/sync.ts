@@ -9,6 +9,7 @@ export type SyncResult = {
 	projects: number;
 	sections: number;
 	labels: number;
+	filters: number;
 	tasks: number;
 	reconciled: number;
 };
@@ -36,6 +37,7 @@ export function countSyncData(
 		projects: data.projects.length,
 		sections: data.sections.length,
 		labels: data.labels.length,
+		filters: data.filters.length,
 		tasks: data.tasks.length,
 		reconciled,
 	};
@@ -74,6 +76,7 @@ export async function syncAndFetch(
 			projects_in_response: raw.projects.length,
 			sections_in_response: raw.sections.length,
 			labels_in_response: raw.labels.length,
+			filters_in_response: raw.filters.length,
 			has_syncToken: !!raw.syncToken,
 			task_ids: raw.tasks.map((t) => t.id),
 		},
@@ -124,6 +127,7 @@ export async function syncAndPersist(
 		projects,
 		sections,
 		labels,
+		filters,
 		tasks,
 		deletedTaskIds,
 		completedTaskIds,
@@ -138,6 +142,9 @@ export async function syncAndPersist(
 		}
 		for (const l of labels) {
 			db.upsertLabel(l);
+		}
+		for (const f of filters) {
+			db.upsertFilter(f);
 		}
 		for (const t of tasks) {
 			db.upsertTask(t);

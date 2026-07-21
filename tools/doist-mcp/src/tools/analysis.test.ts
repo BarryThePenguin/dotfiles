@@ -3,7 +3,6 @@ import {
 	createDefaultHarness,
 	TASK_A,
 	TASK_B,
-	NOW,
 } from "../test-helpers/server.ts";
 
 let harness: Awaited<ReturnType<typeof createDefaultHarness>>;
@@ -84,11 +83,15 @@ describe("todoist_find_duplicates", () => {
 		};
 		expect(result.groups.length).toBeGreaterThan(0);
 		expect(result.groups[0]).toMatchObject({
-			canonicalTask: expect.objectContaining({ id: expect.any(String) }),
-			matches: expect.any(Array),
-			matchType: expect.stringMatching(/^(exact|fuzzy)$/),
-			score: expect.any(Number),
-			recommendationCode: expect.stringMatching(/^(merge|review|ignore)$/),
+			canonicalTask: expect.objectContaining({
+				id: expect.any(String) as unknown,
+			}) as unknown,
+			matches: expect.any(Array) as unknown,
+			matchType: expect.stringMatching(/^(exact|fuzzy)$/) as unknown,
+			score: expect.any(Number) as unknown,
+			recommendationCode: expect.stringMatching(
+				/^(merge|review|ignore)$/,
+			) as unknown,
 		});
 	});
 
@@ -120,12 +123,14 @@ describe("todoist_find_stale_tasks", () => {
 		};
 		expect(result.candidates.length).toBeGreaterThanOrEqual(1);
 		expect(result.candidates[0]).toMatchObject({
-			task: expect.objectContaining({ id: expect.any(String) }),
-			signals: expect.any(Array),
-			score: expect.any(Number),
+			task: expect.objectContaining({
+				id: expect.any(String) as unknown,
+			}) as unknown,
+			signals: expect.any(Array) as unknown,
+			score: expect.any(Number) as unknown,
 			recommendationCode: expect.stringMatching(
 				/^(complete|rewrite|reschedule|schedule|keep)$/,
-			),
+			) as unknown,
 		});
 	});
 

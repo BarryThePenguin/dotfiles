@@ -1,8 +1,21 @@
 import { Database } from "./db.ts";
-import { normalizeTask, type AppTask } from "./schema.ts";
-import { type AddTaskFields, type UpdateTaskFields } from "./schemas.ts";
+import {
+	normalizeFilter,
+	normalizeTask,
+	type AppFilter,
+	type AppTask,
+} from "./schema.ts";
+import {
+	type AddFilterFields,
+	type AddTaskFields,
+	type UpdateFilterFields,
+	type UpdateTaskFields,
+} from "./schemas.ts";
 import {
 	createAddCommand,
+	createFilterAddCommand,
+	createFilterDeleteCommand,
+	createFilterUpdateCommand,
 	createItemCloseCommand,
 	createItemMoveCommand,
 	createItemUncompleteCommand,
@@ -276,4 +289,151 @@ export async function uncompleteTasks(
 	});
 
 	return { ok: true, result: ids.length };
+}
+
+// ============================================================================
+// Filter Operations
+// ============================================================================
+
+/**
+ * List all saved filters from the local database.
+ */
+export function listFilters(db: Database): AppFilter[] {
+	return db.selectFilters();
+}
+
+/**
+ * Add a new filter via the Todoist sync API.
+ */
+export async function addFilter(
+	db: Database,
+	client: TodoistClient,
+	{ name, query, color, itemOrder, isFavorite }: AddFilterFields,
+): Promise<OperationResult<AppFilter>> {
+	const tempId = crypto.randomUUID();
+	const allData = await client.sync(
+		getToken(db),
+		createFilterAddCommand(
+			{ name, query, color, item_order: itemOrder, is_favorite: isFavorite },
+			tempId,
+		),
+	);
+
+	const realId = allData.tempIdMapping?.[tempId];
+	if (!realId) {
+		throw new Error("failed to create filter: no id returned");
+	}
+
+	const filter = allData.filters.find((f) => f.id === realId);
+	if (!filter) {
+		throw new Error(`created filter ${realId} not in sync response`);
+	}
+
+	persistMutations(db, { token: allData.syncToken });
+	return { ok: true, result: normalizeFilter(filter) };
+}
+
+/**
+ * Update an existing filter via the Todoist sync API.
+ */
+export async function updateFilter(
+	db: Database,
+	client: TodoistClient,
+	id: string,
+	{ name, query, color, itemOrder, isFavorite }: UpdateFilterFields,
+): Promise<OperationResult<AppFilter>> {
+	const allData = await client.sync(
+		getToken(db),
+		createFilterUpdateCommand({
+			id,
+			name,
+			query,
+			color,
+			item_order: itemOrder,
+			is_favorite: isFavorite,
+		}),
+	);
+
+	const filter = allData.filters.find((f) => f.id === id);
+	if (!filter) {
+		throw new Error(`updated filter ${id} not in sync response`);
+	}
+
+	persistMutations(db, { token: allData.syncToken });
+	return { ok: true, result: normalizeFilter(filter) };
+}
+
+/**
+ * Delete a filter via the Todoist sync API.
+ */
+export async function deleteFilter(
+	db: Database,
+	client: TodoistClient,
+	id: string,
+): Promise<OperationResult<void>> {
+	const allData = await client.sync(
+		getToken(db),
+		createFilterDeleteCommand({ id }),
+	);
+
+	persistMutations(db, {
+		token: allData.syncToken,
+		customOperations: (db) => {
+			db.deleteFilterById(id);
+		},
+	});
+	return { ok: true, result: undefined };
+}
+
+/**
+ * Run a filter query against the Todoist REST API.
+ *
+ * Executes the given query string on Todoist's servers and returns matching tasks.
+ * This is useful for reusing saved Todoist filters (e.g. "triage", "energy level", "quick wins").
+ */
+export async function runFilterQuery(
+	client: TodoistClient,
+	query: string,
+	limit: number = 50,
+): Promise<
+	OperationResult<{
+		tasks: AppTask[];
+		hasMore: boolean;
+		nextCursor: string | null;
+	}>
+> {
+	const { tasks, nextCursor } = await client.fetchTasksByFilter(query, limit);
+
+	const normalizedTasks = tasks
+		.filter((t) => !t.is_deleted)
+		.map((t) =>
+			normalizeTask({
+				id: t.id,
+				project_id: t.project_id,
+				section_id: t.section_id,
+				parent_id: t.parent_id ?? null,
+				child_order: t.child_order ?? 0,
+				note_count: t.note_count ?? 0,
+				updated_at: t.updated_at ?? null,
+				content: t.content,
+				description: t.description,
+				priority: t.priority,
+				due_date: t.due?.date ?? null,
+				due_string: t.due?.string ?? null,
+				is_recurring: t.due?.is_recurring ? 1 : 0,
+				labels: JSON.stringify(t.labels),
+				is_completed: t.checked ? 1 : 0,
+				created_at: t.added_at ?? null,
+				synced_at: new Date().toISOString(),
+			}),
+		);
+
+	return {
+		ok: true,
+		result: {
+			tasks: normalizedTasks,
+			hasMore: nextCursor !== null,
+			nextCursor,
+		},
+	};
 }

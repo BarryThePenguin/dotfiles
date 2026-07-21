@@ -22,6 +22,7 @@ import {
 	TASK_DONE,
 	TASK_IDS,
 	TASK_OVERDUE,
+	NOW,
 } from "./test-helpers/fixtures.ts";
 
 // ── Token persistence tests ────────────────────────────────────────────────
@@ -510,5 +511,107 @@ describe("listSections", () => {
 		db.upsertProject(PROJECT_WORK);
 		const results = listSections(db, PROJECT_IDS.work);
 		expect(results).toHaveLength(0);
+	});
+});
+
+// ── Filter CRUD tests ────────────────────────────────────────────────
+
+describe("filter operations", () => {
+	let db: Database;
+
+	beforeEach(() => {
+		db = openDb();
+	});
+
+	afterEach(() => {
+		db.close();
+	});
+
+	const FILTER_A = {
+		id: "f1",
+		name: "Today",
+		query: "today",
+		color: "blue",
+		item_order: 1,
+		is_favorite: 0,
+		synced_at: NOW,
+	};
+
+	const FILTER_B = {
+		id: "f2",
+		name: "Triage",
+		query: "overdue | today",
+		color: "red",
+		item_order: 2,
+		is_favorite: 1,
+		synced_at: NOW,
+	};
+
+	it("upsertFilter and selectFilters round-trips a filter", () => {
+		db.upsertFilter(FILTER_A);
+		const filters = db.selectFilters();
+		expect(filters).toHaveLength(1);
+		expect(filters[0]?.id).toBe("f1");
+		expect(filters[0]?.name).toBe("Today");
+		expect(filters[0]?.query).toBe("today");
+		expect(filters[0]?.color).toBe("blue");
+		expect(filters[0]?.itemOrder).toBe(1);
+		expect(filters[0]?.isFavorite).toBe(false);
+	});
+
+	it("selectFilters orders by item_order", () => {
+		db.upsertFilter(FILTER_B);
+		db.upsertFilter(FILTER_A);
+		const filters = db.selectFilters();
+		expect(filters[0]?.id).toBe("f1"); // item_order 1
+		expect(filters[1]?.id).toBe("f2"); // item_order 2
+	});
+
+	it("upsertFilter overwrites on conflict", () => {
+		db.upsertFilter(FILTER_A);
+		db.upsertFilter({ ...FILTER_A, name: "Renamed" });
+		const filters = db.selectFilters();
+		expect(filters).toHaveLength(1);
+		expect(filters[0]?.name).toBe("Renamed");
+	});
+
+	it("getFilterById returns the matching filter", () => {
+		db.upsertFilter(FILTER_A);
+		db.upsertFilter(FILTER_B);
+		const filter = db.getFilterById("f2");
+		expect(filter?.name).toBe("Triage");
+	});
+
+	it("getFilterById returns null for unknown id", () => {
+		expect(db.getFilterById("f-unknown")).toBeNull();
+	});
+
+	it("getFilterByName returns the matching filter", () => {
+		db.upsertFilter(FILTER_A);
+		const filter = db.getFilterByName("Today");
+		expect(filter?.id).toBe("f1");
+	});
+
+	it("getFilterByName returns null for unknown name", () => {
+		expect(db.getFilterByName("Nonexistent")).toBeNull();
+	});
+
+	it("deleteFilterById removes the filter", () => {
+		db.upsertFilter(FILTER_A);
+		db.upsertFilter(FILTER_B);
+		db.deleteFilterById("f1");
+		const filters = db.selectFilters();
+		expect(filters).toHaveLength(1);
+		expect(filters[0]?.id).toBe("f2");
+	});
+
+	it("deleteFilterById is a no-op for unknown id", () => {
+		db.upsertFilter(FILTER_A);
+		db.deleteFilterById("f-unknown");
+		expect(db.selectFilters()).toHaveLength(1);
+	});
+
+	it("selectFilters returns empty array when no filters exist", () => {
+		expect(db.selectFilters()).toEqual([]);
 	});
 });

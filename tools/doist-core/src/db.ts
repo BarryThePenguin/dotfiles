@@ -25,10 +25,12 @@ import {
 } from "node:sqlite";
 import type { ConfigPaths } from "./paths.ts";
 import {
+	normalizeFilter,
 	normalizeLabel,
 	normalizeProject,
 	normalizeSection,
 	normalizeTask,
+	type AppFilter,
 	type AppLabel,
 	type AppProject,
 	type AppSection,
@@ -61,6 +63,16 @@ interface LabelTable {
 	synced_at: string;
 }
 
+interface FilterTable {
+	id: string;
+	name: string;
+	query: string;
+	color: string | null;
+	item_order: number;
+	is_favorite: number;
+	synced_at: string;
+}
+
 interface TaskTable {
 	id: string;
 	project_id: string | null;
@@ -90,6 +102,7 @@ type Schema = {
 	projects: ProjectTable;
 	sections: SectionTable;
 	labels: LabelTable;
+	filters: FilterTable;
 	tasks: TaskTable;
 	meta: MetaTable;
 };
@@ -97,6 +110,7 @@ type Schema = {
 export type DbProject = Selectable<ProjectTable>;
 export type DbSection = Selectable<SectionTable>;
 export type DbLabel = Selectable<LabelTable>;
+export type DbFilter = Selectable<FilterTable>;
 export type DbTask = Selectable<TaskTable>;
 
 const SCHEMA_SQL = `
@@ -126,6 +140,16 @@ const SCHEMA_SQL = `
 	id          TEXT PRIMARY KEY,
 	name        TEXT NOT NULL,
 	color       TEXT,
+	synced_at   TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS filters (
+	id          TEXT PRIMARY KEY,
+	name        TEXT NOT NULL,
+	query       TEXT NOT NULL,
+	color       TEXT,
+	item_order  INTEGER DEFAULT 0,
+	is_favorite INTEGER DEFAULT 0,
 	synced_at   TEXT NOT NULL
   );
 
@@ -522,6 +546,27 @@ export class Database {
 		).map(normalizeLabel);
 	}
 
+	// Filter queries
+	private filters() {
+		return this.#q.selectFrom("filters").selectAll();
+	}
+
+	selectFilters(): AppFilter[] {
+		return this.all(this.filters().orderBy("item_order").compile()).map(
+			normalizeFilter,
+		);
+	}
+
+	getFilterById(id: string): AppFilter | null {
+		const filter = this.get(this.filters().where("id", "=", id).compile());
+		return filter ? normalizeFilter(filter) : null;
+	}
+
+	getFilterByName(name: string): AppFilter | null {
+		const filter = this.get(this.filters().where("name", "=", name).compile());
+		return filter ? normalizeFilter(filter) : null;
+	}
+
 	// Write operations
 	private upsert<T extends keyof Schema>(
 		table: T,
@@ -547,6 +592,14 @@ export class Database {
 
 	upsertLabel(label: Insertable<LabelTable>): void {
 		this.upsert("labels", "id", label);
+	}
+
+	upsertFilter(filter: Insertable<FilterTable>): void {
+		this.upsert("filters", "id", filter);
+	}
+
+	deleteFilterById(id: string): void {
+		this.run(this.#q.deleteFrom("filters").where("id", "=", id).compile());
 	}
 
 	upsertTask(task: Insertable<TaskTable>): void {

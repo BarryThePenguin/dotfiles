@@ -8,8 +8,14 @@
  * No side effects, no DB access. Pure translation layer.
  */
 
-import type { DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
-import type { SyncItem, SyncLabel, SyncProject, SyncSection } from "./sdk.ts";
+import type { DbLabel, DbProject, DbSection, DbTask, DbFilter } from "./db.ts";
+import type {
+	SyncFilter,
+	SyncItem,
+	SyncLabel,
+	SyncProject,
+	SyncSection,
+} from "./sdk.ts";
 
 // App-facing types (camelCase)
 export type AppTask = {
@@ -49,6 +55,15 @@ export type AppLabel = {
 	id: string;
 	name: string;
 	color: string | null;
+};
+
+export type AppFilter = {
+	id: string;
+	name: string;
+	query: string;
+	color: string | null;
+	itemOrder: number | null;
+	isFavorite: boolean;
 };
 
 /**
@@ -245,5 +260,49 @@ export function normalizeLabel(l: DbLabel): AppLabel {
 		id: l.id,
 		name: l.name,
 		color: l.color,
+	};
+}
+
+/**
+ * Prepare a Todoist filter for database storage.
+ *
+ * Filters deleted filters.
+ * Transforms:
+ * - item_order → item_order
+ * - is_favorite (boolean) → is_favorite (0/1)
+ */
+export function prepareFilterForDB(
+	f: SyncFilter,
+	syncedAt: string = now(),
+): DbFilter | null {
+	if (f.is_deleted) {
+		return null;
+	}
+	return {
+		id: f.id,
+		name: f.name,
+		query: f.query,
+		color: f.color ?? null,
+		item_order: f.item_order ?? 0,
+		is_favorite: f.is_favorite ? 1 : 0,
+		synced_at: syncedAt,
+	};
+}
+
+/**
+ * Normalize a database filter to app-facing format (camelCase).
+ *
+ * Transforms:
+ * - item_order → itemOrder
+ * - is_favorite (0/1) → isFavorite (boolean)
+ */
+export function normalizeFilter(f: DbFilter): AppFilter {
+	return {
+		id: f.id,
+		name: f.name,
+		query: f.query,
+		color: f.color,
+		itemOrder: f.item_order,
+		isFavorite: f.is_favorite === 1,
 	};
 }

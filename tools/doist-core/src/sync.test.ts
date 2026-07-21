@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterToAllowedProjects } from "./filtering.ts";
-import { syncAndPersist } from "./sync.ts";
+import { countSyncData, syncAndPersist } from "./sync.ts";
 import { createTestContainer } from "./test-helpers/container.ts";
 import {
 	makeData,
@@ -83,6 +83,25 @@ describe("filterToAllowedProjects", () => {
 		});
 		const result = filterToAllowedProjects(data, ["Work"]);
 		expect(result.completedTaskIds).toEqual(["completed1", "completed2"]);
+	});
+
+	it("passes filters through unchanged (filters are global)", () => {
+		const filter = {
+			id: "f1",
+			name: "Today",
+			query: "today",
+			color: "blue",
+			item_order: 1,
+			is_favorite: 0,
+			synced_at: NOW,
+		};
+		const data = makeData({
+			projects: [makeProject("p1", "Work")],
+			filters: [filter],
+		});
+		const result = filterToAllowedProjects(data, ["Work"]);
+		expect(result.filters).toHaveLength(1);
+		expect(result.filters[0]?.id).toBe("f1");
 	});
 });
 
@@ -241,5 +260,124 @@ describe("sync", () => {
 		const t2 = allTasks.find((t) => t.id === "t2");
 		expect(t1?.isCompleted).toBe(false);
 		expect(t2?.isCompleted).toBe(true);
+	});
+
+	it("persists filters from sync response", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValue(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				filters: [
+					{
+						id: "f1",
+						name: "Today",
+						query: "today",
+						color: "blue",
+						item_order: 1,
+						is_favorite: 0,
+						synced_at: NOW,
+					},
+					{
+						id: "f2",
+						name: "Triage",
+						query: "overdue | today",
+						color: "red",
+						item_order: 2,
+						is_favorite: 1,
+						synced_at: NOW,
+					},
+				],
+				syncToken: "tok1",
+			}),
+		);
+
+		const result = await syncAndPersist(db, client);
+		expect(result.data.filters).toHaveLength(2);
+
+		const filters = db.selectFilters();
+		expect(filters).toHaveLength(2);
+		expect(filters[0]?.id).toBe("f1");
+		expect(filters[0]?.name).toBe("Today");
+		expect(filters[1]?.id).toBe("f2");
+		expect(filters[1]?.name).toBe("Triage");
+	});
+
+	it("overwrites filters on re-sync", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValue(
+			makeData({
+				filters: [
+					{
+						id: "f1",
+						name: "V1",
+						query: "today",
+						color: null,
+						item_order: 0,
+						is_favorite: 0,
+						synced_at: NOW,
+					},
+				],
+				syncToken: "tok1",
+			}),
+		);
+
+		await syncAndPersist(db, client);
+		expect(db.selectFilters()[0]?.name).toBe("V1");
+
+		client.sync.mockResolvedValue(
+			makeData({
+				filters: [
+					{
+						id: "f1",
+						name: "V2",
+						query: "today",
+						color: null,
+						item_order: 0,
+						is_favorite: 0,
+						synced_at: NOW,
+					},
+				],
+				syncToken: "tok2",
+			}),
+		);
+
+		await syncAndPersist(db, client);
+		const filters = db.selectFilters();
+		expect(filters).toHaveLength(1);
+		expect(filters[0]?.name).toBe("V2");
+	});
+});
+
+describe("countSyncData", () => {
+	it("counts filters in sync data", () => {
+		const data = makeData({
+			filters: [
+				{
+					id: "f1",
+					name: "A",
+					query: "today",
+					color: null,
+					item_order: 0,
+					is_favorite: 0,
+					synced_at: NOW,
+				},
+				{
+					id: "f2",
+					name: "B",
+					query: "tomorrow",
+					color: null,
+					item_order: 1,
+					is_favorite: 0,
+					synced_at: NOW,
+				},
+			],
+		});
+		const result = countSyncData(data);
+		expect(result.filters).toBe(2);
+	});
+
+	it("returns 0 filters when none present", () => {
+		const result = countSyncData(makeData());
+		expect(result.filters).toBe(0);
 	});
 });

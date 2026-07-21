@@ -1,6 +1,9 @@
 import { afterEach, describe, it, expect } from "vitest";
 import * as undici from "undici";
 import {
+	createFilterAddCommand,
+	createFilterDeleteCommand,
+	createFilterUpdateCommand,
 	createItemAddCommand,
 	createItemCompleteCommand,
 	createItemUpdateCommand,
@@ -8,6 +11,7 @@ import {
 	syncRequest,
 } from "./sdk.ts";
 import {
+	createMockApiFilter,
 	createMockSyncResponse,
 	interceptSync,
 	TODOIST_ORIGIN,
@@ -157,5 +161,125 @@ describe("syncRequest", () => {
 				commands: [createItemCompleteCommand({ id: "t1" })],
 			}),
 		).resolves.toBeDefined();
+	});
+});
+
+// ── Filter Command Constructors ────────────────────────────────────────────
+
+describe("createFilterAddCommand", () => {
+	it("returns an add command with the given args", () => {
+		const cmd = createFilterAddCommand({
+			name: "My Filter",
+			query: "today & #Work",
+		});
+		expect(cmd.type).toBe("filter_add");
+		expect(cmd.args).toEqual({ name: "My Filter", query: "today & #Work" });
+		expect(cmd.suggestedResourceTypes).toEqual(["filters"]);
+	});
+
+	it("generates a unique uuid per call", () => {
+		const a = createFilterAddCommand({ name: "A", query: "today" });
+		const b = createFilterAddCommand({ name: "A", query: "today" });
+		expect(a.uuid).not.toBe(b.uuid);
+	});
+
+	it("sets temp_id when provided", () => {
+		const cmd = createFilterAddCommand(
+			{ name: "A", query: "today" },
+			"tmp-123",
+		);
+		expect(cmd.temp_id).toBe("tmp-123");
+	});
+
+	it("omits temp_id when not provided", () => {
+		const cmd = createFilterAddCommand({ name: "A", query: "today" });
+		expect(cmd.temp_id).toBeUndefined();
+	});
+});
+
+describe("createFilterUpdateCommand", () => {
+	it("returns an update command with the given args", () => {
+		const cmd = createFilterUpdateCommand({
+			id: "f1",
+			name: "Renamed",
+		});
+		expect(cmd.type).toBe("filter_update");
+		expect(cmd.args).toEqual({ id: "f1", name: "Renamed" });
+		expect(cmd.suggestedResourceTypes).toEqual(["filters"]);
+	});
+});
+
+describe("createFilterDeleteCommand", () => {
+	it("returns a delete command with the given args", () => {
+		const cmd = createFilterDeleteCommand({ id: "f1" });
+		expect(cmd.type).toBe("filter_delete");
+		expect(cmd.args).toEqual({ id: "f1" });
+		expect(cmd.suggestedResourceTypes).toEqual(["filters"]);
+	});
+});
+
+// ── Sync Response: Filters Parsing ─────────────────────────────────────────
+
+describe("syncRequest with filters", () => {
+	it("parses filters from sync response", async () => {
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				filters: [
+					createMockApiFilter({
+						id: "f1",
+						name: "Today",
+						query: "today",
+					}),
+					createMockApiFilter({
+						id: "f2",
+						name: "High Priority",
+						query: "priority 1",
+						color: "red",
+						item_order: 2,
+						is_favorite: true,
+					}),
+				],
+			}),
+		);
+
+		const result = await syncRequest("mytoken", {
+			sync_token: "*",
+			resource_types: ["filters"],
+		});
+
+		expect(result.filters).toHaveLength(2);
+		expect(result.filters?.[0]).toEqual({
+			id: "f1",
+			name: "Today",
+			query: "today",
+			color: "blue",
+			item_order: 1,
+			is_deleted: false,
+			is_favorite: false,
+			is_frozen: false,
+		});
+		expect(result.filters?.[1]).toEqual({
+			id: "f2",
+			name: "High Priority",
+			query: "priority 1",
+			color: "red",
+			item_order: 2,
+			is_deleted: false,
+			is_favorite: true,
+			is_frozen: false,
+		});
+	});
+
+	it("returns empty filters array when no filters in response", async () => {
+		interceptSync(mockAgent, createMockSyncResponse({ sync_token: "tok" }));
+
+		const result = await syncRequest("mytoken", {
+			sync_token: "*",
+			resource_types: ["filters"],
+		});
+
+		expect(result.filters).toEqual([]);
 	});
 });

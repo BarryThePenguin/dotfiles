@@ -281,6 +281,7 @@ export async function createDefaultHarness(): Promise<{
 				projects: [PROJECT, PROJECT_PERSONAL],
 				sections: [SECTION],
 				labels: [LABEL],
+				filters: [],
 				tasks,
 				completedTaskIds: [],
 				deletedTaskIds: [],
@@ -312,6 +313,62 @@ export async function createDefaultHarness(): Promise<{
 		],
 		nextCursor: null,
 	});
+	container.client.fetchTasksByFilter.mockImplementation(
+		async (query: string) => {
+			const q = query.toLowerCase();
+			const allTasks = container.db.selectTasks({ completed: "incomplete" });
+
+			function matches(t: { due: { date: string } | null; labels: string[] }) {
+				const dueDate = t.due?.date ?? null;
+				if (q === "overdue") {
+					return dueDate && dueDate < TODAY;
+				}
+				if (q === "today") {
+					return dueDate === TODAY;
+				}
+				if (q === "@thoughts") {
+					return t.labels.includes("thoughts");
+				}
+				if (q.includes("@low-energy") || q.includes("@quick")) {
+					return (
+						t.labels.includes("low-energy") ||
+						t.labels.includes("quick") ||
+						(q.includes("@medium-energy") && t.labels.includes("medium-energy"))
+					);
+				}
+				return true;
+			}
+
+			const filtered = allTasks.filter(matches);
+
+			return {
+				tasks: filtered.map((t) => ({
+					id: t.id,
+					content: t.content,
+					description: t.description ?? "",
+					priority: t.priority ?? 1,
+					due: t.due
+						? {
+								date: t.due.date,
+								string: t.due.string,
+								is_recurring: t.due.isRecurring,
+							}
+						: null,
+					labels: t.labels,
+					checked: t.isCompleted,
+					added_at: t.createdAt,
+					updated_at: t.updatedAt,
+					parent_id: t.parentId,
+					child_order: t.childOrder,
+					note_count: t.noteCount,
+					project_id: t.projectId,
+					section_id: t.sectionId,
+					is_deleted: false,
+				})),
+				nextCursor: null,
+			};
+		},
+	);
 
 	const server = buildServer(container);
 	const client = await makeClient(server);

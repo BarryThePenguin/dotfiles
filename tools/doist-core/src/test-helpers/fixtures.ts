@@ -208,6 +208,7 @@ export function makeData(overrides: Partial<AllData> = {}): AllData {
 		projects: [],
 		sections: [],
 		labels: [],
+		filters: [],
 		tasks: [],
 		completedTaskIds: [],
 		deletedTaskIds: [],

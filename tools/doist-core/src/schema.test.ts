@@ -6,19 +6,27 @@
  * - User mutation types → Todoist API request args
  */
 
-import { describe, expect, it } from "vitest";
-import type { DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
+import { assert, describe, expect, it } from "vitest";
+import type { DbFilter, DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
 import {
+	normalizeFilter,
 	normalizeLabel,
 	normalizeProject,
 	normalizeSection,
 	normalizeTask,
+	prepareFilterForDB,
 	prepareLabelForDB,
 	prepareProjectForDB,
 	prepareSectionForDB,
 	prepareTaskForDB,
 } from "./schema.ts";
-import type { SyncItem, SyncLabel, SyncProject, SyncSection } from "./sdk.ts";
+import type {
+	SyncFilter,
+	SyncItem,
+	SyncLabel,
+	SyncProject,
+	SyncSection,
+} from "./sdk.ts";
 import { encodeAddFields, encodeUpdateFields } from "./sdk.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -528,5 +536,146 @@ describe("encodeAddFields", () => {
 			due: { string: "2026-05-24" },
 			labels: ["urgent"],
 		});
+	});
+});
+
+// ── Filter Transformations ──────────────────────────────────────────────────────
+
+function syncFilter(overrides: Partial<SyncFilter> = {}): SyncFilter {
+	return {
+		id: "f1",
+		name: "My Filter",
+		query: "today & #Work",
+		color: "blue",
+		item_order: 1,
+		is_deleted: false,
+		is_favorite: false,
+		is_frozen: false,
+		...overrides,
+	};
+}
+
+function dbFilter(overrides: Partial<DbFilter> = {}): DbFilter {
+	return {
+		id: "f1",
+		name: "My Filter",
+		query: "today & #Work",
+		color: "blue",
+		item_order: 1,
+		is_favorite: 0,
+		synced_at: "2026-05-23T10:00:00.000Z",
+		...overrides,
+	};
+}
+
+describe("prepareFilterForDB", () => {
+	it("converts a sync filter to a DB filter", () => {
+		const result = prepareFilterForDB(syncFilter());
+		expect(result).toEqual({
+			id: "f1",
+			name: "My Filter",
+			query: "today & #Work",
+			color: "blue",
+			item_order: 1,
+			is_favorite: 0,
+			synced_at: expect.any(String) as unknown,
+		});
+	});
+
+	it("returns null for deleted filters", () => {
+		const result = prepareFilterForDB(syncFilter({ is_deleted: true }));
+		expect(result).toBeNull();
+	});
+
+	it("defaults null color to null", () => {
+		const result = prepareFilterForDB(syncFilter({ color: undefined }));
+		expect(result?.color).toBeNull();
+	});
+
+	it("defaults missing item_order to 0", () => {
+		const result = prepareFilterForDB(syncFilter({ item_order: undefined }));
+		expect(result?.item_order).toBe(0);
+	});
+
+	it("converts is_favorite boolean to 0/1", () => {
+		expect(
+			prepareFilterForDB(syncFilter({ is_favorite: false }))?.is_favorite,
+		).toBe(0);
+		expect(
+			prepareFilterForDB(syncFilter({ is_favorite: true }))?.is_favorite,
+		).toBe(1);
+	});
+});
+
+describe("normalizeFilter", () => {
+	it("converts a DB filter to an app filter", () => {
+		const result = normalizeFilter(dbFilter());
+		expect(result).toEqual({
+			id: "f1",
+			name: "My Filter",
+			query: "today & #Work",
+			color: "blue",
+			itemOrder: 1,
+			isFavorite: false,
+		});
+	});
+
+	it("converts is_favorite 1 to true", () => {
+		const result = normalizeFilter(dbFilter({ is_favorite: 1 }));
+		expect(result.isFavorite).toBe(true);
+	});
+
+	it("converts is_favorite 0 to false", () => {
+		const result = normalizeFilter(dbFilter({ is_favorite: 0 }));
+		expect(result.isFavorite).toBe(false);
+	});
+
+	it("preserves null color", () => {
+		const result = normalizeFilter(dbFilter({ color: null }));
+		expect(result.color).toBeNull();
+	});
+});
+
+describe("filter round-trip", () => {
+	it("prepareFilterForDB → normalizeFilter preserves all fields", () => {
+		const original = syncFilter({
+			id: "f-roundtrip",
+			name: "Triage",
+			query: "overdue | today",
+			color: "red",
+			item_order: 3,
+			is_favorite: true,
+		});
+
+		const dbRow = prepareFilterForDB(original);
+		assert(dbRow);
+
+		const appFilter = normalizeFilter(dbRow);
+		expect(appFilter.id).toBe("f-roundtrip");
+		expect(appFilter.name).toBe("Triage");
+		expect(appFilter.query).toBe("overdue | today");
+		expect(appFilter.color).toBe("red");
+		expect(appFilter.itemOrder).toBe(3);
+		expect(appFilter.isFavorite).toBe(true);
+	});
+
+	it("round-trip with minimal values", () => {
+		const original = syncFilter({
+			id: "f-min",
+			name: "Q",
+			query: "today",
+			color: undefined,
+			item_order: undefined,
+			is_favorite: false,
+		});
+
+		const dbRow = prepareFilterForDB(original);
+		assert(dbRow);
+
+		const appFilter = normalizeFilter(dbRow);
+		expect(appFilter.id).toBe("f-min");
+		expect(appFilter.color).toBeNull();
+		expect(appFilter.itemOrder).toBe(0);
+		expect(appFilter.isFavorite).toBe(false);
 	});
 });

@@ -1,6 +1,7 @@
 import * as undici from "undici";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	createMockApiFilter,
 	createMockApiLabel,
 	createMockApiProject,
 	createMockApiSection,
@@ -118,6 +119,83 @@ describe("createClient.sync", () => {
 		expect(data.tasks[0]?.due_date).toBe("2026-05-15");
 		expect(data.tasks[0]?.due_string).toBe("May 15");
 	});
+
+	it("parses filters from sync response", async () => {
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				filters: [
+					createMockApiFilter({
+						id: "f1",
+						name: "Today",
+						query: "today",
+						color: "blue",
+						item_order: 1,
+						is_favorite: true,
+					}),
+					createMockApiFilter({
+						id: "f2",
+						name: "High Priority",
+						query: "priority 1",
+						color: null,
+						item_order: 0,
+					}),
+				],
+			}),
+		);
+
+		const client = createClient("mytoken");
+		const data = await client.sync();
+
+		expect(data.filters).toHaveLength(2);
+		expect(data.filters[0]).toEqual({
+			id: "f1",
+			name: "Today",
+			query: "today",
+			color: "blue",
+			item_order: 1,
+			is_favorite: 1,
+			synced_at: expect.any(String) as unknown,
+		});
+		expect(data.filters[1]).toEqual({
+			id: "f2",
+			name: "High Priority",
+			query: "priority 1",
+			color: null,
+			item_order: 0,
+			is_favorite: 0,
+			synced_at: expect.any(String) as unknown,
+		});
+	});
+
+	it("excludes deleted filters from sync response", async () => {
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok",
+				filters: [
+					createMockApiFilter({ id: "f1", name: "Active" }),
+					createMockApiFilter({ id: "f2", name: "Deleted", is_deleted: true }),
+				],
+			}),
+		);
+
+		const client = createClient("mytoken");
+		const data = await client.sync();
+
+		expect(data.filters).toHaveLength(1);
+		expect(data.filters[0]?.id).toBe("f1");
+	});
+
+	it("returns empty filters array when no filters in response", async () => {
+		interceptSync(mockAgent, createMockSyncResponse({ sync_token: "tok" }));
+
+		const client = createClient("mytoken");
+		const data = await client.sync();
+
+		expect(data.filters).toEqual([]);
+	});
 });
 
 // ── resolveCreated ────────────────────────────────────────────────────────────
@@ -127,6 +205,7 @@ function makeAllData(overrides: Partial<AllData> = {}): AllData {
 		projects: [],
 		sections: [],
 		labels: [],
+		filters: [],
 		tasks: [],
 		completedTaskIds: [],
 		deletedTaskIds: [],

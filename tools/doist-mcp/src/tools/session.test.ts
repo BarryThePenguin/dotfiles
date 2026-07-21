@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	createDefaultHarness,
-	TASK_A,
 	TASK_B,
 	TODAY,
 } from "../test-helpers/server.ts";

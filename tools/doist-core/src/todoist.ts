@@ -1,5 +1,6 @@
-import type { DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
+import type { DbFilter, DbLabel, DbProject, DbSection, DbTask } from "./db.ts";
 import {
+	prepareFilterForDB,
 	prepareLabelForDB,
 	prepareProjectForDB,
 	prepareSectionForDB,
@@ -7,10 +8,12 @@ import {
 } from "./schema.ts";
 import {
 	fetchProjectsFromApi,
+	fetchTasksByFilter,
 	syncRequest,
 	type ResourceType,
 	type ResourceTypes,
 	type RestApiProject,
+	type RestApiTaskByFilter,
 	type SyncCommand,
 } from "./sdk.ts";
 
@@ -18,6 +21,7 @@ export type AllData = {
 	projects: DbProject[];
 	sections: DbSection[];
 	labels: DbLabel[];
+	filters: DbFilter[];
 	tasks: DbTask[];
 	completedTaskIds: string[];
 	deletedTaskIds: string[];
@@ -26,7 +30,13 @@ export type AllData = {
 };
 
 function getResourceTypesForSync(commands?: SyncCommand[]): ResourceTypes {
-	const coreTypes: ResourceType[] = ["projects", "sections", "labels", "items"];
+	const coreTypes: ResourceType[] = [
+		"projects",
+		"sections",
+		"labels",
+		"filters",
+		"items",
+	];
 
 	if (!commands || commands.length === 0) {
 		return coreTypes;
@@ -48,6 +58,11 @@ export interface TodoistClient {
 		limit?: number,
 		cursor?: string | null,
 	): Promise<{ projects: RestApiProject[]; nextCursor: string | null }>;
+	fetchTasksByFilter(
+		query: string,
+		limit?: number,
+		cursor?: string | null,
+	): Promise<{ tasks: RestApiTaskByFilter[]; nextCursor: string | null }>;
 }
 
 /**
@@ -93,6 +108,10 @@ export function createClient(token: string): TodoistClient {
 			response.labels
 				?.map((l) => prepareLabelForDB(l))
 				.filter((l): l is DbLabel => l !== null) ?? [];
+		const filters: DbFilter[] =
+			response.filters
+				?.map((f) => prepareFilterForDB(f))
+				.filter((f): f is DbFilter => f !== null) ?? [];
 		const items = response.items ?? [];
 		const tasks: DbTask[] = items
 			.filter((t) => !t.is_deleted)
@@ -113,6 +132,7 @@ export function createClient(token: string): TodoistClient {
 			projects,
 			sections,
 			labels,
+			filters,
 			tasks,
 			completedTaskIds,
 			deletedTaskIds,
@@ -128,6 +148,10 @@ export function createClient(token: string): TodoistClient {
 
 		fetchProjects(limit, cursor) {
 			return fetchProjectsFromApi(token, limit, cursor);
+		},
+
+		fetchTasksByFilter(query, limit, cursor) {
+			return fetchTasksByFilter(token, query, limit, cursor);
 		},
 	};
 }

@@ -24,6 +24,11 @@ import {
 	findMissingEnergyMetadata,
 	groupStaleByProject,
 	filterByEnergy,
+	listFilters,
+	addFilter,
+	updateFilter,
+	deleteFilter,
+	runFilterQuery,
 } from "doist-core";
 import { shutdown } from "./instrumentation.ts";
 import { out } from "./output.ts";
@@ -590,6 +595,134 @@ const sessionCmd = defineCommand({
 	},
 });
 
+// ── filters ──────────────────────────────────────────────────
+const filtersCmd = defineCommand({
+	meta: { description: "Manage saved filters" },
+	subCommands: {
+		list: defineCommand({
+			meta: { description: "List all saved filters" },
+			args: {
+				sync: {
+					type: "boolean",
+					description: "sync before listing",
+				},
+			},
+			async run({ args }) {
+				const { db } = container;
+				if (args.sync) {
+					await syncAndPersist(db, client, listProjectIds(), false);
+				}
+				out(listFilters(db));
+			},
+		}),
+		add: defineCommand({
+			meta: { description: "Create a new saved filter" },
+			args: {
+				name: {
+					type: "positional",
+					description: "filter name",
+					required: true,
+				},
+				query: {
+					type: "positional",
+					description: "filter query (Todoist syntax)",
+					required: true,
+				},
+				color: { type: "string", description: "filter color" },
+				"item-order": { type: "string", description: "filter order position" },
+				"is-favorite": { type: "boolean", description: "mark as favorite" },
+				sync: { type: "boolean", description: "sync before adding" },
+			},
+			async run({ args }) {
+				const { db } = container;
+				if (args.sync) {
+					await syncAndPersist(db, client, listProjectIds(), false);
+				}
+				const result = await addFilter(db, client, {
+					name: args.name,
+					query: args.query,
+					color: args.color ?? undefined,
+					itemOrder: args["item-order"]
+						? Number(args["item-order"])
+						: undefined,
+					isFavorite: args["is-favorite"] ?? undefined,
+				});
+				out(result);
+			},
+		}),
+		update: defineCommand({
+			meta: { description: "Update an existing saved filter" },
+			args: {
+				id: { type: "positional", description: "filter id", required: true },
+				name: { type: "string", description: "new filter name" },
+				query: { type: "string", description: "new filter query" },
+				color: { type: "string", description: "new filter color" },
+				"item-order": { type: "string", description: "new filter order" },
+				"is-favorite": { type: "boolean", description: "set favorite status" },
+				sync: { type: "boolean", description: "sync before updating" },
+			},
+			async run({ args }) {
+				const { db } = container;
+				if (args.sync) {
+					await syncAndPersist(db, client, listProjectIds(), false);
+				}
+				const result = await updateFilter(db, client, args.id, {
+					name: args.name ?? undefined,
+					query: args.query ?? undefined,
+					color: args.color ?? undefined,
+					itemOrder: args["item-order"]
+						? Number(args["item-order"])
+						: undefined,
+					isFavorite: args["is-favorite"] ?? undefined,
+				});
+				out(result);
+			},
+		}),
+		delete: defineCommand({
+			meta: { description: "Delete a saved filter" },
+			args: {
+				id: { type: "positional", description: "filter id", required: true },
+				sync: { type: "boolean", description: "sync before deleting" },
+			},
+			async run({ args }) {
+				const { db } = container;
+				if (args.sync) {
+					await syncAndPersist(db, client, listProjectIds(), false);
+				}
+				await deleteFilter(db, client, args.id);
+				out({ ok: true, deleted: args.id });
+			},
+		}),
+		query: defineCommand({
+			meta: {
+				description:
+					"Run a filter query against Todoist and return matching tasks",
+			},
+			args: {
+				query: {
+					type: "positional",
+					description: "filter query (Todoist syntax)",
+					required: true,
+				},
+				limit: {
+					type: "string",
+					description: "max tasks to return (1-200, default 50)",
+				},
+				sync: { type: "boolean", description: "sync before querying" },
+			},
+			async run({ args }) {
+				const { db } = container;
+				if (args.sync) {
+					await syncAndPersist(db, client, listProjectIds(), false);
+				}
+				const limit = args.limit ? Number(args.limit) : 50;
+				const result = await runFilterQuery(client, args.query, limit);
+				out(result);
+			},
+		}),
+	},
+});
+
 const main = defineCommand({
 	meta: {
 		name: "doist",
@@ -601,6 +734,7 @@ const main = defineCommand({
 		projects: projectsCmd,
 		sections: sectionsCmd,
 		labels: labelsCmd,
+		filters: filtersCmd,
 		tasks: tasksCmd,
 		analysis: analysisCmd,
 		session: sessionCmd,

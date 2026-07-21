@@ -69,3 +69,25 @@ export const ListTaskSchema = v.object({
 });
 
 export type ListTaskOptions = v.InferOutput<typeof ListTaskSchema>;
+
+// ── Add filter fields ──
+export const AddFilterFieldsSchema = v.object({
+	name: v.string(),
+	query: v.string(),
+	color: v.optional(v.nullable(v.string())),
+	itemOrder: v.optional(v.number()),
+	isFavorite: v.optional(v.boolean()),
+});
+
+export type AddFilterFields = v.InferOutput<typeof AddFilterFieldsSchema>;
+
+// ── Update filter fields ──
+export const UpdateFilterFieldsSchema = v.object({
+	name: v.optional(v.string()),
+	query: v.optional(v.string()),
+	color: v.optional(v.nullable(v.string())),
+	itemOrder: v.optional(v.number()),
+	isFavorite: v.optional(v.boolean()),
+});
+
+export type UpdateFilterFields = v.InferOutput<typeof UpdateFilterFieldsSchema>;

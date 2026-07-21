@@ -1,17 +1,24 @@
 // Domain types
 export { Database } from "./db.ts";
-export type { DbProject, DbTask, DbLabel, DbSection } from "./db.ts";
+export type { DbProject, DbTask, DbLabel, DbSection, DbFilter } from "./db.ts";
 export { createContainer, ProjectRefSchema } from "./container.ts";
 export type { Container, ProjectRef } from "./container.ts";
 export type { ConfigPaths } from "./paths.ts";
 
 // Schema transformations
-export type { AppTask, AppProject, AppSection, AppLabel } from "./schema.ts";
+export type {
+	AppTask,
+	AppProject,
+	AppSection,
+	AppLabel,
+	AppFilter,
+} from "./schema.ts";
 export {
 	normalizeTask,
 	normalizeProject,
 	normalizeSection,
 	normalizeLabel,
+	normalizeFilter,
 } from "./schema.ts";
 
 // Operations
@@ -23,6 +30,11 @@ export {
 	updateTask,
 	resolveProject,
 	listSections,
+	listFilters,
+	addFilter,
+	updateFilter,
+	deleteFilter,
+	runFilterQuery,
 } from "./operations.ts";
 export type { OperationResult } from "./operations.ts";
 
@@ -34,6 +46,8 @@ export {
 	ListTaskSchema,
 	UpdateTaskFieldsSchema,
 	TasksUpdateInputSchema,
+	AddFilterFieldsSchema,
+	UpdateFilterFieldsSchema,
 	parseAddTaskFields,
 	parseUpdateTaskFields,
 } from "./schemas.ts";
@@ -42,15 +56,19 @@ export type {
 	UpdateTaskFields,
 	ListTaskOptions,
 	TasksUpdateInput,
+	AddFilterFields,
+	UpdateFilterFields,
 } from "./schemas.ts";
 
 // SDK types
 export { RestApiProjectSchema } from "./sdk.ts";
 export type {
 	RestApiProject,
+	RestApiTaskByFilter,
 	ResourceType,
 	ResourceTypes,
 	SyncCommand,
+	SyncFilter,
 	AddItemArgs,
 	UpdateItemArgs,
 } from "./sdk.ts";

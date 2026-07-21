@@ -1,15 +1,20 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import { filterByEnergy } from "doist-core";
-import type { Container } from "doist-core";
+import type { Container, RestApiTaskByFilter } from "doist-core";
 import {
-	createEnricher,
+	buildProjectMap,
 	FormattedTaskSchema,
 	maybeSyncSummary,
 	SyncSummarySchema,
 } from "./shared.ts";
 import { registerTool } from "./traced-tool.ts";
+
+const ENERGY_FILTERS: Record<string, string> = {
+	low: "@low-energy | @quick",
+	medium: "@low-energy | @medium-energy | @quick",
+	high: "invalid-no-high-energy-tasks",
+};
 
 const SessionSummaryInputSchema = toStandardJsonSchema(
 	v.object({
@@ -31,6 +36,38 @@ const SessionSummaryOutputSchema = toStandardJsonSchema(
 );
 
 const TRIAGE_THRESHOLD = 5;
+
+function toFormatted(
+	task: RestApiTaskByFilter,
+	projectMap: Map<string, string>,
+) {
+	return {
+		id: task.id,
+		url: `https://app.todoist.com/app/task/${task.id}`,
+		projectId: task.project_id,
+		sectionId: task.section_id,
+		parentId: task.parent_id ?? null,
+		childOrder: task.child_order ?? null,
+		noteCount: task.note_count ?? null,
+		updatedAt: task.updated_at ?? null,
+		content: task.content,
+		due: task.due
+			? {
+					date: task.due.date,
+					string: task.due.string,
+					isRecurring: task.due.is_recurring ?? false,
+				}
+			: null,
+		isCompleted: task.checked ?? false,
+		createdAt: task.added_at ?? null,
+		labels: task.labels,
+		priority: task.priority,
+		description: task.description,
+		projectName: task.project_id
+			? (projectMap.get(task.project_id) ?? null)
+			: null,
+	};
+}
 
 export function registerSessionTools(
 	mcp: McpServer,
@@ -60,15 +97,36 @@ export function registerSessionTools(
 				shouldSync,
 			);
 
-			const enrich = createEnricher(db);
+			const projectMap = buildProjectMap(db.selectProjects());
 
-			const overdue = db.selectTasks({ due: "overdue" }).map(enrich);
-			const today = db.selectTasks({ due: "today" }).map(enrich);
-			const thoughts = db.selectTasks({ label: "thoughts" });
+			const [overdueResult, todayResult, thoughtsResult] = await Promise.all([
+				client.fetchTasksByFilter("overdue", 200),
+				client.fetchTasksByFilter("today", 200),
+				client.fetchTasksByFilter("@thoughts", 200),
+			]);
+
+			const overdue = overdueResult.tasks
+				.filter((t) => !t.is_deleted)
+				.map((t) => toFormatted(t, projectMap));
+			const today = todayResult.tasks
+				.filter((t) => !t.is_deleted)
+				.map((t) => toFormatted(t, projectMap));
+			const thoughtsCount = thoughtsResult.tasks.filter(
+				(t) => !t.is_deleted,
+			).length;
 			const requiresTriage = overdue.length > TRIAGE_THRESHOLD;
-			const suggested = energy
-				? filterByEnergy(db.selectTasks(), energy).map(enrich)
-				: [];
+
+			let suggested: ReturnType<typeof toFormatted>[] = [];
+			if (energy && energy !== "high") {
+				const filter = ENERGY_FILTERS[energy];
+				if (filter) {
+					const energyResult = await client.fetchTasksByFilter(filter, 2);
+					suggested = energyResult.tasks
+						.filter((t) => !t.is_deleted)
+						.map((t) => toFormatted(t, projectMap));
+				}
+			}
+
 			const syncedAt = db.getLastSyncedAt();
 
 			return {
@@ -76,16 +134,16 @@ export function registerSessionTools(
 					sync,
 					overdue,
 					today,
-					thoughtsCount: thoughts.length,
+					thoughtsCount,
 					requiresTriage,
 					suggested,
 					syncedAt,
 				},
-				text: `${overdue.length} overdue, ${today.length} today, ${thoughts.length} thoughts${requiresTriage ? " — triage needed" : ""}`,
+				text: `${overdue.length} overdue, ${today.length} today, ${thoughtsCount} thoughts${requiresTriage ? " — triage needed" : ""}`,
 				track: {
 					"overdue.count": overdue.length,
 					"today.count": today.length,
-					"thoughts.count": thoughts.length,
+					"thoughts.count": thoughtsCount,
 					"requires.triage": requiresTriage ? 1 : 0,
 					"energy.provided": energy ? 1 : 0,
 					"suggested.count": suggested.length,
