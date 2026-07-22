@@ -15,7 +15,7 @@ OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
 "brew-cask:zed" = "latest"
 
 [tools]
-"github:SigNoz/signoz-mcp-server" = "0.8.0"
+"github:SigNoz/signoz-mcp-server" = "0.9.0"
 cloudflared = "2026.7.2"
 cosign = "3.1.2"
 copilot = "1.0.73"
