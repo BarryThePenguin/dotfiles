@@ -14,6 +14,11 @@ OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
 "brew-cask:utm" = "latest"
 "brew-cask:zed" = "latest"
 
+[dotfiles]
+"~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
+"~/.config/opencode/tui.json" = { mode = "symlink" }
+"~/.config/opencode/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
+
 [tools]
 "github:SigNoz/signoz-mcp-server" = "0.9.0"
 cloudflared = "2026.7.2"

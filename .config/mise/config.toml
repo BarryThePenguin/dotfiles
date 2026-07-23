@@ -62,13 +62,9 @@ login_shell = "/bin/zsh"
 [bootstrap.brew.taps]
 "showpad/gitlab" = "git@gitlab.com:showpad-code/devops/homebrew.git"
 
-
 [dotfiles]
 "~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
-"~/CLAUDE.md" = { mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
-"~/.claude" = { mode = "symlink-each" }
-"~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.config/1Password" = { mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "copy" }
@@ -84,8 +80,6 @@ login_shell = "/bin/zsh"
 "~/.config/jj/config.toml" = { mode = "symlink" }
 "~/.config/kube/config" = { mode = "symlink" }
 "~/.config/mise" = { mode = "symlink-each"}
-"~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
-"~/.config/opencode/tui.json" = { mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }

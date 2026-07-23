@@ -22,6 +22,11 @@ CI_JOB_TOKEN = "${GITLAB_TOKEN:-}"
 NPM_TOKEN = "${GITLAB_TOKEN:-}"
 FNOX_PROFILE = "work"
 
+[dotfiles]
+"~/CLAUDE.md" = { mode = "symlink" }
+"~/.claude" = { mode = "symlink-each" }
+"~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
+
 [tools]
 "dotnet:csharp-ls" = "0.25.0"
 "dotnet:dotnet-ef" = "10.0.2"

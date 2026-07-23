@@ -9,7 +9,9 @@ todoist.db
 .zsh_sessions
 
 .agents/*
-!.agents/skills/model-routing
-!.agents/skills/todoist-check-in
-!.agents/skills/todoist-process-inbox
-!.agents/skills/todoist-triage
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/model-routing/
+!.agents/skills/todoist-check-in/
+!.agents/skills/todoist-process-inbox/
+!.agents/skills/todoist-triage/

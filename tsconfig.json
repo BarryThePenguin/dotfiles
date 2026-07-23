@@ -5,7 +5,6 @@
 	},
 	"files": [],
 	"references": [
-		{ "path": "./tools/doist/tsconfig.json" },
 		{ "path": "./tools/doist-cli/tsconfig.json" },
 		{ "path": "./tools/doist-core/tsconfig.json" },
 		{ "path": "./tools/doist-mcp/tsconfig.json" },

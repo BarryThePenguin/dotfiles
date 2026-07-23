@@ -3,6 +3,7 @@
 	"type": "module",
 	"scripts": {
 		"knip": "knip",
+		"lint": "eslint .",
 		"prettier": "prettier --write .",
 		"test": "vitest"
 	},
