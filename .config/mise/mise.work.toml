@@ -30,7 +30,7 @@ FNOX_PROFILE = "work"
 [tools]
 "dotnet:csharp-ls" = "0.25.0"
 "dotnet:dotnet-ef" = "10.0.2"
-docker-cli = "29.6.1"
+docker-cli = "29.6.2"
 dotnet = "10.0.102"
 git-lfs = "3.7.1"
 glab = "1.105.0"
