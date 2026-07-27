@@ -134,8 +134,8 @@ importers:
         specifier: 24.13.3
         version: 24.13.3
       undici:
-        specifier: 8.8.0
-        version: 8.8.0
+        specifier: 8.9.0
+        version: 8.9.0
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
@@ -1972,8 +1972,8 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
-  undici@8.8.0:
-    resolution: {integrity: sha512-ubshXMXwF3MQIMF1y/WxZdNBnjEKeSg2wF5mcGUtU55YTw34tnVVpKRlLf7ruDXZ5344KokPVX4RBx1wJm64Bw==}
+  undici@8.9.0:
+    resolution: {integrity: sha512-aWZpUj7XoGonMClx4gdDRfgBjqeA+F473aDmROQQbM9n6PRfK/u1q/a0X4wMTgcHfT8H6fpbt98PFuDUwFg2YA==}
     engines: {node: '>=22.19.0'}
 
   uri-js@4.4.1:
@@ -3807,7 +3807,7 @@ snapshots:
 
   undici-types@7.18.2: {}
 
-  undici@8.8.0: {}
+  undici@8.9.0: {}
 
   uri-js@4.4.1:
     dependencies:
