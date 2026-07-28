@@ -39,6 +39,9 @@ export function filterToAllowedProjects(
 	const filteredTasks = data.tasks.filter(
 		(t) => t.project_id !== null && resolvedIds.has(t.project_id),
 	);
+	const filteredNotes = data.notes.filter((n) =>
+		filteredTasks.some((t) => t.id === n.item_id),
+	);
 
 	logger.info(
 		{
@@ -63,8 +66,10 @@ export function filterToAllowedProjects(
 		labels: data.labels,
 		filters: data.filters,
 		tasks: filteredTasks,
+		notes: filteredNotes,
 		completedTaskIds: data.completedTaskIds,
 		deletedTaskIds: data.deletedTaskIds,
+		deletedNoteIds: data.deletedNoteIds,
 		syncToken: data.syncToken,
 		...(data.tempIdMapping !== undefined && {
 			tempIdMapping: data.tempIdMapping,

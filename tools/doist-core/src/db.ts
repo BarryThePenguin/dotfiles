@@ -18,20 +18,20 @@ import {
 	type Selectable,
 	type SqlBool,
 } from "kysely";
-import {
-	DatabaseSync,
-	type SQLInputValue,
-	type StatementSync,
-} from "node:sqlite";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+import type { DatabaseSync, SQLInputValue, StatementSync } from "node:sqlite";
 import type { ConfigPaths } from "./paths.ts";
 import {
 	normalizeFilter,
 	normalizeLabel,
+	normalizeNote,
 	normalizeProject,
 	normalizeSection,
 	normalizeTask,
 	type AppFilter,
 	type AppLabel,
+	type AppNote,
 	type AppProject,
 	type AppSection,
 	type AppTask,
@@ -93,6 +93,15 @@ interface TaskTable {
 	synced_at: string;
 }
 
+interface NoteTable {
+	id: string;
+	item_id: string;
+	content: string;
+	posted_at: string | null;
+	is_deleted: number;
+	synced_at: string;
+}
+
 interface MetaTable {
 	key: string;
 	value: string;
@@ -104,6 +113,7 @@ type Schema = {
 	labels: LabelTable;
 	filters: FilterTable;
 	tasks: TaskTable;
+	notes: NoteTable;
 	meta: MetaTable;
 };
 
@@ -112,6 +122,7 @@ export type DbSection = Selectable<SectionTable>;
 export type DbLabel = Selectable<LabelTable>;
 export type DbFilter = Selectable<FilterTable>;
 export type DbTask = Selectable<TaskTable>;
+export type DbNote = Selectable<NoteTable>;
 
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS meta (
@@ -172,6 +183,17 @@ const SCHEMA_SQL = `
 	created_at    TEXT,
 	synced_at     TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS notes (
+	id         TEXT PRIMARY KEY,
+	item_id    TEXT NOT NULL,
+	content    TEXT NOT NULL,
+	posted_at  TEXT,
+	is_deleted INTEGER DEFAULT 0,
+	synced_at  TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS notes_item_id_idx ON notes (item_id);
 `;
 
 // Expression builder helper for building reusable filter expressions
@@ -237,6 +259,9 @@ export class Database {
 	readonly #q: Kysely<Schema>;
 
 	constructor({ dbPath }: ConfigPaths) {
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+		const { DatabaseSync } = require("node:sqlite");
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
 		this.#raw = new DatabaseSync(dbPath);
 
 		this.#raw.exec(SCHEMA_SQL);
@@ -378,6 +403,10 @@ export class Database {
 
 	private tasks() {
 		return this.#q.selectFrom("tasks").selectAll();
+	}
+
+	private notes() {
+		return this.#q.selectFrom("notes").selectAll();
 	}
 
 	getTaskById(id: string): AppTask | null {
@@ -546,6 +575,17 @@ export class Database {
 		).map(normalizeLabel);
 	}
 
+	// Note queries
+	selectNotesByTask(itemId: string): AppNote[] {
+		return this.all(
+			this.notes()
+				.where("item_id", "=", itemId)
+				.where("is_deleted", "=", 0)
+				.orderBy("posted_at", "asc")
+				.compile(),
+		).map(normalizeNote);
+	}
+
 	// Filter queries
 	private filters() {
 		return this.#q.selectFrom("filters").selectAll();
@@ -606,6 +646,10 @@ export class Database {
 		this.upsert("tasks", "id", task);
 	}
 
+	upsertNote(note: Insertable<NoteTable>): void {
+		this.upsert("notes", "id", note);
+	}
+
 	updateTasksAsCompleted(ids: string[]): void {
 		if (ids.length === 0) {
 			return;
@@ -639,6 +683,13 @@ export class Database {
 			return;
 		}
 		this.run(this.#q.deleteFrom("tasks").where("id", "in", ids).compile());
+	}
+
+	deleteNotesByIds(ids: string[]): void {
+		if (ids.length === 0) {
+			return;
+		}
+		this.run(this.#q.deleteFrom("notes").where("id", "in", ids).compile());
 	}
 
 	// Metadata operations

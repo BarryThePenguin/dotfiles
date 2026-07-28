@@ -1,6 +1,13 @@
 // Domain types
 export { Database } from "./db.ts";
-export type { DbProject, DbTask, DbLabel, DbSection, DbFilter } from "./db.ts";
+export type {
+	DbProject,
+	DbTask,
+	DbLabel,
+	DbSection,
+	DbFilter,
+	DbNote,
+} from "./db.ts";
 export { createContainer, ProjectRefSchema } from "./container.ts";
 export type { Container, ProjectRef } from "./container.ts";
 export type { ConfigPaths } from "./paths.ts";
@@ -12,6 +19,7 @@ export type {
 	AppSection,
 	AppLabel,
 	AppFilter,
+	AppNote,
 } from "./schema.ts";
 export {
 	normalizeTask,
@@ -19,6 +27,7 @@ export {
 	normalizeSection,
 	normalizeLabel,
 	normalizeFilter,
+	normalizeNote,
 } from "./schema.ts";
 
 // Operations
@@ -35,6 +44,8 @@ export {
 	updateFilter,
 	deleteFilter,
 	runFilterQuery,
+	addTaskComment,
+	listTaskComments,
 } from "./operations.ts";
 export type { OperationResult } from "./operations.ts";
 
@@ -48,8 +59,14 @@ export {
 	TasksUpdateInputSchema,
 	AddFilterFieldsSchema,
 	UpdateFilterFieldsSchema,
+	FilterQueryInputSchema,
+	AddCommentFieldsSchema,
 	parseAddTaskFields,
 	parseUpdateTaskFields,
+	parseAddFilterFields,
+	parseUpdateFilterFields,
+	parseFilterQueryInput,
+	parseAddCommentFields,
 } from "./schemas.ts";
 export type {
 	AddTaskFields,
@@ -58,7 +75,12 @@ export type {
 	TasksUpdateInput,
 	AddFilterFields,
 	UpdateFilterFields,
+	FilterQueryInput,
+	AddCommentFields,
 } from "./schemas.ts";
+
+// Char limits — single source of truth for Todoist per-field caps
+export { LIMITS } from "./limits.ts";
 
 // SDK types
 export { RestApiProjectSchema } from "./sdk.ts";
@@ -89,6 +111,25 @@ export * as SyncState from "./sync-lifecycle.ts";
 
 // Todoist client
 export type { TodoistClient, AllData } from "./todoist.ts";
+
+// SDK types (including Note types)
+export type {
+	SyncNote,
+	AddNoteArgs,
+	UpdateNoteArgs,
+	DeleteNoteArgs,
+	NoteAddCommand,
+	NoteUpdateCommand,
+	NoteDeleteCommand,
+} from "./sdk.ts";
+export {
+	AddNoteArgsSchema,
+	UpdateNoteArgsSchema,
+	DeleteNoteArgsSchema,
+	createNoteAddCommand,
+	createNoteUpdateCommand,
+	createNoteDeleteCommand,
+} from "./sdk.ts";
 
 // Telemetry
 export { recordException, tracer, trackOperation } from "./telemetry.ts";

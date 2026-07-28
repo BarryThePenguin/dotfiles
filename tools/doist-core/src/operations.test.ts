@@ -1,8 +1,11 @@
 import * as undici from "undici";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Database } from "./db.ts";
 import {
 	addTask,
+	addTaskComment,
 	completeTasks,
+	listTaskComments,
 	moveTask,
 	resolveProject,
 	uncompleteTasks,
@@ -10,6 +13,7 @@ import {
 } from "./operations.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
 import {
+	createMockApiNote,
 	createMockApiTask,
 	createMockSyncResponse,
 	interceptSync,
@@ -22,6 +26,8 @@ import {
 import { openDb } from "./test-helpers/database.ts";
 import {
 	NOW,
+	NOTE_ALPHA,
+	NOTE_IDS,
 	PROJECT_IDS,
 	PROJECT_INBOX,
 	PROJECT_PERSONAL,
@@ -489,6 +495,131 @@ describe("mock HTTP client", () => {
 			expect(result.result).toBe(0);
 		});
 	});
+
+	describe("addTaskComment", () => {
+		let container: TestContainer;
+
+		beforeEach(() => {
+			container = createTestContainer({
+				projects: [PROJECT_IDS.inbox],
+			});
+			setToken(container.db, "tok-0");
+		});
+
+		afterEach(() => {
+			container.db.close();
+		});
+
+		it("happy path: sends note_add with item_id (regression for task_id bug)", async () => {
+			let captured:
+				| { type: string; args: Record<string, unknown>; temp_id?: string }
+				| undefined;
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					type: string;
+					args: Record<string, unknown>;
+					temp_id?: string;
+				}>;
+				captured = commands[0];
+				const tempId = commands[0]?.temp_id ?? "t-1";
+				return {
+					sync_token: "tok-1",
+					temp_id_mapping: { [tempId]: "n-new" },
+					notes: [
+						createMockApiNote({
+							id: "n-new",
+							item_id: "t1",
+							content: "Resolution: done",
+						}),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await addTaskComment(
+				container.db,
+				client,
+				"t1",
+				"Resolution: done",
+			);
+
+			expect(result.ok).toBe(true);
+			// Regression: must be item_id, not task_id — the latter is what
+			// caused "Invalid argument value" from the Todoist API.
+			expect(captured?.type).toBe("note_add");
+			expect(captured?.args).toEqual({
+				item_id: "t1",
+				content: "Resolution: done",
+			});
+			expect(captured?.args).not.toHaveProperty("task_id");
+			expect(result.result).toMatchObject({
+				id: "n-new",
+				itemId: "t1",
+				content: "Resolution: done",
+			});
+		});
+
+		it("write-through: persists the new note to the db", async () => {
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					temp_id?: string;
+				}>;
+				const tempId = commands[0]?.temp_id ?? "t-1";
+				return {
+					sync_token: "tok-1",
+					temp_id_mapping: { [tempId]: "n-new" },
+					notes: [
+						createMockApiNote({
+							id: "n-new",
+							item_id: "t1",
+							content: "Resolution: done",
+						}),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await addTaskComment(
+				container.db,
+				client,
+				"t1",
+				"Resolution: done",
+			);
+
+			expect(result.ok).toBe(true);
+			// Write-through: subsequent listTaskComments reads from db and
+			// finds the note without another sync.
+			const listed = listTaskComments(container.db, "t1");
+			expect(listed.ok).toBe(true);
+			expect(listed.result).toHaveLength(1);
+			expect(listed.result[0]).toMatchObject({
+				id: "n-new",
+				itemId: "t1",
+				content: "Resolution: done",
+			});
+		});
+
+		it("advances sync token", async () => {
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					temp_id?: string;
+				}>;
+				const tempId = commands[0]?.temp_id ?? "t-1";
+				return {
+					sync_token: "tok-1",
+					temp_id_mapping: { [tempId]: "n-new" },
+					notes: [createMockApiNote({ id: "n-new", item_id: "t1" })],
+				};
+			});
+
+			const client = createClient("test-token");
+			await addTaskComment(container.db, client, "t1", "hi");
+			expect(getToken(container.db)).toBe("tok-1");
+		});
+	});
 });
 
 // ── resolveProject tests ──────────────────────────────────────────────────
@@ -535,5 +666,35 @@ describe("resolveProject", () => {
 		db.upsertProject(PROJECT_PERSONAL);
 		db.upsertProject(PROJECT_WORK_DUP);
 		expect(resolveProject(db, "Work")).toBeUndefined();
+	});
+});
+
+describe("listTaskComments", () => {
+	let db: Database;
+
+	beforeEach(() => {
+		db = openDb();
+	});
+
+	afterEach(() => {
+		db.close();
+	});
+
+	it("returns notes for a task from the db", () => {
+		db.upsertNote(NOTE_ALPHA);
+		const result = listTaskComments(db, "t1");
+		expect(result.ok).toBe(true);
+		expect(result.result).toHaveLength(1);
+		expect(result.result[0]).toMatchObject({
+			id: NOTE_IDS.alpha,
+			itemId: "t1",
+			content: "Resolution: alpha",
+		});
+	});
+
+	it("returns [] for a task with no notes", () => {
+		const result = listTaskComments(db, "no-such-task");
+		expect(result.ok).toBe(true);
+		expect(result.result).toEqual([]);
 	});
 });

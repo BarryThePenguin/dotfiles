@@ -1,4 +1,4 @@
-import type { Database, DbTask, DbLabel, DbSection } from "./db.ts";
+import type { Database, DbTask, DbLabel, DbNote, DbSection } from "./db.ts";
 
 /**
  * SyncLifecycle manages the sync token and enforces the critical invariant:
@@ -50,6 +50,7 @@ export interface MutationPersistOptions {
 	tasks?: DbTask[];
 	labels?: DbLabel[];
 	sections?: DbSection[];
+	notes?: DbNote[];
 	customOperations?: (db: Database) => void;
 }
 
@@ -60,7 +61,7 @@ export interface MutationPersistOptions {
  * and the mutated resource(s). This function wraps them in a transaction
  * to ensure token and data always stay synchronized.
  *
- * For simple upserts, pass tasks/labels/sections arrays.
+ * For simple upserts, pass tasks/labels/sections/notes arrays.
  * For custom operations (e.g., markCompleted), use the customOperations callback.
  *
  * @param db Database instance
@@ -71,7 +72,7 @@ export function persistMutations(
 	options: MutationPersistOptions,
 ): void {
 	db.transaction(() => {
-		const { token, tasks, labels, sections, customOperations } = options;
+		const { token, tasks, labels, sections, notes, customOperations } = options;
 
 		if (tasks) {
 			for (const t of tasks) {
@@ -86,6 +87,11 @@ export function persistMutations(
 		if (sections) {
 			for (const s of sections) {
 				db.upsertSection(s);
+			}
+		}
+		if (notes) {
+			for (const n of notes) {
+				db.upsertNote(n);
 			}
 		}
 

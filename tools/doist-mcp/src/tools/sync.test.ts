@@ -14,25 +14,23 @@ afterEach(async () => {
 
 describe("sync", () => {
 	it("fetches from todoist and returns counts", async () => {
-		const result = (await harness.client.callTool("todoist_sync")) as {
-			projects: number;
-			sections: number;
-			labels: number;
-			tasks: number;
-			reconciled: number;
-		};
-		expect(result.projects).toBe(2);
-		expect(result.sections).toBe(1);
-		expect(result.labels).toBe(1);
-		expect(result.tasks).toBe(2);
-		expect(typeof result.reconciled).toBe("number");
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_sync",
+		});
+		expect(structuredContent).toEqual({
+			filters: 0,
+			projects: 2,
+			sections: 1,
+			labels: 1,
+			tasks: 2,
+			reconciled: 0,
+		});
 	});
 
 	it("does not expose updatedTaskIds in output", async () => {
-		const result = (await harness.client.callTool("todoist_sync")) as Record<
-			string,
-			unknown
-		>;
-		expect(Object.keys(result)).not.toContain("updatedTaskIds");
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_sync",
+		});
+		expect(structuredContent).not.toHaveProperty("updatedTaskIds");
 	});
 });

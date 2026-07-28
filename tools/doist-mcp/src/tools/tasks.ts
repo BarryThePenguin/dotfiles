@@ -4,11 +4,14 @@ import * as v from "valibot";
 import type { Container } from "doist-core";
 import {
 	addTask,
+	addTaskComment,
 	completeTasks,
+	listTaskComments,
 	moveTask,
 	uncompleteTasks,
 	updateTask,
 	resolveProject,
+	AddCommentFieldsSchema,
 	AddTaskFieldsSchema,
 	ListTaskSchema,
 	TasksUpdateInputSchema,
@@ -277,6 +280,101 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 				track: {
 					"result.count": tasks.length,
 					"query.length": query.length,
+				},
+			};
+		},
+	});
+
+	// ── Comments (Notes) ─────────────────────────────────────────────
+	registerTool({
+		mcp,
+		name: "todoist_tasks_comments_list",
+		config: {
+			description: "List comments (notes) for a task",
+			inputSchema: toStandardJsonSchema(
+				v.object({
+					taskId: v.string(),
+					sync: v.optional(v.boolean(), false),
+				}),
+			),
+			outputSchema: toStandardJsonSchema(
+				v.object({
+					sync: v.optional(SyncSummarySchema),
+					comments: v.array(
+						v.object({
+							id: v.string(),
+							taskId: v.string(),
+							content: v.string(),
+							postedAt: v.optional(v.nullable(v.string())),
+						}),
+					),
+				}),
+			),
+		},
+		spanOptions: (args: { taskId: string }) => ({
+			attributes: { taskId: args.taskId },
+		}),
+		callback: async ({ taskId, sync: shouldSync }) => {
+			const { db, client, listProjectIds } = container;
+			const syncResult = await maybeSyncSummary(
+				db,
+				client,
+				listProjectIds,
+				shouldSync,
+			);
+
+			const result = listTaskComments(db, taskId);
+			const comments = result.result.map((n) => ({
+				id: n.id,
+				taskId: n.itemId,
+				content: n.content,
+				postedAt: n.postedAt,
+			}));
+
+			return {
+				data: { sync: syncResult, comments },
+				text: `Listed ${comments.length} comments for task ${taskId}`,
+				track: {
+					"result.count": comments.length,
+					"sync.performed": shouldSync ? 1 : 0,
+				},
+			};
+		},
+	});
+
+	registerTool({
+		mcp,
+		name: "todoist_tasks_comments_add",
+		config: {
+			description: "Add a comment (note) to a task",
+			inputSchema: toStandardJsonSchema(AddCommentFieldsSchema),
+			outputSchema: toStandardJsonSchema(
+				v.object({
+					id: v.string(),
+					taskId: v.string(),
+					content: v.string(),
+					postedAt: v.optional(v.nullable(v.string())),
+				}),
+			),
+		},
+		spanOptions: (args: { taskId: string; content: string }) => ({
+			attributes: { taskId: args.taskId },
+		}),
+		callback: async ({ taskId, content }) => {
+			const { db, client } = container;
+			const result = await addTaskComment(db, client, taskId, content);
+			const note = result.result;
+
+			return {
+				data: {
+					id: note.id,
+					taskId: note.itemId,
+					content: note.content,
+					postedAt: note.postedAt,
+				},
+				text: `Added comment to task ${taskId}`,
+				track: {
+					"content.length": content.length,
 				},
 			};
 		},

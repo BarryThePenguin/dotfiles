@@ -207,8 +207,10 @@ function makeAllData(overrides: Partial<AllData> = {}): AllData {
 		labels: [],
 		filters: [],
 		tasks: [],
+		notes: [],
 		completedTaskIds: [],
 		deletedTaskIds: [],
+		deletedNoteIds: [],
 		syncToken: "tok",
 		...overrides,
 	};

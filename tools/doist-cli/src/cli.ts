@@ -15,6 +15,10 @@ import {
 	resolveProject,
 	parseAddTaskFields,
 	parseUpdateTaskFields,
+	parseAddFilterFields,
+	parseUpdateFilterFields,
+	parseFilterQueryInput,
+	parseAddCommentFields,
 	countSyncData,
 	syncAndPersist,
 	tracer,
@@ -29,6 +33,8 @@ import {
 	updateFilter,
 	deleteFilter,
 	runFilterQuery,
+	addTaskComment,
+	listTaskComments,
 } from "doist-core";
 import { shutdown } from "./instrumentation.ts";
 import { out } from "./output.ts";
@@ -59,6 +65,22 @@ const parseListTask = v.parser(
 		),
 	}),
 );
+
+/**
+ * Parse a comma-separated label list from a CLI arg.
+ * Returns `undefined` when the arg is absent or empty, otherwise a trimmed,
+ * non-empty array of label names.
+ */
+function parseLabelList(value: string | undefined): string[] | undefined {
+	if (!value) {
+		return undefined;
+	}
+	const labels = value
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
+	return labels.length > 0 ? labels : undefined;
+}
 
 // ── sync ──────────────────────────────────────────────────────
 const syncCmd = defineCommand({
@@ -337,16 +359,24 @@ const tasksCmd = defineCommand({
 					description: 'due date (natural language: "tomorrow", "2026-05-10")',
 				},
 				priority: { type: "string", description: "priority 1-4 (4=urgent)" },
-				label: { type: "string", description: "add a label" },
-				removeLabel: { type: "string", description: "remove a label" },
+				label: {
+					type: "string",
+					description:
+						"label(s) to add; comma-separated for multiple (e.g. urgent,work)",
+				},
+				removeLabel: {
+					type: "string",
+					description:
+						"label(s) to remove; comma-separated for multiple (e.g. urgent,work)",
+				},
 				description: { type: "string", description: "task description" },
 			},
 			async run({ args }) {
 				const { db } = container;
 				const fields = parseUpdateTaskFields({
 					...args,
-					addLabels: args.label ? [args.label] : undefined,
-					removeLabels: args.removeLabel ? [args.removeLabel] : undefined,
+					addLabels: parseLabelList(args.label),
+					removeLabels: parseLabelList(args.removeLabel),
 				});
 				out(await updateTask(db, client, args.id, fields));
 			},
@@ -379,20 +409,81 @@ const tasksCmd = defineCommand({
 					type: "string",
 					description: "project name (resolved to id via local db)",
 				},
+				parent: {
+					type: "string",
+					description: "parent task id (creates a subtask)",
+				},
 				due: {
 					type: "string",
 					description: 'due date (natural language: "tomorrow", "2026-05-10")',
 				},
 				priority: { type: "string", description: "priority 1-4 (4=urgent)" },
-				label: { type: "string", description: "label name" },
+				label: {
+					type: "string",
+					description:
+						"label name(s); comma-separated for multiple (e.g. urgent,work)",
+				},
+				description: { type: "string", description: "task description" },
 			},
 			async run({ args }) {
 				const { db } = container;
 				const fields = parseAddTaskFields({
 					...args,
-					labels: args.label ? [args.label] : undefined,
+					labels: parseLabelList(args.label),
+					parentId: args.parent ?? undefined,
 				});
 				out(await addTask(db, client, fields));
+			},
+		}),
+		comments: defineCommand({
+			meta: { description: "Manage task comments" },
+			subCommands: {
+				add: defineCommand({
+					meta: { description: "Add a comment to a task" },
+					args: {
+						task: {
+							type: "positional",
+							description: "task id",
+							required: true,
+						},
+						content: {
+							type: "positional",
+							description: "comment content",
+							required: true,
+						},
+					},
+					async run({ args }) {
+						const { db } = container;
+						const fields = parseAddCommentFields({
+							taskId: args.task,
+							content: args.content,
+						});
+						out(
+							await addTaskComment(db, client, fields.taskId, fields.content),
+						);
+					},
+				}),
+				list: defineCommand({
+					meta: { description: "List comments for a task" },
+					args: {
+						task: {
+							type: "positional",
+							description: "task id",
+							required: true,
+						},
+						sync: {
+							type: "boolean",
+							description: "sync before listing",
+						},
+					},
+					async run({ args }) {
+						const { db } = container;
+						if (args.sync) {
+							await syncAndPersist(db, client, listProjectIds(), false);
+						}
+						out(await listTaskComments(db, args.task));
+					},
+				}),
 			},
 		}),
 	},
@@ -638,7 +729,7 @@ const filtersCmd = defineCommand({
 				if (args.sync) {
 					await syncAndPersist(db, client, listProjectIds(), false);
 				}
-				const result = await addFilter(db, client, {
+				const fields = parseAddFilterFields({
 					name: args.name,
 					query: args.query,
 					color: args.color ?? undefined,
@@ -647,6 +738,7 @@ const filtersCmd = defineCommand({
 						: undefined,
 					isFavorite: args["is-favorite"] ?? undefined,
 				});
+				const result = await addFilter(db, client, fields);
 				out(result);
 			},
 		}),
@@ -666,7 +758,7 @@ const filtersCmd = defineCommand({
 				if (args.sync) {
 					await syncAndPersist(db, client, listProjectIds(), false);
 				}
-				const result = await updateFilter(db, client, args.id, {
+				const fields = parseUpdateFilterFields({
 					name: args.name ?? undefined,
 					query: args.query ?? undefined,
 					color: args.color ?? undefined,
@@ -675,6 +767,7 @@ const filtersCmd = defineCommand({
 						: undefined,
 					isFavorite: args["is-favorite"] ?? undefined,
 				});
+				const result = await updateFilter(db, client, args.id, fields);
 				out(result);
 			},
 		}),
@@ -715,8 +808,15 @@ const filtersCmd = defineCommand({
 				if (args.sync) {
 					await syncAndPersist(db, client, listProjectIds(), false);
 				}
-				const limit = args.limit ? Number(args.limit) : 50;
-				const result = await runFilterQuery(client, args.query, limit);
+				const parsed = parseFilterQueryInput({
+					query: args.query,
+					limit: args.limit ? Number(args.limit) : undefined,
+				});
+				const result = await runFilterQuery(
+					client,
+					parsed.query,
+					parsed.limit ?? 50,
+				);
 				out(result);
 			},
 		}),

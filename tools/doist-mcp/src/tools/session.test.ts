@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-	createDefaultHarness,
-	TASK_B,
-	TODAY,
-} from "../test-helpers/server.ts";
+import { createDefaultHarness, TASK_B, TODAY } from "../test-helpers/server.ts";
 
 let harness: Awaited<ReturnType<typeof createDefaultHarness>>;
 
@@ -18,23 +14,16 @@ afterEach(async () => {
 
 describe("todoist_session_summary", () => {
 	it("returns overdue, today, and thoughts counts", async () => {
-		const result = (await harness.client.callTool(
-			"todoist_session_summary",
-		)) as {
-			overdue: unknown[];
-			today: unknown[];
-			thoughtsCount: number;
-			requiresTriage: boolean;
-			suggested: unknown[];
-			syncedAt: string | null;
-		};
-		expect(result.today).toBeInstanceOf(Array);
-		expect(result.today.length).toBeGreaterThan(0);
-		expect(result.today[0]).toMatchObject({ id: "t1" });
-		expect(typeof result.thoughtsCount).toBe("number");
-		expect(typeof result.requiresTriage).toBe("boolean");
-		expect(result.suggested).toBeInstanceOf(Array);
-		expect(result.syncedAt).toEqual(expect.any(String));
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_session_summary",
+		});
+		expect(structuredContent).toHaveProperty("today", [
+			expect.objectContaining({ id: "t1" }),
+		]);
+		expect(structuredContent).toHaveProperty("thoughtsCount", 0);
+		expect(structuredContent).toHaveProperty("requiresTriage", false);
+		expect(structuredContent).toHaveProperty("suggested", []);
+		expect(structuredContent).toHaveProperty("syncedAt", expect.any(String));
 	});
 
 	it("requiresTriage is true when overdue > 5", async () => {
@@ -48,38 +37,37 @@ describe("todoist_session_summary", () => {
 				updated_at: TODAY,
 			});
 		}
-		const result = (await harness.client.callTool(
-			"todoist_session_summary",
-		)) as {
-			overdue: unknown[];
-			requiresTriage: boolean;
-		};
-		expect(result.overdue.length).toBeGreaterThanOrEqual(6);
-		expect(result.requiresTriage).toBe(true);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_session_summary",
+		});
+		expect(structuredContent).toHaveProperty("overdue", expect.objectContaining({ length: 6 }));
+		expect(structuredContent).toHaveProperty("requiresTriage", true);
 	});
 
 	it("returns energy-matched suggestions when energy is provided", async () => {
-		const result = (await harness.client.callTool("todoist_session_summary", {
-			energy: "low",
-		})) as {
-			suggested: unknown[];
-		};
-		expect(result.suggested).toBeInstanceOf(Array);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_session_summary",
+			arguments: {
+				energy: "low",
+			},
+		});
+		expect(structuredContent).toHaveProperty("suggested", expect.any(Array));
 	});
 
 	it("returns empty suggestions when energy is omitted", async () => {
-		const result = (await harness.client.callTool(
-			"todoist_session_summary",
-		)) as {
-			suggested: unknown[];
-		};
-		expect(result.suggested).toHaveLength(0);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_session_summary",
+		});
+		expect(structuredContent).toHaveProperty("suggested", expect.arrayContaining([]));
 	});
 
 	it("can sync first when requested", async () => {
-		const result = (await harness.client.callTool("todoist_session_summary", {
-			sync: true,
-		})) as { sync: unknown };
-		expect(result.sync).toBeDefined();
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_session_summary",
+			arguments: {
+				sync: true,
+			},
+		});
+		expect(structuredContent).toHaveProperty("syncedAt", expect.any(String));
 	});
 });

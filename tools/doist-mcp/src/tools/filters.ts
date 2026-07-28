@@ -7,6 +7,7 @@ import {
 	listFilters,
 	runFilterQuery,
 	updateFilter,
+	FilterQueryInputSchema as FilterQueryInputRaw,
 } from "doist-core";
 import type { Container } from "doist-core";
 import {
@@ -62,15 +63,7 @@ const FilterDeleteInputSchema = toStandardJsonSchema(
 	}),
 );
 
-const FilterQueryInputSchema = toStandardJsonSchema(
-	v.object({
-		query: v.string(),
-		limit: v.optional(
-			v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(200)),
-		),
-		...v.object({ sync: v.optional(v.boolean(), false) }).entries,
-	}),
-);
+const FilterQueryInputSchema = toStandardJsonSchema(FilterQueryInputRaw);
 
 const FilterQueryOutputSchema = toStandardJsonSchema(
 	v.object({

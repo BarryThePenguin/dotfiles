@@ -1,8 +1,11 @@
 import { Database } from "./db.ts";
 import {
 	normalizeFilter,
+	normalizeNote,
 	normalizeTask,
+	prepareNoteForDB,
 	type AppFilter,
+	type AppNote,
 	type AppTask,
 } from "./schema.ts";
 import {
@@ -19,11 +22,16 @@ import {
 	createItemCloseCommand,
 	createItemMoveCommand,
 	createItemUncompleteCommand,
+	createNoteAddCommand,
 	createUpdateCommand,
 	type SyncCommand,
 } from "./sdk.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
-import { resolveCreated, type TodoistClient } from "./todoist.ts";
+import {
+	resolveCreated,
+	resolveCreatedNote,
+	type TodoistClient,
+} from "./todoist.ts";
 
 /**
  * Resolve a project name or ID.
@@ -436,4 +444,50 @@ export async function runFilterQuery(
 			nextCursor,
 		},
 	};
+}
+
+// ============================================================================
+// Comment Operations (Notes)
+// ============================================================================
+
+/**
+ * Add a comment to a task.
+ *
+ * @returns { ok: true, result: note } on success
+ */
+export async function addTaskComment(
+	db: Database,
+	client: TodoistClient,
+	taskId: string,
+	content: string,
+): Promise<OperationResult<AppNote>> {
+	const tempId = crypto.randomUUID();
+	const allData = await client.sync(
+		getToken(db),
+		createNoteAddCommand({ item_id: taskId, content }, tempId),
+	);
+	const note = resolveCreatedNote(allData, tempId);
+	const prepared = prepareNoteForDB(note);
+	persistMutations(db, {
+		token: allData.syncToken,
+		...(prepared ? { notes: [prepared] } : {}),
+	});
+	return { ok: true, result: normalizeNote(prepared!) };
+}
+
+/**
+ * List comments for a task from the local database.
+ *
+ * Reads from the db only — does not perform a sync. Comments are kept
+ * up to date by the routine sync flow (syncAndPersist) and by the
+ * write-through in addTaskComment.
+ *
+ * @returns { ok: true, result: notes } on success
+ */
+export function listTaskComments(
+	db: Database,
+	taskId: string,
+): OperationResult<AppNote[]> {
+	const notes = db.selectNotesByTask(taskId);
+	return { ok: true, result: notes };
 }

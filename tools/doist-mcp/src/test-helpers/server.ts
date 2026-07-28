@@ -1,15 +1,11 @@
-import {
-	LATEST_PROTOCOL_VERSION,
-	McpServer,
-	type JSONRPCMessage,
-	type Transport,
-} from "@modelcontextprotocol/server";
-import { writeFileSync } from "node:fs";
-import { buildServer } from "../server.ts";
-import type { SyncCommand, DbTask } from "doist-core";
-import { createTestContainer } from "doist-core/test-helpers";
+import { Client } from "@modelcontextprotocol/client";
+import { InMemoryTransport } from "@modelcontextprotocol/server";
+import type { DbTask, SyncCommand } from "doist-core";
 import { setToken } from "doist-core";
 import type { TestContainer } from "doist-core/test-helpers";
+import { createTestContainer } from "doist-core/test-helpers";
+import { writeFileSync } from "node:fs";
+import { buildServer } from "../server.ts";
 
 export const NOW = new Date().toISOString();
 export const TODAY = new Date().toISOString().slice(0, 10);
@@ -82,112 +78,9 @@ export const TASK_B = {
 	is_recurring: 0,
 };
 
-export class InMemoryTransport implements Transport {
-	private _peer: InMemoryTransport | null = null;
-	onmessage?: ((msg: JSONRPCMessage) => void) | undefined;
-	onclose?: (() => void) | undefined;
-	onerror?: ((err: Error) => void) | undefined;
-
-	static pair(): [InMemoryTransport, InMemoryTransport] {
-		const a = new InMemoryTransport();
-		const b = new InMemoryTransport();
-		a._peer = b;
-		b._peer = a;
-		return [a, b];
-	}
-
-	async start(): Promise<void> {}
-
-	// eslint-disable-next-line @typescript-eslint/require-await
-	async send(message: JSONRPCMessage): Promise<void> {
-		this._peer?.onmessage?.(message);
-	}
-
-	// eslint-disable-next-line @typescript-eslint/require-await
-	async close(): Promise<void> {
-		this.onclose?.();
-	}
-}
-
-export async function makeClient(server: McpServer) {
-	const [clientTransport, serverTransport] = InMemoryTransport.pair();
-	await server.connect(serverTransport);
-
-	let nextId = 1;
-	const pending = new Map<number, (msg: JSONRPCMessage) => void>();
-
-	clientTransport.onmessage = (msg: JSONRPCMessage) => {
-		if ("id" in msg && typeof msg.id === "number") {
-			const resolve = pending.get(msg.id);
-			resolve?.(msg);
-			pending.delete(msg.id);
-		}
-	};
-
-	function rpc(method: string, params?: object): Promise<JSONRPCMessage> {
-		return new Promise((resolve) => {
-			const id = nextId++;
-			pending.set(id, resolve);
-			void clientTransport.send({
-				jsonrpc: "2.0",
-				id,
-				method,
-				params: params ?? {},
-			} as JSONRPCMessage);
-		});
-	}
-
-	function notify(method: string): void {
-		void clientTransport.send({
-			jsonrpc: "2.0",
-			method,
-			params: {},
-		});
-	}
-
-	await rpc("initialize", {
-		protocolVersion: LATEST_PROTOCOL_VERSION,
-		capabilities: {},
-		clientInfo: { name: "test-client", version: "0.0.1" },
-	});
-	notify("notifications/initialized");
-
-	async function callTool(
-		name: string,
-		args: Record<string, unknown> = {},
-	): Promise<unknown> {
-		const response = await rpc("tools/call", { name, arguments: args });
-		const r = response as Record<string, unknown>;
-		if ("error" in r && r["error"]) {
-			const err = r["error"] as { message?: string };
-			throw new Error(err.message ?? "rpc error");
-		}
-		const result = r["result"] as {
-			content?: { text: string }[];
-			isError?: boolean;
-			structuredContent?: unknown;
-		};
-		if (result.isError) {
-			throw new Error(result.content?.[0]?.text ?? "tool error");
-		}
-		if (result.structuredContent !== undefined) {
-			return result.structuredContent;
-		}
-		return JSON.parse(result.content?.[0]?.text ?? "null");
-	}
-
-	return { callTool, close: () => clientTransport.close() };
-}
-
 export async function createDefaultHarness(): Promise<{
 	container: TestContainer;
-	client: {
-		callTool: (
-			name: string,
-			args?: Record<string, unknown>,
-		) => Promise<unknown>;
-		close: () => Promise<void>;
-	};
+	client: Client;
 }> {
 	process.env["TODOIST_API_TOKEN"] = "test-token";
 
@@ -283,8 +176,10 @@ export async function createDefaultHarness(): Promise<{
 				labels: [LABEL],
 				filters: [],
 				tasks,
+				notes: [],
 				completedTaskIds: [],
 				deletedTaskIds: [],
+				deletedNoteIds: [],
 				syncToken: "tok-sync",
 				...(Object.keys(tempIdMapping).length > 0 && { tempIdMapping }),
 			});
@@ -314,6 +209,7 @@ export async function createDefaultHarness(): Promise<{
 		nextCursor: null,
 	});
 	container.client.fetchTasksByFilter.mockImplementation(
+		// eslint-disable-next-line @typescript-eslint/require-await
 		async (query: string) => {
 			const q = query.toLowerCase();
 			const allTasks = container.db.selectTasks({ completed: "incomplete" });
@@ -370,8 +266,13 @@ export async function createDefaultHarness(): Promise<{
 		},
 	);
 
+	const [clientTransport, serverTransport] =
+		InMemoryTransport.createLinkedPair();
+
 	const server = buildServer(container);
-	const client = await makeClient(server);
+	const client = new Client({ name: "test-client", version: "1.0.0" });
+	await server.connect(serverTransport);
+	await client.connect(clientTransport);
 
 	return { container, client };
 }

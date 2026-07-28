@@ -6,6 +6,6 @@ export default defineConfig({
 			enabled: true,
 			provider: "v8",
 		},
-		projects: ["tools/*"],
+		projects: ["tools/*", ".pi/agent/extensions/*"],
 	},
 });

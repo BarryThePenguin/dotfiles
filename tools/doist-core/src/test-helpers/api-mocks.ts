@@ -102,6 +102,23 @@ export function createMockApiFilter(overrides: Record<string, unknown> = {}) {
 	};
 }
 
+/**
+ * Create a mock Todoist API note (comment) response.
+ *
+ * @param overrides - Property overrides for the base note
+ * @returns Note object matching Todoist API sync format
+ */
+export function createMockApiNote(overrides: Record<string, unknown> = {}) {
+	return {
+		id: "n1",
+		item_id: "t1",
+		content: "Resolution: done",
+		posted_at: "2026-01-01T00:00:00.000000Z",
+		is_deleted: false,
+		...overrides,
+	};
+}
+
 // ── Sync Response Builders ────────────────────────────────────────────────
 
 /**
@@ -118,6 +135,7 @@ export function createMockSyncResponse(
 		labels?: unknown[];
 		filters?: unknown[];
 		items?: unknown[];
+		notes?: unknown[];
 		temp_id_mapping?: Record<string, unknown>;
 		sync_status?: Record<string, unknown>;
 	} = {},
@@ -130,6 +148,7 @@ export function createMockSyncResponse(
 		labels: [],
 		filters: [],
 		items: [],
+		notes: [],
 		temp_id_mapping: {},
 		sync_status: {},
 		...overrides,

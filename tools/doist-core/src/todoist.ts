@@ -15,6 +15,7 @@ import {
 	type RestApiProject,
 	type RestApiTaskByFilter,
 	type SyncCommand,
+	type SyncNote,
 } from "./sdk.ts";
 
 export type AllData = {
@@ -23,8 +24,10 @@ export type AllData = {
 	labels: DbLabel[];
 	filters: DbFilter[];
 	tasks: DbTask[];
+	notes: SyncNote[];
 	completedTaskIds: string[];
 	deletedTaskIds: string[];
+	deletedNoteIds: string[];
 	syncToken: string;
 	tempIdMapping?: Record<string, string>;
 };
@@ -36,6 +39,7 @@ function getResourceTypesForSync(commands?: SyncCommand[]): ResourceTypes {
 		"labels",
 		"filters",
 		"items",
+		"notes",
 	];
 
 	if (!commands || commands.length === 0) {
@@ -85,6 +89,21 @@ export function resolveCreated(data: AllData, tempId: string): DbTask {
 	return task;
 }
 
+/**
+ * Resolve a created note from a sync response using the temp ID.
+ */
+export function resolveCreatedNote(data: AllData, tempId: string): SyncNote {
+	const realId = data.tempIdMapping?.[tempId];
+	if (!realId) {
+		throw new Error("failed to create note: no id returned");
+	}
+	const note = data.notes.find((n) => n.id === realId);
+	if (!note) {
+		throw new Error(`created note ${realId} not in sync response`);
+	}
+	return note;
+}
+
 export function createClient(token: string): TodoistClient {
 	async function sync(
 		syncToken?: string | null,
@@ -120,6 +139,8 @@ export function createClient(token: string): TodoistClient {
 			.filter((t) => t.checked && !t.is_deleted)
 			.map((t) => t.id);
 		const deletedTaskIds = items.filter((t) => t.is_deleted).map((t) => t.id);
+		const notes = response.notes ?? [];
+		const deletedNoteIds = notes.filter((n) => n.is_deleted).map((n) => n.id);
 
 		// Invariant: sync_token must always be present
 		if (!response.sync_token) {
@@ -134,8 +155,10 @@ export function createClient(token: string): TodoistClient {
 			labels,
 			filters,
 			tasks,
+			notes,
 			completedTaskIds,
 			deletedTaskIds,
+			deletedNoteIds,
 			syncToken: response.sync_token,
 			...(response.temp_id_mapping !== undefined && {
 				tempIdMapping: response.temp_id_mapping,

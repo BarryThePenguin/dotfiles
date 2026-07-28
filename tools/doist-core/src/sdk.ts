@@ -107,6 +107,14 @@ const FilterSchema = v.object({
 	is_frozen: v.optional(v.boolean(), false),
 });
 
+const NoteSchema = v.object({
+	id: v.string(),
+	item_id: v.string(),
+	content: v.string(),
+	posted_at: v.optional(v.nullable(v.string())),
+	is_deleted: v.boolean(),
+});
+
 const SyncResponseSchema = v.object({
 	sync_token: v.string(),
 	sync_status: v.optional(v.record(v.string(), SyncStatusValueSchema)),
@@ -115,6 +123,7 @@ const SyncResponseSchema = v.object({
 	sections: v.optional(v.array(SectionSchema)),
 	labels: v.optional(v.array(LabelSchema)),
 	filters: v.optional(v.array(FilterSchema)),
+	notes: v.optional(v.array(NoteSchema)),
 	temp_id_mapping: v.optional(v.record(v.string(), v.string())),
 });
 
@@ -126,6 +135,7 @@ export type SyncProject = v.InferOutput<typeof ProjectSchema>;
 export type SyncSection = v.InferOutput<typeof SectionSchema>;
 export type SyncLabel = v.InferOutput<typeof LabelSchema>;
 export type SyncFilter = v.InferOutput<typeof FilterSchema>;
+export type SyncNote = v.InferOutput<typeof NoteSchema>;
 
 // ============================================================================
 // Command Argument Schemas
@@ -214,6 +224,27 @@ export type UpdateFilterOrdersArgs = v.InferOutput<
 >;
 
 // ============================================================================
+// Note Command Argument Schemas
+// ============================================================================
+
+export const AddNoteArgsSchema = v.object({
+	item_id: v.string(),
+	content: v.string(),
+});
+export type AddNoteArgs = v.InferOutput<typeof AddNoteArgsSchema>;
+
+export const UpdateNoteArgsSchema = v.object({
+	id: v.string(),
+	content: v.optional(v.string()),
+});
+export type UpdateNoteArgs = v.InferOutput<typeof UpdateNoteArgsSchema>;
+
+export const DeleteNoteArgsSchema = v.object({
+	id: v.string(),
+});
+export type DeleteNoteArgs = v.InferOutput<typeof DeleteNoteArgsSchema>;
+
+// ============================================================================
 // Discriminated Union: SyncCommand
 // ============================================================================
 
@@ -289,6 +320,28 @@ export type FilterUpdateOrdersCommand = {
 	suggestedResourceTypes: readonly ["filters"];
 };
 
+export type NoteAddCommand = {
+	type: "note_add";
+	uuid: string;
+	args: AddNoteArgs;
+	temp_id?: string | undefined;
+	suggestedResourceTypes: readonly ["notes"];
+};
+
+export type NoteUpdateCommand = {
+	type: "note_update";
+	uuid: string;
+	args: UpdateNoteArgs;
+	suggestedResourceTypes: readonly ["notes"];
+};
+
+export type NoteDeleteCommand = {
+	type: "note_delete";
+	uuid: string;
+	args: DeleteNoteArgs;
+	suggestedResourceTypes: readonly ["notes"];
+};
+
 export type SyncCommand =
 	| ItemAddCommand
 	| ItemUpdateCommand
@@ -299,7 +352,10 @@ export type SyncCommand =
 	| FilterAddCommand
 	| FilterUpdateCommand
 	| FilterDeleteCommand
-	| FilterUpdateOrdersCommand;
+	| FilterUpdateOrdersCommand
+	| NoteAddCommand
+	| NoteUpdateCommand
+	| NoteDeleteCommand;
 
 // ============================================================================
 // Command Failures & Errors
@@ -427,6 +483,45 @@ export function createFilterDeleteCommand(
 		uuid: crypto.randomUUID(),
 		args,
 		suggestedResourceTypes: ["filters"],
+	};
+}
+
+// ============================================================================
+// Note Command Constructors
+// ============================================================================
+
+export function createNoteAddCommand(
+	args: AddNoteArgs,
+	tempId?: string,
+): NoteAddCommand {
+	return {
+		type: "note_add",
+		uuid: crypto.randomUUID(),
+		args,
+		temp_id: tempId,
+		suggestedResourceTypes: ["notes"],
+	};
+}
+
+export function createNoteUpdateCommand(
+	args: UpdateNoteArgs,
+): NoteUpdateCommand {
+	return {
+		type: "note_update",
+		uuid: crypto.randomUUID(),
+		args,
+		suggestedResourceTypes: ["notes"],
+	};
+}
+
+export function createNoteDeleteCommand(
+	args: DeleteNoteArgs,
+): NoteDeleteCommand {
+	return {
+		type: "note_delete",
+		uuid: crypto.randomUUID(),
+		args,
+		suggestedResourceTypes: ["notes"],
 	};
 }
 

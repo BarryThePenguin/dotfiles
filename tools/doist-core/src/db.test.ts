@@ -22,6 +22,9 @@ import {
 	TASK_DONE,
 	TASK_IDS,
 	TASK_OVERDUE,
+	NOTE_ALPHA,
+	NOTE_BETA,
+	NOTE_IDS,
 	NOW,
 } from "./test-helpers/fixtures.ts";
 
@@ -214,6 +217,63 @@ describe("CRUD operations", () => {
 				noteCount: 1,
 				updatedAt: expect.any(String) as unknown,
 			});
+		});
+	});
+
+	describe("notes", () => {
+		it("upsertNote inserts a note", () => {
+			db.upsertNote(NOTE_ALPHA);
+			const notes = db.selectNotesByTask("t1");
+			expect(notes).toHaveLength(1);
+			expect(notes[0]).toMatchObject({
+				id: NOTE_IDS.alpha,
+				itemId: "t1",
+				content: "Resolution: alpha",
+			});
+		});
+
+		it("upsertNote is idempotent", () => {
+			db.upsertNote(NOTE_ALPHA);
+			db.upsertNote({ ...NOTE_ALPHA, content: "Updated resolution" });
+			const notes = db.selectNotesByTask("t1");
+			expect(notes).toHaveLength(1);
+			expect(notes[0]?.content).toBe("Updated resolution");
+		});
+
+		it("selectNotesByTask filters by item_id", () => {
+			db.upsertNote(NOTE_ALPHA); // t1
+			db.upsertNote(NOTE_BETA); // t2
+			const t1 = db.selectNotesByTask("t1");
+			const t2 = db.selectNotesByTask("t2");
+			expect(t1.map((n) => n.id)).toEqual([NOTE_IDS.alpha]);
+			expect(t2.map((n) => n.id)).toEqual([NOTE_IDS.beta]);
+		});
+
+		it("selectNotesByTask returns empty for unknown task", () => {
+			db.upsertNote(NOTE_ALPHA);
+			expect(db.selectNotesByTask("nope")).toEqual([]);
+		});
+
+		it("selectNotesByTask skips soft-deleted notes (is_deleted=1)", () => {
+			db.upsertNote(NOTE_ALPHA);
+			db.upsertNote({ ...NOTE_BETA, item_id: "t1", is_deleted: 1 });
+			const notes = db.selectNotesByTask("t1");
+			expect(notes).toHaveLength(1);
+			expect(notes[0]?.id).toBe(NOTE_IDS.alpha);
+		});
+
+		it("deleteNotesByIds removes notes", () => {
+			db.upsertNote(NOTE_ALPHA);
+			db.upsertNote(NOTE_BETA);
+			db.deleteNotesByIds([NOTE_IDS.alpha]);
+			expect(db.selectNotesByTask("t1")).toEqual([]);
+			expect(db.selectNotesByTask("t2")).toHaveLength(1);
+		});
+
+		it("deleteNotesByIds is a no-op on empty input", () => {
+			db.upsertNote(NOTE_ALPHA);
+			db.deleteNotesByIds([]);
+			expect(db.selectNotesByTask("t1")).toHaveLength(1);
 		});
 	});
 });

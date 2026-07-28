@@ -11,7 +11,7 @@
 		"./test-helpers": "./src/test-helpers/index.ts"
 	},
 	"scripts": {
-		"build": "tsc",
+		"build": "tsc --build",
 		"test": "vitest"
 	},
 	"engines": {

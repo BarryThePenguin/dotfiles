@@ -8,13 +8,21 @@
  * No side effects, no DB access. Pure translation layer.
  */
 
-import type { DbLabel, DbProject, DbSection, DbTask, DbFilter } from "./db.ts";
+import type {
+	DbLabel,
+	DbProject,
+	DbSection,
+	DbTask,
+	DbFilter,
+	DbNote,
+} from "./db.ts";
 import type {
 	SyncFilter,
 	SyncItem,
 	SyncLabel,
 	SyncProject,
 	SyncSection,
+	SyncNote,
 } from "./sdk.ts";
 
 // App-facing types (camelCase)
@@ -64,6 +72,13 @@ export type AppFilter = {
 	color: string | null;
 	itemOrder: number | null;
 	isFavorite: boolean;
+};
+
+export type AppNote = {
+	id: string;
+	itemId: string;
+	content: string;
+	postedAt: string | null;
 };
 
 /**
@@ -304,5 +319,46 @@ export function normalizeFilter(f: DbFilter): AppFilter {
 		color: f.color,
 		itemOrder: f.item_order,
 		isFavorite: f.is_favorite === 1,
+	};
+}
+
+/**
+ * Prepare a Todoist note (comment) for database storage.
+ *
+ * Filters notes marked as deleted remotely; the caller is responsible for
+ * passing those separately to deleteNotesByIds so they get removed.
+ * Transforms:
+ * - is_deleted (boolean) → is_deleted (0/1) (or skipped when true)
+ */
+export function prepareNoteForDB(
+	n: SyncNote,
+	syncedAt: string = now(),
+): DbNote | null {
+	if (n.is_deleted) {
+		return null;
+	}
+	return {
+		id: n.id,
+		item_id: n.item_id,
+		content: n.content,
+		posted_at: n.posted_at ?? null,
+		is_deleted: 0,
+		synced_at: syncedAt,
+	};
+}
+
+/**
+ * Normalize a database note to app-facing format (camelCase).
+ *
+ * Transforms:
+ * - item_id → itemId
+ * - posted_at → postedAt
+ */
+export function normalizeNote(n: DbNote): AppNote {
+	return {
+		id: n.id,
+		itemId: n.item_id,
+		content: n.content,
+		postedAt: n.posted_at,
 	};
 }

@@ -18,25 +18,18 @@ afterEach(async () => {
 
 describe("todoist_triage_analysis", () => {
 	it("returns all four analysis categories", async () => {
-		const result = (await harness.client.callTool(
-			"todoist_triage_analysis",
-		)) as {
-			duplicates: { groups: unknown[] };
-			stale: { candidates: unknown[] };
-			unroutedInbox: unknown[];
-			missingEnergyMetadata: unknown[];
-			requiresAttention: boolean;
-			recommendedStartCategory: string | null;
-			syncedAt: string | null;
-		};
-		expect(result.duplicates).toBeDefined();
-		expect(result.duplicates.groups).toBeInstanceOf(Array);
-		expect(result.stale).toBeDefined();
-		expect(result.stale.candidates).toBeInstanceOf(Array);
-		expect(result.unroutedInbox).toBeInstanceOf(Array);
-		expect(result.missingEnergyMetadata).toBeInstanceOf(Array);
-		expect(typeof result.requiresAttention).toBe("boolean");
-		expect(result.syncedAt).toEqual(expect.any(String));
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_triage_analysis",
+		});
+		expect(structuredContent).toHaveProperty("duplicates.groups", []);
+		expect(structuredContent).toHaveProperty("stale.candidates", []);
+		expect(structuredContent).toHaveProperty("unroutedInbox", []);
+		expect(structuredContent).toHaveProperty(
+			"missingEnergyMetadata",
+			expect.objectContaining({ length: 1 }),
+		);
+		expect(structuredContent).toHaveProperty("requiresAttention", true);
+		expect(structuredContent).toHaveProperty("sync");
 	});
 
 	it("sets requiresAttention true when duplicates exist", async () => {
@@ -45,21 +38,31 @@ describe("todoist_triage_analysis", () => {
 			id: "t3",
 			content: "Alpha task",
 		});
-		const result = (await harness.client.callTool(
-			"todoist_triage_analysis",
-		)) as {
-			requiresAttention: boolean;
-			duplicates: { groups: unknown[] };
-		};
-		expect(result.requiresAttention).toBe(true);
-		expect(result.duplicates.groups.length).toBeGreaterThan(0);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_triage_analysis",
+		});
+		expect(structuredContent).toHaveProperty("requiresAttention", true);
+		expect(structuredContent).toHaveProperty(
+			"duplicates.groups",
+			expect.objectContaining({ length: 1 }),
+		);
 	});
 
 	it("can sync first when requested", async () => {
-		const result = (await harness.client.callTool("todoist_triage_analysis", {
-			sync: true,
-		})) as { sync: unknown };
-		expect(result.sync).toBeDefined();
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_triage_analysis",
+			arguments: {
+				sync: true,
+			},
+		});
+		expect(structuredContent).toHaveProperty("sync", {
+			filters: 0,
+			labels: 1,
+			projects: 2,
+			reconciled: 0,
+			sections: 1,
+			tasks: 2,
+		});
 	});
 });
 
@@ -70,36 +73,42 @@ describe("todoist_find_duplicates", () => {
 			id: "t3",
 			content: "Alpha task",
 		});
-		const result = (await harness.client.callTool(
-			"todoist_find_duplicates",
-		)) as {
-			groups: Array<{
-				canonicalTask: { id: string; content: string };
-				matches: unknown[];
-				matchType: string;
-				score: number;
-				recommendationCode: string;
-			}>;
-		};
-		expect(result.groups.length).toBeGreaterThan(0);
-		expect(result.groups[0]).toMatchObject({
-			canonicalTask: expect.objectContaining({
-				id: expect.any(String) as unknown,
-			}) as unknown,
-			matches: expect.any(Array) as unknown,
-			matchType: expect.stringMatching(/^(exact|fuzzy)$/) as unknown,
-			score: expect.any(Number) as unknown,
-			recommendationCode: expect.stringMatching(
-				/^(merge|review|ignore)$/,
-			) as unknown,
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_find_duplicates",
 		});
+		expect(structuredContent).toHaveProperty(
+			"groups",
+			expect.arrayContaining([
+				expect.objectContaining({
+					canonicalTask: expect.objectContaining({
+						id: expect.any(String) as unknown,
+					}) as unknown,
+					matches: expect.any(Array) as unknown,
+					matchType: expect.stringMatching(/^(exact|fuzzy)$/) as unknown,
+					score: expect.any(Number) as unknown,
+					recommendationCode: expect.stringMatching(
+						/^(merge|review|ignore)$/,
+					) as unknown,
+				}),
+			]),
+		);
 	});
 
 	it("can sync first when requested", async () => {
-		const result = (await harness.client.callTool("todoist_find_duplicates", {
-			sync: true,
-		})) as { sync: unknown };
-		expect(result.sync).toBeDefined();
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_find_duplicates",
+			arguments: {
+				sync: true,
+			},
+		});
+		expect(structuredContent).toHaveProperty("sync", {
+			filters: 0,
+			labels: 1,
+			projects: 2,
+			reconciled: 0,
+			sections: 1,
+			tasks: 2,
+		});
 	});
 });
 
@@ -111,33 +120,40 @@ describe("todoist_find_stale_tasks", () => {
 			content: "Old task",
 			updated_at: "2020-01-01T00:00:00.000Z",
 		});
-		const result = (await harness.client.callTool(
-			"todoist_find_stale_tasks",
-		)) as {
-			candidates: Array<{
-				task: { id: string; content: string };
-				signals: string[];
-				score: number;
-				recommendationCode: string;
-			}>;
-		};
-		expect(result.candidates.length).toBeGreaterThanOrEqual(1);
-		expect(result.candidates[0]).toMatchObject({
-			task: expect.objectContaining({
-				id: expect.any(String) as unknown,
-			}) as unknown,
-			signals: expect.any(Array) as unknown,
-			score: expect.any(Number) as unknown,
-			recommendationCode: expect.stringMatching(
-				/^(complete|rewrite|reschedule|schedule|keep)$/,
-			) as unknown,
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_find_stale_tasks",
 		});
+		expect(structuredContent).toHaveProperty(
+			"candidates",
+			expect.arrayContaining([
+				expect.objectContaining({
+					task: expect.objectContaining({
+						id: expect.any(String) as unknown,
+					}) as unknown,
+					signals: expect.any(Array) as unknown,
+					score: expect.any(Number) as unknown,
+					recommendationCode: expect.stringMatching(
+						/^(complete|rewrite|reschedule|schedule|keep)$/,
+					) as unknown,
+				}),
+			]),
+		);
 	});
 
 	it("can sync first when requested", async () => {
-		const result = (await harness.client.callTool("todoist_find_stale_tasks", {
-			sync: true,
-		})) as { sync: unknown };
-		expect(result.sync).toBeDefined();
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_find_stale_tasks",
+			arguments: {
+				sync: true,
+			},
+		});
+		expect(structuredContent).toHaveProperty("sync", {
+			filters: 0,
+			labels: 1,
+			projects: 2,
+			reconciled: 0,
+			sections: 1,
+			tasks: 2,
+		});
 	});
 });

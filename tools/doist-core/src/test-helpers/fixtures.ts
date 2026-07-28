@@ -2,7 +2,7 @@
  * Centralized test fixtures for db and operations tests.
  */
 
-import type { DbProject, DbSection, DbTask } from "../db.ts";
+import type { DbNote, DbProject, DbSection, DbTask } from "../db.ts";
 import type { AllData } from "../todoist.ts";
 
 export const NOW = new Date().toISOString();
@@ -210,8 +210,10 @@ export function makeData(overrides: Partial<AllData> = {}): AllData {
 		labels: [],
 		filters: [],
 		tasks: [],
+		notes: [],
 		completedTaskIds: [],
 		deletedTaskIds: [],
+		deletedNoteIds: [],
 		syncToken: "sync-token",
 		...overrides,
 	};
@@ -259,3 +261,26 @@ export function makeTask(id: string, projectId: string): DbTask {
 		is_recurring: 0,
 	};
 }
+
+export const NOTE_IDS = {
+	alpha: "n-alpha",
+	beta: "n-beta",
+};
+
+export const NOTE_ALPHA: DbNote = {
+	id: NOTE_IDS.alpha,
+	item_id: "t1",
+	content: "Resolution: alpha",
+	posted_at: NOW,
+	is_deleted: 0,
+	synced_at: NOW,
+};
+
+export const NOTE_BETA: DbNote = {
+	id: NOTE_IDS.beta,
+	item_id: "t2",
+	content: "Resolution: beta",
+	posted_at: NOW,
+	is_deleted: 0,
+	synced_at: NOW,
+};

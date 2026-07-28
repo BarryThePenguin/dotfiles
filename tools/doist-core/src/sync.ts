@@ -2,6 +2,7 @@ import type { Database } from "./db.ts";
 import { filterToAllowedProjects } from "./filtering.ts";
 import { logger } from "./logger.ts";
 import { markDeleted, reconcileCompleted } from "./reconciliation.ts";
+import { prepareNoteForDB } from "./schema.ts";
 import { getToken, persistSync, resetToken } from "./sync-lifecycle.ts";
 import type { AllData, TodoistClient } from "./todoist.ts";
 
@@ -129,7 +130,9 @@ export async function syncAndPersist(
 		labels,
 		filters,
 		tasks,
+		notes,
 		deletedTaskIds,
+		deletedNoteIds,
 		completedTaskIds,
 	} = filtered;
 
@@ -149,11 +152,18 @@ export async function syncAndPersist(
 		for (const t of tasks) {
 			db.upsertTask(t);
 		}
+		for (const n of notes) {
+			const prepared = prepareNoteForDB(n);
+			if (prepared) {
+				db.upsertNote(prepared);
+			}
+		}
 
 		// Some incremental sync responses report closures via completedTaskIds
 		// without returning full item payloads.
 		db.updateTasksAsCompleted(completedTaskIds);
 		markDeleted(db, deletedTaskIds);
+		db.deleteNotesByIds(deletedNoteIds);
 		return isFullSync
 			? reconcileCompleted(
 					db,

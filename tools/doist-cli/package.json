@@ -7,7 +7,7 @@
 		"doist": "src/cli.ts"
 	},
 	"scripts": {
-		"build": "tsc",
+		"build": "tsc --build",
 		"test": "vitest"
 	},
 	"engines": {

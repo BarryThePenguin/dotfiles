@@ -84,5 +84,6 @@ login_shell = "/bin/zsh"
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }
 "~/.config/zsh" = { mode = "symlink-each" }
+"~/.pi/agent/extensions" = { mode = "symlink" }
 "~/.zprezto-contrib" = { mode = "symlink" }
 "~/.zshenv" = { mode = "symlink" }

@@ -14,15 +14,14 @@ afterEach(async () => {
 
 describe("projects_fetch", () => {
 	it("returns the first page", async () => {
-		const result = (await harness.client.callTool(
-			"todoist_projects_fetch",
-		)) as {
-			projects: Array<{ id: string; name: string }>;
-			nextCursor: string | null;
-		};
-		expect(result.projects).toHaveLength(2);
-		expect(result.projects[0]).toMatchObject({ id: "p1", name: "Work" });
-		expect(result.nextCursor).toBeNull();
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_projects_fetch",
+		});
+		expect(structuredContent).toHaveProperty("projects", [
+			expect.objectContaining({ id: "p1", name: "Work" }),
+			expect.objectContaining({ id: "p2", name: "Personal" }),
+		]);
+		expect(structuredContent).toHaveProperty("nextCursor", null);
 	});
 
 	it("returns paginated results when cursor is provided", async () => {
@@ -40,22 +39,29 @@ describe("projects_fetch", () => {
 			],
 			nextCursor: "next",
 		});
-		const result = (await harness.client.callTool("todoist_projects_fetch", {
-			cursor: "abc",
-		})) as { projects: Array<{ id: string }>; nextCursor: string | null };
-		expect(result.projects).toHaveLength(1);
-		expect(result.nextCursor).toBe("next");
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_projects_fetch",
+			arguments: {
+				cursor: "abc",
+			},
+		});
+		expect(structuredContent).toHaveProperty(
+			"projects",
+			expect.objectContaining({ length: 1 }),
+		);
+		expect(structuredContent).toHaveProperty("nextCursor", "next");
 	});
 });
 
 describe("projects_discover", () => {
 	it("returns all projects", async () => {
-		const result = (await harness.client.callTool(
-			"todoist_projects_discover",
-		)) as {
-			projects: Array<{ id: string; name: string }>;
-		};
-		expect(result.projects).toHaveLength(2);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_projects_discover",
+		});
+		expect(structuredContent).toHaveProperty(
+			"projects",
+			expect.objectContaining({ length: 2 }),
+		);
 	});
 
 	it("returns paginated results when cursor is provided", async () => {
@@ -73,29 +79,38 @@ describe("projects_discover", () => {
 			],
 			nextCursor: "next",
 		});
-		const result = (await harness.client.callTool("todoist_projects_discover", {
-			cursor: "abc",
-		})) as { projects: Array<{ id: string }>; nextCursor: string | null };
-		expect(result.projects).toHaveLength(1);
-		expect(result.nextCursor).toBe("next");
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_projects_discover",
+			arguments: {
+				cursor: "abc",
+			},
+		});
+		expect(structuredContent).toHaveProperty(
+			"projects",
+			expect.objectContaining({ length: 1 }),
+		);
+		expect(structuredContent).toHaveProperty("nextCursor", "next");
 	});
 });
 
 describe("labels_list", () => {
 	it("returns all labels", async () => {
-		const result = (await harness.client.callTool("todoist_labels_list")) as {
-			labels: Array<{ id: string; name: string }>;
-		};
-		expect(result.labels).toEqual([{ id: "l1", name: "urgent" }]);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_labels_list",
+		});
+		expect(structuredContent).toHaveProperty("labels", [
+			{ id: "l1", name: "urgent" },
+		]);
 	});
 });
 
 describe("sections_list", () => {
 	it("returns all sections", async () => {
-		const result = (await harness.client.callTool("todoist_sections_list")) as {
-			sections: Array<{ id: string; name: string }>;
-		};
-		expect(result.sections).toEqual(
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_sections_list",
+		});
+		expect(structuredContent).toHaveProperty(
+			"sections",
 			expect.arrayContaining([
 				expect.objectContaining({ id: "s1", name: "Backlog" }),
 			]),
@@ -103,23 +118,38 @@ describe("sections_list", () => {
 	});
 
 	it("filters by project", async () => {
-		const result = (await harness.client.callTool("todoist_sections_list", {
-			project: "p1",
-		})) as { sections: Array<{ id: string }> };
-		expect(result.sections).toHaveLength(1);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_sections_list",
+			arguments: {
+				project: "p1",
+			},
+		});
+		expect(structuredContent).toHaveProperty(
+			"sections",
+			expect.objectContaining({ length: 1 }),
+		);
 	});
 
 	it("returns empty for unknown project", async () => {
-		const result = (await harness.client.callTool("todoist_sections_list", {
-			project: "unknown",
-		})) as { sections: Array<unknown> };
-		expect(result.sections).toHaveLength(0);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_sections_list",
+			arguments: {
+				project: "unknown",
+			},
+		});
+		expect(structuredContent).toHaveProperty("sections", []);
 	});
 
 	it("filters by project name as well as id", async () => {
-		const result = (await harness.client.callTool("todoist_sections_list", {
-			project: "Work",
-		})) as { sections: Array<unknown> };
-		expect(result.sections).toHaveLength(1);
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_sections_list",
+			arguments: {
+				project: "Work",
+			},
+		});
+		expect(structuredContent).toHaveProperty(
+			"sections",
+			expect.objectContaining({ length: 1 }),
+		);
 	});
 });
