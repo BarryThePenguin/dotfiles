@@ -15,7 +15,7 @@
 		"@types/node": "24.13.3",
 		"@typescript/native": "npm:typescript@7.0.2",
 		"@vitest/coverage-v8": "4.1.10",
-		"@vitest/eslint-plugin": "1.6.23",
+		"@vitest/eslint-plugin": "1.6.24",
 		"doist-cli": "workspace:*",
 		"doist-mcp": "workspace:*",
 		"eslint": "10.8.0",
