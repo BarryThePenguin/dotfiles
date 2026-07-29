@@ -20,7 +20,7 @@
 		"doist-cli": "workspace:*",
 		"doist-mcp": "workspace:*",
 		"eslint": "10.8.0",
-		"globals": "17.7.0",
+		"globals": "17.8.0",
 		"knip": "6.29.0",
 		"prettier": "3.9.6",
 		"typescript": "npm:@typescript/typescript6@6.0.2",
