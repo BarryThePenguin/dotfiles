@@ -42,10 +42,14 @@ export const ChartParams = Type.Object({
 		description: "Map title (without 'Wayfinder:' prefix)",
 	}),
 	destination: Type.String({
-		description: "What reaching the end looks like (1-2 lines)",
+		description:
+			"User-confirmed destination after /grilling and /domain-modeling pre-map discovery (1-2 lines)",
 	}),
 	notes: Type.Optional(
-		Type.String({ description: "Domain context, skills, preferences" }),
+		Type.String({
+			description:
+				"Domain language, context, skills, and preferences surfaced during pre-map discovery",
+		}),
 	),
 });
 export type ChartParams = Static<typeof ChartParams>;

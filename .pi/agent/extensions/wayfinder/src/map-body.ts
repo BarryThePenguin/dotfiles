@@ -62,7 +62,9 @@ function findSectionRanges(
 		}
 	});
 	tree.children.forEach((child, i) => {
-		if (child.type !== "heading") return;
+		if (child.type !== "heading") {
+			return;
+		}
 		const pos = headingIndices.indexOf(i);
 		const end = headingIndices[pos + 1] ?? tree.children.length;
 		ranges.set(toString(child).toLowerCase().trim(), { start: i, end });

@@ -1,5 +1,5 @@
 /**
- * Wayfinder Pi Extension — Maps large efforts as decision tickets on Todoist.
+ * Wayfinder Pi Extension — Maps large efforts as decision tickets on the selected tracker.
  */
 
 import * as path from "node:path";
@@ -11,6 +11,11 @@ import { Type } from "typebox";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult } from "./render.ts";
 import { STATUS_KEY } from "./helpers.ts";
+import {
+	detectTrackerSelection,
+	localTrackerRoot,
+	type TrackerMode,
+} from "./tracker.ts";
 import {
 	ChartParams,
 	ClaimParams,
@@ -27,20 +32,71 @@ const SKILL_DIR = path.join(import.meta.dirname, "../skills");
 
 export default function wayfinderExtension(pi: ExtensionAPI) {
 	let activeMap: string | null = null;
+	let trackerMode: TrackerMode | null = null;
 
 	const persistState = () => {
 		pi.appendEntry("wayfinder-state", { activeMap });
 	};
 
+	const resolveTrackerMode = async (
+		ctx: ExtensionContext,
+	): Promise<TrackerMode> => {
+		if (trackerMode) {
+			return trackerMode;
+		}
+
+		const selection = detectTrackerSelection(ctx.cwd);
+		if (selection.mode) {
+			trackerMode = selection.mode;
+			return trackerMode;
+		}
+
+		if (!ctx.hasUI) {
+			trackerMode = "local";
+			return trackerMode;
+		}
+
+		const choice = await ctx.ui.select("Wayfinder tracker", [
+			"Local Markdown (.wayfinder)",
+			"Todoist (.doistrc)",
+		]);
+		trackerMode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
+		ctx.ui.notify(`Wayfinder tracker: ${trackerMode}`, "info");
+		updateStatus(ctx);
+		return trackerMode;
+	};
+
 	const updateStatus = (ctx: ExtensionContext) => {
+		const selection = detectTrackerSelection(ctx.cwd);
+		const mode = trackerMode ?? selection.mode;
+		if (!mode) {
+			ctx.ui.setStatus(
+				STATUS_KEY,
+				ctx.ui.theme.fg("warning", "🗺 choose tracker"),
+			);
+			return;
+		}
+		const label = activeMap ? `🗺 ${mode}:${activeMap}` : `🗺 ${mode}`;
 		ctx.ui.setStatus(
 			STATUS_KEY,
-			activeMap ? ctx.ui.theme.fg("accent", `🗺 ${activeMap}`) : undefined,
+			ctx.ui.theme.fg(
+				"accent",
+				mode === "local" ? `${label} (${localTrackerRoot(ctx.cwd)})` : label,
+			),
 		);
 	};
 
 	const getState = (): ToolContext => ({
-		activeMap,
+		get activeMap() {
+			return activeMap;
+		},
+		set activeMap(value) {
+			activeMap = value;
+		},
+		get trackerMode() {
+			return trackerMode;
+		},
+		resolveTrackerMode,
 		persistState,
 		updateStatus,
 	});
@@ -65,8 +121,10 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "wayfinder_chart",
 		label: "Wayfinder: Chart",
-		description: "Create a new wayfinder map for a large effort.",
-		promptSnippet: "Create a wayfinder map on Todoist",
+		description:
+			"Create a new wayfinder map after /grilling and /domain-modeling have confirmed the destination.",
+		promptSnippet:
+			"Create a wayfinder map after confirming the destination with grilling and domain modeling",
 		parameters: ChartParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("chart", params, getState(), ctx);
@@ -78,8 +136,9 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "wayfinder_get_map",
 		label: "Wayfinder: Get Map",
-		description: "Read a wayfinder map and its tickets.",
-		promptSnippet: "Read a wayfinder map from Todoist",
+		description: "Read the low-resolution wayfinder map.",
+		promptSnippet:
+			"Read the low-resolution wayfinder map from the selected tracker",
 		parameters: GetMapParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("get_map", params, getState(), ctx);
@@ -92,7 +151,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "wayfinder_list_maps",
 		label: "Wayfinder: List Maps",
 		description: "List all open wayfinder maps.",
-		promptSnippet: "List wayfinder maps on Todoist",
+		promptSnippet: "List wayfinder maps from the selected tracker",
 		parameters: Type.Object({}),
 		async execute(_id, _params, _signal, _onUpdate, ctx) {
 			return handleAction("list_maps", {}, getState(), ctx);
@@ -105,7 +164,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "wayfinder_create_ticket",
 		label: "Wayfinder: Create Ticket",
 		description: "Create a decision ticket on a wayfinder map.",
-		promptSnippet: "Create a wayfinder ticket on Todoist",
+		promptSnippet: "Create a wayfinder ticket on the selected tracker",
 		parameters: CreateTicketParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("create_ticket", params, getState(), ctx);
@@ -118,7 +177,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "wayfinder_get_ticket",
 		label: "Wayfinder: Get Ticket",
 		description: "Read a wayfinder ticket's details.",
-		promptSnippet: "Read a wayfinder ticket from Todoist",
+		promptSnippet: "Read a wayfinder ticket from the selected tracker",
 		parameters: GetTicketParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("get_ticket", params, getState(), ctx);
@@ -132,7 +191,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		label: "Wayfinder: Resolve",
 		description:
 			"Resolve a ticket: post resolution, close it, append to map's Decisions.",
-		promptSnippet: "Resolve a wayfinder ticket on Todoist",
+		promptSnippet: "Resolve a wayfinder ticket on the selected tracker",
 		parameters: ResolveParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("resolve", params, getState(), ctx);
@@ -146,7 +205,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		label: "Wayfinder: Update Map",
 		description:
 			"Replace content of a map section (destination, notes, decisions, fog, out of scope).",
-		promptSnippet: "Update a wayfinder map section on Todoist",
+		promptSnippet: "Update a wayfinder map section on the selected tracker",
 		parameters: UpdateMapParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("update_map", params, getState(), ctx);
@@ -159,7 +218,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "wayfinder_set_blocking",
 		label: "Wayfinder: Set Blocking",
 		description: "Wire blocking edges between tickets.",
-		promptSnippet: "Set blocking on a wayfinder ticket on Todoist",
+		promptSnippet: "Set blocking on a wayfinder ticket on the selected tracker",
 		parameters: SetBlockingParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("set_blocking", params, getState(), ctx);
@@ -173,7 +232,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		label: "Wayfinder: List Frontier",
 		description:
 			"List open, unblocked, unclaimed tickets — the edge of the known.",
-		promptSnippet: "List wayfinder frontier tickets on Todoist",
+		promptSnippet: "List wayfinder frontier tickets from the selected tracker",
 		parameters: ListFrontierParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("list_frontier", params, getState(), ctx);
@@ -185,9 +244,8 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "wayfinder_claim",
 		label: "Wayfinder: Claim",
-		description:
-			"Claim or unclaim a ticket (assign to yourself so others skip it).",
-		promptSnippet: "Claim a wayfinder ticket on Todoist",
+		description: "Claim or unclaim a ticket so concurrent sessions skip it.",
+		promptSnippet: "Claim a wayfinder ticket on the selected tracker",
 		parameters: ClaimParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("claim", params, getState(), ctx);

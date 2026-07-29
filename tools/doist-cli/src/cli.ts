@@ -481,7 +481,7 @@ const tasksCmd = defineCommand({
 						if (args.sync) {
 							await syncAndPersist(db, client, listProjectIds(), false);
 						}
-						out(await listTaskComments(db, args.task));
+						out(listTaskComments(db, args.task));
 					},
 				}),
 			},

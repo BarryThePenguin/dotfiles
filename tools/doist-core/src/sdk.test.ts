@@ -7,6 +7,7 @@ import {
 	createItemAddCommand,
 	createItemCompleteCommand,
 	createItemUpdateCommand,
+	createNoteAddCommand,
 	SyncCommandError,
 	syncRequest,
 } from "./sdk.ts";
@@ -53,6 +54,15 @@ describe("createItemUpdateCommand", () => {
 		expect(cmd.type).toBe("item_update");
 		expect(cmd.args).toEqual({ id: "t1", content: "New title" });
 		expect(cmd.suggestedResourceTypes).toEqual(["items"]);
+	});
+});
+
+describe("createNoteAddCommand", () => {
+	it("returns a note_add command with the given args", () => {
+		const cmd = createNoteAddCommand({ item_id: "t1", content: "Resolution" });
+		expect(cmd.type).toBe("note_add");
+		expect(cmd.args).toEqual({ item_id: "t1", content: "Resolution" });
+		expect(cmd.suggestedResourceTypes).toEqual(["notes"]);
 	});
 });
 

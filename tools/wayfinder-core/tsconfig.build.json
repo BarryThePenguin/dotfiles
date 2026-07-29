@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.build.json",
+	"compilerOptions": {
+		"composite": true,
+		"types": ["node"]
+	},
+	"references": [
+		{
+			"path": "../doist-core/tsconfig.build.json"
+		}
+	]
+}

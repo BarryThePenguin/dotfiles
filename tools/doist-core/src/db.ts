@@ -19,8 +19,9 @@ import {
 	type SqlBool,
 } from "kysely";
 import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
 import type { DatabaseSync, SQLInputValue, StatementSync } from "node:sqlite";
+
+const require = createRequire(import.meta.url);
 import type { ConfigPaths } from "./paths.ts";
 import {
 	normalizeFilter,

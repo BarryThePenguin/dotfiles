@@ -2,8 +2,10 @@ packages:
   - tools/*
   - .pi/agent/extensions/*
 allowBuilds:
-  '@google/genai': true
-  "@parcel/watcher": set this to true or false
+  "@google/genai": true
+  "@mongodb-js/zstd": false
+  "@parcel/watcher": false
   esbuild: true
-  msgpackr-extract: set this to true or false
+  msgpackr-extract: false
+  node-liblzma: false
   protobufjs: true

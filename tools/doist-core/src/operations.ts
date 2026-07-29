@@ -1,4 +1,4 @@
-import { Database } from "./db.ts";
+import type { Database } from "./db.ts";
 import {
 	normalizeFilter,
 	normalizeNote,
@@ -468,11 +468,14 @@ export async function addTaskComment(
 	);
 	const note = resolveCreatedNote(allData, tempId);
 	const prepared = prepareNoteForDB(note);
+	if (!prepared) {
+		throw new Error("Todoist sync did not return the created note");
+	}
 	persistMutations(db, {
 		token: allData.syncToken,
-		...(prepared ? { notes: [prepared] } : {}),
+		notes: [prepared],
 	});
-	return { ok: true, result: normalizeNote(prepared!) };
+	return { ok: true, result: normalizeNote(prepared) };
 }
 
 /**

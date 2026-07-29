@@ -1,33 +1,19 @@
 /**
  * Wayfinder tool action handlers.
  *
- * Each action is a named handler with a strictly-typed param bag, looked up
- * through a dispatch table. Adding/removing actions is enforced at compile
- * time by the ActionMap type, so the table is the source of truth.
+ * This file is the Pi adapter: it translates Pi tool params/session state into
+ * domain-level WayfinderTracker calls and formats human-readable responses.
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { LocalTicket, MapSectionKey } from "wayfinder-core";
+import { ok, stripPrefix } from "./helpers.ts";
 import {
-	CLAIMED_LABEL,
-	MAP_LABEL,
-	TodoistClient,
-	parseBlockedBy,
-	setBlockedBy,
+	createWayfinderTracker,
+	localTrackerRoot,
+	selectedTrackerMode,
+	type TrackerMode,
 } from "./tracker.ts";
-import {
-	appendDecision,
-	buildInitialMapBody,
-	parseMapBody,
-	replaceSection,
-} from "./map-body.ts";
-import {
-	formatTicket,
-	getMapTickets,
-	ok,
-	stripPrefix,
-	ticketState,
-	ticketTypeLabel,
-} from "./helpers.ts";
 import type {
 	ChartParams,
 	ClaimParams,
@@ -64,6 +50,8 @@ export interface ActionMap {
 
 export interface ToolContext {
 	activeMap: string | null;
+	trackerMode: TrackerMode | null;
+	resolveTrackerMode: (ext: ExtensionContext) => Promise<TrackerMode>;
 	persistState: () => void;
 	updateStatus: (ext: ExtensionContext) => void;
 }
@@ -80,15 +68,15 @@ type Handler<K extends keyof ActionMap> = (
 
 const handlers: { [K in keyof ActionMap]: Handler<K> } = {
 	list_maps: listMaps,
-	chart: chart,
+	chart,
 	get_map: getMap,
 	create_ticket: createTicket,
 	get_ticket: getTicket,
-	resolve: resolve,
+	resolve,
 	update_map: updateMap,
 	set_blocking: setBlocking,
 	list_frontier: listFrontier,
-	claim: claim,
+	claim,
 };
 
 export function handleAction<K extends keyof ActionMap>(
@@ -105,6 +93,20 @@ export function handleAction<K extends keyof ActionMap>(
 // ---------------------------------------------------------------------------
 
 const TITLE_MAX_LEN = 80;
+const DEFAULT_CLAIMANT = "pi-wayfinder";
+
+async function createTracker(ext: ExtensionContext, ctx: ToolContext) {
+	const mode = await ctx.resolveTrackerMode(ext);
+	return createWayfinderTracker({ cwd: ext.cwd, mode });
+}
+
+function trackerDetails(ext: ExtensionContext, ctx: ToolContext) {
+	const mode = ctx.trackerMode ?? selectedTrackerMode(ext.cwd);
+	return {
+		tracker: mode,
+		...(mode === "local" ? { root: localTrackerRoot(ext.cwd) } : {}),
+	};
+}
 
 function truncateTitle(text: string): string {
 	const firstLine = text.split("\n")[0] ?? "";
@@ -121,24 +123,56 @@ function requireMapId(
 	return params.map_id ?? ctx.activeMap;
 }
 
+function formatTicket(ticket: LocalTicket, opts?: { showState?: boolean }) {
+	const state = opts?.showState ? ` [${ticketState(ticket)}]` : "";
+	return `${ticket.id} — ${ticket.title} (wayfinder:${ticket.type})${state}`;
+}
+
+function ticketState(ticket: LocalTicket) {
+	if (ticket.claimedBy) {
+		return "claimed";
+	}
+	if (ticket.blockerIds.length > 0) {
+		return "blocked";
+	}
+	return "frontier";
+}
+
+function sectionKey(section: UpdateMapParams["section"]): MapSectionKey {
+	return section === "decisions" ? "decisions" : section;
+}
+
+function mapDetails(
+	ext: ExtensionContext,
+	ctx: ToolContext,
+	details: Record<string, unknown>,
+) {
+	return { ...trackerDetails(ext, ctx), ...details };
+}
+
 // ---------------------------------------------------------------------------
 // Handlers
 // ---------------------------------------------------------------------------
 
 async function listMaps(
 	_params: Record<string, never>,
-	_ctx: ToolContext,
-	_ext: ExtensionContext,
+	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
-	const tasks = await client.listTasks({ labels: [MAP_LABEL] });
-	const open = tasks.filter((t) => !t.isCompleted);
-	if (open.length === 0) {
-		return ok("No open wayfinder maps.", { maps: [] });
+	const tracker = await createTracker(ext, ctx);
+	const maps = await tracker.listMaps();
+	if (maps.length === 0) {
+		return ok("No open wayfinder maps.", mapDetails(ext, ctx, { maps: [] }));
 	}
 	return ok(
-		`${open.length} open map(s):\n\n${open.map((t) => `${t.id} — ${stripPrefix(t.content)}\n  ${t.url}`).join("\n\n")}`,
-		{ maps: open.map((t) => ({ id: t.id, title: t.content, url: t.url })) },
+		`${maps.length} open map(s):\n\n${maps.map((map) => `${map.id} — ${stripPrefix(map.title)}\n  ${map.url}`).join("\n\n")}`,
+		mapDetails(ext, ctx, {
+			maps: maps.map((map) => ({
+				id: map.id,
+				title: map.title,
+				url: map.url,
+			})),
+		}),
 	);
 }
 
@@ -147,18 +181,18 @@ async function chart(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
-	const task = await client.createTask({
-		content: params.title,
-		description: buildInitialMapBody(params.destination, params.notes ?? ""),
-		labels: [MAP_LABEL],
+	const tracker = await createTracker(ext, ctx);
+	const map = await tracker.createMap({
+		title: params.title,
+		destination: params.destination,
+		...(params.notes ? { notes: params.notes } : {}),
 	});
-	ctx.activeMap = task.id;
+	ctx.activeMap = map.id;
 	ctx.persistState();
 	ctx.updateStatus(ext);
 	return ok(
-		`Map created: ${task.content}\nID: ${task.id}\nURL: ${task.url}\n\nDestination:\n${params.destination}`,
-		{ id: task.id, url: task.url, title: task.content },
+		`Map created: ${map.title}\nID: ${map.id}\nURL: ${map.url}\n\nDestination:\n${params.destination}`,
+		mapDetails(ext, ctx, { id: map.id, url: map.url, title: map.title }),
 	);
 }
 
@@ -167,285 +201,330 @@ async function getMap(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
+	const tracker = await createTracker(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id provided and no active map.");
 	}
-	const task = await client.getTask(mapId);
-	const sections = parseMapBody(task.description || "");
-	const [open, closed] = await Promise.all([
-		getMapTickets(client, mapId, { completed: false }),
-		getMapTickets(client, mapId, { completed: true }),
+	const [map, tickets] = await Promise.all([
+		tracker.getMap(mapId),
+		tracker.listChildTickets(mapId),
 	]);
+	const open = tickets.filter((ticket) => ticket.status === "open");
+	const closed = tickets.filter((ticket) => ticket.status === "closed");
 
 	const lines = [
-		`## ${task.content}`,
-		`ID: ${task.id}  URL: ${task.url}`,
+		`## ${map.title}`,
+		`ID: ${map.id}  URL: ${map.url}`,
 		"",
-		...(
-			[
-				"destination",
-				"notes",
-				"decisions",
-				"notYetSpecified",
-				"outOfScope",
-			] as const
-		).flatMap((s) => [`### ${s}`, sections[s] || "(empty)", ""]),
-		`### Open tickets (${open.length})`,
-		...open.map((t) => `  ${formatTicket(t, { showState: true })}`),
+		"### destination",
+		map.destination || "(empty)",
 		"",
+		"### notes",
+		map.notes || "(empty)",
+		"",
+		"### decisions",
+		map.decisionsSoFar.length > 0
+			? map.decisionsSoFar
+					.map(
+						(decision) =>
+							`- [${decision.title}](${decision.url}) — ${decision.gist}`,
+					)
+					.join("\n")
+			: "(empty)",
+		"",
+		"### notYetSpecified",
+		map.notYetSpecified.length > 0
+			? map.notYetSpecified.map((item) => `- ${item}`).join("\n")
+			: "(empty)",
+		"",
+		"### outOfScope",
+		map.outOfScope.length > 0
+			? map.outOfScope
+					.map((item) => `- ${item.text} — ${item.reason}`)
+					.join("\n")
+			: "(empty)",
+		"",
+		`Open tickets: ${open.length} (use wayfinder_list_frontier to choose the next ticket)`,
 		`Closed tickets: ${closed.length}`,
 	].join("\n");
 
 	ctx.activeMap = mapId;
 	ctx.persistState();
 	ctx.updateStatus(ext);
-	return ok(lines, {
-		id: task.id,
-		title: task.content,
-		url: task.url,
-		sections,
-		openTickets: open.length,
-		closedTickets: closed.length,
-	});
+	return ok(
+		lines,
+		mapDetails(ext, ctx, {
+			id: map.id,
+			title: map.title,
+			url: map.url,
+			sections: {
+				destination: map.destination,
+				notes: map.notes,
+				decisions: map.decisionsSoFar,
+				notYetSpecified: map.notYetSpecified,
+				outOfScope: map.outOfScope,
+			},
+			openTickets: open.length,
+			closedTickets: closed.length,
+		}),
+	);
 }
 
 async function createTicket(
 	params: CreateTicketParams,
 	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
+	const tracker = await createTracker(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id and no active map.");
 	}
-	const body = `## Question\n\n${params.question}`;
-	const task = await client.createTask({
-		content: truncateTitle(params.question),
-		description: body,
-		parentId: mapId,
-		labels: [ticketTypeLabel(params.type)],
+	const ticket = await tracker.createChildTicket({
+		mapId,
+		title: truncateTitle(params.question),
+		type: params.type,
+		question: params.question,
 	});
 	return ok(
-		`Ticket created: ${task.content}\nID: ${task.id}\nType: ${params.type}\nURL: ${task.url}`,
-		{ id: task.id, title: task.content, type: params.type, url: task.url },
+		`Ticket created: ${ticket.title}\nID: ${ticket.id}\nType: ${params.type}\nURL: ${ticket.url}`,
+		mapDetails(ext, ctx, {
+			id: ticket.id,
+			title: ticket.title,
+			type: params.type,
+			url: ticket.url,
+		}),
 	);
 }
 
 async function getTicket(
 	params: GetTicketParams,
-	_ctx: ToolContext,
+	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
-	const task = await client.getTask(params.ticket_id);
-	const blockers = parseBlockedBy(task.description || "");
-	const comments = await client.listComments(params.ticket_id);
+	const tracker = await createTracker(ext, ctx);
+	const ticket = await tracker.getTicket(params.ticket_id);
 	const text = [
-		`## ${task.content}`,
-		`ID: ${task.id}  URL: ${task.url}`,
-		`Labels: ${task.labels.join(", ")}`,
-		`Blocked by: ${blockers.length > 0 ? blockers.join(", ") : "nothing"}`,
-		`Claimed: ${task.labels.includes(CLAIMED_LABEL) ? "yes" : "no"}`,
+		`## ${ticket.title}`,
+		`ID: ${ticket.id}  URL: ${ticket.url}`,
+		`Type: ${ticket.type}`,
+		`Blocked by: ${ticket.blockerIds.length > 0 ? ticket.blockerIds.join(", ") : "nothing"}`,
+		`Claimed: ${ticket.claimedBy ?? "no"}`,
 		"",
-		task.description || "(no description)",
-		comments.length > 0
-			? `\n### Comments (${comments.length})\n\n${comments.map((c) => `> ${c.content}`).join("\n\n")}`
+		`## Question\n\n${ticket.question}`,
+		ticket.comments.length > 0
+			? `\n### Comments (${ticket.comments.length})\n\n${ticket.comments.map((comment) => `> ${comment}`).join("\n\n")}`
 			: "",
 	]
 		.filter(Boolean)
 		.join("\n");
-	return ok(text, {
-		id: task.id,
-		title: task.content,
-		labels: task.labels,
-		blockers,
-		claimed: task.labels.includes(CLAIMED_LABEL),
-		comments: comments.length,
-	});
+	return ok(
+		text,
+		mapDetails(ext, ctx, {
+			id: ticket.id,
+			title: ticket.title,
+			type: ticket.type,
+			blockers: ticket.blockerIds,
+			claimed: Boolean(ticket.claimedBy),
+			comments: ticket.comments.length,
+		}),
+	);
 }
 
 async function resolve(
 	params: ResolveParams,
 	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
-	const ticket = await client.getTask(params.ticket_id);
+	const tracker = await createTracker(ext, ctx);
+	const ticket = await tracker.getTicket(params.ticket_id);
+	const mapId = ticket.mapId || ctx.activeMap;
+	const usedFallback = !ticket.mapId && !!mapId;
 
-	// Discover the map from the ticket's parent. Fall back to
-	// the active map if parent is missing, and surface the fallback.
-	const mapId = ticket.parentId ?? ctx.activeMap;
-	const usedFallback = !ticket.parentId && !!mapId;
-
-	await client.addComment(
+	await tracker.postComment(
 		params.ticket_id,
 		`**Resolution:**\n\n${params.resolution}`,
 	);
-	await client.completeTask(params.ticket_id);
+	await tracker.closeTicket(params.ticket_id);
 
 	let unblocked: string[] = [];
 	if (mapId) {
-		const mapTask = await client.getTask(mapId);
-		await client.updateTask(mapId, {
-			description: appendDecision(
-				mapTask.description || "",
-				ticket.content,
-				ticket.url,
-				params.gist,
-			),
+		await tracker.recordDecision(mapId, {
+			title: ticket.title,
+			url: ticket.url,
+			gist: params.gist,
 		});
-		const siblings = await getMapTickets(client, mapId, { completed: false });
+		const siblings = await tracker.listChildTickets(mapId);
 		unblocked = siblings
-			.filter((t) => {
-				const blockers = parseBlockedBy(t.description || "");
-				if (blockers.length === 0) {
+			.filter((sibling) => {
+				if (
+					sibling.status !== "open" ||
+					!sibling.blockerIds.includes(params.ticket_id)
+				) {
 					return false;
 				}
-				const remaining = blockers.filter((b) => b !== params.ticket_id);
+				const remaining = sibling.blockerIds.filter(
+					(blockerId) => blockerId !== params.ticket_id,
+				);
 				return remaining.length === 0;
 			})
-			.map((t) => t.id);
+			.map((sibling) => sibling.id);
 	}
 
 	const lines = [
 		`Ticket ${params.ticket_id} resolved.`,
 		`Gist: ${params.gist}`,
 		usedFallback
-			? `\nWarning: ticket was missing the wayfinder:map tag — used the active map (${mapId}).`
+			? `\nWarning: ticket was missing its map metadata — used the active map (${mapId}).`
 			: "",
 		unblocked.length > 0
 			? `\nUnblocked tickets: ${unblocked.join(", ")}`
 			: "\nNo tickets unblocked.",
 	];
 
-	return ok(lines.join("\n"), {
-		resolved: params.ticket_id,
-		gist: params.gist,
-		mapId,
-		unblocked,
-		usedFallback,
-	});
+	return ok(
+		lines.join("\n"),
+		mapDetails(ext, ctx, {
+			resolved: params.ticket_id,
+			gist: params.gist,
+			mapId,
+			unblocked,
+			usedFallback,
+		}),
+	);
 }
 
 async function updateMap(
 	params: UpdateMapParams,
 	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
+	const tracker = await createTracker(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id and no active map.");
 	}
-	const mapTask = await client.getTask(mapId);
-	await client.updateTask(mapId, {
-		description: replaceSection(
-			mapTask.description || "",
-			params.section,
-			params.content,
-		),
-	});
-	return ok(`Map section "${params.section}" updated.`, {
+	await tracker.updateMapSection(
 		mapId,
-		section: params.section,
-	});
+		sectionKey(params.section),
+		params.content,
+	);
+	return ok(
+		`Map section "${params.section}" updated.`,
+		mapDetails(ext, ctx, { mapId, section: params.section }),
+	);
 }
 
 async function setBlocking(
 	params: SetBlockingParams,
-	_ctx: ToolContext,
+	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
-	const task = await client.getTask(params.ticket_id);
-	await client.updateTask(params.ticket_id, {
-		description: setBlockedBy(task.description || "", params.blocked_by),
-	});
+	const tracker = await createTracker(ext, ctx);
+	await tracker.setBlockingDependencies(params.ticket_id, params.blocked_by);
 	const status =
 		params.blocked_by.length > 0
 			? `Blocked by: ${params.blocked_by.join(", ")}`
 			: "Blocking cleared";
-	return ok(`Ticket ${params.ticket_id}: ${status}`, {
-		ticketId: params.ticket_id,
-		blockedBy: params.blocked_by,
-	});
+	return ok(
+		`Ticket ${params.ticket_id}: ${status}`,
+		mapDetails(ext, ctx, {
+			ticketId: params.ticket_id,
+			blockedBy: params.blocked_by,
+		}),
+	);
 }
 
 async function listFrontier(
 	params: ListFrontierParams,
 	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
+	const tracker = await createTracker(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id and no active map.");
 	}
-	const tickets = await getMapTickets(client, mapId, { completed: false });
-	const ticketMap = new Map(tickets.map((t) => [t.id, t]));
-	const frontier: typeof tickets = [];
-	const blocked: { ticket: (typeof tickets)[number]; blockers: string[] }[] =
-		[];
-	const claimed: typeof tickets = [];
-	for (const t of tickets) {
-		const state = ticketState(t);
-		if (state === "claimed") {
-			claimed.push(t);
-		} else if (state === "blocked") {
-			// Check if all blockers are actually open (uncompleted)
-			const blockerIds = parseBlockedBy(t.description || "");
-			const openBlockers = blockerIds.filter((id) => {
-				const blocker = ticketMap.get(id);
-				return blocker && !blocker.isCompleted;
-			});
-			if (openBlockers.length > 0) {
-				blocked.push({ ticket: t, blockers: openBlockers });
-			} else {
-				// All blockers are closed, ticket is unblocked
-				frontier.push(t);
+	const tickets = await tracker.listChildTickets(mapId);
+	const frontier = await tracker.listFrontierTickets(mapId);
+	const frontierIds = new Set(frontier.map((ticket) => ticket.id));
+	const blocked: { ticket: LocalTicket; blockers: string[] }[] = [];
+	const claimed: LocalTicket[] = [];
+
+	for (const ticket of tickets) {
+		if (ticket.status !== "open" || frontierIds.has(ticket.id)) {
+			continue;
+		}
+		if (ticket.claimedBy) {
+			claimed.push(ticket);
+			continue;
+		}
+		const openBlockers: string[] = [];
+		for (const blockerId of ticket.blockerIds) {
+			const blocker = await tracker.getTicket(blockerId);
+			if (blocker.status !== "closed") {
+				openBlockers.push(blockerId);
 			}
-		} else {
-			frontier.push(t);
+		}
+		if (openBlockers.length > 0) {
+			blocked.push({ ticket, blockers: openBlockers });
 		}
 	}
 
 	if (frontier.length === 0 && blocked.length === 0 && claimed.length === 0) {
-		return ok("No open tickets on this map.", { frontier, blocked, claimed });
+		return ok(
+			"No open tickets on this map.",
+			mapDetails(ext, ctx, { frontier, blocked, claimed }),
+		);
 	}
 
 	const lines = [
 		frontier.length > 0 &&
-			`Frontier (${frontier.length} — ready to work):\n${frontier.map((t) => `  ${formatTicket(t)}`).join("\n")}`,
+			`Frontier (${frontier.length} — ready to work):\n${frontier.map((ticket) => `  ${formatTicket(ticket)}`).join("\n")}`,
 		blocked.length > 0 &&
-			`Blocked (${blocked.length}):\n${blocked.map((b) => `  ${formatTicket(b.ticket)} (blocked by ${b.blockers.join(", ")})`).join("\n")}`,
+			`Blocked (${blocked.length}):\n${blocked.map((item) => `  ${formatTicket(item.ticket)} (blocked by ${item.blockers.join(", ")})`).join("\n")}`,
 		claimed.length > 0 &&
-			`Claimed (${claimed.length}):\n${claimed.map((t) => `  ${formatTicket(t)}`).join("\n")}`,
+			`Claimed (${claimed.length}):\n${claimed.map((ticket) => `  ${formatTicket(ticket)}`).join("\n")}`,
 	]
 		.filter(Boolean)
 		.join("\n\n");
 
-	return ok(lines, {
-		frontier: frontier.map((t) => ({ id: t.id, title: t.content })),
-		blocked: blocked.map((b) => ({
-			id: b.ticket.id,
-			title: b.ticket.content,
-			blockedBy: b.blockers,
-		})),
-		claimed: claimed.map((t) => ({ id: t.id, title: t.content })),
-	});
+	return ok(
+		lines,
+		mapDetails(ext, ctx, {
+			frontier: frontier.map((ticket) => ({
+				id: ticket.id,
+				title: ticket.title,
+			})),
+			blocked: blocked.map((item) => ({
+				id: item.ticket.id,
+				title: item.ticket.title,
+				blockedBy: item.blockers,
+			})),
+			claimed: claimed.map((ticket) => ({
+				id: ticket.id,
+				title: ticket.title,
+			})),
+		}),
+	);
 }
 
 async function claim(
 	params: ClaimParams,
-	_ctx: ToolContext,
+	ctx: ToolContext,
+	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const client = new TodoistClient();
-	const task = await client.getTask(params.ticket_id);
+	const tracker = await createTracker(ext, ctx);
 	const shouldClaim = params.claim !== false;
-	const labels = shouldClaim
-		? [...new Set([...task.labels, CLAIMED_LABEL])]
-		: task.labels.filter((l) => l !== CLAIMED_LABEL);
-	await client.updateTask(params.ticket_id, { labels });
+	if (shouldClaim) {
+		await tracker.claimTicketIfUnclaimed(params.ticket_id, DEFAULT_CLAIMANT);
+	} else {
+		await tracker.unclaimTicket(params.ticket_id);
+	}
 	return ok(
 		`${shouldClaim ? "Claimed" : "Unclaimed"} ticket ${params.ticket_id}`,
-		{ ticketId: params.ticket_id, claimed: shouldClaim },
+		mapDetails(ext, ctx, { ticketId: params.ticket_id, claimed: shouldClaim }),
 	);
 }
 

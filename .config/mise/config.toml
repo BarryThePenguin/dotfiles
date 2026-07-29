@@ -85,5 +85,6 @@ login_shell = "/bin/zsh"
 "~/.config/zellij" = { mode = "symlink" }
 "~/.config/zsh" = { mode = "symlink-each" }
 "~/.pi/agent/extensions" = { mode = "symlink" }
+"~/.pi/agent/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.zprezto-contrib" = { mode = "symlink" }
 "~/.zshenv" = { mode = "symlink" }
