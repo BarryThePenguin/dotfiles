@@ -76,10 +76,6 @@ function sectionTitleMatches(
 	);
 }
 
-function isWayfinderMetadata(node: RootContent): boolean {
-	return node.type === "html" && /^<!--\s*wayfinder:/i.test(node.value.trim());
-}
-
 export function text(value: string): Text {
 	return u("text", value);
 }
@@ -129,7 +125,7 @@ export function heading(
 export function sectionRange(
 	root: Root,
 	title: string | string[],
-	options: { depth?: number; stopAtWayfinderMetadata?: boolean } = {},
+	options: { depth?: number } = {},
 ): { start: number; end: number } | undefined {
 	const depth = (options.depth ?? 2) as Heading["depth"];
 	const max = root.children.length;
@@ -160,23 +156,13 @@ export function sectionRange(
 		return undefined;
 	}
 
-	if (options.stopAtWayfinderMetadata) {
-		for (let index = start + 1; index < (end ?? max); index += 1) {
-			const node = root.children[index];
-			if (node && isWayfinderMetadata(node)) {
-				end = index;
-				break;
-			}
-		}
-	}
-
 	return { start, end: end ?? max };
 }
 
 export function sectionChildren(
 	root: Root,
 	title: string | string[],
-	options: { depth?: number; stopAtWayfinderMetadata?: boolean } = {},
+	options: { depth?: number } = {},
 ): RootContent[] {
 	const range = sectionRange(root, title, options);
 	return range ? root.children.slice(range.start + 1, range.end) : [];
@@ -185,7 +171,7 @@ export function sectionChildren(
 export function removeSection(
 	root: Root,
 	title: string | string[],
-	options: { depth?: number; stopAtWayfinderMetadata?: boolean } = {},
+	options: { depth?: number } = {},
 ): void {
 	const range = sectionRange(root, title, options);
 	if (!range) {
@@ -198,7 +184,7 @@ export function replaceSection(
 	root: Root,
 	title: string,
 	children: RootContent[],
-	options: { depth?: Heading["depth"]; stopAtWayfinderMetadata?: boolean } = {},
+	options: { depth?: Heading["depth"] } = {},
 ): void {
 	const depth: Heading["depth"] = options.depth ?? 2;
 	const range = sectionRange(root, title, options);

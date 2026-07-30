@@ -1,5 +1,4 @@
 .DS_Store
 .scratch
-.wayfinder
 todoist.db
 **/.claude/settings.local.json

@@ -36,7 +36,6 @@ import {
 import {
 	createWayfinderTracker,
 	localTrackerRoot,
-	selectedTrackerMode,
 	type TrackerMode,
 } from "./tracker.ts";
 // ---------------------------------------------------------------------------
@@ -128,7 +127,7 @@ async function createTracker(ext: ExtensionContext, ctx: ToolContext) {
 }
 
 function trackerDetails(ext: ExtensionContext, ctx: ToolContext) {
-	const mode = ctx.trackerMode ?? selectedTrackerMode(ext.cwd);
+	const mode = ctx.trackerMode ?? "local";
 	return {
 		tracker: mode,
 		...(mode === "local" ? { root: localTrackerRoot(ext.cwd) } : {}),
@@ -232,9 +231,16 @@ function renderMapSummary(
 	]);
 }
 
-function renderTicketDetails(ticket: LocalTicket): string {
+function renderTicketDetails(
+	ticket: LocalTicket,
+	blockerTitles?: string[],
+): string {
 	const question = markdownBlocks(ticket.question);
 	const answer = ticket.answer ? markdownBlocks(ticket.answer) : [];
+	const blockedBy =
+		blockerTitles && blockerTitles.length > 0
+			? blockerTitles.join(", ")
+			: "nothing";
 	const nodes: RootContent[] = [
 		heading(2, [text(ticket.title)]),
 		paragraph([
@@ -242,14 +248,14 @@ function renderTicketDetails(ticket: LocalTicket): string {
 			{ type: "break" },
 			text(`URL: ${ticket.url}`),
 		]),
-		paragraph(`Type: ${ticket.type}`),
-		paragraph(
-			`Blocked by: ${ticket.blockerIds.length > 0 ? ticket.blockerIds.join(", ") : "nothing"}`,
-		),
+		paragraph(`Type: ${ticket.type} | Blocked by: ${blockedBy}`),
+	];
+
+	nodes.push(
 		paragraph(`Claimed: ${ticket.claimedBy ?? "no"}`),
 		heading(2, [text("Question")]),
 		...question,
-	];
+	);
 
 	if (answer.length > 0) {
 		nodes.push(heading(2, [text("Answer")]), ...answer);
@@ -397,13 +403,22 @@ async function getTicket(
 ): Promise<ActionResult> {
 	const tracker = await createTracker(ext, ctx);
 	const ticket = await tracker.getTicket(params.ticket_id);
+	const blockerTitles =
+		ticket.blockerIds.length > 0
+			? await Promise.all(
+					ticket.blockerIds.map((id) =>
+						tracker.getTicket(id).then((t) => t.title),
+					),
+				)
+			: undefined;
 	return ok(
-		renderTicketDetails(ticket),
+		renderTicketDetails(ticket, blockerTitles),
 		mapDetails(ext, ctx, {
 			id: ticket.id,
 			title: ticket.title,
 			type: ticket.type,
 			blockers: ticket.blockerIds,
+			blockerTitles,
 			claimed: Boolean(ticket.claimedBy),
 			comments: ticket.comments.length,
 		}),

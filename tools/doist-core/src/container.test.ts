@@ -7,12 +7,12 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, onTestFinished } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { createContainer } from "./container.ts";
 
-afterEach(() => {
-	delete process.env["TODOIST_API_TOKEN"];
-	delete process.env["TODOIST_RC_DIR"];
+beforeEach(() => {
+	vi.stubEnv("TODOIST_API_TOKEN", undefined);
+	vi.stubEnv("TODOIST_RC_DIR", undefined);
 });
 
 function setupContainer() {

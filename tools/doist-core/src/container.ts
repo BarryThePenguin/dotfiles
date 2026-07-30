@@ -33,10 +33,10 @@ const parseConfigSchema = v.parser(
 
 const EnvSchema = v.object({
 	TODOIST_API_TOKEN: v.string(),
-	TODOIST_RC_DIR: v.optional(v.string()),
+	TODOIST_RC_DIR: v.optional(v.string(), cwd()),
 });
 
-const parseEnv = v.parser(EnvSchema);
+const parseEnv = v.safeParser(EnvSchema);
 
 /**
  * Container bundles dependencies and manages their lifecycle.
@@ -76,8 +76,9 @@ export interface Container {
  */
 export function createContainer(): Container {
 	const env = parseEnv(process.env);
-	const rcDir = env.TODOIST_RC_DIR ?? cwd();
+	const rcDir = env.success ? env.output.TODOIST_RC_DIR : cwd();
 	let paths = findPaths(rcDir, { exists: existsSync });
+	let client: TodoistClient | null = null;
 	let db: Database | null = null;
 
 	// Create projects namespace with in-memory caching.
@@ -150,7 +151,15 @@ export function createContainer(): Container {
 		return listProjects().length;
 	}
 
-	const client = createClient(env.TODOIST_API_TOKEN);
+	function getClient(): TodoistClient {
+		if (!env.success) {
+			throw new v.ValiError(env.issues);
+		}
+		if (client === null) {
+			client = createClient(env.output.TODOIST_API_TOKEN);
+		}
+		return client;
+	}
 
 	return {
 		addProject,
@@ -164,7 +173,9 @@ export function createContainer(): Container {
 		get db() {
 			return getDb();
 		},
-		client,
+		get client(): TodoistClient {
+			return getClient();
+		},
 		close() {
 			if (db) {
 				db.close();

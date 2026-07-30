@@ -28,7 +28,6 @@ export type WayfinderMarkdownHeader = {
 export type WayfinderMarkdownIndex = {
 	title?: string;
 	sections: WayfinderMarkdownSection[];
-	metadata: Record<string, string[]>;
 	localHeaders: WayfinderMarkdownHeader[];
 };
 
@@ -38,30 +37,13 @@ export type WayfinderMarkdownDocument = {
 	title: () => string | undefined;
 	section: (
 		title: string | string[],
-		options?: { depth?: Heading["depth"]; stopAtWayfinderMetadata?: boolean },
+		options?: { depth?: Heading["depth"] },
 	) => RootContent[];
-	metadata: (key: string) => string[];
 	header: (name: string) => string | undefined;
 };
 
 function normalizeSectionTitle(title: string): string {
 	return title.trim().replace(/:$/, "").toLowerCase();
-}
-
-function readWayfinderMetadata(
-	node: RootContent,
-): { key: string; value: string } | undefined {
-	if (node.type !== "html") {
-		return undefined;
-	}
-	const match =
-		/^<!--\s*wayfinder:([A-Za-z0-9_-]+):?(?:\s+([\s\S]*?))?\s*-->$/.exec(
-			node.value.trim(),
-		);
-	if (!match?.[1]) {
-		return undefined;
-	}
-	return { key: match[1], value: match[2]?.trim() ?? "" };
 }
 
 export function headerParagraphIndex(root: Root): number | undefined {
@@ -123,14 +105,17 @@ export function setHeaderOnRoot(
 			root.children.splice(index, 1);
 		}
 	} else if (lines.length > 0) {
-		const insertAt = root.children[0]?.type === "heading" ? 1 : 0;
+		const firstSectionIndex = root.children.findIndex(
+			(node) => node.type === "heading" && node.depth >= 2,
+		);
+		const insertAt =
+			firstSectionIndex === -1 ? root.children.length : firstSectionIndex;
 		root.children.splice(insertAt, 0, paragraph(lines.join("\n")));
 	}
 }
 
 export function indexWayfinderMarkdown(root: Root): WayfinderMarkdownIndex {
 	const sections: WayfinderMarkdownSection[] = [];
-	const metadata: Record<string, string[]> = {};
 	let title: string | undefined;
 
 	for (const [index, node] of root.children.entries()) {
@@ -149,11 +134,6 @@ export function indexWayfinderMarkdown(root: Root): WayfinderMarkdownIndex {
 				});
 			}
 		}
-
-		const entry = readWayfinderMetadata(node);
-		if (entry) {
-			metadata[entry.key] = [...(metadata[entry.key] ?? []), entry.value];
-		}
 	}
 
 	for (const [index, section] of sections.entries()) {
@@ -166,7 +146,6 @@ export function indexWayfinderMarkdown(root: Root): WayfinderMarkdownIndex {
 	return {
 		...(title ? { title } : {}),
 		sections,
-		metadata,
 		localHeaders: headerEntries(root),
 	};
 }
@@ -195,7 +174,6 @@ export function markdownDocumentFromRoot(
 		index,
 		title: () => index.title,
 		section: (title, options) => documentSectionChildren({ root, index }, title, options),
-		metadata: (key) => index.metadata[key] ?? [],
 		header: (name) =>
 			index.localHeaders.find(
 				(header) => header.name.toLowerCase() === name.toLowerCase(),
@@ -216,7 +194,7 @@ export function markdownDocument(markdown: string): WayfinderMarkdownDocument {
 export function documentSectionRange(
 	document: Pick<WayfinderMarkdownDocument, "root" | "index">,
 	title: string | string[],
-	options: { depth?: Heading["depth"]; stopAtWayfinderMetadata?: boolean } = {},
+	options: { depth?: Heading["depth"] } = {},
 ): { start: number; end: number } | undefined {
 	const depth = options.depth ?? 2;
 	const expectedTitles = Array.isArray(title) ? title : [title];
@@ -226,33 +204,14 @@ export function documentSectionRange(
 			candidate.depth === depth &&
 			normalizedTitles.has(candidate.normalizedTitle),
 	);
-	if (!section) {
-		return undefined;
-	}
-
-	let end = section.end;
-	if (options.stopAtWayfinderMetadata) {
-		for (let index = section.start + 1; index < end; index += 1) {
-			const node = document.root.children[index];
-			if (node && isWayfinderMetadata(node)) {
-				end = index;
-				break;
-			}
-		}
-	}
-
-	return { start: section.start, end };
+	return section ? { start: section.start, end: section.end } : undefined;
 }
 
 export function documentSectionChildren(
 	document: Pick<WayfinderMarkdownDocument, "root" | "index">,
 	title: string | string[],
-	options: { depth?: Heading["depth"]; stopAtWayfinderMetadata?: boolean } = {},
+	options: { depth?: Heading["depth"] } = {},
 ): RootContent[] {
 	const range = documentSectionRange(document, title, options);
 	return range ? document.root.children.slice(range.start + 1, range.end) : [];
-}
-
-function isWayfinderMetadata(node: RootContent): boolean {
-	return node.type === "html" && /^<!--\s*wayfinder:/i.test(node.value.trim());
 }

@@ -1,12 +1,101 @@
 import { describe, expect, it } from "vitest";
+import { TODOIST_TICKET_TYPE_LABELS, WAYFINDER_MAP_LABEL } from "./labels.ts";
 import {
-	TODOIST_TICKET_TYPE_LABELS,
-	WAYFINDER_MAP_LABEL,
-} from "./labels.ts";
-import {
-	InMemoryTodoistGateway,
 	TodoistTracker,
+	type TodoistCreateTaskInput,
+	type TodoistGateway,
+	type TodoistListTasksInput,
+	type TodoistTask,
+	type TodoistUpdateTaskInput,
 } from "./todoist-tracker.ts";
+
+class InMemoryTodoistGateway implements TodoistGateway {
+	readonly tasks = new Map<string, TodoistTask>();
+	#nextTaskNumber = 1;
+
+	createTask(input: TodoistCreateTaskInput): Promise<TodoistTask> {
+		const id = String(this.#nextTaskNumber++);
+		const task: TodoistTask = {
+			id,
+			url: `https://app.todoist.com/app/task/${id}`,
+			content: input.content,
+			description: input.description,
+			labels: input.labels,
+			parentId: input.parentId ?? null,
+			projectId: input.projectId ?? null,
+			isCompleted: false,
+			comments: [],
+		};
+		this.tasks.set(id, task);
+		return Promise.resolve(task);
+	}
+
+	getTask(id: string): Promise<TodoistTask> {
+		const task = this.tasks.get(id);
+		if (!task) {
+			return Promise.reject(new Error(`Todoist task not found: ${id}`));
+		}
+		return Promise.resolve(task);
+	}
+
+	async getTasks(ids: string[]): Promise<TodoistTask[]> {
+		const found: TodoistTask[] = [];
+		for (const id of ids) {
+			const task = this.tasks.get(id);
+			if (!task) {
+				throw new Error(`Todoist task not found: ${id}`);
+			}
+			found.push(task);
+		}
+		return Promise.resolve(found);
+	}
+
+	async updateTask(
+		id: string,
+		input: TodoistUpdateTaskInput,
+	): Promise<TodoistTask> {
+		const task = await this.getTask(id);
+		const updated: TodoistTask = {
+			...task,
+			...(input.description !== undefined
+				? { description: input.description }
+				: {}),
+			...(input.labels !== undefined ? { labels: input.labels } : {}),
+		};
+		this.tasks.set(id, updated);
+		return updated;
+	}
+
+	async completeTask(id: string): Promise<TodoistTask> {
+		const task = await this.getTask(id);
+		const updated = { ...task, isCompleted: true };
+		this.tasks.set(id, updated);
+		return updated;
+	}
+
+	listTasks(input: TodoistListTasksInput = {}): Promise<TodoistTask[]> {
+		let tasks = Array.from(this.tasks.values());
+		if (input.labels) {
+			tasks = tasks.filter((task) =>
+				input.labels?.every((label) => task.labels.includes(label)),
+			);
+		}
+		return Promise.resolve(tasks);
+	}
+
+	listSubtasks(parentId: string): Promise<TodoistTask[]> {
+		return Promise.resolve(
+			Array.from(this.tasks.values()).filter(
+				(task) => task.parentId === parentId,
+			),
+		);
+	}
+
+	async addComment(taskId: string, body: string): Promise<void> {
+		const task = await this.getTask(taskId);
+		task.comments.push(body);
+	}
+}
 
 describe("TodoistTracker", () => {
 	it("creates a map task and ticket subtasks using Todoist labels", async () => {
@@ -87,7 +176,7 @@ describe("TodoistTracker", () => {
 			blockerIds: [blocker.id],
 		});
 		expect(gateway.tasks.get(blocked.id)?.description).toContain(
-			`## Blocked by:\n\n- ${blocker.id}`,
+			`## Blocked by:\n\n- [Blocking research](${blocker.url})`,
 		);
 		expect(gateway.tasks.get(blocked.id)?.description).not.toContain(
 			"wayfinder:blocked-by",
@@ -100,15 +189,15 @@ describe("TodoistTracker", () => {
 		});
 		await tracker.claimTicketIfUnclaimed(claimed.id, "agent-1");
 
-		expect((await tracker.listFrontierTickets(map.id)).map((t) => t.id)).toEqual([
-			blocker.id,
-		]);
+		expect(
+			(await tracker.listFrontierTickets(map.id)).map((t) => t.id),
+		).toEqual([blocker.id]);
 
 		await tracker.closeTicket(blocker.id);
 
-		expect((await tracker.listFrontierTickets(map.id)).map((t) => t.id)).toEqual([
-			blocked.id,
-		]);
+		expect(
+			(await tracker.listFrontierTickets(map.id)).map((t) => t.id),
+		).toEqual([blocked.id]);
 	});
 
 	it("claims, comments on, records, and closes Todoist tickets", async () => {
@@ -128,6 +217,9 @@ describe("TodoistTracker", () => {
 		expect(
 			await tracker.claimTicketIfUnclaimed(ticket.id, "agent-1"),
 		).toMatchObject({ claimed: true, ticket: { claimedBy: "agent-1" } });
+		const claimedDescription = gateway.tasks.get(ticket.id)?.description ?? "";
+		expect(claimedDescription).toContain("Claimed by: agent-1");
+		expect(claimedDescription).not.toContain("wayfinder:claimed-by");
 		expect(
 			await tracker.claimTicketIfUnclaimed(ticket.id, "agent-2"),
 		).toMatchObject({ claimed: false, ticket: { claimedBy: "agent-1" } });
@@ -144,6 +236,11 @@ describe("TodoistTracker", () => {
 			status: "closed",
 			comments: ["Resolution: use Todoist."],
 		});
+
+		await tracker.unclaimTicket(ticket.id);
+		const unclaimedDescription = gateway.tasks.get(ticket.id)?.description ?? "";
+		expect(unclaimedDescription).not.toContain("Claimed by:");
+		expect(unclaimedDescription).not.toContain("wayfinder:claimed-by");
 		expect((await tracker.getMap(map.id)).decisionsSoFar).toEqual([
 			{
 				title: "Choose tracker",

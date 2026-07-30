@@ -4,11 +4,12 @@ import {
 	ticketTypeToTodoistLabel,
 } from "./labels.ts";
 import { parseMapBody, renderMapBody, type MapSectionKey } from "./map-body.ts";
-import { removeMetadata, setMetadata } from "./metadata.ts";
 import {
 	parseTicketBody,
 	renderTicketBody,
 	setBlockedBySection,
+	setClaimedBy,
+	type BlockerRef,
 } from "./ticket-body.ts";
 import type { DecisionSummary, TicketType } from "./schema.ts";
 import {
@@ -62,6 +63,7 @@ export type TodoistListTasksInput = {
 export interface TodoistGateway {
 	createTask(input: TodoistCreateTaskInput): Promise<TodoistTask>;
 	getTask(id: string): Promise<TodoistTask>;
+	getTasks(ids: string[]): Promise<TodoistTask[]>;
 	updateTask(id: string, input: TodoistUpdateTaskInput): Promise<TodoistTask>;
 	completeTask(id: string): Promise<TodoistTask>;
 	listTasks(input?: TodoistListTasksInput): Promise<TodoistTask[]>;
@@ -100,7 +102,7 @@ function toTicket(task: TodoistTask): WayfinderTrackerTicket {
 	const parsed = parseTicketBody(task.description);
 	return {
 		id: task.id,
-		mapId: task.parentId ?? parsed.mapId ?? "",
+		mapId: task.parentId ?? "",
 		title: task.content,
 		type: ticketTypeFromLabels(task.labels),
 		question: parsed.question,
@@ -127,7 +129,9 @@ export class TodoistTracker {
 		this.#projectId = options.projectId;
 	}
 
-	async createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap> {
+	async createMap(
+		input: CreateWayfinderMapInput,
+	): Promise<WayfinderTrackerMap> {
 		const task = await this.#gateway.createTask({
 			content: input.title,
 			description: renderMapBody({
@@ -155,11 +159,19 @@ export class TodoistTracker {
 		input: CreateWayfinderChildTicketInput,
 	): Promise<WayfinderTrackerTicket> {
 		await this.#gateway.getTask(input.mapId);
+		const blockerIds = input.blockerIds ?? [];
+		const blockerTasks =
+			blockerIds.length > 0 ? await this.#gateway.getTasks(blockerIds) : [];
+		const blockers: BlockerRef[] = blockerTasks.map((task) => ({
+			id: task.id,
+			title: task.content,
+			url: task.url,
+		}));
 		const task = await this.#gateway.createTask({
 			content: input.title,
 			description: renderTicketBody({
 				question: input.question,
-				blockerIds: input.blockerIds ?? [],
+				blockers,
 			}),
 			labels: [ticketTypeToTodoistLabel(input.type)],
 			...(this.#projectId ? { projectId: this.#projectId } : {}),
@@ -196,7 +208,7 @@ export class TodoistTracker {
 
 		const task = await this.#gateway.getTask(id);
 		await this.#gateway.updateTask(id, {
-			description: setMetadata(task.description, "claimed-by", [claimant]),
+			description: setClaimedBy(task.description, claimant),
 		});
 		return { claimed: true, ticket: await this.getTicket(id) };
 	}
@@ -205,7 +217,7 @@ export class TodoistTracker {
 		const task = await this.#gateway.getTask(id);
 		return toTicket(
 			await this.#gateway.updateTask(id, {
-				description: removeMetadata(task.description, "claimed-by"),
+				description: setClaimedBy(task.description, undefined),
 			}),
 		);
 	}
@@ -222,13 +234,16 @@ export class TodoistTracker {
 		id: string,
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket> {
-		await Promise.all(
-			blockerIds.map((blockerId) => this.#gateway.getTask(blockerId)),
-		);
+		const blockerTasks = await this.#gateway.getTasks(blockerIds);
+		const blockers: BlockerRef[] = blockerTasks.map((task) => ({
+			id: task.id,
+			title: task.content,
+			url: task.url,
+		}));
 		const task = await this.#gateway.getTask(id);
 		return toTicket(
 			await this.#gateway.updateTask(id, {
-				description: setBlockedBySection(task.description, blockerIds),
+				description: setBlockedBySection(task.description, blockers),
 			}),
 		);
 	}
@@ -262,7 +277,8 @@ export class TodoistTracker {
 
 	#mapBodyAccessor() {
 		return {
-			readMapBody: async (id: string) => (await this.#gateway.getTask(id)).description,
+			readMapBody: async (id: string) =>
+				(await this.#gateway.getTask(id)).description,
 			writeMapBody: async (id: string, body: string) =>
 				toMap(
 					await this.#gateway.updateTask(id, {
@@ -272,80 +288,3 @@ export class TodoistTracker {
 		};
 	}
 }
-
-export class InMemoryTodoistGateway implements TodoistGateway {
-	readonly tasks = new Map<string, TodoistTask>();
-	#nextTaskNumber = 1;
-
-	createTask(input: TodoistCreateTaskInput): Promise<TodoistTask> {
-		const id = String(this.#nextTaskNumber++);
-		const task: TodoistTask = {
-			id,
-			url: `https://app.todoist.com/app/task/${id}`,
-			content: input.content,
-			description: input.description,
-			labels: input.labels,
-			parentId: input.parentId ?? null,
-			projectId: input.projectId ?? null,
-			isCompleted: false,
-			comments: [],
-		};
-		this.tasks.set(id, task);
-		return Promise.resolve(task);
-	}
-
-	getTask(id: string): Promise<TodoistTask> {
-		const task = this.tasks.get(id);
-		if (!task) {
-			return Promise.reject(new Error(`Todoist task not found: ${id}`));
-		}
-		return Promise.resolve(task);
-	}
-
-	async updateTask(
-		id: string,
-		input: TodoistUpdateTaskInput,
-	): Promise<TodoistTask> {
-		const task = await this.getTask(id);
-		const updated: TodoistTask = {
-			...task,
-			...(input.description !== undefined
-				? { description: input.description }
-				: {}),
-			...(input.labels !== undefined ? { labels: input.labels } : {}),
-		};
-		this.tasks.set(id, updated);
-		return updated;
-	}
-
-	async completeTask(id: string): Promise<TodoistTask> {
-		const task = await this.getTask(id);
-		const updated = { ...task, isCompleted: true };
-		this.tasks.set(id, updated);
-		return updated;
-	}
-
-	listTasks(input: TodoistListTasksInput = {}): Promise<TodoistTask[]> {
-		let tasks = Array.from(this.tasks.values());
-		if (input.labels) {
-			tasks = tasks.filter((task) =>
-				input.labels?.every((label) => task.labels.includes(label)),
-			);
-		}
-		return Promise.resolve(tasks);
-	}
-
-	listSubtasks(parentId: string): Promise<TodoistTask[]> {
-		return Promise.resolve(
-			Array.from(this.tasks.values()).filter(
-				(task) => task.parentId === parentId,
-			),
-		);
-	}
-
-	async addComment(taskId: string, body: string): Promise<void> {
-		const task = await this.getTask(taskId);
-		task.comments.push(body);
-	}
-}
-

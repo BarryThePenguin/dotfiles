@@ -44,8 +44,8 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		}
 
 		const selection = detectTrackerSelection(ctx.cwd);
-		if (selection.mode) {
-			trackerMode = selection.mode;
+		if (selection) {
+			trackerMode = selection;
 			return trackerMode;
 		}
 
@@ -65,8 +65,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	};
 
 	const updateStatus = (ctx: ExtensionContext) => {
-		const selection = detectTrackerSelection(ctx.cwd);
-		const mode = trackerMode ?? selection.mode;
+		const mode = trackerMode ?? detectTrackerSelection(ctx.cwd);
 		if (!mode) {
 			ctx.ui.setStatus(
 				STATUS_KEY,

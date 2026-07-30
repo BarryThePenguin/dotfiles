@@ -1,57 +1,73 @@
 import type { Root, RootContent } from "mdast";
 import { u } from "unist-builder";
+import { visit } from "unist-util-visit";
 import {
-	listItemTexts,
 	heading,
+	link,
 	list,
 	listItem,
 	markdownBlocks,
-	text,
+	paragraph,
 	parseMarkdown,
 	removeSection,
 	stringifyChildren,
 	stringifyMarkdown,
-	paragraph,
+	text,
 } from "./markdown.ts";
+import type { ParsedTicketBody } from "./schema.ts";
 import {
 	markdownDocument,
+	setHeaderOnRoot,
 	type WayfinderMarkdownDocument,
 } from "./wayfinder-markdown.ts";
-import { setMetadataOnRoot } from "./metadata.ts";
-import type { ParsedTicketBody, RenderTicketBodyInput } from "./schema.ts";
+
+export type BlockerRef = {
+	id: string;
+	title: string;
+	url: string;
+};
 
 export type TicketBodyRootInput = {
 	question: RootContent[];
-	blockerIds: string[];
+	blockers: BlockerRef[];
 };
 
 export function ticketBodyRoot(input: TicketBodyRootInput): Root {
 	const root = u("root", [heading(2, [text("Question")]), ...input.question]);
-	setBlockedBySectionOnRoot(root, input.blockerIds);
+	setBlockedBySectionOnRoot(root, input.blockers);
 	return root;
 }
 
-function parseBlockerNodes(nodes: RootContent[]): string[] {
-	const looseLines = nodes
-		.filter((node) => node.type !== "html" && node.type !== "list")
-		.flatMap((node) => stringifyChildren([node]).split("\n"));
+// Wayfinder writes `## Blocked by` as a list of links whose URL ends in the
+// ticket id (the last path segment). Since we control the format, we parse
+// exactly that — no legacy text fallback.
+function blockerIdFromLink(url: string): string {
+	return new URL(url).pathname.split("/").at(-1) ?? "";
+}
 
-	return [...listItemTexts(nodes), ...looseLines]
-		.flatMap((line) => line.split(/,/))
-		.map((item) => item.trim())
-		.filter((item) => item.length > 0 && !/^none$/i.test(item));
+function parseBlockerNodes(nodes: RootContent[]): string[] {
+	const ids: string[] = [];
+	visit({ type: "root", children: nodes }, "link", (node) => {
+		const id = blockerIdFromLink(node.url);
+		if (id) {
+			ids.push(id);
+		}
+	});
+	return Array.from(new Set(ids));
 }
 
 export function setBlockedBySectionOnRoot(
 	root: Root,
-	blockerIds: string[],
+	blockers: BlockerRef[],
 ): void {
-	removeSection(root, "Blocked by", { stopAtWayfinderMetadata: true });
-	if (blockerIds.length > 0) {
+	removeSection(root, "Blocked by");
+	if (blockers.length > 0) {
 		root.children.push(
 			heading(2, [text("Blocked by:")]),
 			list(
-				blockerIds.map((blockerId) => listItem([paragraph([text(blockerId)])])),
+				blockers.map((blocker) =>
+					listItem([paragraph([link(blocker.url, [text(blocker.title)])])]),
+				),
 			),
 		);
 	}
@@ -59,61 +75,63 @@ export function setBlockedBySectionOnRoot(
 
 export function setBlockedBySection(
 	markdown: string,
-	blockerIds: string[],
+	blockers: BlockerRef[],
 ): string {
 	const root = parseMarkdown(markdown);
-	setBlockedBySectionOnRoot(root, blockerIds);
+	setBlockedBySectionOnRoot(root, blockers);
+	return stringifyMarkdown(root);
+}
+
+// `Claimed by` lives as a header line ("Claimed by: <name>") at the top of the
+// body, mirroring the local file format.
+export function setClaimedByOnRoot(
+	root: Root,
+	claimant: string | undefined,
+): void {
+	setHeaderOnRoot(root, "Claimed by", claimant);
+}
+
+export function setClaimedBy(
+	markdown: string,
+	claimant: string | undefined,
+): string {
+	const root = parseMarkdown(markdown);
+	setClaimedByOnRoot(root, claimant);
 	return stringifyMarkdown(root);
 }
 
 function questionChildren(document: WayfinderMarkdownDocument): RootContent[] {
 	return document
-		.section("Question", { stopAtWayfinderMetadata: true })
+		.section("Question")
 		.filter((node) => node.type !== "html");
 }
 
-export function renderTicketBody(input: RenderTicketBodyInput): string {
+export function renderTicketBody(input: {
+	question: string;
+	blockers: BlockerRef[];
+	claimedBy?: string;
+}): string {
 	const root = ticketBodyRoot({
 		question: markdownBlocks(input.question),
-		blockerIds: input.blockerIds,
+		blockers: input.blockers,
 	});
-	if (input.mapId) {
-		setMetadataOnRoot(root, "map", [input.mapId]);
-	}
 	if (input.claimedBy) {
-		setMetadataOnRoot(root, "claimed-by", [input.claimedBy]);
+		setClaimedByOnRoot(root, input.claimedBy);
 	}
 	return stringifyMarkdown(root);
-}
-
-function splitMetadataList(values: string[]): string[] {
-	return values.flatMap((value) =>
-		value
-			.split(/[\s,]+/)
-			.map((item) => item.trim())
-			.filter(Boolean),
-	);
 }
 
 export function ticketBodyFromDocument(
 	document: WayfinderMarkdownDocument,
 ): ParsedTicketBody {
 	const question = stringifyChildren(questionChildren(document));
-	const [mapId] = document.metadata("map");
-	const [claimedBy] = document.metadata("claimed-by");
+	const claimedBy = document.header("Claimed by");
 
-	const blockerNodes = document.section("Blocked by", {
-		stopAtWayfinderMetadata: true,
-	});
-	const blockerIds =
-		blockerNodes.length > 0
-			? parseBlockerNodes(blockerNodes)
-			: splitMetadataList(document.metadata("blocked-by"));
+	const blockerNodes = document.section("Blocked by");
 
 	return {
 		question,
-		...(mapId ? { mapId } : {}),
-		blockerIds,
+		blockerIds: parseBlockerNodes(blockerNodes),
 		...(claimedBy ? { claimedBy } : {}),
 	};
 }

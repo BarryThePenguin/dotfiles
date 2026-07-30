@@ -1,6 +1,7 @@
 import {
 	addTask,
 	completeTasks,
+	createContainer,
 	createNoteAddCommand,
 	getToken,
 	persistMutations,
@@ -45,6 +46,17 @@ export class DoistCoreTodoistGateway implements TodoistGateway {
 		this.#client = options.client;
 	}
 
+	/**
+	 * Create a production gateway from environment.
+	 */
+	static create(): DoistCoreTodoistGateway {
+		const container = createContainer();
+		return new DoistCoreTodoistGateway({
+			db: container.db,
+			client: container.client,
+		});
+	}
+
 	async createTask(input: TodoistCreateTaskInput): Promise<TodoistTask> {
 		const { result } = await addTask(this.#db, this.#client, {
 			title: input.content,
@@ -62,6 +74,18 @@ export class DoistCoreTodoistGateway implements TodoistGateway {
 			return Promise.reject(new Error(`Todoist task not found: ${id}`));
 		}
 		return Promise.resolve(this.#toTodoistTask(task));
+	}
+
+	getTasks(ids: string[]): Promise<TodoistTask[]> {
+		const found: TodoistTask[] = [];
+		for (const id of ids) {
+			const task = this.#db.getTaskById(id);
+			if (!task) {
+				return Promise.reject(new Error(`Todoist task not found: ${id}`));
+			}
+			found.push(this.#toTodoistTask(task));
+		}
+		return Promise.resolve(found);
 	}
 
 	async updateTask(

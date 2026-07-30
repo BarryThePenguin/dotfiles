@@ -1,114 +1,147 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	buildTodoistTracker,
+	createWayfinderTracker,
 	detectTrackerSelection,
-	findDoistRc,
 	localTrackerRoot,
-	selectedTrackerMode,
 } from "./tracker.ts";
 
 // ---------------------------------------------------------------------------
-// Tracker selection
+// Env + tempdir plumbing
 // ---------------------------------------------------------------------------
 
-const ENV_KEYS = ["WAYFINDER_TRACKER"] as const;
-let originalEnv: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>>;
-let tempDirs: string[] = [];
-
 function tempDir() {
-	const dir = mkdtempSync(join(tmpdir(), "wayfinder-tracker-"));
-	tempDirs.push(dir);
+	const dir = mkdtempDisposableSync(join(tmpdir(), "wayfinder-tracker-"));
+	mkdirSync(join(dir.path, ".git")); // stop the directory walk
 	return dir;
 }
 
 beforeEach(() => {
-	originalEnv = Object.fromEntries(
-		ENV_KEYS.map((key) => [key, process.env[key]]),
-	);
-	for (const key of ENV_KEYS) {
-		Reflect.deleteProperty(process.env, key);
-	}
+	vi.stubEnv("TODOIST_API_TOKEN", undefined);
+	vi.stubEnv("TODOIST_RC_DIR", undefined);
 });
 
-afterEach(() => {
-	for (const key of ENV_KEYS) {
-		const value = originalEnv[key];
-		if (value === undefined) {
-			Reflect.deleteProperty(process.env, key);
-		} else {
-			process.env[key] = value;
-		}
-	}
-	for (const dir of tempDirs) {
-		rmSync(dir, { recursive: true, force: true });
-	}
-	tempDirs = [];
-});
+// ---------------------------------------------------------------------------
+// detectTrackerSelection
+// ---------------------------------------------------------------------------
 
 describe("detectTrackerSelection", () => {
-	it("uses explicit WAYFINDER_TRACKER first", () => {
-		const dir = tempDir();
-		mkdirSync(join(dir, ".scratch"));
-		process.env["WAYFINDER_TRACKER"] = "todoist";
-
-		expect(detectTrackerSelection(dir)).toEqual({
-			mode: "todoist",
-			source: "env",
-		});
+	it("returns 'local' when .scratch exists", () => {
+		using dir = tempDir();
+		mkdirSync(join(dir.path, ".scratch"));
+		expect(detectTrackerSelection(dir.path)).toBe("local");
 	});
 
-	it("uses an existing local tracker directory", () => {
-		const dir = tempDir();
-		mkdirSync(join(dir, ".scratch"));
+	it("returns 'todoist' when TODOIST_API_TOKEN and .doistrc are set", () => {
+		using dir = tempDir();
+		writeFileSync(
+			join(dir.path, ".doistrc"),
+			'{"projects":[{"id":"p1","label":"Test"}]}\n',
+		);
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		expect(detectTrackerSelection(dir)).toEqual({
-			mode: "local",
-			source: "existing-local",
-			path: join(dir, ".scratch"),
-		});
+		expect(detectTrackerSelection(dir.path)).toBe("todoist");
 	});
 
-	it("uses an existing .doistrc when no local tracker exists", () => {
-		const dir = tempDir();
-		writeFileSync(join(dir, ".doistrc"), "{}\n");
-
-		expect(detectTrackerSelection(dir)).toEqual({
-			mode: "todoist",
-			source: "existing-doist",
-			path: join(dir, ".doistrc"),
-		});
+	it("returns null when no .scratch, no .doistrc, or no projects", () => {
+		using dir = tempDir();
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
+		expect(detectTrackerSelection(dir.path)).toBeNull();
 	});
 
-	it("walks up to find .doistrc before the git root", () => {
-		const dir = tempDir();
-		const child = join(dir, "packages", "app");
-		mkdirSync(child, { recursive: true });
-		writeFileSync(join(dir, ".doistrc"), "{}\n");
-
-		expect(findDoistRc(child)).toBe(join(dir, ".doistrc"));
+	it("returns null when .doistrc has no projects", () => {
+		using dir = tempDir();
+		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
+		expect(detectTrackerSelection(dir.path)).toBeNull();
 	});
 
-	it("asks for a preference when neither tracker exists", () => {
-		const dir = tempDir();
-		expect(detectTrackerSelection(dir)).toEqual({
-			mode: null,
-			source: "needs-preference",
-		});
-		expect(selectedTrackerMode(dir)).toBe("local");
+	it("prefers local over Todoist when both are configured", () => {
+		using dir = tempDir();
+		mkdirSync(join(dir.path, ".scratch"));
+		writeFileSync(
+			join(dir.path, ".doistrc"),
+			'{"projects":[{"id":"p1","label":"Test"}]}\n',
+		);
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
+		expect(detectTrackerSelection(dir.path)).toBe("local");
 	});
 
 	it("uses .scratch for the local tracker path", () => {
-		const dir = tempDir();
-		mkdirSync(join(dir, ".scratch"));
-
-		expect(localTrackerRoot(dir)).toBe(join(dir, ".scratch"));
-		expect(detectTrackerSelection(dir)).toMatchObject({
-			mode: "local",
-			source: "existing-local",
-			path: join(dir, ".scratch"),
-		});
+		using dir = tempDir();
+		mkdirSync(join(dir.path, ".scratch"));
+		expect(localTrackerRoot(dir.path)).toBe(join(dir.path, ".scratch"));
 	});
 });
 
+// ---------------------------------------------------------------------------
+// buildTodoistTracker
+// ---------------------------------------------------------------------------
+
+describe("buildTodoistTracker", () => {
+	it("throws when TODOIST_API_TOKEN is missing", () => {
+		using dir = tempDir();
+		writeFileSync(
+			join(dir.path, ".doistrc"),
+			'{"projects":[{"id":"p1","label":"Test"}]}\n',
+		);
+		process.env["TODOIST_RC_DIR"] = dir.path;
+
+		expect(() => buildTodoistTracker()).toThrow(
+			/Expected "TODOIST_API_TOKEN" but received undefined/,
+		);
+	});
+
+	it("throws when .doistrc has no projects", () => {
+		using dir = tempDir();
+		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
+
+		expect(() => buildTodoistTracker()).toThrow(
+			"Could not create Todoist tracker: no-projects",
+		);
+	});
+
+	it("throws when no .doistrc is found", () => {
+		using dir = tempDir();
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
+
+		expect(() => buildTodoistTracker()).toThrow(
+			"Could not create Todoist tracker: no-config",
+		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// createWayfinderTracker (no silent fallback: throws on Todoist build error)
+// ---------------------------------------------------------------------------
+
+describe("createWayfinderTracker", () => {
+	it("throws when Todoist build fails", () => {
+		using dir = tempDir();
+		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
+
+		expect(() =>
+			createWayfinderTracker({ cwd: dir.path, mode: "todoist" }),
+		).toThrow("Could not create Todoist tracker: no-projects");
+	});
+
+	it("builds a local tracker", () => {
+		using dir = tempDir();
+		mkdirSync(join(dir.path, ".scratch"));
+
+		const tracker = createWayfinderTracker({ cwd: dir.path, mode: "local" });
+		expect(tracker).toBeDefined();
+	});
+});

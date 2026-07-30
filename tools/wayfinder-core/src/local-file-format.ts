@@ -89,11 +89,9 @@ function ticketRefsFromNodes(nodes: RootContent[]): string[] {
 }
 
 export function setBlockedBySectionOnRoot(root: Root, refs: string[]): void {
-	removeSection(root, "Blocked by", { stopAtWayfinderMetadata: true });
+	removeSection(root, "Blocked by");
 	if (refs.length > 0) {
-		replaceSection(root, "Blocked by:", [ticketRefList(refs)], {
-			stopAtWayfinderMetadata: true,
-		});
+		replaceSection(root, "Blocked by:", [ticketRefList(refs)]);
 	}
 }
 
@@ -151,9 +149,7 @@ export function ticketFileBodyFromDocument(
 		throw new Error(`Invalid or missing Wayfinder ticket Type: ${type ?? ""}`);
 	}
 
-	const blockedByNodes = document.section("Blocked by", {
-		stopAtWayfinderMetadata: true,
-	});
+	const blockedByNodes = document.section("Blocked by");
 	const legacyBlockedBy = document.header("Blocked by") ?? "None";
 	const blockerRefs = blockedByNodes.length > 0
 		? ticketRefsFromNodes(blockedByNodes)

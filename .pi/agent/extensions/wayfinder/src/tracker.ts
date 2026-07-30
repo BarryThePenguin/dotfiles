@@ -1,15 +1,16 @@
 /**
  * Wayfinder tracker factory for the Pi extension.
  *
- * The extension speaks the domain-level WayfinderTracker interface. Storage is
- * selected here: local Markdown by default when Todoist is not configured, or
- * Todoist via the `doist` CLI when Todoist config is present.
+ * The extension speaks the domain-level WayfinderTracker interface. Storage
+ * is selected here: local Markdown by default, or Todoist via doist-core
+ * when `TODOIST_API_TOKEN` is set and a `.doistrc` is present.
  */
 
-import { existsSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import {
-	DoistCliGateway,
+	createContainer,
+	DoistCoreTodoistGateway,
 	LocalMarkdownTracker,
 	TodoistTracker,
 	type WayfinderTracker,
@@ -19,101 +20,48 @@ export type TrackerMode = "local" | "todoist";
 
 export type CreateWayfinderTrackerOptions = {
 	cwd: string;
-	mode?: TrackerMode;
+	mode: TrackerMode;
 };
-
-export type TrackerSelection =
-	| {
-			mode: TrackerMode;
-			source:
-				"env" | "existing-local" | "existing-doist" | "session-preference";
-			path?: string;
-	  }
-	| {
-			mode: null;
-			source: "needs-preference";
-	  };
-
-function pathIsDirectory(path: string): boolean {
-	try {
-		return statSync(path).isDirectory();
-	} catch {
-		return false;
-	}
-}
-
-function pathIsFile(path: string): boolean {
-	try {
-		return statSync(path).isFile();
-	} catch {
-		return false;
-	}
-}
-
-function explicitTrackerMode(): TrackerMode | null {
-	const mode = process.env["WAYFINDER_TRACKER"]?.toLowerCase();
-	return mode === "local" || mode === "todoist" ? mode : null;
-}
 
 export function localTrackerRoot(cwd: string): string {
 	return resolve(cwd, ".scratch");
 }
 
-export function findDoistRc(start: string): string | null {
-	let current = resolve(start);
-	for (;;) {
-		const candidate = join(current, ".doistrc");
-		if (pathIsFile(candidate)) {
-			return candidate;
-		}
-		if (existsSync(join(current, ".git"))) {
-			return null;
-		}
-		const parent = dirname(current);
-		if (parent === current) {
-			return null;
-		}
-		current = parent;
+export function detectTrackerSelection(cwd: string): TrackerMode | null {
+	if (existsSync(localTrackerRoot(cwd))) {
+		return "local";
 	}
+	const container = createContainer();
+	if (container.paths && container.listProjectIds().length > 0) {
+		return "todoist";
+	}
+	return null;
 }
 
-export function detectTrackerSelection(cwd: string): TrackerSelection {
-	const explicitMode = explicitTrackerMode();
-	if (explicitMode) {
-		return { mode: explicitMode, source: "env" };
+export function buildTodoistTracker(): WayfinderTracker {
+	const container = createContainer();
+	if (!container.paths) {
+		throw new Error("Could not create Todoist tracker: no-config");
+	}
+	const projectIds = container.listProjectIds();
+	if (projectIds.length === 0) {
+		throw new Error("Could not create Todoist tracker: no-projects");
 	}
 
-	const localRoot = localTrackerRoot(cwd);
-	if (pathIsDirectory(localRoot)) {
-		return { mode: "local", source: "existing-local", path: localRoot };
-	}
-
-	const doistRc = findDoistRc(cwd);
-	if (doistRc) {
-		return { mode: "todoist", source: "existing-doist", path: doistRc };
-	}
-
-	return { mode: null, source: "needs-preference" };
-}
-
-export function selectedTrackerMode(cwd?: string): TrackerMode {
-	if (cwd) {
-		const selection = detectTrackerSelection(cwd);
-		return selection.mode ?? "local";
-	}
-	return explicitTrackerMode() ?? "local";
+	const gateway = new DoistCoreTodoistGateway({
+		db: container.db,
+		client: container.client,
+	});
+	const [projectId] = projectIds;
+	return new TodoistTracker(gateway, projectId ? { projectId } : {});
 }
 
 export function createWayfinderTracker({
 	cwd,
-	mode = selectedTrackerMode(cwd),
+	mode,
 }: CreateWayfinderTrackerOptions): WayfinderTracker {
 	if (mode === "local") {
 		return new LocalMarkdownTracker(localTrackerRoot(cwd));
 	}
-	return new TodoistTracker(new DoistCliGateway(), {
-		...(process.env["WAYFINDER_TODOIST_PROJECT_ID"]
-			? { projectId: process.env["WAYFINDER_TODOIST_PROJECT_ID"] }
-			: {}),
-	});
+	return buildTodoistTracker();
 }

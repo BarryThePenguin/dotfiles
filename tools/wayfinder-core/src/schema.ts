@@ -53,7 +53,6 @@ export type RenderMapBodyInput = ParsedMapBody;
 
 export const ParsedTicketBodySchema = Type.Object({
 	question: Type.String(),
-	mapId: Type.Optional(Type.String()),
 	blockerIds: Type.Array(Type.String()),
 	claimedBy: Type.Optional(Type.String()),
 });

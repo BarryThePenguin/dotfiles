@@ -65,9 +65,6 @@ importers:
 
   .pi/agent/extensions/wayfinder:
     dependencies:
-      '@earendil-works/pi-ai':
-        specifier: 0.82.1
-        version: 0.82.1(supports-color@7.2.0)(ws@8.21.1)(zod@4.4.3)
       '@earendil-works/pi-coding-agent':
         specifier: 0.82.1
         version: 0.82.1(supports-color@7.2.0)(ws@8.21.1)(zod@4.4.3)

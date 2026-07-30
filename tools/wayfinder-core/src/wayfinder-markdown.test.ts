@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { markdownDocument } from "./wayfinder-markdown.ts";
 
 describe("Wayfinder Markdown document indexing", () => {
-	it("indexes title, sections, metadata, and local headers during parsing", () => {
+	it("indexes title, sections, and local headers during parsing", () => {
 		const document = markdownDocument([
 			"# 01 — Choose path",
 			"",
@@ -17,9 +17,6 @@ describe("Wayfinder Markdown document indexing", () => {
 			"## Blocked by:",
 			"",
 			"- 01-blocker",
-			"",
-			"<!-- wayfinder:map map-1 -->",
-			"<!-- wayfinder:blocked-by 01-blocker -->",
 		].join("\n"));
 
 		expect(document.index.title).toBe("01 — Choose path");
@@ -28,10 +25,6 @@ describe("Wayfinder Markdown document indexing", () => {
 			{ name: "Status", value: "open" },
 			{ name: "Claimed by", value: "pi" },
 		]);
-		expect(document.index.metadata).toEqual({
-			map: ["map-1"],
-			"blocked-by": ["01-blocker"],
-		});
 		expect(
 			document.index.sections.map((section) => ({
 				title: section.title,
@@ -44,10 +37,10 @@ describe("Wayfinder Markdown document indexing", () => {
 				title: "01 — Choose path",
 				normalizedTitle: "01 — choose path",
 				start: 0,
-				end: 8,
+				end: 6,
 			},
 			{ title: "Question", normalizedTitle: "question", start: 2, end: 4 },
-			{ title: "Blocked by:", normalizedTitle: "blocked by", start: 4, end: 8 },
+			{ title: "Blocked by:", normalizedTitle: "blocked by", start: 4, end: 6 },
 		]);
 	});
 });
