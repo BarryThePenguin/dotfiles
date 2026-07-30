@@ -221,6 +221,10 @@ export type GetMapParams = Static<typeof GetMapParams>;
 
 export const CreateTicketParams = Type.Object({
 	map_id: MapId,
+	title: Type.String({
+		description:
+			"Name for the ticket. Refer to tickets by name in narration and decisions — names read at a glance, bare ids do not.",
+	}),
 	question: Type.String({
 		description: "The decision or investigation this ticket resolves",
 	}),

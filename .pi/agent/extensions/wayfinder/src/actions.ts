@@ -120,7 +120,6 @@ export function handleAction<K extends keyof ActionMap>(
 // Helpers
 // ---------------------------------------------------------------------------
 
-const TITLE_MAX_LEN = 80;
 const DEFAULT_CLAIMANT = "pi-wayfinder";
 
 async function createTracker(ext: ExtensionContext, ctx: ToolContext) {
@@ -134,14 +133,6 @@ function trackerDetails(ext: ExtensionContext, ctx: ToolContext) {
 		tracker: mode,
 		...(mode === "local" ? { root: localTrackerRoot(ext.cwd) } : {}),
 	};
-}
-
-function truncateTitle(text: string): string {
-	const firstLine = text.split("\n")[0] ?? "";
-	if (firstLine.length <= TITLE_MAX_LEN) {
-		return firstLine;
-	}
-	return `${firstLine.slice(0, TITLE_MAX_LEN - 1)}…`;
 }
 
 function requireMapId(
@@ -384,7 +375,7 @@ async function createTicket(
 	}
 	const ticket = await tracker.createChildTicket({
 		mapId,
-		title: truncateTitle(params.question),
+		title: params.title,
 		type: params.type,
 		question: params.question,
 	});
