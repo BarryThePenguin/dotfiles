@@ -1,118 +1,57 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { mapBodyFromDocument, type MapSectionKey } from "./map-body.ts";
+import { stringifyMarkdown } from "./markdown.ts";
 import {
-	appendDecision,
-	parseMapBody,
-	replaceMapSection,
-	renderMapBody,
-	type MapSectionKey,
-} from "./map-body.ts";
-import { getMetadata, removeMetadata, setMetadata } from "./metadata.ts";
-import { parseTicketBody, renderTicketBody } from "./ticket-body.ts";
+	compareTicketIds,
+	mapFileUrl,
+	mapMarkdown,
+	normalizeTicketIdForMap,
+	setBlockedBySectionOnRoot,
+	setSectionOnRoot,
+	slugify,
+	stripResolutionHeading,
+	ticketFileBodyFromDocument,
+	ticketFileUrl,
+	ticketMarkdown,
+	ticketNumberFromRef,
+	ticketRefFromId,
+	titleFromSlug,
+} from "./local-file-format.ts";
+import {
+	markdownDocument,
+	setHeaderOnRoot,
+	type WayfinderMarkdownDocument,
+} from "./wayfinder-markdown.ts";
+import type { DecisionSummary } from "./schema.ts";
+import {
+	addBlockingDependency as addBlockingDependencyOperation,
+	canClaimTicket,
+	listFrontierTickets as listFrontierTicketsOperation,
+	recordDecision as recordDecisionOperation,
+	updateMapSection as updateMapSectionOperation,
+} from "./tracker-operations.ts";
 import type {
-	DecisionSummary,
-	ParsedMapBody,
-	TicketType,
-	WayfinderTicket,
-} from "./schema.ts";
+	CreateWayfinderChildTicketInput,
+	CreateWayfinderMapInput,
+	WayfinderClaimResult,
+	WayfinderTicketStatus,
+	WayfinderTrackerMap,
+	WayfinderTrackerTicket,
+} from "./tracker.ts";
 
-export type LocalTicketStatus = "open" | "closed";
+export type LocalTicketStatus = WayfinderTicketStatus;
+export type LocalMap = WayfinderTrackerMap;
+export type LocalTicket = WayfinderTrackerTicket;
+export type CreateLocalMapInput = CreateWayfinderMapInput;
+export type CreateLocalChildTicketInput = CreateWayfinderChildTicketInput;
+export type LocalClaimResult = WayfinderClaimResult;
 
-export type LocalMap = ParsedMapBody & {
-	id: string;
-	title: string;
-	url: string;
-};
-
-export type LocalTicket = WayfinderTicket & {
-	url: string;
-	status: LocalTicketStatus;
-	comments: string[];
-};
-
-export type CreateLocalMapInput = {
-	title: string;
-	destination: string;
-	notes?: string;
-	notYetSpecified?: string[];
-};
-
-export type CreateLocalChildTicketInput = {
+type TicketFileInfo = {
 	mapId: string;
-	title: string;
-	type: TicketType;
-	question: string;
-	blockerIds?: string[];
+	ref: string;
+	path: string;
 };
-
-export type LocalClaimResult = {
-	claimed: boolean;
-	ticket: LocalTicket;
-};
-
-type LocalMapRecord = {
-	id: string;
-	title: string;
-	url: string;
-	createdAt?: string;
-};
-
-type LocalTicketRecord = {
-	id: string;
-	mapId: string;
-	title: string;
-	type: TicketType;
-	url: string;
-	status: LocalTicketStatus;
-	claimedBy?: string;
-	comments: string[];
-	createdAt?: string;
-};
-
-type LocalIndex = {
-	maps: Record<string, LocalMapRecord>;
-	tickets: Record<string, LocalTicketRecord>;
-};
-
-function emptyIndex(): LocalIndex {
-	return {
-		maps: {},
-		tickets: {},
-	};
-}
-
-function localId(prefix: "map" | "ticket"): string {
-	return `${prefix}_${randomUUID()}`;
-}
-
-function numericIdPart(id: string): number | undefined {
-	const match = /-(\d+)$/.exec(id);
-	return match ? Number(match[1]) : undefined;
-}
-
-function compareRecordOrder(
-	a: { id: string; createdAt?: string },
-	b: { id: string; createdAt?: string },
-): number {
-	if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
-		return a.createdAt.localeCompare(b.createdAt);
-	}
-
-	const numericA = numericIdPart(a.id);
-	const numericB = numericIdPart(b.id);
-	if (numericA !== undefined && numericB !== undefined) {
-		return numericA - numericB;
-	}
-
-	return a.id.localeCompare(b.id);
-}
-
-function sortById<T extends { id: string; createdAt?: string }>(
-	records: T[],
-): T[] {
-	return records.toSorted(compareRecordOrder);
-}
 
 export class LocalMarkdownTracker {
 	readonly #rootDir: string;
@@ -124,28 +63,18 @@ export class LocalMarkdownTracker {
 
 	async createMap(input: CreateLocalMapInput): Promise<LocalMap> {
 		return this.#withIndexLock(async () => {
-			const index = await this.#loadIndex();
-			const id = localId("map");
+			await this.#ensureLayout();
+			const baseSlug = slugify(input.title);
+			let id = baseSlug;
+			let suffix = 2;
+			while (await this.#mapExists(id)) {
+				id = `${baseSlug}-${suffix}`;
+				suffix += 1;
+			}
 
-			const record: LocalMapRecord = {
-				id,
-				title: input.title,
-				url: `local-wayfinder://map/${id}`,
-				createdAt: new Date().toISOString(),
-			};
-			index.maps[id] = record;
-
-			await this.#writeMapBody(
-				id,
-				renderMapBody({
-					destination: input.destination,
-					notes: input.notes ?? "",
-					decisionsSoFar: [],
-					notYetSpecified: input.notYetSpecified ?? [],
-					outOfScope: [],
-				}),
-			);
-			await this.#saveIndex(index);
+			await mkdir(this.#mapDir(id), { recursive: true });
+			await mkdir(this.#issuesDir(id), { recursive: true });
+			await this.#writeMapBody(id, mapMarkdown(input.title, input));
 
 			return this.getMap(id);
 		});
@@ -155,105 +84,115 @@ export class LocalMarkdownTracker {
 		input: CreateLocalChildTicketInput,
 	): Promise<LocalTicket> {
 		return this.#withIndexLock(async () => {
-			const index = await this.#loadIndex();
-			this.#requireMap(index, input.mapId);
+			await this.getMap(input.mapId);
+			await mkdir(this.#issuesDir(input.mapId), { recursive: true });
+			const nextNumber = await this.#nextTicketNumber(input.mapId);
+			const ref = `${String(nextNumber).padStart(2, "0")}-${slugify(input.title)}`;
+			const id = `${input.mapId}/${ref}`;
+			const blockerRefs = (input.blockerIds ?? []).map(ticketRefFromId);
 
-			const id = localId("ticket");
-
-			const record: LocalTicketRecord = {
-				id,
-				mapId: input.mapId,
-				title: input.title,
-				type: input.type,
-				url: `local-wayfinder://ticket/${id}`,
-				status: "open",
-				comments: [],
-				createdAt: new Date().toISOString(),
-			};
-			index.tickets[id] = record;
-
-			await this.#writeTicketBody(
-				id,
-				renderTicketBody({
+			await writeFile(
+				this.#ticketPathFromParts(input.mapId, ref),
+				ticketMarkdown({
+					number: nextNumber,
+					title: input.title,
+					type: input.type,
+					status: "open",
 					question: input.question,
-					mapId: input.mapId,
-					blockerIds: input.blockerIds ?? [],
+					blockerRefs,
 				}),
 			);
-			await this.#saveIndex(index);
 
 			return this.getTicket(id);
 		});
 	}
 
 	async getMap(id: string): Promise<LocalMap> {
-		const index = await this.#loadIndex();
-		const record = this.#requireMap(index, id);
-		const body = await this.#readMapBody(id);
+		const document = await this.#readMapDocument(id);
 		return {
-			...record,
-			...parseMapBody(body),
+			id,
+			title: document.title() ?? titleFromSlug(id),
+			url: mapFileUrl(id),
+			...mapBodyFromDocument(document),
 		};
 	}
 
 	async getTicket(id: string): Promise<LocalTicket> {
-		const index = await this.#loadIndex();
-		const record = this.#requireTicket(index, id);
-		const body = await this.#readTicketBody(id);
-		const parsed = parseTicketBody(body);
+		const info = this.#ticketInfo(id);
+		const document = await this.#readTicketDocument(info);
+		const parsed = ticketFileBodyFromDocument(document);
+		const status: LocalTicketStatus =
+			parsed.status.toLowerCase() === "resolved" ? "closed" : "open";
+		const blockerIds = parsed.blockerRefs.map((ref) =>
+			normalizeTicketIdForMap(info.mapId, ref),
+		);
+
 		return {
-			id: record.id,
-			mapId: parsed.mapId ?? record.mapId,
-			title: record.title,
-			type: record.type,
+			id: `${info.mapId}/${info.ref}`,
+			mapId: info.mapId,
+			title: parsed.title,
+			type: parsed.type,
 			question: parsed.question,
-			blockerIds: parsed.blockerIds,
+			blockerIds,
 			...(parsed.claimedBy ? { claimedBy: parsed.claimedBy } : {}),
-			url: record.url,
-			status: record.status,
-			comments: record.comments,
+			url: ticketFileUrl(info.ref),
+			status,
+			comments: parsed.comments,
+			...(parsed.answer ? { answer: parsed.answer } : {}),
 		};
 	}
 
 	async listMaps(): Promise<LocalMap[]> {
-		const index = await this.#loadIndex();
-		const records = sortById(Object.values(index.maps));
-		return Promise.all(records.map((record) => this.getMap(record.id)));
+		await this.#ensureLayout();
+		const entries = await readdir(this.#rootDir, { withFileTypes: true });
+		const ids = entries
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name)
+			.toSorted();
+		const maps: LocalMap[] = [];
+		for (const id of ids) {
+			if (await this.#mapExists(id)) {
+				maps.push(await this.getMap(id));
+			}
+		}
+		return maps;
 	}
 
 	async listTickets(): Promise<LocalTicket[]> {
-		const index = await this.#loadIndex();
-		const records = sortById(Object.values(index.tickets));
-		return Promise.all(records.map((record) => this.getTicket(record.id)));
+		const maps = await this.listMaps();
+		const ticketLists = await Promise.all(
+			maps.map((map) => this.listChildTickets(map.id)),
+		);
+		return ticketLists.flat().toSorted((a, b) => compareTicketIds(a.id, b.id));
 	}
 
 	async listChildTickets(mapId: string): Promise<LocalTicket[]> {
-		const index = await this.#loadIndex();
-		this.#requireMap(index, mapId);
-		const records = sortById(
-			Object.values(index.tickets).filter((ticket) => ticket.mapId === mapId),
-		);
-		return Promise.all(records.map((record) => this.getTicket(record.id)));
+		await this.getMap(mapId);
+		try {
+			const entries = await readdir(this.#issuesDir(mapId), {
+				withFileTypes: true,
+			});
+			return await Promise.all(
+				entries
+					.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+					.map((entry) => `${mapId}/${entry.name.replace(/\.md$/, "")}`)
+					.toSorted(compareTicketIds)
+					.map((ticketId) => this.getTicket(ticketId)),
+			);
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				"code" in error &&
+				error.code === "ENOENT"
+			) {
+				return [];
+			}
+			throw error;
+		}
 	}
 
 	async listFrontierTickets(mapId: string): Promise<LocalTicket[]> {
-		const tickets = await this.listChildTickets(mapId);
-		const frontier: LocalTicket[] = [];
-
-		for (const ticket of tickets) {
-			if (ticket.status !== "open" || ticket.claimedBy) {
-				continue;
-			}
-
-			const blockers = await Promise.all(
-				ticket.blockerIds.map((blockerId) => this.getTicket(blockerId)),
-			);
-			if (blockers.every((blocker) => blocker.status === "closed")) {
-				frontier.push(ticket);
-			}
-		}
-
-		return frontier;
+		return listFrontierTicketsOperation(this, mapId);
 	}
 
 	async claimTicketIfUnclaimed(
@@ -261,69 +200,64 @@ export class LocalMarkdownTracker {
 		claimant: string,
 	): Promise<LocalClaimResult> {
 		return this.#withIndexLock(async () => {
-			const index = await this.#loadIndex();
-			const record = this.#requireTicket(index, id);
 			const ticket = await this.getTicket(id);
-
-			if (ticket.status !== "open" || ticket.claimedBy) {
+			if (!canClaimTicket(ticket)) {
 				return { claimed: false, ticket };
 			}
 
-			record.claimedBy = claimant;
-			await this.#writeTicketBody(
-				id,
-				setMetadata(await this.#readTicketBody(id), "claimed-by", [claimant]),
-			);
-			await this.#saveIndex(index);
+			const info = this.#ticketInfo(id);
+			const { root } = await this.#readTicketDocument(info);
+			setHeaderOnRoot(root, "Status", "claimed");
+			setHeaderOnRoot(root, "Claimed by", claimant);
+			await writeFile(info.path, stringifyMarkdown(root));
 
 			return { claimed: true, ticket: await this.getTicket(id) };
 		});
 	}
 
 	async updateMapBody(id: string, body: string): Promise<LocalMap> {
-		const index = await this.#loadIndex();
-		this.#requireMap(index, id);
+		await this.getMap(id);
 		await this.#writeMapBody(id, body);
 		return this.getMap(id);
 	}
 
 	async updateTicketBody(id: string, body: string): Promise<LocalTicket> {
-		const index = await this.#loadIndex();
-		this.#requireTicket(index, id);
-		await this.#writeTicketBody(id, body);
+		const info = this.#ticketInfo(id);
+		await this.getTicket(id);
+		await writeFile(info.path, body);
 		return this.getTicket(id);
 	}
 
 	async unclaimTicket(id: string): Promise<LocalTicket> {
 		return this.#withIndexLock(async () => {
-			const index = await this.#loadIndex();
-			const record = this.#requireTicket(index, id);
-			delete record.claimedBy;
-			await this.#writeTicketBody(
-				id,
-				removeMetadata(await this.#readTicketBody(id), "claimed-by"),
-			);
-			await this.#saveIndex(index);
+			const info = this.#ticketInfo(id);
+			await this.getTicket(id);
+			const { root } = await this.#readTicketDocument(info);
+			setHeaderOnRoot(root, "Status", "open");
+			setHeaderOnRoot(root, "Claimed by", undefined);
+			await writeFile(info.path, stringifyMarkdown(root));
 			return this.getTicket(id);
 		});
 	}
 
 	async closeTicket(id: string): Promise<LocalTicket> {
 		return this.#withIndexLock(async () => {
-			const index = await this.#loadIndex();
-			const record = this.#requireTicket(index, id);
-			record.status = "closed";
-			await this.#saveIndex(index);
+			const info = this.#ticketInfo(id);
+			await this.getTicket(id);
+			const { root } = await this.#readTicketDocument(info);
+			setHeaderOnRoot(root, "Status", "resolved");
+			await writeFile(info.path, stringifyMarkdown(root));
 			return this.getTicket(id);
 		});
 	}
 
 	async postComment(id: string, body: string): Promise<void> {
 		return this.#withIndexLock(async () => {
-			const index = await this.#loadIndex();
-			const record = this.#requireTicket(index, id);
-			record.comments.push(body);
-			await this.#saveIndex(index);
+			const info = this.#ticketInfo(id);
+			await this.getTicket(id);
+			const { root } = await this.#readTicketDocument(info);
+			setSectionOnRoot(root, "Answer", stripResolutionHeading(body));
+			await writeFile(info.path, stringifyMarkdown(root));
 		});
 	}
 
@@ -331,16 +265,12 @@ export class LocalMarkdownTracker {
 		id: string,
 		blockerIds: string[],
 	): Promise<LocalTicket> {
-		const index = await this.#loadIndex();
-		this.#requireTicket(index, id);
-		for (const blockerId of blockerIds) {
-			this.#requireTicket(index, blockerId);
-		}
-
-		await this.#writeTicketBody(
-			id,
-			setMetadata(await this.#readTicketBody(id), "blocked-by", blockerIds),
-		);
+		const info = this.#ticketInfo(id);
+		await this.getTicket(id);
+		await Promise.all(blockerIds.map((blockerId) => this.getTicket(blockerId)));
+		const { root } = await this.#readTicketDocument(info);
+		setBlockedBySectionOnRoot(root, blockerIds.map(ticketRefFromId));
+		await writeFile(info.path, stringifyMarkdown(root));
 		return this.getTicket(id);
 	}
 
@@ -348,23 +278,25 @@ export class LocalMarkdownTracker {
 		id: string,
 		blockerId: string,
 	): Promise<LocalTicket> {
-		const body = await this.#readTicketBody(id);
-		const blockerIds = new Set(getMetadata(body, "blocked-by"));
-		blockerIds.add(blockerId);
-		return this.setBlockingDependencies(id, Array.from(blockerIds));
+		return addBlockingDependencyOperation(this, id, blockerId);
 	}
 
 	async recordDecision(
 		mapId: string,
 		decision: DecisionSummary,
 	): Promise<LocalMap> {
-		const index = await this.#loadIndex();
-		this.#requireMap(index, mapId);
-		await this.#writeMapBody(
+		await this.getMap(mapId);
+		return recordDecisionOperation(
+			{
+				readMapBody: (id) => this.#readMapBody(id),
+				writeMapBody: async (id, body) => {
+					await this.#writeMapBody(id, body);
+					return this.getMap(id);
+				},
+			},
 			mapId,
-			appendDecision(await this.#readMapBody(mapId), decision),
+			decision,
 		);
-		return this.getMap(mapId);
 	}
 
 	async updateMapSection(
@@ -372,18 +304,19 @@ export class LocalMarkdownTracker {
 		section: MapSectionKey,
 		content: string,
 	): Promise<LocalMap> {
-		const index = await this.#loadIndex();
-		this.#requireMap(index, mapId);
-		await this.#writeMapBody(
+		await this.getMap(mapId);
+		return updateMapSectionOperation(
+			{
+				readMapBody: (id) => this.#readMapBody(id),
+				writeMapBody: async (id, body) => {
+					await this.#writeMapBody(id, body);
+					return this.getMap(id);
+				},
+			},
 			mapId,
-			replaceMapSection(await this.#readMapBody(mapId), section, content),
+			section,
+			content,
 		);
-		return this.getMap(mapId);
-	}
-
-	async #ensureLayout(): Promise<void> {
-		await mkdir(this.#mapsDir(), { recursive: true });
-		await mkdir(this.#ticketsDir(), { recursive: true });
 	}
 
 	#withIndexLock<Result>(operation: () => Promise<Result>): Promise<Result> {
@@ -395,85 +328,104 @@ export class LocalMarkdownTracker {
 		return run;
 	}
 
-	async #loadIndex(): Promise<LocalIndex> {
-		await this.#ensureLayout();
-		try {
-			return JSON.parse(
-				await readFile(this.#indexPath(), "utf8"),
-			) as LocalIndex;
-		} catch (error) {
-			if (
-				error instanceof Error &&
-				"code" in error &&
-				error.code === "ENOENT"
-			) {
-				const index = emptyIndex();
-				await this.#saveIndex(index);
-				return index;
-			}
-			throw error;
-		}
+	async #ensureLayout(): Promise<void> {
+		await mkdir(this.#rootDir, { recursive: true });
 	}
 
-	async #saveIndex(index: LocalIndex): Promise<void> {
-		await this.#ensureLayout();
-		await writeFile(
-			this.#indexPath(),
-			`${JSON.stringify(index, null, "\t")}\n`,
-		);
+	#mapDir(id: string): string {
+		return join(this.#rootDir, id);
 	}
 
-	#requireMap(index: LocalIndex, id: string): LocalMapRecord {
-		const map = index.maps[id];
-		if (!map) {
-			throw new Error(`Wayfinder map not found: ${id}`);
-		}
-		return map;
-	}
-
-	#requireTicket(index: LocalIndex, id: string): LocalTicketRecord {
-		const ticket = index.tickets[id];
-		if (!ticket) {
-			throw new Error(`Wayfinder ticket not found: ${id}`);
-		}
-		return ticket;
-	}
-
-	#mapsDir(): string {
-		return join(this.#rootDir, "maps");
-	}
-
-	#ticketsDir(): string {
-		return join(this.#rootDir, "tickets");
-	}
-
-	#indexPath(): string {
-		return join(this.#rootDir, "index.json");
+	#issuesDir(mapId: string): string {
+		return join(this.#mapDir(mapId), "issues");
 	}
 
 	#mapPath(id: string): string {
-		return join(this.#mapsDir(), `${id}.md`);
+		return join(this.#mapDir(id), "map.md");
 	}
 
-	#ticketPath(id: string): string {
-		return join(this.#ticketsDir(), `${id}.md`);
+	#ticketPathFromParts(mapId: string, ref: string): string {
+		return join(this.#issuesDir(mapId), `${ref}.md`);
+	}
+
+	#ticketInfo(id: string): TicketFileInfo {
+		const withoutMarkdown = id.replace(/\.md$/, "");
+		const issuePathMatch = /([^/]+)\/issues\/([^/]+)$/.exec(withoutMarkdown);
+		if (issuePathMatch?.[1] && issuePathMatch[2]) {
+			return {
+				mapId: issuePathMatch[1],
+				ref: issuePathMatch[2],
+				path: this.#ticketPathFromParts(issuePathMatch[1], issuePathMatch[2]),
+			};
+		}
+
+		const [mapId, ref] = withoutMarkdown.split("/", 2);
+		if (!mapId || !ref) {
+			throw new Error(`Local Wayfinder ticket id must be <map>/<NN-slug>: ${id}`);
+		}
+		return {
+			mapId,
+			ref,
+			path: this.#ticketPathFromParts(mapId, ref),
+		};
 	}
 
 	async #readMapBody(id: string): Promise<string> {
 		return readFile(this.#mapPath(id), "utf8");
 	}
 
+	async #readMapDocument(id: string): Promise<WayfinderMarkdownDocument> {
+		return markdownDocument(await this.#readMapBody(id));
+	}
+
+	async #readTicketDocument(
+		info: TicketFileInfo,
+	): Promise<WayfinderMarkdownDocument> {
+		return markdownDocument(await readFile(info.path, "utf8"));
+	}
+
 	async #writeMapBody(id: string, body: string): Promise<void> {
 		await this.#ensureLayout();
+		await mkdir(this.#mapDir(id), { recursive: true });
 		await writeFile(this.#mapPath(id), body);
 	}
 
-	async #readTicketBody(id: string): Promise<string> {
-		return readFile(this.#ticketPath(id), "utf8");
+	async #mapExists(id: string): Promise<boolean> {
+		try {
+			await this.#readMapBody(id);
+			return true;
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				"code" in error &&
+				error.code === "ENOENT"
+			) {
+				return false;
+			}
+			throw error;
+		}
 	}
 
-	async #writeTicketBody(id: string, body: string): Promise<void> {
-		await this.#ensureLayout();
-		await writeFile(this.#ticketPath(id), body);
+	async #nextTicketNumber(mapId: string): Promise<number> {
+		try {
+			const entries = await readdir(this.#issuesDir(mapId), {
+				withFileTypes: true,
+			});
+			const max = entries
+				.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+				.map((entry) => ticketNumberFromRef(entry.name.replace(/\.md$/, "")))
+				.filter((number): number is number => number !== undefined)
+				.reduce((current, number) => Math.max(current, number), 0);
+			return max + 1;
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				"code" in error &&
+				error.code === "ENOENT"
+			) {
+				return 1;
+			}
+			throw error;
+		}
 	}
 }

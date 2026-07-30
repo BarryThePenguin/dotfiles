@@ -1,66 +1,89 @@
-import type { Heading, Paragraph, Root, RootContent, Text } from "mdast";
-import { toString } from "mdast-util-to-string";
+import type { Root, RootContent } from "mdast";
 import { u } from "unist-builder";
 import {
+	listItemTexts,
+	heading,
+	list,
+	listItem,
+	markdownBlocks,
+	text,
 	parseMarkdown,
+	removeSection,
 	stringifyChildren,
 	stringifyMarkdown,
+	paragraph,
 } from "./markdown.ts";
-import { getMetadata, setMetadata } from "./metadata.ts";
+import {
+	markdownDocument,
+	type WayfinderMarkdownDocument,
+} from "./wayfinder-markdown.ts";
+import { setMetadataOnRoot } from "./metadata.ts";
 import type { ParsedTicketBody, RenderTicketBodyInput } from "./schema.ts";
 
-function text(value: string): Text {
-	return u("text", value);
+export type TicketBodyRootInput = {
+	question: RootContent[];
+	blockerIds: string[];
+};
+
+export function ticketBodyRoot(input: TicketBodyRootInput): Root {
+	const root = u("root", [heading(2, [text("Question")]), ...input.question]);
+	setBlockedBySectionOnRoot(root, input.blockerIds);
+	return root;
 }
 
-function heading(value: string): Heading {
-	return u("heading", { depth: 2 } as const, [text(value)]);
+function parseBlockerNodes(nodes: RootContent[]): string[] {
+	const looseLines = nodes
+		.filter((node) => node.type !== "html" && node.type !== "list")
+		.flatMap((node) => stringifyChildren([node]).split("\n"));
+
+	return [...listItemTexts(nodes), ...looseLines]
+		.flatMap((line) => line.split(/,/))
+		.map((item) => item.trim())
+		.filter((item) => item.length > 0 && !/^none$/i.test(item));
 }
 
-function paragraph(value: string): Paragraph {
-	return u("paragraph", [text(value)]);
+export function setBlockedBySectionOnRoot(
+	root: Root,
+	blockerIds: string[],
+): void {
+	removeSection(root, "Blocked by", { stopAtWayfinderMetadata: true });
+	if (blockerIds.length > 0) {
+		root.children.push(
+			heading(2, [text("Blocked by:")]),
+			list(
+				blockerIds.map((blockerId) => listItem([paragraph([text(blockerId)])])),
+			),
+		);
+	}
 }
 
-function renderQuestionOnly(question: string): string {
-	const root = u("root", [heading("Question"), paragraph(question)]);
+export function setBlockedBySection(
+	markdown: string,
+	blockerIds: string[],
+): string {
+	const root = parseMarkdown(markdown);
+	setBlockedBySectionOnRoot(root, blockerIds);
 	return stringifyMarkdown(root);
 }
 
-function questionChildren(root: Root): RootContent[] {
-	let inQuestion = false;
-	const children: RootContent[] = [];
-
-	for (const node of root.children) {
-		if (node.type === "heading" && node.depth === 2) {
-			if (toString(node).trim().toLowerCase() === "question") {
-				inQuestion = true;
-				continue;
-			}
-			if (inQuestion) {
-				break;
-			}
-		}
-
-		if (inQuestion && node.type !== "html") {
-			children.push(node);
-		}
-	}
-
-	return children;
+function questionChildren(document: WayfinderMarkdownDocument): RootContent[] {
+	return document
+		.section("Question", { stopAtWayfinderMetadata: true })
+		.filter((node) => node.type !== "html");
 }
 
 export function renderTicketBody(input: RenderTicketBodyInput): string {
-	let markdown = renderQuestionOnly(input.question);
+	const root = ticketBodyRoot({
+		question: markdownBlocks(input.question),
+		blockerIds: input.blockerIds,
+	});
 	if (input.mapId) {
-		markdown = setMetadata(markdown, "map", [input.mapId]);
-	}
-	if (input.blockerIds.length > 0) {
-		markdown = setMetadata(markdown, "blocked-by", input.blockerIds);
+		setMetadataOnRoot(root, "map", [input.mapId]);
 	}
 	if (input.claimedBy) {
-		markdown = setMetadata(markdown, "claimed-by", [input.claimedBy]);
+		setMetadataOnRoot(root, "claimed-by", [input.claimedBy]);
 	}
-	return markdown;
+	return stringifyMarkdown(root);
 }
 
 function splitMetadataList(values: string[]): string[] {
@@ -72,16 +95,29 @@ function splitMetadataList(values: string[]): string[] {
 	);
 }
 
-export function parseTicketBody(markdown: string): ParsedTicketBody {
-	const root = parseMarkdown(markdown);
-	const question = stringifyChildren(questionChildren(root));
-	const [mapId] = getMetadata(markdown, "map");
-	const [claimedBy] = getMetadata(markdown, "claimed-by");
+export function ticketBodyFromDocument(
+	document: WayfinderMarkdownDocument,
+): ParsedTicketBody {
+	const question = stringifyChildren(questionChildren(document));
+	const [mapId] = document.metadata("map");
+	const [claimedBy] = document.metadata("claimed-by");
+
+	const blockerNodes = document.section("Blocked by", {
+		stopAtWayfinderMetadata: true,
+	});
+	const blockerIds =
+		blockerNodes.length > 0
+			? parseBlockerNodes(blockerNodes)
+			: splitMetadataList(document.metadata("blocked-by"));
 
 	return {
 		question,
 		...(mapId ? { mapId } : {}),
-		blockerIds: splitMetadataList(getMetadata(markdown, "blocked-by")),
+		blockerIds,
 		...(claimedBy ? { claimedBy } : {}),
 	};
+}
+
+export function parseTicketBody(markdown: string): ParsedTicketBody {
+	return ticketBodyFromDocument(markdownDocument(markdown));
 }

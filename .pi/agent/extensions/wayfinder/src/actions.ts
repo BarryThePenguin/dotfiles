@@ -6,26 +6,39 @@
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { LocalTicket, MapSectionKey } from "wayfinder-core";
-import { ok, stripPrefix } from "./helpers.ts";
+import type { ListItem, RootContent } from "mdast";
+import {
+	blockquote,
+	heading,
+	inspectFrontier,
+	link,
+	list,
+	listItem,
+	markdownBlocks,
+	paragraph,
+	resolveTicket,
+	stringifyChildren,
+	strong,
+	text,
+	type ChartParams,
+	type ClaimParams,
+	type CreateTicketParams,
+	type GetMapParams,
+	type GetTicketParams,
+	type ListFrontierParams,
+	type LocalMap,
+	type LocalTicket,
+	type MapSectionKey,
+	type ResolveParams,
+	type SetBlockingParams,
+	type UpdateMapParams,
+} from "wayfinder-core";
 import {
 	createWayfinderTracker,
 	localTrackerRoot,
 	selectedTrackerMode,
 	type TrackerMode,
 } from "./tracker.ts";
-import type {
-	ChartParams,
-	ClaimParams,
-	CreateTicketParams,
-	GetMapParams,
-	GetTicketParams,
-	ListFrontierParams,
-	ResolveParams,
-	SetBlockingParams,
-	UpdateMapParams,
-} from "./schemas.ts";
-
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
@@ -61,6 +74,21 @@ type Handler<K extends keyof ActionMap> = (
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ) => Promise<ActionResult>;
+
+const WAYFINDER_PREFIX = "Wayfinder:";
+
+function ok(text: string, details: unknown = {}): ActionResult {
+	return {
+		content: [{ type: "text", text }],
+		details,
+	};
+}
+
+function stripPrefix(title: string): string {
+	return title.startsWith(`${WAYFINDER_PREFIX} `)
+		? title.slice(WAYFINDER_PREFIX.length + 1)
+		: title;
+}
 
 // ---------------------------------------------------------------------------
 // Dispatch table
@@ -128,6 +156,10 @@ function formatTicket(ticket: LocalTicket, opts?: { showState?: boolean }) {
 	return `${ticket.id} — ${ticket.title} (wayfinder:${ticket.type})${state}`;
 }
 
+function emptyParagraph() {
+	return paragraph("(empty)");
+}
+
 function ticketState(ticket: LocalTicket) {
 	if (ticket.claimedBy) {
 		return "claimed";
@@ -148,6 +180,109 @@ function mapDetails(
 	details: Record<string, unknown>,
 ) {
 	return { ...trackerDetails(ext, ctx), ...details };
+}
+
+function sectionNodes(title: string, content: RootContent[]): RootContent[] {
+	return [
+		heading(3, [text(title)]),
+		...(content.length > 0 ? content : [emptyParagraph()]),
+	];
+}
+
+function listSectionNodes(title: string, items: ListItem[]): RootContent[] {
+	return [
+		heading(3, [text(title)]),
+		items.length > 0 ? list(items) : emptyParagraph(),
+	];
+}
+
+function renderMapSummary(
+	map: LocalMap,
+	openCount: number,
+	closedCount: number,
+) {
+	const destination = markdownBlocks(map.destination);
+	const notes = markdownBlocks(map.notes);
+
+	return stringifyChildren([
+		heading(2, [text(map.title)]),
+		paragraph([
+			text(`ID: ${map.id}`),
+			{ type: "break" },
+			text(`URL: ${map.url}`),
+		]),
+		...sectionNodes("destination", destination),
+		...sectionNodes("notes", notes),
+		...listSectionNodes(
+			"decisions",
+			map.decisionsSoFar.map((decision) =>
+				listItem([
+					paragraph([
+						link(decision.url, [text(decision.title)]),
+						text(` — ${decision.gist}`),
+					]),
+				]),
+			),
+		),
+		...listSectionNodes(
+			"notYetSpecified",
+			map.notYetSpecified.map((item) => listItem([paragraph([text(item)])])),
+		),
+		...listSectionNodes(
+			"outOfScope",
+			map.outOfScope.map((item) =>
+				listItem([paragraph([text(`${item.text} — ${item.reason}`)])]),
+			),
+		),
+		paragraph(
+			`Open tickets: ${openCount} (use wayfinder_list_frontier to choose the next ticket)`,
+		),
+		paragraph(`Closed tickets: ${closedCount}`),
+	]);
+}
+
+function renderTicketDetails(ticket: LocalTicket): string {
+	const question = markdownBlocks(ticket.question);
+	const answer = ticket.answer ? markdownBlocks(ticket.answer) : [];
+	const nodes: RootContent[] = [
+		heading(2, [text(ticket.title)]),
+		paragraph([
+			text(`ID: ${ticket.id}`),
+			{ type: "break" },
+			text(`URL: ${ticket.url}`),
+		]),
+		paragraph(`Type: ${ticket.type}`),
+		paragraph(
+			`Blocked by: ${ticket.blockerIds.length > 0 ? ticket.blockerIds.join(", ") : "nothing"}`,
+		),
+		paragraph(`Claimed: ${ticket.claimedBy ?? "no"}`),
+		heading(2, [text("Question")]),
+		...question,
+	];
+
+	if (answer.length > 0) {
+		nodes.push(heading(2, [text("Answer")]), ...answer);
+	}
+
+	if (ticket.comments.length > 0) {
+		nodes.push(
+			heading(3, [text(`Comments (${ticket.comments.length})`)]),
+			...ticket.comments.map((comment) => blockquote(comment)),
+		);
+	}
+
+	return stringifyChildren(nodes);
+}
+
+function renderResolutionBody(resolution: RootContent[]): string {
+	return stringifyChildren([
+		paragraph([strong([text("Resolution:")])]),
+		...resolution,
+	]);
+}
+
+function renderResolution(resolution: string): string {
+	return renderResolutionBody(markdownBlocks(resolution));
 }
 
 // ---------------------------------------------------------------------------
@@ -213,47 +348,13 @@ async function getMap(
 	const open = tickets.filter((ticket) => ticket.status === "open");
 	const closed = tickets.filter((ticket) => ticket.status === "closed");
 
-	const lines = [
-		`## ${map.title}`,
-		`ID: ${map.id}  URL: ${map.url}`,
-		"",
-		"### destination",
-		map.destination || "(empty)",
-		"",
-		"### notes",
-		map.notes || "(empty)",
-		"",
-		"### decisions",
-		map.decisionsSoFar.length > 0
-			? map.decisionsSoFar
-					.map(
-						(decision) =>
-							`- [${decision.title}](${decision.url}) — ${decision.gist}`,
-					)
-					.join("\n")
-			: "(empty)",
-		"",
-		"### notYetSpecified",
-		map.notYetSpecified.length > 0
-			? map.notYetSpecified.map((item) => `- ${item}`).join("\n")
-			: "(empty)",
-		"",
-		"### outOfScope",
-		map.outOfScope.length > 0
-			? map.outOfScope
-					.map((item) => `- ${item.text} — ${item.reason}`)
-					.join("\n")
-			: "(empty)",
-		"",
-		`Open tickets: ${open.length} (use wayfinder_list_frontier to choose the next ticket)`,
-		`Closed tickets: ${closed.length}`,
-	].join("\n");
+	const summary = renderMapSummary(map, open.length, closed.length);
 
 	ctx.activeMap = mapId;
 	ctx.persistState();
 	ctx.updateStatus(ext);
 	return ok(
-		lines,
+		summary,
 		mapDetails(ext, ctx, {
 			id: map.id,
 			title: map.title,
@@ -305,22 +406,8 @@ async function getTicket(
 ): Promise<ActionResult> {
 	const tracker = await createTracker(ext, ctx);
 	const ticket = await tracker.getTicket(params.ticket_id);
-	const text = [
-		`## ${ticket.title}`,
-		`ID: ${ticket.id}  URL: ${ticket.url}`,
-		`Type: ${ticket.type}`,
-		`Blocked by: ${ticket.blockerIds.length > 0 ? ticket.blockerIds.join(", ") : "nothing"}`,
-		`Claimed: ${ticket.claimedBy ?? "no"}`,
-		"",
-		`## Question\n\n${ticket.question}`,
-		ticket.comments.length > 0
-			? `\n### Comments (${ticket.comments.length})\n\n${ticket.comments.map((comment) => `> ${comment}`).join("\n\n")}`
-			: "",
-	]
-		.filter(Boolean)
-		.join("\n");
 	return ok(
-		text,
+		renderTicketDetails(ticket),
 		mapDetails(ext, ctx, {
 			id: ticket.id,
 			title: ticket.title,
@@ -338,48 +425,21 @@ async function resolve(
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
 	const tracker = await createTracker(ext, ctx);
-	const ticket = await tracker.getTicket(params.ticket_id);
-	const mapId = ticket.mapId || ctx.activeMap;
-	const usedFallback = !ticket.mapId && !!mapId;
-
-	await tracker.postComment(
-		params.ticket_id,
-		`**Resolution:**\n\n${params.resolution}`,
-	);
-	await tracker.closeTicket(params.ticket_id);
-
-	let unblocked: string[] = [];
-	if (mapId) {
-		await tracker.recordDecision(mapId, {
-			title: ticket.title,
-			url: ticket.url,
-			gist: params.gist,
-		});
-		const siblings = await tracker.listChildTickets(mapId);
-		unblocked = siblings
-			.filter((sibling) => {
-				if (
-					sibling.status !== "open" ||
-					!sibling.blockerIds.includes(params.ticket_id)
-				) {
-					return false;
-				}
-				const remaining = sibling.blockerIds.filter(
-					(blockerId) => blockerId !== params.ticket_id,
-				);
-				return remaining.length === 0;
-			})
-			.map((sibling) => sibling.id);
-	}
+	const result = await resolveTicket(tracker, {
+		ticketId: params.ticket_id,
+		...(ctx.activeMap ? { mapId: ctx.activeMap } : {}),
+		resolution: renderResolution(params.resolution),
+		gist: params.gist,
+	});
 
 	const lines = [
 		`Ticket ${params.ticket_id} resolved.`,
 		`Gist: ${params.gist}`,
-		usedFallback
-			? `\nWarning: ticket was missing its map metadata — used the active map (${mapId}).`
+		result.usedFallback
+			? `\nWarning: ticket was missing its map metadata — used the active map (${result.mapId}).`
 			: "",
-		unblocked.length > 0
-			? `\nUnblocked tickets: ${unblocked.join(", ")}`
+		result.unblocked.length > 0
+			? `\nUnblocked tickets: ${result.unblocked.join(", ")}`
 			: "\nNo tickets unblocked.",
 	];
 
@@ -388,9 +448,9 @@ async function resolve(
 		mapDetails(ext, ctx, {
 			resolved: params.ticket_id,
 			gist: params.gist,
-			mapId,
-			unblocked,
-			usedFallback,
+			mapId: result.mapId,
+			unblocked: result.unblocked,
+			usedFallback: result.usedFallback,
 		}),
 	);
 }
@@ -446,31 +506,7 @@ async function listFrontier(
 	if (!mapId) {
 		return err("no map_id and no active map.");
 	}
-	const tickets = await tracker.listChildTickets(mapId);
-	const frontier = await tracker.listFrontierTickets(mapId);
-	const frontierIds = new Set(frontier.map((ticket) => ticket.id));
-	const blocked: { ticket: LocalTicket; blockers: string[] }[] = [];
-	const claimed: LocalTicket[] = [];
-
-	for (const ticket of tickets) {
-		if (ticket.status !== "open" || frontierIds.has(ticket.id)) {
-			continue;
-		}
-		if (ticket.claimedBy) {
-			claimed.push(ticket);
-			continue;
-		}
-		const openBlockers: string[] = [];
-		for (const blockerId of ticket.blockerIds) {
-			const blocker = await tracker.getTicket(blockerId);
-			if (blocker.status !== "closed") {
-				openBlockers.push(blockerId);
-			}
-		}
-		if (openBlockers.length > 0) {
-			blocked.push({ ticket, blockers: openBlockers });
-		}
-	}
+	const { frontier, blocked, claimed } = await inspectFrontier(tracker, mapId);
 
 	if (frontier.length === 0 && blocked.length === 0 && claimed.length === 0) {
 		return ok(

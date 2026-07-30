@@ -2,7 +2,6 @@ age.txt
 coverage
 dist
 node_modules
-todoist.db
 
 .env
 .zsh_history

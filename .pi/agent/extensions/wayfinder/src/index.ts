@@ -2,20 +2,10 @@
  * Wayfinder Pi Extension — Maps large efforts as decision tickets on the selected tracker.
  */
 
-import * as path from "node:path";
 import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
-import { handleAction, type ToolContext } from "./actions.ts";
-import { renderCall, renderResult } from "./render.ts";
-import { STATUS_KEY } from "./helpers.ts";
-import {
-	detectTrackerSelection,
-	localTrackerRoot,
-	type TrackerMode,
-} from "./tracker.ts";
 import {
 	ChartParams,
 	ClaimParams,
@@ -23,12 +13,20 @@ import {
 	GetMapParams,
 	GetTicketParams,
 	ListFrontierParams,
+	ListMapsParams,
 	ResolveParams,
 	SetBlockingParams,
 	UpdateMapParams,
-} from "./schemas.ts";
+} from "wayfinder-core";
+import { handleAction, type ToolContext } from "./actions.ts";
+import { renderCall, renderResult } from "./render.ts";
+import {
+	detectTrackerSelection,
+	localTrackerRoot,
+	type TrackerMode,
+} from "./tracker.ts";
 
-const SKILL_DIR = path.join(import.meta.dirname, "../skills");
+const STATUS_KEY = "wayfinder";
 
 export default function wayfinderExtension(pi: ExtensionAPI) {
 	let activeMap: string | null = null;
@@ -57,7 +55,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		}
 
 		const choice = await ctx.ui.select("Wayfinder tracker", [
-			"Local Markdown (.wayfinder)",
+			"Local Markdown (.scratch)",
 			"Todoist (.doistrc)",
 		]);
 		trackerMode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
@@ -152,7 +150,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		label: "Wayfinder: List Maps",
 		description: "List all open wayfinder maps.",
 		promptSnippet: "List wayfinder maps from the selected tracker",
-		parameters: Type.Object({}),
+		parameters: ListMapsParams,
 		async execute(_id, _params, _signal, _onUpdate, ctx) {
 			return handleAction("list_maps", {}, getState(), ctx);
 		},
@@ -190,7 +188,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "wayfinder_resolve",
 		label: "Wayfinder: Resolve",
 		description:
-			"Resolve a ticket: post resolution, close it, append to map's Decisions.",
+			"Resolve a ticket: record resolution, close it, append to map's Decisions.",
 		promptSnippet: "Resolve a wayfinder ticket on the selected tracker",
 		parameters: ResolveParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
@@ -254,11 +252,4 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		renderResult,
 	});
 
-	// -- Resources -----------------------------------------------------------
-
-	pi.on("resources_discover", (_event, _ctx) => {
-		return {
-			skillPaths: [path.join(SKILL_DIR, "wayfinder")],
-		};
-	});
 }

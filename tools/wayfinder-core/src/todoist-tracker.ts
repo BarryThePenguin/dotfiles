@@ -3,29 +3,32 @@ import {
 	todoistLabelToTicketType,
 	ticketTypeToTodoistLabel,
 } from "./labels.ts";
+import { parseMapBody, renderMapBody, type MapSectionKey } from "./map-body.ts";
+import { removeMetadata, setMetadata } from "./metadata.ts";
 import {
-	appendDecision,
-	parseMapBody,
-	replaceMapSection,
-	renderMapBody,
-	type MapSectionKey,
-} from "./map-body.ts";
-import { getMetadata, removeMetadata, setMetadata } from "./metadata.ts";
-import { parseTicketBody, renderTicketBody } from "./ticket-body.ts";
+	parseTicketBody,
+	renderTicketBody,
+	setBlockedBySection,
+} from "./ticket-body.ts";
+import type { DecisionSummary, TicketType } from "./schema.ts";
+import {
+	addBlockingDependency as addBlockingDependencyOperation,
+	canClaimTicket,
+	listFrontierTickets as listFrontierTicketsOperation,
+	recordDecision as recordDecisionOperation,
+	updateMapSection as updateMapSectionOperation,
+} from "./tracker-operations.ts";
 import type {
-	DecisionSummary,
-	ParsedMapBody,
-	TicketType,
-	WayfinderTicket,
-} from "./schema.ts";
-import type {
-	CreateLocalChildTicketInput,
-	CreateLocalMapInput,
-	LocalClaimResult,
-	LocalMap,
-	LocalTicket,
-	LocalTicketStatus,
-} from "./local-tracker.ts";
+	CreateWayfinderChildTicketInput,
+	CreateWayfinderMapInput,
+	WayfinderClaimResult,
+	WayfinderTicketStatus,
+	WayfinderTrackerMap,
+	WayfinderTrackerTicket,
+} from "./tracker.ts";
+
+export type TodoistMap = WayfinderTrackerMap;
+export type TodoistTicket = WayfinderTrackerTicket;
 
 export type TodoistTask = {
 	id: string;
@@ -70,7 +73,7 @@ export type TodoistTrackerOptions = {
 	projectId?: string;
 };
 
-function taskStatus(task: TodoistTask): LocalTicketStatus {
+function taskStatus(task: TodoistTask): WayfinderTicketStatus {
 	return task.isCompleted ? "closed" : "open";
 }
 
@@ -84,7 +87,7 @@ function ticketTypeFromLabels(labels: string[]): TicketType {
 	throw new Error(`Todoist task is missing a Wayfinder ticket type label`);
 }
 
-function toMap(task: TodoistTask): LocalMap {
+function toMap(task: TodoistTask): WayfinderTrackerMap {
 	return {
 		id: task.id,
 		title: task.content,
@@ -93,11 +96,11 @@ function toMap(task: TodoistTask): LocalMap {
 	};
 }
 
-function toTicket(task: TodoistTask): LocalTicket {
+function toTicket(task: TodoistTask): WayfinderTrackerTicket {
 	const parsed = parseTicketBody(task.description);
 	return {
 		id: task.id,
-		mapId: parsed.mapId ?? task.parentId ?? "",
+		mapId: task.parentId ?? parsed.mapId ?? "",
 		title: task.content,
 		type: ticketTypeFromLabels(task.labels),
 		question: parsed.question,
@@ -124,7 +127,7 @@ export class TodoistTracker {
 		this.#projectId = options.projectId;
 	}
 
-	async createMap(input: CreateLocalMapInput): Promise<LocalMap> {
+	async createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap> {
 		const task = await this.#gateway.createTask({
 			content: input.title,
 			description: renderMapBody({
@@ -140,7 +143,7 @@ export class TodoistTracker {
 		return toMap(task);
 	}
 
-	async listMaps(): Promise<LocalMap[]> {
+	async listMaps(): Promise<WayfinderTrackerMap[]> {
 		return sortById(
 			await this.#gateway.listTasks({ labels: [WAYFINDER_MAP_LABEL] }),
 		)
@@ -149,14 +152,13 @@ export class TodoistTracker {
 	}
 
 	async createChildTicket(
-		input: CreateLocalChildTicketInput,
-	): Promise<LocalTicket> {
+		input: CreateWayfinderChildTicketInput,
+	): Promise<WayfinderTrackerTicket> {
 		await this.#gateway.getTask(input.mapId);
 		const task = await this.#gateway.createTask({
 			content: input.title,
 			description: renderTicketBody({
 				question: input.question,
-				mapId: input.mapId,
 				blockerIds: input.blockerIds ?? [],
 			}),
 			labels: [ticketTypeToTodoistLabel(input.type)],
@@ -166,44 +168,29 @@ export class TodoistTracker {
 		return toTicket(task);
 	}
 
-	async getMap(id: string): Promise<LocalMap> {
+	async getMap(id: string): Promise<WayfinderTrackerMap> {
 		return toMap(await this.#gateway.getTask(id));
 	}
 
-	async getTicket(id: string): Promise<LocalTicket> {
+	async getTicket(id: string): Promise<WayfinderTrackerTicket> {
 		return toTicket(await this.#gateway.getTask(id));
 	}
 
-	async listChildTickets(mapId: string): Promise<LocalTicket[]> {
+	async listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
 		await this.#gateway.getTask(mapId);
 		return sortById(await this.#gateway.listSubtasks(mapId)).map(toTicket);
 	}
 
-	async listFrontierTickets(mapId: string): Promise<LocalTicket[]> {
-		const tickets = await this.listChildTickets(mapId);
-		const frontier: LocalTicket[] = [];
-
-		for (const ticket of tickets) {
-			if (ticket.status !== "open" || ticket.claimedBy) {
-				continue;
-			}
-			const blockers = await Promise.all(
-				ticket.blockerIds.map((blockerId) => this.getTicket(blockerId)),
-			);
-			if (blockers.every((blocker) => blocker.status === "closed")) {
-				frontier.push(ticket);
-			}
-		}
-
-		return frontier;
+	async listFrontierTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
+		return listFrontierTicketsOperation(this, mapId);
 	}
 
 	async claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,
-	): Promise<LocalClaimResult> {
+	): Promise<WayfinderClaimResult> {
 		const ticket = await this.getTicket(id);
-		if (ticket.status !== "open" || ticket.claimedBy) {
+		if (!canClaimTicket(ticket)) {
 			return { claimed: false, ticket };
 		}
 
@@ -214,7 +201,7 @@ export class TodoistTracker {
 		return { claimed: true, ticket: await this.getTicket(id) };
 	}
 
-	async unclaimTicket(id: string): Promise<LocalTicket> {
+	async unclaimTicket(id: string): Promise<WayfinderTrackerTicket> {
 		const task = await this.#gateway.getTask(id);
 		return toTicket(
 			await this.#gateway.updateTask(id, {
@@ -223,7 +210,7 @@ export class TodoistTracker {
 		);
 	}
 
-	async closeTicket(id: string): Promise<LocalTicket> {
+	async closeTicket(id: string): Promise<WayfinderTrackerTicket> {
 		return toTicket(await this.#gateway.completeTask(id));
 	}
 
@@ -234,14 +221,14 @@ export class TodoistTracker {
 	async setBlockingDependencies(
 		id: string,
 		blockerIds: string[],
-	): Promise<LocalTicket> {
+	): Promise<WayfinderTrackerTicket> {
 		await Promise.all(
 			blockerIds.map((blockerId) => this.#gateway.getTask(blockerId)),
 		);
 		const task = await this.#gateway.getTask(id);
 		return toTicket(
 			await this.#gateway.updateTask(id, {
-				description: setMetadata(task.description, "blocked-by", blockerIds),
+				description: setBlockedBySection(task.description, blockerIds),
 			}),
 		);
 	}
@@ -249,36 +236,40 @@ export class TodoistTracker {
 	async addBlockingDependency(
 		id: string,
 		blockerId: string,
-	): Promise<LocalTicket> {
-		const task = await this.#gateway.getTask(id);
-		const blockerIds = new Set(getMetadata(task.description, "blocked-by"));
-		blockerIds.add(blockerId);
-		return this.setBlockingDependencies(id, Array.from(blockerIds));
+	): Promise<WayfinderTrackerTicket> {
+		return addBlockingDependencyOperation(this, id, blockerId);
 	}
 
 	async recordDecision(
 		mapId: string,
 		decision: DecisionSummary,
-	): Promise<LocalMap> {
-		const task = await this.#gateway.getTask(mapId);
-		return toMap(
-			await this.#gateway.updateTask(mapId, {
-				description: appendDecision(task.description, decision),
-			}),
-		);
+	): Promise<WayfinderTrackerMap> {
+		return recordDecisionOperation(this.#mapBodyAccessor(), mapId, decision);
 	}
 
 	async updateMapSection(
 		mapId: string,
 		section: MapSectionKey,
 		content: string,
-	): Promise<LocalMap> {
-		const task = await this.#gateway.getTask(mapId);
-		return toMap(
-			await this.#gateway.updateTask(mapId, {
-				description: replaceMapSection(task.description, section, content),
-			}),
+	): Promise<WayfinderTrackerMap> {
+		return updateMapSectionOperation(
+			this.#mapBodyAccessor(),
+			mapId,
+			section,
+			content,
 		);
+	}
+
+	#mapBodyAccessor() {
+		return {
+			readMapBody: async (id: string) => (await this.#gateway.getTask(id)).description,
+			writeMapBody: async (id: string, body: string) =>
+				toMap(
+					await this.#gateway.updateTask(id, {
+						description: body,
+					}),
+				),
+		};
 	}
 }
 
@@ -358,14 +349,3 @@ export class InMemoryTodoistGateway implements TodoistGateway {
 	}
 }
 
-export type TodoistMap = ParsedMapBody & {
-	id: string;
-	title: string;
-	url: string;
-};
-
-export type TodoistTicket = WayfinderTicket & {
-	url: string;
-	status: LocalTicketStatus;
-	comments: string[];
-};

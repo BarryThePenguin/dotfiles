@@ -1,4 +1,4 @@
-import type { Html, RootContent } from "mdast";
+import type { Html, Root, RootContent } from "mdast";
 import { u } from "unist-builder";
 import { visit } from "unist-util-visit";
 import { parseMarkdown, stringifyMarkdown } from "./markdown.ts";
@@ -32,9 +32,9 @@ function isMetadataNode(node: RootContent, key: string): boolean {
 	return readMetadataValue(node, key) !== undefined;
 }
 
-export function getMetadata(markdown: string, key: string): string[] {
+export function getMetadataFromRoot(root: Root, key: string): string[] {
 	const values: string[] = [];
-	visit(parseMarkdown(markdown), "html", (node: Html) => {
+	visit(root, "html", (node: Html) => {
 		const value = readMetadataValue(node, key);
 		if (value !== undefined) {
 			values.push(value);
@@ -43,14 +43,35 @@ export function getMetadata(markdown: string, key: string): string[] {
 	return values;
 }
 
+export function getMetadata(markdown: string, key: string): string[] {
+	return getMetadataFromRoot(parseMarkdown(markdown), key);
+}
+
+export function appendMetadataToRoot(
+	root: Root,
+	key: string,
+	value: string,
+): void {
+	root.children.push(metadataNode(key, value));
+}
+
 export function appendMetadata(
 	markdown: string,
 	key: string,
 	value: string,
 ): string {
 	const root = parseMarkdown(markdown);
-	root.children.push(metadataNode(key, value));
+	appendMetadataToRoot(root, key, value);
 	return stringifyMarkdown(root);
+}
+
+export function setMetadataOnRoot(
+	root: Root,
+	key: string,
+	values: string[],
+): void {
+	root.children = root.children.filter((node) => !isMetadataNode(node, key));
+	root.children.push(...values.map((value) => metadataNode(key, value)));
 }
 
 export function setMetadata(
@@ -59,13 +80,16 @@ export function setMetadata(
 	values: string[],
 ): string {
 	const root = parseMarkdown(markdown);
-	root.children = root.children.filter((node) => !isMetadataNode(node, key));
-	root.children.push(...values.map((value) => metadataNode(key, value)));
+	setMetadataOnRoot(root, key, values);
 	return stringifyMarkdown(root);
+}
+
+export function removeMetadataFromRoot(root: Root, key: string): void {
+	root.children = root.children.filter((node) => !isMetadataNode(node, key));
 }
 
 export function removeMetadata(markdown: string, key: string): string {
 	const root = parseMarkdown(markdown);
-	root.children = root.children.filter((node) => !isMetadataNode(node, key));
+	removeMetadataFromRoot(root, key);
 	return stringifyMarkdown(root);
 }

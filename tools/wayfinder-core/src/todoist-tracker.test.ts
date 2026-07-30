@@ -30,11 +30,13 @@ describe("TodoistTracker", () => {
 			projectId: "project-1",
 			labels: [WAYFINDER_MAP_LABEL],
 		});
-		expect(gateway.tasks.get(ticket.id)).toMatchObject({
+		const ticketTask = gateway.tasks.get(ticket.id);
+		expect(ticketTask).toMatchObject({
 			content: "Choose dependency representation",
 			parentId: map.id,
 			labels: [TODOIST_TICKET_TYPE_LABELS.grilling],
 		});
+		expect(ticketTask?.description).not.toContain("wayfinder:map");
 		expect(ticket).toMatchObject({
 			mapId: map.id,
 			type: "grilling",
@@ -42,8 +44,29 @@ describe("TodoistTracker", () => {
 		});
 	});
 
+	it("uses the Todoist parent relationship as the ticket's map id", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const map = await tracker.createMap({
+			title: "Plan Todoist Wayfinder",
+			destination: "A Todoist-backed MVP exists.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Choose relationship source",
+			type: "grilling",
+			question: "Where should map identity come from?",
+		});
+
+		const task = gateway.tasks.get(ticket.id);
+		expect(task?.parentId).toBe(map.id);
+		expect(task?.description).not.toContain("wayfinder:map");
+		expect(await tracker.getTicket(ticket.id)).toMatchObject({ mapId: map.id });
+	});
+
 	it("lists frontier tickets using completion, claim metadata, and blocker metadata", async () => {
-		const tracker = new TodoistTracker(new InMemoryTodoistGateway(), {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, {
 			projectId: "project-1",
 		});
 		const map = await tracker.createMap({
@@ -63,6 +86,12 @@ describe("TodoistTracker", () => {
 			question: "What follows research?",
 			blockerIds: [blocker.id],
 		});
+		expect(gateway.tasks.get(blocked.id)?.description).toContain(
+			`## Blocked by:\n\n- ${blocker.id}`,
+		);
+		expect(gateway.tasks.get(blocked.id)?.description).not.toContain(
+			"wayfinder:blocked-by",
+		);
 		const claimed = await tracker.createChildTicket({
 			mapId: map.id,
 			title: "Claimed decision",

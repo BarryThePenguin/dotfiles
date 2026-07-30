@@ -3,5 +3,9 @@
 	"compilerOptions": {
 		"types": ["node"]
 	},
-	"references": []
+	"references": [
+		{
+			"path": "../../../../tools/wayfinder-core/tsconfig.build.json"
+		}
+	]
 }

@@ -34,7 +34,7 @@ describe("local Wayfinder tracker tools", () => {
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
 		});
-		expect(map.id).toMatch(/^map_[0-9a-f-]+$/);
+		expect(map.id).toBe("plan-todoist-wayfinder");
 
 		await expect(
 			tools.wayfinder_get_map.run({ mapId: map.id }),
@@ -59,7 +59,7 @@ describe("local Wayfinder tracker tools", () => {
 			type: "grilling",
 			status: "open",
 		});
-		expect(ticket.id).toMatch(/^ticket_[0-9a-f-]+$/);
+		expect(ticket.id).toBe("plan-todoist-wayfinder/01-choose-tracker");
 		await expect(
 			tools.wayfinder_list_children.run({ mapId: map.id }),
 		).resolves.toEqual([ticket]);
@@ -86,7 +86,13 @@ describe("local Wayfinder tracker tools", () => {
 		)) as LocalTicket[];
 
 		const ticketIds = tickets.map((ticket) => ticket.id);
-		expect(ticketIds.every((id) => /^ticket_[0-9a-f-]+$/.test(id))).toBe(true);
+		expect(ticketIds).toEqual([
+			"plan-todoist-wayfinder/01-concurrent-ticket-1",
+			"plan-todoist-wayfinder/02-concurrent-ticket-2",
+			"plan-todoist-wayfinder/03-concurrent-ticket-3",
+			"plan-todoist-wayfinder/04-concurrent-ticket-4",
+			"plan-todoist-wayfinder/05-concurrent-ticket-5",
+		]);
 		expect(new Set(ticketIds)).toHaveLength(5);
 		expect(
 			(
@@ -184,7 +190,8 @@ describe("local Wayfinder tracker tools", () => {
 			await tools.wayfinder_get_ticket.run({ ticketId: ticket.id }),
 		).toMatchObject({
 			status: "closed",
-			comments: ["Resolution: use Todoist."],
+			answer: "Resolution: use Todoist.",
+			comments: [],
 		});
 		expect(await tools.wayfinder_get_map.run({ mapId: map.id })).toMatchObject({
 			decisionsSoFar: [

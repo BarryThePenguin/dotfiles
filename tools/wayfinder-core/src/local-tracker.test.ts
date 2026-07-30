@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { LocalMarkdownTracker } from "./local-tracker.ts";
 import { parseMapBody } from "./map-body.ts";
-import { parseTicketBody } from "./ticket-body.ts";
 
 function setupDir() {
 	return mkdtempDisposableSync(join(tmpdir(), "wayfinder-local-tracker-"));
@@ -31,20 +30,20 @@ describe("LocalMarkdownTracker", () => {
 
 		expect(map).toMatchObject({
 			title: "Plan Todoist Wayfinder",
-			url: `local-wayfinder://map/${map.id}`,
+			url: `${map.id}/map.md`,
 		});
-		expect(map.id).toMatch(/^map_[0-9a-f-]+$/);
+		expect(map.id).toBe("plan-todoist-wayfinder");
 		expect(ticket).toMatchObject({
+			id: "plan-todoist-wayfinder/01-choose-the-first-implementation-slice",
 			mapId: map.id,
 			title: "Choose the first implementation slice",
 			type: "grilling",
-			url: `local-wayfinder://ticket/${ticket.id}`,
+			url: "issues/01-choose-the-first-implementation-slice.md",
 			status: "open",
 		});
-		expect(ticket.id).toMatch(/^ticket_[0-9a-f-]+$/);
 
 		const mapBody = await readFile(
-			join(rootDir.path, "maps", `${map.id}.md`),
+			join(rootDir.path, map.id, "map.md"),
 			"utf8",
 		);
 		expect(parseMapBody(mapBody).destination).toBe(
@@ -52,14 +51,18 @@ describe("LocalMarkdownTracker", () => {
 		);
 
 		const ticketBody = await readFile(
-			join(rootDir.path, "tickets", `${ticket.id}.md`),
+			join(
+				rootDir.path,
+				map.id,
+				"issues",
+				"01-choose-the-first-implementation-slice.md",
+			),
 			"utf8",
 		);
-		expect(parseTicketBody(ticketBody)).toEqual({
-			question: "What is the smallest useful implementation slice?",
-			mapId: map.id,
-			blockerIds: [],
-		});
+		expect(ticketBody).toContain("Type: grilling");
+		expect(ticketBody).toContain("Status: open");
+		expect(ticketBody).not.toContain("Blocked by: None");
+		expect(ticketBody).toContain("## Question\n\nWhat is the smallest useful implementation slice?");
 	});
 
 	it("lists only incomplete, unclaimed, unblocked child tickets as frontier", async () => {
@@ -82,6 +85,15 @@ describe("LocalMarkdownTracker", () => {
 			question: "What should happen after the blocker?",
 			blockerIds: [blocker.id],
 		});
+		const blockedBody = await readFile(
+			join(rootDir.path, map.id, "issues", "02-blocked-decision.md"),
+			"utf8",
+		);
+		expect(blockedBody).toContain(
+			"## Blocked by:\n\n- [01-blocking-decision](01-blocking-decision.md)",
+		);
+		expect(blockedBody).not.toContain("Blocked by: 01-blocking-decision");
+
 		const claimed = await tracker.createChildTicket({
 			mapId: map.id,
 			title: "Already claimed decision",
@@ -134,10 +146,18 @@ describe("LocalMarkdownTracker", () => {
 		});
 		await tracker.closeTicket(ticket.id);
 
-		expect((await tracker.getTicket(ticket.id)).status).toBe("closed");
-		expect((await tracker.getTicket(ticket.id)).comments).toEqual([
-			"Resolution: use Todoist.",
-		]);
+		const resolvedTicket = await tracker.getTicket(ticket.id);
+		expect(resolvedTicket.status).toBe("closed");
+		expect(resolvedTicket.answer).toBe("Resolution: use Todoist.");
+		const resolvedBody = await readFile(
+			join(rootDir.path, map.id, "issues", "01-choose-tracker.md"),
+			"utf8",
+		);
+		expect(resolvedBody).toContain("Type: grilling");
+		expect(resolvedBody).toContain("Status: resolved");
+		expect(resolvedBody).not.toContain("Blocked by: None");
+		expect(resolvedBody).toContain("Claimed by: agent-1");
+		expect(resolvedBody).toContain("## Answer\n\nResolution: use Todoist.");
 		expect((await tracker.getMap(map.id)).decisionsSoFar).toEqual([
 			{
 				title: "Choose tracker",

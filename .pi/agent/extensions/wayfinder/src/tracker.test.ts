@@ -6,16 +6,14 @@ import {
 	detectTrackerSelection,
 	findDoistRc,
 	localTrackerRoot,
-	parseBlockedBy,
 	selectedTrackerMode,
-	setBlockedBy,
 } from "./tracker.ts";
 
 // ---------------------------------------------------------------------------
 // Tracker selection
 // ---------------------------------------------------------------------------
 
-const ENV_KEYS = ["WAYFINDER_TRACKER", "WAYFINDER_ROOT"] as const;
+const ENV_KEYS = ["WAYFINDER_TRACKER"] as const;
 let originalEnv: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>>;
 let tempDirs: string[] = [];
 
@@ -52,7 +50,7 @@ afterEach(() => {
 describe("detectTrackerSelection", () => {
 	it("uses explicit WAYFINDER_TRACKER first", () => {
 		const dir = tempDir();
-		mkdirSync(join(dir, ".wayfinder"));
+		mkdirSync(join(dir, ".scratch"));
 		process.env["WAYFINDER_TRACKER"] = "todoist";
 
 		expect(detectTrackerSelection(dir)).toEqual({
@@ -63,12 +61,12 @@ describe("detectTrackerSelection", () => {
 
 	it("uses an existing local tracker directory", () => {
 		const dir = tempDir();
-		mkdirSync(join(dir, ".wayfinder"));
+		mkdirSync(join(dir, ".scratch"));
 
 		expect(detectTrackerSelection(dir)).toEqual({
 			mode: "local",
 			source: "existing-local",
-			path: join(dir, ".wayfinder"),
+			path: join(dir, ".scratch"),
 		});
 	});
 
@@ -101,76 +99,16 @@ describe("detectTrackerSelection", () => {
 		expect(selectedTrackerMode(dir)).toBe("local");
 	});
 
-	it("uses WAYFINDER_ROOT for the local tracker path", () => {
+	it("uses .scratch for the local tracker path", () => {
 		const dir = tempDir();
-		process.env["WAYFINDER_ROOT"] = ".wf";
-		mkdirSync(join(dir, ".wf"));
+		mkdirSync(join(dir, ".scratch"));
 
-		expect(localTrackerRoot(dir)).toBe(join(dir, ".wf"));
+		expect(localTrackerRoot(dir)).toBe(join(dir, ".scratch"));
 		expect(detectTrackerSelection(dir)).toMatchObject({
 			mode: "local",
 			source: "existing-local",
-			path: join(dir, ".wf"),
+			path: join(dir, ".scratch"),
 		});
 	});
 });
 
-// ---------------------------------------------------------------------------
-// Blocking convention
-// ---------------------------------------------------------------------------
-
-describe("parseBlockedBy", () => {
-	it("extracts task IDs from blocking annotation", () => {
-		const desc = `<!-- wayfinder:blocked-by: abc123, def456 -->
-Some description here.`;
-
-		expect(parseBlockedBy(desc)).toEqual(["abc123", "def456"]);
-	});
-
-	it("returns empty array when no annotation", () => {
-		expect(parseBlockedBy("Just a description")).toEqual([]);
-	});
-
-	it("handles single blocker", () => {
-		const desc = `<!-- wayfinder:blocked-by: only-one -->`;
-		expect(parseBlockedBy(desc)).toEqual(["only-one"]);
-	});
-
-	it("handles annotation with extra whitespace", () => {
-		const desc = `<!--  wayfinder:blocked-by:   a ,  b  -->`;
-		expect(parseBlockedBy(desc)).toEqual(["a", "b"]);
-	});
-});
-
-describe("setBlockedBy", () => {
-	it("adds blocking annotation to empty description", () => {
-		const result = setBlockedBy("", ["abc", "def"]);
-		expect(result).toContain("<!-- wayfinder:blocked-by: abc, def -->");
-	});
-
-	it("replaces existing annotation", () => {
-		const desc = `<!-- wayfinder:blocked-by: old-id -->
-Keep this text.`;
-
-		const result = setBlockedBy(desc, ["new-id"]);
-		expect(result).toContain("<!-- wayfinder:blocked-by: new-id -->");
-		expect(result).toContain("Keep this text.");
-		expect(result).not.toContain("old-id");
-	});
-
-	it("clears blocking when empty array", () => {
-		const desc = `<!-- wayfinder:blocked-by: some-id -->
-Keep this.`;
-
-		const result = setBlockedBy(desc, []);
-		expect(result).not.toContain("wayfinder:blocked-by");
-		expect(result).toContain("Keep this.");
-	});
-
-	it("preserves description without annotation", () => {
-		const desc = "Just a plain description.";
-		const result = setBlockedBy(desc, ["id1"]);
-		expect(result).toContain("Just a plain description.");
-		expect(result).toContain("<!-- wayfinder:blocked-by: id1 -->");
-	});
-});
