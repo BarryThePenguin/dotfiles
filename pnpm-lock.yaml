@@ -47,9 +47,6 @@ importers:
       globals:
         specifier: 17.8.0
         version: 17.8.0
-      issue-tools-pi:
-        specifier: workspace:*
-        version: link:tools/issue-tools-pi
       knip:
         specifier: 6.29.0
         version: 6.29.0

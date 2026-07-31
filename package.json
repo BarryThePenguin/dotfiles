@@ -19,7 +19,6 @@
 		"@vitest/eslint-plugin": "1.6.24",
 		"doist-cli": "workspace:*",
 		"doist-mcp": "workspace:*",
-		"issue-tools-pi": "workspace:*",
 		"eslint": "10.8.0",
 		"globals": "17.8.0",
 		"knip": "6.29.0",
