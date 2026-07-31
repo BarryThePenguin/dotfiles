@@ -17,7 +17,7 @@ import {
 	ResolveParams,
 	SetBlockingParams,
 	UpdateMapParams,
-} from "wayfinder-core";
+} from "issue-tools-core";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult } from "./render.ts";
 import {
@@ -26,14 +26,14 @@ import {
 	type TrackerMode,
 } from "./tracker.ts";
 
-const STATUS_KEY = "wayfinder";
+const STATUS_KEY = "issue-tools";
 
 export default function wayfinderExtension(pi: ExtensionAPI) {
 	let activeMap: string | null = null;
 	let trackerMode: TrackerMode | null = null;
 
 	const persistState = () => {
-		pi.appendEntry("wayfinder-state", { activeMap });
+		pi.appendEntry("issue-tools-state", { activeMap });
 	};
 
 	const resolveTrackerMode = async (
@@ -103,7 +103,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	pi.on("session_start", (_event, ctx) => {
 		activeMap = null;
 		for (const entry of ctx.sessionManager.getBranch()) {
-			if (entry.type === "custom" && entry.customType === "wayfinder-state") {
+			if (entry.type === "custom" && entry.customType === "issue-tools-state") {
 				// `maps` was dropped from the persisted shape; older sessions may
 				// still carry it. We just ignore it.
 				const data = entry.data as { activeMap?: string | null } | undefined;

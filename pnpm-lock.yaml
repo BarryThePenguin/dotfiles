@@ -47,6 +47,9 @@ importers:
       globals:
         specifier: 17.8.0
         version: 17.8.0
+      issue-tools-pi:
+        specifier: workspace:*
+        version: link:tools/issue-tools-pi
       knip:
         specifier: 6.29.0
         version: 6.29.0
@@ -62,18 +65,6 @@ importers:
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(vite@8.1.5(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
-
-  .pi/agent/extensions/wayfinder:
-    dependencies:
-      '@earendil-works/pi-coding-agent':
-        specifier: 0.82.1
-        version: 0.82.1(supports-color@7.2.0)(ws@8.21.1)(zod@4.4.3)
-      '@earendil-works/pi-tui':
-        specifier: 0.82.1
-        version: 0.82.1
-      wayfinder-core:
-        specifier: workspace:*
-        version: link:../../../../tools/wayfinder-core
 
   tools/doist-cli:
     dependencies:
@@ -186,7 +177,7 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(vite@8.1.5(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
 
-  tools/wayfinder-core:
+  tools/issue-tools-core:
     dependencies:
       doist-core:
         specifier: workspace:*
@@ -225,6 +216,18 @@ importers:
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(vite@8.1.5(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
+
+  tools/issue-tools-pi:
+    dependencies:
+      '@earendil-works/pi-coding-agent':
+        specifier: 0.82.1
+        version: 0.82.1(supports-color@7.2.0)(ws@8.21.1)(zod@4.4.3)
+      '@earendil-works/pi-tui':
+        specifier: 0.82.1
+        version: 0.82.1
+      issue-tools-core:
+        specifier: workspace:*
+        version: link:../issue-tools-core
 
 packages:
 
@@ -2484,9 +2487,6 @@ packages:
   unist-util-visit-parents@6.0.2:
     resolution: {integrity: sha512-goh1s1TBrqSqukSc8wrjwWhL0hiJxgA8m4kFxGlQ+8FYQ3C/m11FcTs4YYem7V664AhHVvgoQLk890Ssdsr2IQ==}
 
-  unist-util-visit@5.0.0:
-    resolution: {integrity: sha512-MR04uvD+07cwl/yhVuVWAtw+3GOR/knlL55Nd/wAdblk27GCVt3lqpTivy/tkJcZoNPzTwS1Y+KMojlLDhoTzg==}
-
   unist-util-visit@5.1.0:
     resolution: {integrity: sha512-m+vIdyeCOpdr/QeQCu2EzxX/ohgS8KbnPDgFni4dQsfSCtpz8UqDyY5GjRru8PDKuYn7Fq19j1CQ+nJSsGKOzg==}
 
@@ -4551,7 +4551,7 @@ snapshots:
       mdast-util-to-string: 4.0.0
       micromark-util-classify-character: 2.0.1
       micromark-util-decode-string: 2.0.1
-      unist-util-visit: 5.0.0
+      unist-util-visit: 5.1.0
       zwitch: 2.0.4
 
   mdast-util-to-string@4.0.0:
@@ -5086,12 +5086,6 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       unist-util-is: 6.0.1
-
-  unist-util-visit@5.0.0:
-    dependencies:
-      '@types/unist': 3.0.3
-      unist-util-is: 6.0.1
-      unist-util-visit-parents: 6.0.2
 
   unist-util-visit@5.1.0:
     dependencies:

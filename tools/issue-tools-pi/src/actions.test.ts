@@ -3,7 +3,7 @@ import { mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { LocalMarkdownTracker } from "wayfinder-core";
+import { LocalMarkdownTracker } from "issue-tools-core";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { localTrackerRoot } from "./tracker.ts";
 

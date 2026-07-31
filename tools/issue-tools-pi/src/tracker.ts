@@ -15,7 +15,7 @@ import {
 	syncAndPersist,
 	TodoistTracker,
 	type WayfinderTracker,
-} from "wayfinder-core";
+} from "issue-tools-core";
 
 export type TrackerMode = "local" | "todoist";
 

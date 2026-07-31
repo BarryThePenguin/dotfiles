@@ -32,7 +32,7 @@ import {
 	type ResolveParams,
 	type SetBlockingParams,
 	type UpdateMapParams,
-} from "wayfinder-core";
+} from "issue-tools-core";
 import {
 	createWayfinderTracker,
 	localTrackerRoot,

@@ -1,8 +1,12 @@
 {
-	"name": "wayfinder",
+	"name": "issue-tools-pi",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
+	"main": "src/index.ts",
+	"exports": {
+		".": "./src/index.ts"
+	},
 	"scripts": {
 		"test": "vitest run"
 	},
@@ -14,6 +18,6 @@
 	"dependencies": {
 		"@earendil-works/pi-coding-agent": "0.82.1",
 		"@earendil-works/pi-tui": "0.82.1",
-		"wayfinder-core": "workspace:*"
+		"issue-tools-core": "workspace:*"
 	}
 }

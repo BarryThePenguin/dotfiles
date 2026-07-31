@@ -1,6 +1,5 @@
 packages:
   - tools/*
-  - .pi/agent/extensions/*
 allowBuilds:
   "@google/genai": true
   "@mongodb-js/zstd": false

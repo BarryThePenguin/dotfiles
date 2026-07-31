@@ -1,7 +1,7 @@
 {
-	"name": "wayfinder-core",
+	"name": "issue-tools-core",
 	"version": "0.1.0",
-	"description": "Core Wayfinder domain logic and Markdown helpers",
+	"description": "Core issue-tracker domain logic and Markdown helpers",
 	"type": "module",
 	"main": "src/index.ts",
 	"exports": {
