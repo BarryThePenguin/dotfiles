@@ -165,8 +165,8 @@ importers:
         version: 1.4.2(typescript@7.0.2)
     devDependencies:
       '@modelcontextprotocol/client':
-        specifier: 2.0.0-beta.5
-        version: 2.0.0-beta.5
+        specifier: 2.0.0
+        version: 2.0.0
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
@@ -558,8 +558,12 @@ packages:
       '@opentelemetry/api':
         optional: true
 
-  '@modelcontextprotocol/client@2.0.0-beta.5':
-    resolution: {integrity: sha512-YuuNm5f2TMoFQRje1UqVP8TJRjijCXMz4ckvoVpx1cUXuBEmykWQ2d8R536pek6UKcXT41T5nWc4qR1JFIbEmg==}
+  '@modelcontextprotocol/client@2.0.0':
+    resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/core@2.0.0':
+    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
     engines: {node: '>=20'}
 
   '@modelcontextprotocol/core@2.0.0':
@@ -3139,9 +3143,9 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@modelcontextprotocol/client@2.0.0-beta.5':
+  '@modelcontextprotocol/client@2.0.0':
     dependencies:
-      '@modelcontextprotocol/core': 2.0.0-beta.5
+      '@modelcontextprotocol/core': 2.0.0
       cross-spawn: 7.0.6
       eventsource: 3.0.7
       eventsource-parser: 3.1.0
