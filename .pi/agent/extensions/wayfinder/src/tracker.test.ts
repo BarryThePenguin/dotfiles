@@ -86,7 +86,7 @@ describe("detectTrackerSelection", () => {
 // ---------------------------------------------------------------------------
 
 describe("buildTodoistTracker", () => {
-	it("throws when TODOIST_API_TOKEN is missing", () => {
+	it("throws when TODOIST_API_TOKEN is missing", async () => {
 		using dir = tempDir();
 		writeFileSync(
 			join(dir.path, ".doistrc"),
@@ -94,28 +94,28 @@ describe("buildTodoistTracker", () => {
 		);
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		expect(() => buildTodoistTracker()).toThrow(
+		await expect(buildTodoistTracker()).rejects.toThrow(
 			/Expected "TODOIST_API_TOKEN" but received undefined/,
 		);
 	});
 
-	it("throws when .doistrc has no projects", () => {
+	it("throws when .doistrc has no projects", async () => {
 		using dir = tempDir();
 		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		expect(() => buildTodoistTracker()).toThrow(
+		await expect(buildTodoistTracker()).rejects.toThrow(
 			"Could not create Todoist tracker: no-projects",
 		);
 	});
 
-	it("throws when no .doistrc is found", () => {
+	it("throws when no .doistrc is found", async () => {
 		using dir = tempDir();
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		expect(() => buildTodoistTracker()).toThrow(
+		await expect(buildTodoistTracker()).rejects.toThrow(
 			"Could not create Todoist tracker: no-config",
 		);
 	});
@@ -126,22 +126,25 @@ describe("buildTodoistTracker", () => {
 // ---------------------------------------------------------------------------
 
 describe("createWayfinderTracker", () => {
-	it("throws when Todoist build fails", () => {
+	it("throws when Todoist build fails", async () => {
 		using dir = tempDir();
 		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		expect(() =>
+		await expect(
 			createWayfinderTracker({ cwd: dir.path, mode: "todoist" }),
-		).toThrow("Could not create Todoist tracker: no-projects");
+		).rejects.toThrow("Could not create Todoist tracker: no-projects");
 	});
 
-	it("builds a local tracker", () => {
+	it("builds a local tracker", async () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));
 
-		const tracker = createWayfinderTracker({ cwd: dir.path, mode: "local" });
+		const tracker = await createWayfinderTracker({
+			cwd: dir.path,
+			mode: "local",
+		});
 		expect(tracker).toBeDefined();
 	});
 });

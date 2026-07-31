@@ -12,6 +12,7 @@ import {
 	createContainer,
 	DoistCoreTodoistGateway,
 	LocalMarkdownTracker,
+	syncAndPersist,
 	TodoistTracker,
 	type WayfinderTracker,
 } from "wayfinder-core";
@@ -38,7 +39,7 @@ export function detectTrackerSelection(cwd: string): TrackerMode | null {
 	return null;
 }
 
-export function buildTodoistTracker(): WayfinderTracker {
+export async function buildTodoistTracker(): Promise<WayfinderTracker> {
 	const container = createContainer();
 	if (!container.paths) {
 		throw new Error("Could not create Todoist tracker: no-config");
@@ -48,6 +49,8 @@ export function buildTodoistTracker(): WayfinderTracker {
 		throw new Error("Could not create Todoist tracker: no-projects");
 	}
 
+	await syncAndPersist(container.db, container.client, projectIds, false);
+
 	const gateway = new DoistCoreTodoistGateway({
 		db: container.db,
 		client: container.client,
@@ -56,10 +59,10 @@ export function buildTodoistTracker(): WayfinderTracker {
 	return new TodoistTracker(gateway, projectId ? { projectId } : {});
 }
 
-export function createWayfinderTracker({
+export async function createWayfinderTracker({
 	cwd,
 	mode,
-}: CreateWayfinderTrackerOptions): WayfinderTracker {
+}: CreateWayfinderTrackerOptions): Promise<WayfinderTracker> {
 	if (mode === "local") {
 		return new LocalMarkdownTracker(localTrackerRoot(cwd));
 	}

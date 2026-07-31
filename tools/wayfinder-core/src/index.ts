@@ -1,4 +1,4 @@
-export { createContainer } from "doist-core";
+export { createContainer, syncAndPersist } from "doist-core";
 export type { Container } from "doist-core";
 export * from "./doist-core-gateway.ts";
 export * from "./labels.ts";
