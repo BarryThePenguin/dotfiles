@@ -65,6 +65,21 @@ describe("LocalMarkdownTracker", () => {
 		expect(ticketBody).toContain("## Question\n\nWhat is the smallest useful implementation slice?");
 	});
 
+	it("accepts a displayed map URL anywhere a map ID is expected", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+		const map = await tracker.createMap({
+			title: "Plan Todoist Wayfinder",
+			destination: "A Todoist-backed Wayfinder MVP exists.",
+		});
+
+		expect(await tracker.getMap(map.url)).toMatchObject({
+			id: map.id,
+			title: "Plan Todoist Wayfinder",
+		});
+		expect(await tracker.listChildTickets(map.url)).toEqual([]);
+	});
+
 	it("lists only incomplete, unclaimed, unblocked child tickets as frontier", async () => {
 		using rootDir = setupDir();
 		const tracker = new LocalMarkdownTracker(rootDir.path);

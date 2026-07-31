@@ -296,8 +296,13 @@ async function listMaps(
 	if (maps.length === 0) {
 		return ok("No open wayfinder maps.", mapDetails(ext, ctx, { maps: [] }));
 	}
+	if (maps.length === 1 && maps[0] && ctx.activeMap !== maps[0].id) {
+		ctx.activeMap = maps[0].id;
+		ctx.persistState();
+		ctx.updateStatus(ext);
+	}
 	return ok(
-		`${maps.length} open map(s):\n\n${maps.map((map) => `${map.id} — ${stripPrefix(map.title)}\n  ${map.url}`).join("\n\n")}`,
+		`${maps.length} open map(s):\n\n${maps.map((map) => `${map.id} — ${stripPrefix(map.title)}\n  ID: ${map.id}\n  URL: ${map.url}`).join("\n\n")}`,
 		mapDetails(ext, ctx, {
 			maps: maps.map((map) => ({
 				id: map.id,

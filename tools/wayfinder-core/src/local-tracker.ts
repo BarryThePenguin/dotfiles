@@ -1,5 +1,5 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { mapBodyFromDocument, type MapSectionKey } from "./map-body.ts";
 import { stringifyMarkdown } from "./markdown.ts";
 import {
@@ -84,15 +84,16 @@ export class LocalMarkdownTracker {
 		input: CreateLocalChildTicketInput,
 	): Promise<LocalTicket> {
 		return this.#withIndexLock(async () => {
-			await this.getMap(input.mapId);
-			await mkdir(this.#issuesDir(input.mapId), { recursive: true });
-			const nextNumber = await this.#nextTicketNumber(input.mapId);
+			const mapId = this.#mapId(input.mapId);
+			await this.getMap(mapId);
+			await mkdir(this.#issuesDir(mapId), { recursive: true });
+			const nextNumber = await this.#nextTicketNumber(mapId);
 			const ref = `${String(nextNumber).padStart(2, "0")}-${slugify(input.title)}`;
-			const id = `${input.mapId}/${ref}`;
+			const id = `${mapId}/${ref}`;
 			const blockerRefs = (input.blockerIds ?? []).map(ticketRefFromId);
 
 			await writeFile(
-				this.#ticketPathFromParts(input.mapId, ref),
+				this.#ticketPathFromParts(mapId, ref),
 				ticketMarkdown({
 					number: nextNumber,
 					title: input.title,
@@ -108,11 +109,12 @@ export class LocalMarkdownTracker {
 	}
 
 	async getMap(id: string): Promise<LocalMap> {
-		const document = await this.#readMapDocument(id);
+		const mapId = this.#mapId(id);
+		const document = await this.#readMapDocument(mapId);
 		return {
-			id,
-			title: document.title() ?? titleFromSlug(id),
-			url: mapFileUrl(id),
+			id: mapId,
+			title: document.title() ?? titleFromSlug(mapId),
+			url: mapFileUrl(mapId),
 			...mapBodyFromDocument(document),
 		};
 	}
@@ -167,15 +169,16 @@ export class LocalMarkdownTracker {
 	}
 
 	async listChildTickets(mapId: string): Promise<LocalTicket[]> {
-		await this.getMap(mapId);
+		const normalizedMapId = this.#mapId(mapId);
+		await this.getMap(normalizedMapId);
 		try {
-			const entries = await readdir(this.#issuesDir(mapId), {
+			const entries = await readdir(this.#issuesDir(normalizedMapId), {
 				withFileTypes: true,
 			});
 			return await Promise.all(
 				entries
 					.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
-					.map((entry) => `${mapId}/${entry.name.replace(/\.md$/, "")}`)
+					.map((entry) => `${normalizedMapId}/${entry.name.replace(/\.md$/, "")}`)
 					.toSorted(compareTicketIds)
 					.map((ticketId) => this.getTicket(ticketId)),
 			);
@@ -192,7 +195,7 @@ export class LocalMarkdownTracker {
 	}
 
 	async listFrontierTickets(mapId: string): Promise<LocalTicket[]> {
-		return listFrontierTicketsOperation(this, mapId);
+		return listFrontierTicketsOperation(this, this.#mapId(mapId));
 	}
 
 	async claimTicketIfUnclaimed(
@@ -216,9 +219,10 @@ export class LocalMarkdownTracker {
 	}
 
 	async updateMapBody(id: string, body: string): Promise<LocalMap> {
-		await this.getMap(id);
-		await this.#writeMapBody(id, body);
-		return this.getMap(id);
+		const mapId = this.#mapId(id);
+		await this.getMap(mapId);
+		await this.#writeMapBody(mapId, body);
+		return this.getMap(mapId);
 	}
 
 	async updateTicketBody(id: string, body: string): Promise<LocalTicket> {
@@ -285,7 +289,8 @@ export class LocalMarkdownTracker {
 		mapId: string,
 		decision: DecisionSummary,
 	): Promise<LocalMap> {
-		await this.getMap(mapId);
+		const normalizedMapId = this.#mapId(mapId);
+		await this.getMap(normalizedMapId);
 		return recordDecisionOperation(
 			{
 				readMapBody: (id) => this.#readMapBody(id),
@@ -294,7 +299,7 @@ export class LocalMarkdownTracker {
 					return this.getMap(id);
 				},
 			},
-			mapId,
+			normalizedMapId,
 			decision,
 		);
 	}
@@ -304,7 +309,8 @@ export class LocalMarkdownTracker {
 		section: MapSectionKey,
 		content: string,
 	): Promise<LocalMap> {
-		await this.getMap(mapId);
+		const normalizedMapId = this.#mapId(mapId);
+		await this.getMap(normalizedMapId);
 		return updateMapSectionOperation(
 			{
 				readMapBody: (id) => this.#readMapBody(id),
@@ -313,7 +319,7 @@ export class LocalMarkdownTracker {
 					return this.getMap(id);
 				},
 			},
-			mapId,
+			normalizedMapId,
 			section,
 			content,
 		);
@@ -332,8 +338,13 @@ export class LocalMarkdownTracker {
 		await mkdir(this.#rootDir, { recursive: true });
 	}
 
+	#mapId(idOrUrl: string): string {
+		const withoutTrailingSlash = idOrUrl.replace(/\/+$/, "");
+		return basename(withoutTrailingSlash.replace(/\/?map\.md$/, ""));
+	}
+
 	#mapDir(id: string): string {
-		return join(this.#rootDir, id);
+		return join(this.#rootDir, this.#mapId(id));
 	}
 
 	#issuesDir(mapId: string): string {
