@@ -1,10 +1,8 @@
 import {
 	addTask,
+	addTaskComment,
 	completeTasks,
 	createContainer,
-	createNoteAddCommand,
-	getToken,
-	persistMutations,
 	updateTask,
 	type AppTask,
 	type Database,
@@ -39,8 +37,6 @@ function appTaskToTodoistTask(task: AppTask, comments: string[]): TodoistTask {
 export class DoistCoreTodoistGateway implements TodoistGateway {
 	readonly #db: Database;
 	readonly #client: TodoistClient;
-	readonly #postedComments = new Map<string, string[]>();
-
 	constructor(options: DoistCoreTodoistGatewayOptions) {
 		this.#db = options.db;
 		this.#client = options.client;
@@ -150,17 +146,13 @@ export class DoistCoreTodoistGateway implements TodoistGateway {
 	}
 
 	async addComment(taskId: string, body: string): Promise<void> {
-		const allData = await this.#client.sync(
-			getToken(this.#db),
-			createNoteAddCommand({ item_id: taskId, content: body }),
-		);
-		persistMutations(this.#db, { token: allData.syncToken });
-
-		const existing = this.#postedComments.get(taskId) ?? [];
-		this.#postedComments.set(taskId, [...existing, body]);
+		await addTaskComment(this.#db, this.#client, taskId, body);
 	}
 
 	#toTodoistTask(task: AppTask): TodoistTask {
-		return appTaskToTodoistTask(task, this.#postedComments.get(task.id) ?? []);
+		return appTaskToTodoistTask(
+			task,
+			this.#db.selectNotesByTask(task.id).map((note) => note.content),
+		);
 	}
 }

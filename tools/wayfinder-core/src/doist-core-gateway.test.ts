@@ -30,7 +30,9 @@ function syncItem(overrides: Partial<DbTask> = {}): DbTask {
 class FakeTodoistClient implements TodoistClient {
 	commands: SyncCommand[] = [];
 	#nextTaskId = 1;
+	#nextNoteId = 1;
 	readonly #tasks = new Map<string, DbTask>();
+	readonly #notes = new Map<string, AllData["notes"][number]>();
 
 	async sync(
 		_syncToken?: string | null,
@@ -78,6 +80,19 @@ class FakeTodoistClient implements TodoistClient {
 					this.#tasks.set(command.args.id, { ...task, is_completed: 1 });
 				}
 			}
+			if (command.type === "note_add") {
+				const id = `note-${this.#nextNoteId++}`;
+				if (command.temp_id) {
+					tempIdMapping[command.temp_id] = id;
+				}
+				this.#notes.set(id, {
+					id,
+					item_id: command.args.item_id,
+					content: command.args.content,
+					posted_at: new Date().toISOString(),
+					is_deleted: false,
+				});
+			}
 		}
 
 		return {
@@ -86,7 +101,7 @@ class FakeTodoistClient implements TodoistClient {
 			labels: [],
 			filters: [],
 			tasks: Array.from(this.#tasks.values()),
-			notes: [],
+			notes: Array.from(this.#notes.values()),
 			completedTaskIds: commands
 				.filter((command) => command.type === "item_close")
 				.map((command) => command.args.id),
