@@ -1,4 +1,4 @@
-import type { Database } from "./db.ts";
+import type { Database, DbNote } from "./db.ts";
 import {
 	normalizeFilter,
 	normalizeNote,
@@ -67,19 +67,14 @@ export function listSections(db: Database, project?: string) {
 	return db.selectSectionsByProjectId(projectId);
 }
 
-/**
- * Add a label to the existing label set, avoiding duplicates.
- */
-function mergeLabelAdd(stored: string[] | null, label: string): string[] {
-	const current = stored ?? [];
-	return current.includes(label) ? current : [...current, label];
-}
-
-/**
- * Remove a label from the existing label set.
- */
-function mergeLabelRemove(stored: string[] | null, label: string): string[] {
-	return (stored ?? []).filter((l) => l !== label);
+function mergeLabels(
+	stored: string[] | null,
+	addLabels: readonly string[] | undefined,
+	removeLabels: readonly string[] | undefined,
+): string[] {
+	const remove = new Set(removeLabels);
+	const values = [...(stored ?? []), ...(addLabels ?? [])];
+	return [...new Set(values).difference(remove)];
 }
 
 export interface OperationResult<T> {
@@ -111,18 +106,7 @@ export async function updateTask(
 	let labels: string[] | undefined;
 	if (addLabels !== undefined || removeLabels !== undefined) {
 		const existing = db.getTaskById(id);
-		let current = existing?.labels ?? null;
-		if (addLabels !== undefined) {
-			for (const l of addLabels) {
-				current = mergeLabelAdd(current, l);
-			}
-		}
-		if (removeLabels !== undefined) {
-			for (const l of removeLabels) {
-				current = mergeLabelRemove(current, l);
-			}
-		}
-		labels = current ?? [];
+		labels = mergeLabels(existing?.labels ?? null, addLabels, removeLabels);
 	}
 
 	const projectId = project ? resolveProject(db, project) : undefined;
@@ -297,6 +281,50 @@ export async function uncompleteTasks(
 	});
 
 	return { ok: true, result: ids.length };
+}
+
+/**
+ * Complete a single task, optionally with a closing comment, in one atomic sync.
+ *
+ * The close command and (when provided) the note-add command are batched into
+ * a single `client.sync` call, so the close and the comment land together in
+ * the same Todoist round trip and the same persistence transaction.
+ *
+ * @returns { ok: true, result: completedTaskId } on success
+ */
+export async function completeTask(
+	db: Database,
+	client: TodoistClient,
+	id: string,
+	comment?: string,
+): Promise<OperationResult<string>> {
+	const commands: SyncCommand[] = [createItemCloseCommand({ id })];
+	let noteTempId: string | undefined;
+	if (comment !== undefined) {
+		noteTempId = crypto.randomUUID();
+		commands.push(
+			createNoteAddCommand({ item_id: id, content: comment }, noteTempId),
+		);
+	}
+
+	const allData = await client.sync(getToken(db), ...commands);
+	const completedIds =
+		allData.completedTaskIds.length > 0 ? allData.completedTaskIds : [id];
+	const completedId = completedIds[0] ?? id;
+	const preparedNotes = allData.notes
+		.map((n) => prepareNoteForDB(n))
+		.filter((n): n is DbNote => n !== null);
+
+	persistMutations(db, {
+		token: allData.syncToken,
+		tasks: allData.tasks,
+		notes: preparedNotes,
+		customOperations: (db) => {
+			db.updateTasksAsCompleted(completedIds);
+		},
+	});
+
+	return { ok: true, result: completedId };
 }
 
 // ============================================================================

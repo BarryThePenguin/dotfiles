@@ -33,6 +33,7 @@ export {
 // Operations
 export {
 	addTask,
+	completeTask,
 	completeTasks,
 	moveTask,
 	uncompleteTasks,

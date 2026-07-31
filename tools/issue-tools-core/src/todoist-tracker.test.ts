@@ -12,6 +12,7 @@ import {
 class InMemoryTodoistGateway implements TodoistGateway {
 	readonly tasks = new Map<string, TodoistTask>();
 	#nextTaskNumber = 1;
+	readonly #createdAt = new Date().toISOString();
 
 	createTask(input: TodoistCreateTaskInput): Promise<TodoistTask> {
 		const id = String(this.#nextTaskNumber++);
@@ -24,6 +25,8 @@ class InMemoryTodoistGateway implements TodoistGateway {
 			parentId: input.parentId ?? null,
 			projectId: input.projectId ?? null,
 			isCompleted: false,
+			createdAt: this.#createdAt,
+			updatedAt: this.#createdAt,
 			comments: [],
 		};
 		this.tasks.set(id, task);
@@ -55,19 +58,36 @@ class InMemoryTodoistGateway implements TodoistGateway {
 		input: TodoistUpdateTaskInput,
 	): Promise<TodoistTask> {
 		const task = await this.getTask(id);
+		let labels = task.labels;
+		if (input.addLabels !== undefined || input.removeLabels !== undefined) {
+			const remove = new Set(input.removeLabels ?? []);
+			const additions = new Set(
+				(input.addLabels ?? []).filter((label) => !remove.has(label)),
+			);
+			labels = [
+				...new Set(
+					task.labels.filter((label) => !remove.has(label)),
+				).union(additions),
+			];
+		}
 		const updated: TodoistTask = {
 			...task,
 			...(input.description !== undefined
 				? { description: input.description }
 				: {}),
-			...(input.labels !== undefined ? { labels: input.labels } : {}),
+			...(input.addLabels !== undefined || input.removeLabels !== undefined
+				? { labels }
+				: {}),
 		};
 		this.tasks.set(id, updated);
 		return updated;
 	}
 
-	async completeTask(id: string): Promise<TodoistTask> {
+	async completeTask(id: string, comment?: string): Promise<TodoistTask> {
 		const task = await this.getTask(id);
+		if (comment !== undefined) {
+			task.comments.push({ content: comment, postedAt: new Date().toISOString() });
+		}
 		const updated = { ...task, isCompleted: true };
 		this.tasks.set(id, updated);
 		return updated;
@@ -93,7 +113,7 @@ class InMemoryTodoistGateway implements TodoistGateway {
 
 	async addComment(taskId: string, body: string): Promise<void> {
 		const task = await this.getTask(taskId);
-		task.comments.push(body);
+		task.comments.push({ content: body, postedAt: new Date().toISOString() });
 	}
 }
 

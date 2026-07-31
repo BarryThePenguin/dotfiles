@@ -4,6 +4,7 @@ import type { Database } from "./db.ts";
 import {
 	addTask,
 	addTaskComment,
+	completeTask,
 	completeTasks,
 	listTaskComments,
 	moveTask,
@@ -143,6 +144,155 @@ describe("mock HTTP client", () => {
 			// Verify persisted with merged labels
 			const persisted = container.db.getTaskById(TASK_IDS.alpha);
 			expect(persisted?.labels).toEqual(["urgent", "high"]);
+		});
+
+		it("is idempotent when addLabels overlaps with existing labels", async () => {
+			// Pre-populate task with existing labels
+			container.db.upsertTask({
+				...TASK_ALPHA,
+				labels: JSON.stringify(["urgent", "home"]),
+			});
+
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							labels: ["urgent", "home", "new"],
+						}),
+					],
+				}),
+			);
+
+			const client = createClient("test-token");
+			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
+				addLabels: ["home", "new"],
+			});
+
+			// Order preserved: existing first (with duplicates dropped), then new appends
+			expect(result.ok).toBe(true);
+			expect(result.result.labels).toEqual(["urgent", "home", "new"]);
+			const persisted = container.db.getTaskById(TASK_IDS.alpha);
+			expect(persisted?.labels).toEqual(["urgent", "home", "new"]);
+		});
+
+		it("preserves order of multiple new labels in addLabels", async () => {
+			container.db.upsertTask({
+				...TASK_ALPHA,
+				labels: JSON.stringify(["urgent"]),
+			});
+
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							labels: ["urgent", "zeta", "alpha", "mike"],
+						}),
+					],
+				}),
+			);
+
+			const client = createClient("test-token");
+			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
+				addLabels: ["zeta", "alpha", "mike"],
+			});
+
+			expect(result.result.labels).toEqual([
+				"urgent",
+				"zeta",
+				"alpha",
+				"mike",
+			]);
+		});
+
+		it("removes labels from existing set", async () => {
+			container.db.upsertTask({
+				...TASK_ALPHA,
+				labels: JSON.stringify(["urgent", "home", "work"]),
+			});
+
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							labels: ["urgent", "work"],
+						}),
+					],
+				}),
+			);
+
+			const client = createClient("test-token");
+			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
+				removeLabels: ["home"],
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.result.labels).toEqual(["urgent", "work"]);
+		});
+
+		it("remove wins when the same label is in both addLabels and removeLabels", async () => {
+			container.db.upsertTask({
+				...TASK_ALPHA,
+				labels: JSON.stringify(["urgent", "home"]),
+			});
+
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							labels: ["urgent", "new"],
+						}),
+					],
+				}),
+			);
+
+			const client = createClient("test-token");
+			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
+				addLabels: ["new", "home"],
+				removeLabels: ["home"],
+			});
+
+			// "home" is in both addLabels and removeLabels → remove wins; result does not include "home"
+			expect(result.ok).toBe(true);
+			expect(result.result.labels).toEqual(["urgent", "new"]);
+		});
+
+		it("adds fresh labels when no existing labels are stored", async () => {
+			container.db.upsertTask({
+				...TASK_ALPHA,
+				labels: JSON.stringify([]),
+			});
+
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							labels: ["fresh", "label"],
+						}),
+					],
+				}),
+			);
+
+			const client = createClient("test-token");
+			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
+				addLabels: ["fresh", "label"],
+			});
+
+			expect(result.result.labels).toEqual(["fresh", "label"]);
 		});
 
 		it("moves task to another project", async () => {
@@ -493,6 +643,119 @@ describe("mock HTTP client", () => {
 
 			expect(result.ok).toBe(true);
 			expect(result.result).toBe(0);
+		});
+	});
+
+	// ── completeTask tests (single, with optional closing comment) ─────
+
+	describe("completeTask", () => {
+		let container: TestContainer;
+
+		beforeEach(() => {
+			container = createTestContainer({
+				projects: [PROJECT_IDS.inbox],
+			});
+			container.db.upsertProject(PROJECT_INBOX);
+			container.db.upsertTask(TASK_ALPHA);
+			setToken(container.db, "tok-0");
+		});
+
+		afterEach(() => {
+			container.db.close();
+		});
+
+		it("completes a single task in one sync round trip (no comment)", async () => {
+			let captured: Array<{ type: string; args: Record<string, unknown> }> = [];
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				captured = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					type: string;
+					args: Record<string, unknown>;
+				}>;
+				return {
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({ id: TASK_IDS.alpha, checked: true }),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await completeTask(container.db, client, TASK_IDS.alpha);
+
+			expect(result.ok).toBe(true);
+			expect(result.result).toBe(TASK_IDS.alpha);
+			// One sync call carries the single close command
+			expect(captured).toHaveLength(1);
+			expect(captured[0]).toMatchObject({
+				type: "item_close",
+				args: { id: TASK_IDS.alpha },
+			});
+			expect(container.db.getTaskById(TASK_IDS.alpha)?.isCompleted).toBe(true);
+			expect(getToken(container.db)).toBe("tok-1");
+		});
+
+		it("closes and comments atomically in one sync when a comment is provided", async () => {
+			let captured: Array<{
+				type: string;
+				args: Record<string, unknown>;
+				temp_id?: string;
+			}> = [];
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				captured = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					type: string;
+					args: Record<string, unknown>;
+					temp_id?: string;
+				}>;
+				const noteTempId =
+					captured.find((c) => c.type === "note_add")?.temp_id ?? "t-note";
+				return {
+					sync_token: "tok-1",
+					temp_id_mapping: { [noteTempId]: "n-closing" },
+					items: [
+						createMockApiTask({ id: TASK_IDS.alpha, checked: true }),
+					],
+					notes: [
+						createMockApiNote({
+							id: "n-closing",
+							item_id: TASK_IDS.alpha,
+							content: "Closing: wontfix",
+						}),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await completeTask(
+				container.db,
+				client,
+				TASK_IDS.alpha,
+				"Closing: wontfix",
+			);
+
+			expect(result.ok).toBe(true);
+			// The single sync call carried both the close and the note add
+			expect(captured.map((c) => c.type).toSorted()).toEqual([
+				"item_close",
+				"note_add",
+			]);
+			const closeCmd = captured.find((c) => c.type === "item_close");
+			const noteCmd = captured.find((c) => c.type === "note_add");
+			expect(closeCmd?.args).toEqual({ id: TASK_IDS.alpha });
+			expect(noteCmd?.args).toEqual({
+				item_id: TASK_IDS.alpha,
+				content: "Closing: wontfix",
+			});
+
+			// Task is closed and the comment is persisted in the same transaction
+			expect(container.db.getTaskById(TASK_IDS.alpha)?.isCompleted).toBe(true);
+			const notes = container.db.selectNotesByTask(TASK_IDS.alpha);
+			expect(notes).toHaveLength(1);
+			expect(notes[0]).toMatchObject({
+				itemId: TASK_IDS.alpha,
+				content: "Closing: wontfix",
+			});
 		});
 	});
 

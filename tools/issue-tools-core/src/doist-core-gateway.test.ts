@@ -29,10 +29,21 @@ function syncItem(overrides: Partial<DbTask> = {}): DbTask {
 
 class FakeTodoistClient implements TodoistClient {
 	commands: SyncCommand[] = [];
+	syncCalls: SyncCommand[][] = [];
 	#nextTaskId = 1;
 	#nextNoteId = 1;
 	readonly #tasks = new Map<string, DbTask>();
 	readonly #notes = new Map<string, AllData["notes"][number]>();
+	readonly #taskTimestamps: { created: string; updated: string };
+
+	constructor(
+		options: { taskTimestamps?: { created: string; updated: string } } = {},
+	) {
+		this.#taskTimestamps = options.taskTimestamps ?? {
+			created: new Date().toISOString(),
+			updated: new Date().toISOString(),
+		};
+	}
 
 	async sync(
 		_syncToken?: string | null,
@@ -40,6 +51,7 @@ class FakeTodoistClient implements TodoistClient {
 	): Promise<AllData> {
 		await Promise.resolve();
 		this.commands.push(...commands);
+		this.syncCalls.push(commands);
 		const tempIdMapping: Record<string, string> = {};
 
 		for (const command of commands) {
@@ -57,20 +69,39 @@ class FakeTodoistClient implements TodoistClient {
 						content: command.args.content,
 						description: command.args.description ?? "",
 						labels: JSON.stringify(command.args.labels ?? []),
+						created_at: this.#taskTimestamps.created,
+						updated_at: this.#taskTimestamps.updated,
 					}),
 				);
 			}
 			if (command.type === "item_update") {
 				const task = this.#tasks.get(command.args.id);
 				if (task) {
+					let labels = task.labels;
+					if (
+						command.args.addLabels !== undefined ||
+						command.args.removeLabels !== undefined
+					) {
+						const remove = new Set(command.args.removeLabels ?? []);
+						const stored: string[] = JSON.parse(task.labels) as string[];
+						const base = new Set(
+							stored.filter((label: string) => !remove.has(label)),
+						);
+						const additions = new Set(
+							(command.args.addLabels ?? []).filter(
+								(label: string) => !remove.has(label),
+							),
+						);
+						labels = JSON.stringify([...base.union(additions)]);
+					} else if (command.args.labels !== undefined) {
+						labels = JSON.stringify(command.args.labels);
+					}
 					this.#tasks.set(command.args.id, {
 						...task,
 						...(command.args.description !== undefined
 							? { description: command.args.description }
 							: {}),
-						...(command.args.labels !== undefined
-							? { labels: JSON.stringify(command.args.labels) }
-							: {}),
+						labels,
 					});
 				}
 			}
@@ -165,12 +196,197 @@ describe("DoistCoreTodoistGateway", () => {
 			args: { item_id: ticket.id, content: "Resolution comment" },
 		});
 		expect(await gateway.getTask(ticket.id)).toMatchObject({
-			comments: ["Resolution comment"],
+			comments: [{ content: "Resolution comment" }],
 		});
 
 		await gateway.completeTask(ticket.id);
 		expect(await gateway.getTask(ticket.id)).toMatchObject({
 			isCompleted: true,
 		});
+	});
+
+	// ── Label contract (set-based merge, one round trip, delta args) ──
+
+	it("updateTask with addLabels/removeLabels makes one round trip with the set-merged result on the wire", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const client = new FakeTodoistClient();
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+
+		// Create a task carrying initial labels
+		const ticket = await gateway.createTask({
+			content: "Ticket",
+			description: "Body",
+			labels: ["urgent", "home"],
+			projectId: "project-1",
+		});
+
+		// Reset the captured sync call counter so we can assert
+		// the upcoming updateTask makes exactly one round trip.
+		client.syncCalls.length = 0;
+
+		await gateway.updateTask(ticket.id, {
+			addLabels: ["work"],
+			removeLabels: ["home"],
+		});
+
+		// Exactly one sync call carried the update. The Todoist API only
+		// accepts an absolute label set, so the merged result is on the
+		// wire — the delta contract lives in the user-facing surface.
+		expect(client.syncCalls).toHaveLength(1);
+		const updateCall = client.syncCalls[0];
+		expect(updateCall).toHaveLength(1);
+		expect(updateCall?.[0]).toMatchObject({
+			type: "item_update",
+			args: {
+				id: ticket.id,
+				labels: ["urgent", "work"],
+			},
+		});
+
+		// Result reflects the set-merged state.
+		expect(await gateway.getTask(ticket.id)).toMatchObject({
+			labels: ["urgent", "work"],
+		});
+	});
+
+	it("updateTask with only addLabels is a single round trip", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const client = new FakeTodoistClient();
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+
+		const ticket = await gateway.createTask({
+			content: "Ticket",
+			description: "Body",
+			labels: ["urgent"],
+			projectId: "project-1",
+		});
+		client.syncCalls.length = 0;
+
+		await gateway.updateTask(ticket.id, { addLabels: ["new"] });
+
+		expect(client.syncCalls).toHaveLength(1);
+		expect(client.syncCalls[0]?.[0]?.args).toMatchObject({
+			id: ticket.id,
+			labels: ["urgent", "new"],
+		});
+	});
+
+	it("updateTask is idempotent when addLabels overlaps with existing labels", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const client = new FakeTodoistClient();
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+
+		const ticket = await gateway.createTask({
+			content: "Ticket",
+			description: "Body",
+			labels: ["urgent", "home"],
+			projectId: "project-1",
+		});
+
+		await gateway.updateTask(ticket.id, { addLabels: ["home", "work"] });
+
+		expect((await gateway.getTask(ticket.id)).labels).toEqual([
+			"urgent",
+			"home",
+			"work",
+		]);
+	});
+
+	// ── Close with optional comment (one atomic sync) ────────────────
+
+	it("completeTask with a comment closes and comments in one atomic sync", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const client = new FakeTodoistClient();
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+
+		const ticket = await gateway.createTask({
+			content: "Ticket",
+			description: "Body",
+			labels: ["wayfinder_grilling"],
+			projectId: "project-1",
+		});
+		client.syncCalls.length = 0;
+
+		await gateway.completeTask(ticket.id, "Closing: wontfix");
+
+		// One sync carried both the close and the note add
+		expect(client.syncCalls).toHaveLength(1);
+		const types = (client.syncCalls[0] ?? []).map((c) => c.type).toSorted();
+		expect(types).toEqual(["item_close", "note_add"]);
+
+		// Task is closed and the comment is persisted in the same transaction
+		const result = await gateway.getTask(ticket.id);
+		expect(result).toMatchObject({
+			isCompleted: true,
+			comments: [{ content: "Closing: wontfix" }],
+		});
+	});
+
+	it("completeTask without a comment is still a single sync with one close command", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const client = new FakeTodoistClient();
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+
+		const ticket = await gateway.createTask({
+			content: "Ticket",
+			description: "Body",
+			labels: ["wayfinder_grilling"],
+			projectId: "project-1",
+		});
+		client.syncCalls.length = 0;
+
+		await gateway.completeTask(ticket.id);
+
+		expect(client.syncCalls).toHaveLength(1);
+		expect(client.syncCalls[0]).toHaveLength(1);
+		expect(client.syncCalls[0]?.[0]).toMatchObject({
+			type: "item_close",
+			args: { id: ticket.id },
+		});
+	});
+
+	// ── Timestamps on read ──────────────────────────────────────────
+
+	it("surfaces task createdAt and updatedAt on read", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const created = "2026-01-01T12:00:00.000000Z";
+		const updated = "2026-02-01T12:00:00.000000Z";
+		const client = new FakeTodoistClient({
+			taskTimestamps: { created, updated },
+		});
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+
+		const ticket = await gateway.createTask({
+			content: "Ticket",
+			description: "Body",
+			labels: ["wayfinder_grilling"],
+			projectId: "project-1",
+		});
+
+		const result = await gateway.getTask(ticket.id);
+		expect(result.createdAt).toBe(created);
+		expect(result.updatedAt).toBe(updated);
+	});
+
+	it("surfaces comment postedAt on read", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const client = new FakeTodoistClient();
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+
+		const ticket = await gateway.createTask({
+			content: "Ticket",
+			description: "Body",
+			labels: ["wayfinder_grilling"],
+			projectId: "project-1",
+		});
+
+		await gateway.addComment(ticket.id, "Resolution: use Todoist");
+
+		const result = await gateway.getTask(ticket.id);
+		expect(result.comments).toHaveLength(1);
+		expect(result.comments[0]?.content).toBe("Resolution: use Todoist");
+		expect(result.comments[0]?.postedAt).toMatch(
+			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+		);
 	});
 });

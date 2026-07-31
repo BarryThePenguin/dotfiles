@@ -31,6 +31,11 @@ import type {
 export type TodoistMap = WayfinderTrackerMap;
 export type TodoistTicket = WayfinderTrackerTicket;
 
+export type TodoistTaskComment = {
+	content: string;
+	postedAt: string | null;
+};
+
 export type TodoistTask = {
 	id: string;
 	url: string;
@@ -40,7 +45,9 @@ export type TodoistTask = {
 	parentId: string | null;
 	projectId: string | null;
 	isCompleted: boolean;
-	comments: string[];
+	createdAt: string | null;
+	updatedAt: string | null;
+	comments: TodoistTaskComment[];
 };
 
 export type TodoistCreateTaskInput = {
@@ -53,7 +60,8 @@ export type TodoistCreateTaskInput = {
 
 export type TodoistUpdateTaskInput = {
 	description?: string;
-	labels?: string[];
+	addLabels?: string[];
+	removeLabels?: string[];
 };
 
 export type TodoistListTasksInput = {
@@ -65,7 +73,7 @@ export interface TodoistGateway {
 	getTask(id: string): Promise<TodoistTask>;
 	getTasks(ids: string[]): Promise<TodoistTask[]>;
 	updateTask(id: string, input: TodoistUpdateTaskInput): Promise<TodoistTask>;
-	completeTask(id: string): Promise<TodoistTask>;
+	completeTask(id: string, comment?: string): Promise<TodoistTask>;
 	listTasks(input?: TodoistListTasksInput): Promise<TodoistTask[]>;
 	listSubtasks(parentId: string): Promise<TodoistTask[]>;
 	addComment(taskId: string, body: string): Promise<void>;
@@ -110,7 +118,7 @@ function toTicket(task: TodoistTask): WayfinderTrackerTicket {
 		...(parsed.claimedBy ? { claimedBy: parsed.claimedBy } : {}),
 		url: task.url,
 		status: taskStatus(task),
-		comments: task.comments,
+		comments: task.comments.map((comment) => comment.content),
 	};
 }
 

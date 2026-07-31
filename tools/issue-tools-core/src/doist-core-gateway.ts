@@ -1,7 +1,7 @@
 import {
 	addTask,
 	addTaskComment,
-	completeTasks,
+	completeTask as doistCoreCompleteTask,
 	createContainer,
 	updateTask,
 	type AppTask,
@@ -12,6 +12,7 @@ import type {
 	TodoistCreateTaskInput,
 	TodoistGateway,
 	TodoistTask,
+	TodoistTaskComment,
 	TodoistUpdateTaskInput,
 } from "./todoist-tracker.ts";
 
@@ -20,7 +21,10 @@ export type DoistCoreTodoistGatewayOptions = {
 	client: TodoistClient;
 };
 
-function appTaskToTodoistTask(task: AppTask, comments: string[]): TodoistTask {
+function appTaskToTodoistTask(
+	task: AppTask,
+	comments: TodoistTaskComment[],
+): TodoistTask {
 	return {
 		id: task.id,
 		url: task.url,
@@ -30,6 +34,8 @@ function appTaskToTodoistTask(task: AppTask, comments: string[]): TodoistTask {
 		parentId: task.parentId,
 		projectId: task.projectId,
 		isCompleted: task.isCompleted,
+		createdAt: task.createdAt,
+		updatedAt: task.updatedAt,
 		comments,
 	};
 }
@@ -88,39 +94,27 @@ export class DoistCoreTodoistGateway implements TodoistGateway {
 		id: string,
 		input: TodoistUpdateTaskInput,
 	): Promise<TodoistTask> {
-		if (input.description === undefined && input.labels === undefined) {
+		if (
+			input.description === undefined &&
+			input.addLabels === undefined &&
+			input.removeLabels === undefined
+		) {
 			return this.getTask(id);
 		}
 
+		// One round trip, delta args only — no absolute label set is ever sent.
+		// doist-core merges against the local DB task, so we don't need to
+		// pre-read the current labels here.
 		const { result } = await updateTask(this.#db, this.#client, id, {
 			description: input.description,
-			...(input.labels !== undefined
-				? { addLabels: [], removeLabels: [] }
-				: {}),
+			addLabels: input.addLabels,
+			removeLabels: input.removeLabels,
 		});
-
-		if (input.labels === undefined) {
-			return this.#toTodoistTask(result);
-		}
-
-		const { result: labelUpdated } = await updateTask(
-			this.#db,
-			this.#client,
-			id,
-			{
-				removeLabels: result.labels.filter(
-					(label) => !input.labels?.includes(label),
-				),
-				addLabels: input.labels.filter(
-					(label) => !result.labels.includes(label),
-				),
-			},
-		);
-		return this.#toTodoistTask(labelUpdated);
+		return this.#toTodoistTask(result);
 	}
 
-	async completeTask(id: string): Promise<TodoistTask> {
-		await completeTasks(this.#db, this.#client, [id]);
+	async completeTask(id: string, comment?: string): Promise<TodoistTask> {
+		await doistCoreCompleteTask(this.#db, this.#client, id, comment);
 		return this.getTask(id);
 	}
 
@@ -152,7 +146,9 @@ export class DoistCoreTodoistGateway implements TodoistGateway {
 	#toTodoistTask(task: AppTask): TodoistTask {
 		return appTaskToTodoistTask(
 			task,
-			this.#db.selectNotesByTask(task.id).map((note) => note.content),
+			this.#db
+				.selectNotesByTask(task.id)
+				.map((note) => ({ content: note.content, postedAt: note.postedAt })),
 		);
 	}
 }

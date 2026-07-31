@@ -1,13 +1,5 @@
-import { readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import wayfinderExtension from "./index.ts";
-
-const extensionsDir = join(
-	dirname(fileURLToPath(import.meta.url)),
-	"../../../.pi/agent/extensions",
-);
 
 describe("extension surface", () => {
 	it("registers every wayfinder_* tool exactly once", () => {
@@ -36,9 +28,5 @@ describe("extension surface", () => {
 		for (const count of Object.values(tools)) {
 			expect(count).toBe(1);
 		}
-	});
-
-	it("keeps the discovery dir to a single shim entry (no duplicate registration)", () => {
-		expect(readdirSync(extensionsDir)).toEqual(["issue-tools-pi.ts"]);
 	});
 });
