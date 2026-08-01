@@ -113,6 +113,12 @@ export * as SyncState from "./sync-lifecycle.ts";
 // Todoist client
 export type { TodoistClient, AllData } from "./todoist.ts";
 
+// Repo-aware project selection
+export { applyRepoMarker, selectRepoProject } from "./repo-project.ts";
+
+// Label-set operations
+export { mergeLabels } from "./labels.ts";
+
 // SDK types (including Note types)
 export type {
 	SyncNote,

@@ -5,7 +5,8 @@
 		"knip": "knip",
 		"lint": "eslint .",
 		"prettier": "prettier --write .",
-		"test": "vitest"
+		"test": "vitest",
+		"typecheck": "tsc --build"
 	},
 	"devDependencies": {
 		"@eslint/js": "10.0.1",

@@ -27,6 +27,7 @@ import {
 	type SyncCommand,
 } from "./sdk.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
+import { mergeLabels } from "./labels.ts";
 import {
 	resolveCreated,
 	resolveCreatedNote,
@@ -67,16 +68,6 @@ export function listSections(db: Database, project?: string) {
 	return db.selectSectionsByProjectId(projectId);
 }
 
-function mergeLabels(
-	stored: string[] | null,
-	addLabels: readonly string[] | undefined,
-	removeLabels: readonly string[] | undefined,
-): string[] {
-	const remove = new Set(removeLabels);
-	const values = [...(stored ?? []), ...(addLabels ?? [])];
-	return [...new Set(values).difference(remove)];
-}
-
 export interface OperationResult<T> {
 	ok: boolean;
 	result: T;
@@ -106,7 +97,7 @@ export async function updateTask(
 	let labels: string[] | undefined;
 	if (addLabels !== undefined || removeLabels !== undefined) {
 		const existing = db.getTaskById(id);
-		labels = mergeLabels(existing?.labels ?? null, addLabels, removeLabels);
+		labels = mergeLabels(existing?.labels ?? [], addLabels, removeLabels);
 	}
 
 	const projectId = project ? resolveProject(db, project) : undefined;

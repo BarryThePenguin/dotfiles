@@ -25,7 +25,11 @@ import {
 	type CreateTicketParams,
 	type GetMapParams,
 	type GetTicketParams,
+	type IssueCloseParams,
+	type IssueCommentParams,
 	type IssueCreateParams,
+	type IssueLabelParams,
+	type IssueListParams,
 	type IssueReadParams,
 	type ListFrontierParams,
 	type LocalMap,
@@ -62,6 +66,10 @@ export interface ActionMap {
 	claim: ClaimParams;
 	issue_create: IssueCreateParams;
 	issue_read: IssueReadParams;
+	issue_label: IssueLabelParams;
+	issue_comment: IssueCommentParams;
+	issue_close: IssueCloseParams;
+	issue_list: IssueListParams;
 }
 
 export interface ToolContext {
@@ -110,6 +118,10 @@ const handlers: { [K in keyof ActionMap]: Handler<K> } = {
 	claim,
 	issue_create: createIssue,
 	issue_read: readIssue,
+	issue_label: labelIssue,
+	issue_comment: commentIssue,
+	issue_close: closeIssue,
+	issue_list: listIssues,
 };
 
 export function handleAction<K extends keyof ActionMap>(
@@ -622,6 +634,100 @@ async function readIssue(
 			labels: issue.labels,
 			status: issue.status,
 			comments: issue.comments.length,
+		}),
+	);
+}
+
+async function labelIssue(
+	params: IssueLabelParams,
+	ctx: ToolContext,
+	ext: ExtensionContext,
+): Promise<ActionResult> {
+	const tracker = await createTracker(ext, ctx);
+	const issue = await tracker.updateIssueLabels(params.id, {
+		...(params.add ? { add: [...params.add] } : {}),
+		...(params.remove ? { remove: [...params.remove] } : {}),
+	});
+	return ok(
+		`Issue ${issue.id}: labels now ${formatLabelList(issue.labels)}`,
+		mapDetails(ext, ctx, {
+			id: issue.id,
+			url: issue.url,
+			labels: issue.labels,
+		}),
+	);
+}
+
+function formatLabelList(labels: string[]): string {
+	return labels.length > 0 ? labels.join(", ") : "(none)";
+}
+
+async function commentIssue(
+	params: IssueCommentParams,
+	ctx: ToolContext,
+	ext: ExtensionContext,
+): Promise<ActionResult> {
+	const tracker = await createTracker(ext, ctx);
+	const { comment } = await tracker.commentOnIssue(params.id, params.body);
+	return ok(
+		`Comment posted on ${params.id}${comment.postedAt ? ` at ${comment.postedAt}` : ""}.`,
+		mapDetails(ext, ctx, {
+			id: params.id,
+			comment: { content: comment.content, ...(comment.postedAt ? { postedAt: comment.postedAt } : {}) },
+		}),
+	);
+}
+
+async function closeIssue(
+	params: IssueCloseParams,
+	ctx: ToolContext,
+	ext: ExtensionContext,
+): Promise<ActionResult> {
+	const tracker = await createTracker(ext, ctx);
+	const { status } = await tracker.closeIssue(
+		params.id,
+		params.comment ? { comment: params.comment } : undefined,
+	);
+	return ok(
+		`Issue ${params.id}: ${status}${params.comment ? ` (closing note posted)` : ""}`,
+		mapDetails(ext, ctx, { id: params.id, status }),
+	);
+}
+
+async function listIssues(
+	params: IssueListParams,
+	ctx: ToolContext,
+	ext: ExtensionContext,
+): Promise<ActionResult> {
+	const tracker = await createTracker(ext, ctx);
+	const issues = await tracker.listIssues({
+		...(params.state ? { state: params.state } : {}),
+		...(params.labels ? { labels: [...params.labels] } : {}),
+		...(params.unlabeled ? { unlabeled: params.unlabeled } : {}),
+	});
+	if (issues.length === 0) {
+		return ok(
+			"No issues matched.",
+			mapDetails(ext, ctx, { count: 0, issues: [] }),
+		);
+	}
+	const lines = issues
+		.map(
+			(issue) =>
+				`${issue.id} — ${issue.title} [${issue.status}] (${formatLabelList(issue.labels)})`,
+		)
+		.join("\n");
+	return ok(
+		`${issues.length} issue(s):\n${lines}`,
+		mapDetails(ext, ctx, {
+			count: issues.length,
+			issues: issues.map((issue) => ({
+				id: issue.id,
+				url: issue.url,
+				title: issue.title,
+				status: issue.status,
+				labels: issue.labels,
+			})),
 		}),
 	);
 }

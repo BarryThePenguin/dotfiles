@@ -313,11 +313,94 @@ export type IssueCreateOutput = Static<typeof IssueCreateOutputSchema>;
 export const IssueReadParams = Type.Object({ id: IssueIdOrUrl });
 export type IssueReadParams = Static<typeof IssueReadParams>;
 
+export const IssueLabelParams = Type.Object({
+	id: IssueIdOrUrl,
+	add: Type.Optional(Type.Array(Type.String())),
+	remove: Type.Optional(Type.Array(Type.String())),
+});
+export type IssueLabelParams = Static<typeof IssueLabelParams>;
+
+export const IssueLabelOutputSchema = Type.Object({
+	labels: Type.Array(Type.String()),
+});
+export type IssueLabelOutput = Static<typeof IssueLabelOutputSchema>;
+
+export const IssueCommentParams = Type.Object({
+	id: IssueIdOrUrl,
+	body: Type.String(),
+});
+export type IssueCommentParams = Static<typeof IssueCommentParams>;
+
+export const IssueCommentOutputSchema = Type.Object({
+	comment: IssueCommentSchema,
+});
+export type IssueCommentOutput = Static<typeof IssueCommentOutputSchema>;
+
+export const IssueCloseParams = Type.Object({
+	id: IssueIdOrUrl,
+	comment: Type.Optional(Type.String()),
+});
+export type IssueCloseParams = Static<typeof IssueCloseParams>;
+
+export const IssueCloseOutputSchema = Type.Object({
+	status: stringEnum(["open", "closed"] as const),
+});
+export type IssueCloseOutput = Static<typeof IssueCloseOutputSchema>;
+
+export const IssueListParams = Type.Object({
+	state: Type.Optional(stringEnum(["open", "closed", "any"] as const)),
+	labels: Type.Optional(Type.Array(Type.String())),
+	unlabeled: Type.Optional(Type.Boolean()),
+});
+export type IssueListParams = Static<typeof IssueListParams>;
+
+export const IssueListOutputSchema = Type.Array(IssueOutputSchema);
+export type IssueListOutput = Static<typeof IssueListOutputSchema>;
+
 export const GenericIssueToolNames = [
 	"issue_create",
 	"issue_read",
+	"issue_label",
+	"issue_comment",
+	"issue_close",
+	"issue_list",
 ] as const;
 export const GenericIssueToolNameSchema = stringEnum(GenericIssueToolNames);
 export type GenericIssueToolName = Static<typeof GenericIssueToolNameSchema>;
+
+/**
+ * The full surface of extension tools: the Wayfinder decisions tools plus
+ * the generic Issue tools. The setup command and the docs derive the
+ * tool inventory from this constant so they cannot drift from the
+ * registered tools.
+ */
+export const ExtensionToolNames = [
+	...WayfinderToolNames,
+	...GenericIssueToolNames,
+] as const;
+
+/**
+ * The actual tool names registered with the Pi extension. The Pi tool
+ * surface differs from the core function names (e.g. `wayfinder_chart`
+ * vs `wayfinder_create_map`); the setup command's inventory uses these
+ * so the docs match the names the LLM calls.
+ */
+export const PiWayfinderToolNames = [
+	"wayfinder_chart",
+	"wayfinder_get_map",
+	"wayfinder_list_maps",
+	"wayfinder_create_ticket",
+	"wayfinder_get_ticket",
+	"wayfinder_resolve",
+	"wayfinder_update_map",
+	"wayfinder_set_blocking",
+	"wayfinder_list_frontier",
+	"wayfinder_claim",
+] as const;
+export const PiIssueToolNames = [...GenericIssueToolNames] as const;
+export const PiToolNames = [
+	...PiWayfinderToolNames,
+	...PiIssueToolNames,
+] as const;
 
 export type AnyWayfinderTypeBoxSchema = TSchema;

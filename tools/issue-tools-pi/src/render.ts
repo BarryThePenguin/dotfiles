@@ -13,6 +13,9 @@ type RenderCallArgs = {
 	section?: string;
 	map_id?: string;
 	id?: string;
+	state?: string;
+	labels?: string[];
+	unlabeled?: boolean;
 };
 
 export function renderCall(

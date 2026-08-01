@@ -31,7 +31,31 @@ export type CreateIssueInput = {
 	labels?: string[];
 };
 
+export type UpdateIssueLabelsInput = {
+	add?: string[];
+	remove?: string[];
+};
+
 export interface IssueTracker {
 	createIssue(input: CreateIssueInput): Promise<Issue>;
 	readIssue(id: string): Promise<Issue>;
+	updateIssueLabels(
+		id: string,
+		input: UpdateIssueLabelsInput,
+	): Promise<Issue>;
+	commentOnIssue(
+		id: string,
+		body: string,
+	): Promise<{ comment: IssueComment }>;
+	closeIssue(
+		id: string,
+		options?: { comment?: string },
+	): Promise<{ status: IssueStatus }>;
+	listIssues(filter: ListIssuesFilter): Promise<Issue[]>;
 }
+
+export type ListIssuesFilter = {
+	state?: IssueStatus | "any";
+	labels?: string[];
+	unlabeled?: boolean;
+};

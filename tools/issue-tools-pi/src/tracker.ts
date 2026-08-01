@@ -3,15 +3,19 @@
  *
  * The extension speaks the domain-level WayfinderTracker interface. Storage
  * is selected here: local Markdown by default, or Todoist via doist-core
- * when `TODOIST_API_TOKEN` is set and a `.doistrc` is present.
+ * when `TODOIST_API_TOKEN` is set and a `.doistrc` is present. The Todoist
+ * project is selected repo-aware: a `repo: true` marker on a project picks
+ * that one, falling back to the first-listed project.
  */
 
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+	type Container,
 	createContainer,
 	DoistCoreTodoistGateway,
 	LocalMarkdownTracker,
+	selectRepoProject,
 	syncAndPersist,
 	TodoistTracker,
 	type WayfinderTracker,
@@ -23,6 +27,17 @@ export type CreateWayfinderTrackerOptions = {
 	cwd: string;
 	mode: TrackerMode;
 };
+
+export function pickRepoProjectId(
+	container: Container,
+): string | undefined {
+	if (!container.paths) {
+		return undefined;
+	}
+	const projects = container.listProjects();
+	const selected = selectRepoProject(projects);
+	return selected?.id;
+}
 
 export function localTrackerRoot(cwd: string): string {
 	return resolve(cwd, ".scratch");
@@ -55,8 +70,11 @@ export async function buildTodoistTracker(): Promise<WayfinderTracker> {
 		db: container.db,
 		client: container.client,
 	});
-	const [projectId] = projectIds;
-	return new TodoistTracker(gateway, projectId ? { projectId } : {});
+	const repoProjectId = pickRepoProjectId(container);
+	return new TodoistTracker(
+		gateway,
+		repoProjectId ? { projectId: repoProjectId } : {},
+	);
 }
 
 export async function createWayfinderTracker({

@@ -12,11 +12,13 @@ import * as v from "valibot";
 import { Database } from "./db.ts";
 import type { ConfigPaths } from "./paths.ts";
 import { findPaths } from "./paths.ts";
+import { applyRepoMarker } from "./repo-project.ts";
 import { createClient, type TodoistClient } from "./todoist.ts";
 
 export const ProjectRefSchema = v.object({
 	id: v.string(),
 	label: v.string(),
+	repo: v.optional(v.boolean()),
 });
 
 export type ProjectRef = v.InferOutput<typeof ProjectRefSchema>;
@@ -51,6 +53,7 @@ export interface Container {
 	listProjects: () => ProjectRef[];
 	listProjectIds: () => string[];
 	projectCount: () => number;
+	setRepoProject: (id: string) => void;
 
 	close(): void;
 }
@@ -135,6 +138,15 @@ export function createContainer(): Container {
 		}
 	}
 
+	function setRepoProject(id: string) {
+		const current = listProjects();
+		const next = applyRepoMarker(current, id);
+		if (next.some((project, index) => project !== current[index])) {
+			cachedProjects = next;
+			writeConfig({ projects: next });
+		}
+	}
+
 	function listProjects(): ProjectRef[] {
 		if (cachedProjects === null) {
 			const { projects } = readConfig();
@@ -167,6 +179,7 @@ export function createContainer(): Container {
 		listProjects,
 		projectCount,
 		removeProject,
+		setRepoProject,
 		get paths() {
 			return getPaths();
 		},

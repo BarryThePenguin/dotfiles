@@ -140,4 +140,130 @@ describe("Generic issue actions", () => {
 		);
 		expect(result.content[0]?.text).toContain("## Untracked question");
 	});
+
+	it("applies and removes labels via issue_label and returns the resulting set", async () => {
+		using dir = tempDir();
+		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const issue = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const { extensionContext, toolContext } = makeContext(dir.path);
+		const result = await handleAction(
+			"issue_label",
+			{
+				id: issue.id,
+				add: ["bug"],
+				remove: ["needs-triage"],
+			},
+			toolContext,
+			extensionContext,
+		);
+		expect(result.content[0]?.text).toContain(
+			`Issue ${issue.id}: labels now bug`,
+		);
+		const details = result.details as { labels: string[] };
+		expect(details.labels).toEqual(["bug"]);
+	});
+
+	it("posts a comment via issue_comment and reports the post", async () => {
+		using dir = tempDir();
+		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const issue = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+		});
+
+		const { extensionContext, toolContext } = makeContext(dir.path);
+		const result = await handleAction(
+			"issue_comment",
+			{ id: issue.id, body: "First agent note" },
+			toolContext,
+			extensionContext,
+		);
+		expect(result.content[0]?.text).toContain("Comment posted on");
+		const details = result.details as { comment: { content: string } };
+		expect(details.comment.content).toBe("First agent note");
+	});
+
+	it("closes an issue via issue_close with an optional closing note", async () => {
+		using dir = tempDir();
+		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const issue = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["wontfix"],
+		});
+
+		const { extensionContext, toolContext } = makeContext(dir.path);
+		const result = await handleAction(
+			"issue_close",
+			{ id: issue.id, comment: "Won't fix in this milestone." },
+			toolContext,
+			extensionContext,
+		);
+		expect(result.content[0]?.text).toContain(
+			`Issue ${issue.id}: closed (closing note posted)`,
+		);
+		const details = result.details as { status: "open" | "closed" };
+		expect(details.status).toBe("closed");
+
+		const after = await tracker.readIssue(issue.id);
+		expect(after.status).toBe("closed");
+		expect(after.comments.map((c) => c.content)).toEqual([
+			"Won't fix in this milestone.",
+		]);
+	});
+
+	it("lists issues via issue_list with state/labels/unlabeled filters", async () => {
+		using dir = tempDir();
+		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+
+		const unlabeled = await tracker.createIssue({
+			title: "Unlabeled",
+			body: "Body.",
+		});
+		await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+		const closed = await tracker.createIssue({
+			title: "Closed triage",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+		await tracker.closeIssue(closed.id);
+
+		const { extensionContext, toolContext } = makeContext(dir.path);
+
+		const openTriage = await handleAction(
+			"issue_list",
+			{ labels: ["needs-triage"] },
+			toolContext,
+			extensionContext,
+		);
+		expect(openTriage.content[0]?.text).toContain("1 issue(s)");
+		expect(openTriage.content[0]?.text).toContain("Triage me");
+
+		const unlabeledResult = await handleAction(
+			"issue_list",
+			{ unlabeled: true },
+			toolContext,
+			extensionContext,
+		);
+		expect(unlabeledResult.content[0]?.text).toContain(unlabeled.id);
+		expect(unlabeledResult.content[0]?.text).not.toContain("Triage me");
+
+		const closedResult = await handleAction(
+			"issue_list",
+			{ state: "closed" },
+			toolContext,
+			extensionContext,
+		);
+		expect(closedResult.content[0]?.text).toContain("Closed triage");
+		expect(closedResult.content[0]?.text).toContain("[closed]");
+	});
 });

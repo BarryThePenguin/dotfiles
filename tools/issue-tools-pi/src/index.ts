@@ -4,22 +4,32 @@
 
 import type {
 	ExtensionAPI,
+	ExtensionCommandContext,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import {
 	ChartParams,
 	ClaimParams,
+	createContainer,
 	CreateTicketParams,
+	detectSetupMode,
 	GetMapParams,
 	GetTicketParams,
+	IssueCloseParams,
+	IssueCommentParams,
 	IssueCreateParams,
+	IssueLabelParams,
+	IssueListParams,
 	IssueReadParams,
 	ListFrontierParams,
 	ListMapsParams,
 	ResolveParams,
 	SetBlockingParams,
+	toolInventory,
 	UpdateMapParams,
 } from "issue-tools-core";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult } from "./render.ts";
 import {
@@ -280,4 +290,156 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		renderCall: (args, theme) => renderCall("issue_read", args, theme),
 		renderResult,
 	});
+
+	pi.registerTool({
+		name: "issue_label",
+		label: "Issue: Label",
+		description:
+			"Apply and remove triage labels on a generic issue with add/remove delta semantics.",
+		promptSnippet: "Apply and remove triage labels on a generic issue",
+		parameters: IssueLabelParams,
+		async execute(_id, params, _signal, _onUpdate, ctx) {
+			return handleAction("issue_label", params, getState(), ctx);
+		},
+		renderCall: (args, theme) => renderCall("issue_label", args, theme),
+		renderResult,
+	});
+
+	pi.registerTool({
+		name: "issue_comment",
+		label: "Issue: Comment",
+		description: "Post a comment on a generic issue.",
+		promptSnippet: "Post a comment on a generic issue",
+		parameters: IssueCommentParams,
+		async execute(_id, params, _signal, _onUpdate, ctx) {
+			return handleAction("issue_comment", params, getState(), ctx);
+		},
+		renderCall: (args, theme) => renderCall("issue_comment", args, theme),
+		renderResult,
+	});
+
+	pi.registerTool({
+		name: "issue_close",
+		label: "Issue: Close",
+		description:
+			"Close a generic issue, optionally with a closing note (one atomic sync).",
+		promptSnippet: "Close a generic issue on the selected tracker",
+		parameters: IssueCloseParams,
+		async execute(_id, params, _signal, _onUpdate, ctx) {
+			return handleAction("issue_close", params, getState(), ctx);
+		},
+		renderCall: (args, theme) => renderCall("issue_close", args, theme),
+		renderResult,
+	});
+
+	pi.registerTool({
+		name: "issue_list",
+		label: "Issue: List",
+		description:
+			"List generic issues on the selected tracker, filterable by state, labels (all-of), and unlabeled. Oldest first.",
+		promptSnippet: "List generic issues on the selected tracker",
+		parameters: IssueListParams,
+		async execute(_id, params, _signal, _onUpdate, ctx) {
+			return handleAction("issue_list", params, getState(), ctx);
+		},
+		renderCall: (args, theme) => renderCall("issue_list", args, theme),
+		renderResult,
+	});
+
+	// -- /setup-issue-tracker command -----------------------------------
+
+	pi.registerCommand("setup-issue-tracker", {
+		description:
+			"Wire the repo's .doistrc (or detect a local tracker) so this repo's issue tracker is configured for the issue_* and wayfinder_* tools, then hand off to the setup-matt-pocock-skills skill for the docs.",
+		async handler(_args, ctx) {
+			await runSetupIssueTracker(ctx);
+		},
+	});
+}
+
+async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
+	const cwd = ctx.cwd;
+	const scratchPath = join(cwd, ".scratch");
+	const doistrcPath = join(cwd, ".doistrc");
+	const hasScratch = existsSync(scratchPath);
+	const hasRc = existsSync(doistrcPath);
+	const mode = detectSetupMode(cwd, {
+		hasScratchDir: hasScratch,
+		hasDoistrc: hasRc,
+	});
+
+	let resolvedMode: "local" | "todoist";
+	if (mode === "ambiguous") {
+		if (!ctx.hasUI) {
+			ctx.ui.notify(
+				"Cannot determine tracker: no UI available to prompt.",
+				"error",
+			);
+			return;
+		}
+		const choice = await ctx.ui.select("Issue tracker", [
+			"Local Markdown (.scratch)",
+			"Todoist (.doistrc)",
+		]);
+		resolvedMode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
+	} else {
+		resolvedMode = mode;
+	}
+
+	if (resolvedMode === "local") {
+		ctx.ui.notify(
+			"Local Markdown tracker selected. Run /setup-matt-pocock-skills to complete the docs.",
+			"info",
+		);
+		return;
+	}
+
+	const container = createContainer();
+	const projects = container.listProjects();
+	if (projects.length === 0) {
+		ctx.ui.notify(
+			"No projects in .doistrc. Add one with `doist projects add` first, then re-run /setup-issue-tracker.",
+			"error",
+		);
+		return;
+	}
+
+	let selectedId: string | undefined;
+	if (projects.length === 1) {
+		selectedId = projects[0]?.id;
+	} else if (ctx.hasUI) {
+		const labels = projects.map((project) => {
+			const tag = project.repo === true ? " (repo)" : "";
+			return `${project.id} — ${project.label}${tag}`;
+		});
+		const choice = await ctx.ui.select(
+			"Select the repo's Todoist project (this becomes the repo Issues home)",
+			labels,
+		);
+		if (!choice) {
+			ctx.ui.notify("Setup cancelled.", "info");
+			return;
+		}
+		selectedId = projects.find((project) => {
+			const tag = project.repo === true ? " (repo)" : "";
+			return `${project.id} — ${project.label}${tag}` === choice;
+		})?.id;
+	} else {
+		selectedId = projects[0]?.id;
+	}
+
+	if (!selectedId) {
+		ctx.ui.notify("Setup cancelled.", "info");
+		return;
+	}
+
+	container.setRepoProject(selectedId);
+	const inventory = toolInventory();
+	const lines = inventory
+		.map((entry) => `- \`${entry.name}\` (${entry.group})`)
+		.join("\n");
+	ctx.ui.notify(
+		`Marked ${selectedId} as the repo project (repo: true). Tools:\n${lines}\n\nRun /setup-matt-pocock-skills to complete the docs.`,
+		"info",
+	);
 }

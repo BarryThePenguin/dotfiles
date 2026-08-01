@@ -24,6 +24,7 @@ export interface TestContainer {
 	listProjects: () => ProjectRef[];
 	listProjectIds: () => string[];
 	projectCount: () => number;
+	setRepoProject: (id: string) => void;
 
 	close(): void;
 }
@@ -93,6 +94,14 @@ export function createTestContainer(overrides?: {
 		},
 		projectCount(): number {
 			return projects.size;
+		},
+		setRepoProject(id: string) {
+			for (const [projectId, project] of projects) {
+				projects.set(projectId, {
+					...project,
+					repo: projectId === id ? true : undefined,
+				});
+			}
 		},
 		paths,
 		db: vi.mocked(db),

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TODOIST_TICKET_TYPE_LABELS, WAYFINDER_MAP_LABEL } from "./labels.ts";
 import {
 	TodoistTracker,
@@ -12,10 +12,17 @@ import {
 class InMemoryTodoistGateway implements TodoistGateway {
 	readonly tasks = new Map<string, TodoistTask>();
 	#nextTaskNumber = 1;
-	readonly #createdAt = new Date().toISOString();
+	#clockMs = Date.parse("2026-01-01T00:00:00.000Z");
+	#currentTimestamp(): string {
+		return new Date(this.#clockMs).toISOString();
+	}
+	tickClock(ms: number = 1000): void {
+		this.#clockMs += ms;
+	}
 
 	createTask(input: TodoistCreateTaskInput): Promise<TodoistTask> {
 		const id = String(this.#nextTaskNumber++);
+		const now = this.#currentTimestamp();
 		const task: TodoistTask = {
 			id,
 			url: `https://app.todoist.com/app/task/${id}`,
@@ -25,8 +32,8 @@ class InMemoryTodoistGateway implements TodoistGateway {
 			parentId: input.parentId ?? null,
 			projectId: input.projectId ?? null,
 			isCompleted: false,
-			createdAt: this.#createdAt,
-			updatedAt: this.#createdAt,
+			createdAt: now,
+			updatedAt: now,
 			comments: [],
 		};
 		this.tasks.set(id, task);
@@ -113,7 +120,10 @@ class InMemoryTodoistGateway implements TodoistGateway {
 
 	async addComment(taskId: string, body: string): Promise<void> {
 		const task = await this.getTask(taskId);
-		task.comments.push({ content: body, postedAt: new Date().toISOString() });
+		task.comments.push({
+			content: body,
+			postedAt: this.#currentTimestamp(),
+		});
 	}
 }
 
@@ -321,5 +331,268 @@ describe("TodoistTracker", () => {
 
 		const read = await tracker.readIssue(created.url);
 		expect(read.id).toBe(created.id);
+	});
+
+	// -- Label delta contract (issue_label) -------------------------------
+
+	it("updateIssueLabels applies delta addLabels/removeLabels in one round trip", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const updateSpy = vi.spyOn(gateway, "updateTask");
+		const after = await tracker.updateIssueLabels(created.id, {
+			add: ["bug"],
+		});
+
+		expect(after.labels).toEqual(["needs-triage", "bug"]);
+		expect(updateSpy).toHaveBeenCalledTimes(1);
+		expect(updateSpy).toHaveBeenCalledWith(created.id, {
+			addLabels: ["bug"],
+		});
+	});
+
+	it("updateIssueLabels removes the right labels and never sends an absolute set", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Multi-label",
+			body: "Body.",
+			labels: ["needs-triage", "bug", "home"],
+		});
+
+		const updateSpy = vi.spyOn(gateway, "updateTask");
+		const after = await tracker.updateIssueLabels(created.id, {
+			remove: ["needs-triage", "home"],
+		});
+
+		expect(after.labels).toEqual(["bug"]);
+		expect(updateSpy).toHaveBeenCalledTimes(1);
+		const call = updateSpy.mock.calls[0]?.[1];
+		expect(call?.addLabels).toBeUndefined();
+		expect(call?.removeLabels).toEqual(["needs-triage", "home"]);
+	});
+
+	it("updateIssueLabels preserves wayfinder: labels across a triage state transition", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Map parent",
+			body: "Body.",
+			labels: ["wayfinder_map", "needs-triage"],
+		});
+
+		const after = await tracker.updateIssueLabels(created.id, {
+			add: ["ready-for-agent"],
+			remove: ["needs-triage"],
+		});
+
+		expect(after.labels).toEqual(["wayfinder_map", "ready-for-agent"]);
+	});
+
+	it("updateIssueLabels makes remove win when the same label is in both add and remove", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Tricky",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const after = await tracker.updateIssueLabels(created.id, {
+			add: ["needs-triage"],
+			remove: ["needs-triage"],
+		});
+
+		expect(after.labels).toEqual([]);
+	});
+
+	// -- issue_comment / issue_close (Todoist) ---------------------------
+
+	it("comments on a generic issue and reads it back with postedAt", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+		});
+
+		const { comment } = await tracker.commentOnIssue(
+			created.id,
+			"First agent note",
+		);
+		expect(comment.content).toBe("First agent note");
+		expect(comment.postedAt).toMatch(
+			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+		);
+
+		const read = await tracker.readIssue(created.id);
+		expect(read.comments).toHaveLength(1);
+		expect(read.comments[0]?.content).toBe("First agent note");
+		expect(read.comments[0]?.postedAt).toBeDefined();
+	});
+
+	it("closes a generic issue through the gateway's completeTask", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const completeSpy = vi.spyOn(gateway, "completeTask");
+		const { status } = await tracker.closeIssue(created.id);
+		expect(status).toBe("closed");
+		expect(completeSpy).toHaveBeenCalledWith(created.id, undefined);
+
+		const read = await tracker.readIssue(created.id);
+		expect(read.status).toBe("closed");
+		expect(read.labels).toEqual(["needs-triage"]);
+	});
+
+	it("closes with a comment, lands the closing note in one atomic sync", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["wontfix"],
+		});
+
+		const { status } = await tracker.closeIssue(created.id, {
+			comment: "Closing: wontfix",
+		});
+		expect(status).toBe("closed");
+
+		const read = await tracker.readIssue(created.id);
+		expect(read.status).toBe("closed");
+		expect(read.comments.map((c) => c.content)).toEqual(["Closing: wontfix"]);
+	});
+
+	// -- issue_list (Todoist) ---------------------------------------------
+
+	it("lists open issues by default, oldest first, with status on every row", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const first = await tracker.createIssue({
+			title: "First issue",
+			body: "Body.",
+		});
+		// Force distinct createdAt on the in-memory tasks.
+		gateway.tickClock();
+		const second = await tracker.createIssue({
+			title: "Second issue",
+			body: "Body.",
+		});
+		await tracker.closeIssue(second.id);
+
+		const issues = await tracker.listIssues({});
+		expect(issues.map((issue) => issue.id)).toEqual([first.id]);
+		expect(issues.every((issue) => issue.status === "open")).toBe(true);
+	});
+
+	it("lists closed issues when state is 'closed' and all when state is 'any'", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const open = await tracker.createIssue({
+			title: "Open issue",
+			body: "Body.",
+		});
+		const closed = await tracker.createIssue({
+			title: "Closed issue",
+			body: "Body.",
+		});
+		await tracker.closeIssue(closed.id);
+
+		const closedIssues = await tracker.listIssues({ state: "closed" });
+		expect(closedIssues.map((issue) => issue.id)).toEqual([closed.id]);
+
+		const all = await tracker.listIssues({ state: "any" });
+		expect(new Set(all.map((issue) => issue.id))).toEqual(
+			new Set([open.id, closed.id]),
+		);
+	});
+
+	it("filters by all-of labels", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const a = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+		const b = await tracker.createIssue({
+			title: "Triage and bug",
+			body: "Body.",
+			labels: ["needs-triage", "bug"],
+		});
+		await tracker.createIssue({
+			title: "Just bug",
+			body: "Body.",
+			labels: ["bug"],
+		});
+
+		const issues = await tracker.listIssues({ labels: ["needs-triage"] });
+		expect(issues.map((issue) => issue.id).toSorted()).toEqual(
+			[a.id, b.id].toSorted(),
+		);
+
+		const both = await tracker.listIssues({
+			labels: ["needs-triage", "bug"],
+		});
+		expect(both.map((issue) => issue.id)).toEqual([b.id]);
+	});
+
+	it("exclusively lists unlabeled issues when unlabeled: true", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const unlabeled = await tracker.createIssue({
+			title: "Unlabeled",
+			body: "Body.",
+		});
+		await tracker.createIssue({
+			title: "Labeled",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const issues = await tracker.listIssues({ unlabeled: true });
+		expect(issues.map((issue) => issue.id)).toEqual([unlabeled.id]);
+	});
+
+	it("scopes the list to the tracker's project (does not leak sibling projects)", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		// A task in a different project should not appear in this list.
+		await gateway.createTask({
+			content: "From another project",
+			description: "Body.",
+			labels: [],
+			projectId: "project-2",
+		});
+		const ours = await tracker.createIssue({
+			title: "Our project",
+			body: "Body.",
+		});
+
+		const issues = await tracker.listIssues({});
+		expect(issues.map((issue) => issue.id)).toEqual([ours.id]);
 	});
 });

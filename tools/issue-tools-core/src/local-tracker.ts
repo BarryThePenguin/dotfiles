@@ -4,7 +4,15 @@ import {
 	issueFileBodyFromMarkdown,
 	issueMarkdown,
 } from "./issue-file-format.ts";
-import type { CreateIssueInput, Issue } from "./issue.ts";
+import { filterIssues } from "./issue-filter.ts";
+import type {
+	CreateIssueInput,
+	Issue,
+	IssueComment,
+	ListIssuesFilter,
+	UpdateIssueLabelsInput,
+} from "./issue.ts";
+import { mergeLabels } from "doist-core";
 import { mapBodyFromDocument, type MapSectionKey } from "./map-body.ts";
 import { stringifyMarkdown } from "./markdown.ts";
 import {
@@ -374,6 +382,112 @@ export class LocalMarkdownTracker {
 			comments: parsed.comments.map((content) => ({ content })),
 			...(updatedAt ? { updatedAt } : {}),
 		};
+	}
+
+	async updateIssueLabels(
+		id: string,
+		input: UpdateIssueLabelsInput,
+	): Promise<Issue> {
+		return this.#withIndexLock(async () => {
+			const slug = this.#issueSlugFromIdOrUrl(id);
+			const path = this.#issuePath(slug);
+			const current = await this.readIssue(slug);
+			const nextLabels = mergeLabels(
+				current.labels,
+				input.add,
+				input.remove,
+			);
+			const updatedAt = new Date().toISOString();
+			const body = issueMarkdown({
+				title: current.title,
+				body: current.body,
+				labels: nextLabels,
+				status: current.status,
+				...(current.status === "closed" && current.updatedAt
+					? { updatedAt: current.updatedAt }
+					: {}),
+				comments: current.comments,
+				...(current.comments.length === 0
+					? {}
+					: { updatedAt }),
+			});
+			await writeFile(path, body);
+			return this.readIssue(slug);
+		});
+	}
+
+	async commentOnIssue(
+		id: string,
+		body: string,
+	): Promise<{ comment: IssueComment }> {
+		return this.#withIndexLock(async () => {
+			const slug = this.#issueSlugFromIdOrUrl(id);
+			const path = this.#issuePath(slug);
+			const current = await this.readIssue(slug);
+			const nextComments = [
+				...current.comments,
+				{ content: body },
+			];
+			const updatedAt = new Date().toISOString();
+			const next = issueMarkdown({
+				title: current.title,
+				body: current.body,
+				labels: current.labels,
+				status: current.status,
+				...(current.status === "closed" && current.updatedAt
+					? { updatedAt: current.updatedAt }
+					: {}),
+				comments: nextComments,
+				...(current.status === "closed"
+					? {}
+					: { updatedAt }),
+			});
+			await writeFile(path, next);
+			return { comment: { content: body } };
+		});
+	}
+
+	async closeIssue(
+		id: string,
+		options?: { comment?: string },
+	): Promise<{ status: "open" | "closed" }> {
+		return this.#withIndexLock(async () => {
+			const slug = this.#issueSlugFromIdOrUrl(id);
+			const path = this.#issuePath(slug);
+			const current = await this.readIssue(slug);
+			const comments = options?.comment
+				? [...current.comments, { content: options.comment }]
+				: current.comments;
+			const updatedAt = new Date().toISOString();
+			const next = issueMarkdown({
+				title: current.title,
+				body: current.body,
+				labels: current.labels,
+				status: "closed",
+				updatedAt,
+				comments,
+			});
+			await writeFile(path, next);
+			return { status: "closed" as const };
+		});
+	}
+
+	async listIssues(filter: ListIssuesFilter): Promise<Issue[]> {
+		await this.#ensureLayout();
+		const entries = await readdir(this.#rootDir, { withFileTypes: true });
+		const slugs = entries
+			.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+			.map((entry) => entry.name.replace(/\.md$/, ""))
+			.toSorted();
+		const issues: Issue[] = [];
+		for (const slug of slugs) {
+			try {
+				issues.push(await this.readIssue(slug));
+			} catch {
+				// Skip unreadable files
+			}
+		}
+		return filterIssues(issues, filter);
 	}
 
 	async #ensureLayout(): Promise<void> {

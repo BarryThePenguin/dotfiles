@@ -55,3 +55,17 @@ Supported modes per entry: `symlink`, `symlink-each`, `copy`, `template`.
 - `mise run brew:bundle` — install Homebrew packages
 - `pnpm install` — install TypeScript tooling dependencies
 - `pnpm test` — run tests across all workspace packages
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live in Todoist (project: Dotfiles, id `6h9Wxp68J6HrG99m`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles, default strings. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.

@@ -247,4 +247,321 @@ describe("LocalMarkdownTracker", () => {
 		expect(body).not.toMatch(/^Status:/m);
 		expect((await tracker.readIssue(created.id)).labels).toEqual([]);
 	});
+
+	it("applies and removes labels on a generic issue, mapping the Status line to Issue.labels", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const afterAdd = await tracker.updateIssueLabels(created.id, {
+			add: ["bug"],
+		});
+		expect(afterAdd.labels).toEqual(["needs-triage", "bug"]);
+		expect(
+			(await tracker.readIssue(created.id)).labels,
+		).toEqual(["needs-triage", "bug"]);
+
+		const afterRemove = await tracker.updateIssueLabels(created.id, {
+			remove: ["needs-triage"],
+		});
+		expect(afterRemove.labels).toEqual(["bug"]);
+
+		const body = await readFile(
+			join(rootDir.path, `${created.id}.md`),
+			"utf8",
+		);
+		expect(body).toContain("Status: bug");
+		expect(body).not.toContain("needs-triage");
+	});
+
+	it("preserves wayfinder: labels across a triage state transition", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Map parent",
+			body: "Body.",
+			labels: ["wayfinder_map", "needs-triage"],
+		});
+
+		const after = await tracker.updateIssueLabels(created.id, {
+			add: ["ready-for-agent"],
+			remove: ["needs-triage"],
+		});
+
+		expect(after.labels).toEqual(["wayfinder_map", "ready-for-agent"]);
+	});
+
+	it("makes remove win when the same label is in both add and remove", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Tricky",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const after = await tracker.updateIssueLabels(created.id, {
+			add: ["needs-triage"],
+			remove: ["needs-triage"],
+		});
+
+		expect(after.labels).toEqual([]);
+		expect(
+			(await tracker.readIssue(created.id)).labels,
+		).toEqual([]);
+	});
+
+	it("clears the Status line when removing the last label", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		await tracker.updateIssueLabels(created.id, {
+			remove: ["needs-triage"],
+		});
+
+		const body = await readFile(
+			join(rootDir.path, `${created.id}.md`),
+			"utf8",
+		);
+		expect(body).not.toMatch(/^Status:/m);
+	});
+
+	// -- issue_comment / issue_close (local) -------------------------------
+
+	it("comments on a generic issue and reads it back", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+		});
+
+		const { comment } = await tracker.commentOnIssue(
+			created.id,
+			"First agent note",
+		);
+		expect(comment.content).toBe("First agent note");
+		expect(comment.postedAt).toBeUndefined();
+
+		const read = await tracker.readIssue(created.id);
+		expect(read.comments.map((c) => c.content)).toEqual(["First agent note"]);
+
+		const body = await readFile(
+			join(rootDir.path, `${created.id}.md`),
+			"utf8",
+		);
+		expect(body).toContain("## Comments");
+		expect(body).toContain("> First agent note");
+	});
+
+	it("appends a second comment, preserving the first under ## Comments", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+		});
+
+		await tracker.commentOnIssue(created.id, "First agent note");
+		await tracker.commentOnIssue(created.id, "Second agent note");
+
+		const read = await tracker.readIssue(created.id);
+		expect(read.comments.map((c) => c.content)).toEqual([
+			"First agent note",
+			"Second agent note",
+		]);
+	});
+
+	it("closes a generic issue, marking it closed with a Closed line", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const { status } = await tracker.closeIssue(created.id);
+		expect(status).toBe("closed");
+
+		const read = await tracker.readIssue(created.id);
+		expect(read.status).toBe("closed");
+		expect(read.labels).toEqual(["needs-triage"]);
+		const body = await readFile(
+			join(rootDir.path, `${created.id}.md`),
+			"utf8",
+		);
+		expect(body).toMatch(/^Closed:/m);
+	});
+
+	it("closes with an optional comment that lands under ## Comments", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["wontfix"],
+		});
+
+		const { status } = await tracker.closeIssue(created.id, {
+			comment: "Won't fix in this milestone.",
+		});
+		expect(status).toBe("closed");
+
+		const read = await tracker.readIssue(created.id);
+		expect(read.status).toBe("closed");
+		expect(read.comments.map((c) => c.content)).toEqual([
+			"Won't fix in this milestone.",
+		]);
+	});
+
+	// -- issue_list (local) -----------------------------------------------
+
+	it("lists open issues by default, oldest first, with status on every row", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const first = await tracker.createIssue({
+			title: "First issue",
+			body: "Body.",
+		});
+		// Force a different mtime so the sort is deterministic.
+		await new Promise((resolve) => setTimeout(resolve, 10));
+		const second = await tracker.createIssue({
+			title: "Second issue",
+			body: "Body.",
+		});
+		await tracker.closeIssue(second.id);
+
+		const issues = await tracker.listIssues({});
+		expect(issues.map((issue) => issue.id)).toEqual([first.id]);
+		expect(issues.every((issue) => issue.status === "open")).toBe(true);
+	});
+
+	it("lists closed issues when state is 'closed'", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const open = await tracker.createIssue({
+			title: "Open issue",
+			body: "Body.",
+		});
+		const closed = await tracker.createIssue({
+			title: "Closed issue",
+			body: "Body.",
+		});
+		await tracker.closeIssue(closed.id);
+
+		const issues = await tracker.listIssues({ state: "closed" });
+		expect(issues.map((issue) => issue.id)).toEqual([closed.id]);
+		expect(issues[0]?.status).toBe("closed");
+		expect(issues.find((issue) => issue.id === open.id)).toBeUndefined();
+	});
+
+	it("lists all issues when state is 'any'", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const open = await tracker.createIssue({
+			title: "Open issue",
+			body: "Body.",
+		});
+		const closed = await tracker.createIssue({
+			title: "Closed issue",
+			body: "Body.",
+		});
+		await tracker.closeIssue(closed.id);
+
+		const issues = await tracker.listIssues({ state: "any" });
+		expect(new Set(issues.map((issue) => issue.id))).toEqual(
+			new Set([open.id, closed.id]),
+		);
+	});
+
+	it("filters by all-of labels", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const needsTriage = await tracker.createIssue({
+			title: "Triage me",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+		const needsTriageAndBug = await tracker.createIssue({
+			title: "Triage and bug",
+			body: "Body.",
+			labels: ["needs-triage", "bug"],
+		});
+		await tracker.createIssue({
+			title: "Just bug",
+			body: "Body.",
+			labels: ["bug"],
+		});
+
+		const issues = await tracker.listIssues({ labels: ["needs-triage"] });
+		expect(issues.map((issue) => issue.id).toSorted()).toEqual(
+			[needsTriage.id, needsTriageAndBug.id].toSorted(),
+		);
+
+		const both = await tracker.listIssues({
+			labels: ["needs-triage", "bug"],
+		});
+		expect(both.map((issue) => issue.id)).toEqual([needsTriageAndBug.id]);
+	});
+
+	it("exclusively lists unlabeled issues when unlabeled: true", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const unlabeled = await tracker.createIssue({
+			title: "Unlabeled",
+			body: "Body.",
+		});
+		await tracker.createIssue({
+			title: "Labeled",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+
+		const issues = await tracker.listIssues({ unlabeled: true });
+		expect(issues.map((issue) => issue.id)).toEqual([unlabeled.id]);
+	});
+
+	it("treats unlabeled as exclusive: a labeled issue is not unlabeled even with state: any", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		await tracker.createIssue({
+			title: "Labeled",
+			body: "Body.",
+			labels: ["needs-triage"],
+		});
+		const unlabeled = await tracker.createIssue({
+			title: "Unlabeled",
+			body: "Body.",
+		});
+
+		const issues = await tracker.listIssues({
+			state: "any",
+			unlabeled: true,
+		});
+		expect(issues.map((issue) => issue.id)).toEqual([unlabeled.id]);
+	});
 });

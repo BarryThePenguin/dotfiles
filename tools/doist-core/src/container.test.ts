@@ -74,4 +74,51 @@ describe("createContainer", () => {
 		expect(container.db).not.toBeNull();
 		expect(existsSync(join(tempDir.path, "todoist.db"))).toBe(true);
 	});
+
+	// ── repo: true marker (repo-aware project selection) ─────────────
+
+	it("parses existing .doistrc files that do not yet carry a repo marker", () => {
+		using tempDir = setupContainer();
+		const rcPath = join(tempDir.path, ".doistrc");
+		writeFileSync(
+			rcPath,
+			'{"projects":[{"id":"p1","label":"Work"},{"id":"p2","label":"Personal"}]}\n',
+			"utf8",
+		);
+		const container = createContainer();
+		onTestFinished(() => {
+			container.close();
+		});
+
+		expect(container.listProjects()).toEqual([
+			{ id: "p1", label: "Work" },
+			{ id: "p2", label: "Personal" },
+		]);
+	});
+
+	it("setRepoProject marks the given project, removing the marker from any other", () => {
+		using tempDir = setupContainer();
+		const rcPath = join(tempDir.path, ".doistrc");
+		writeFileSync(
+			rcPath,
+			'{"projects":[{"id":"p1","label":"Work"},{"id":"p2","label":"Personal"}]}\n',
+			"utf8",
+		);
+		const container = createContainer();
+		onTestFinished(() => {
+			container.close();
+		});
+
+		container.setRepoProject("p2");
+		expect(container.listProjects()).toEqual([
+			{ id: "p1", label: "Work" },
+			{ id: "p2", label: "Personal", repo: true },
+		]);
+
+		container.setRepoProject("p1");
+		expect(container.listProjects()).toEqual([
+			{ id: "p1", label: "Work", repo: true },
+			{ id: "p2", label: "Personal" },
+		]);
+	});
 });

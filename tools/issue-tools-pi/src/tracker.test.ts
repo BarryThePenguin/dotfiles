@@ -2,11 +2,13 @@ import { mkdirSync, writeFileSync, mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createContainer } from "issue-tools-core";
 import {
 	buildTodoistTracker,
 	createWayfinderTracker,
 	detectTrackerSelection,
 	localTrackerRoot,
+	pickRepoProjectId,
 } from "./tracker.ts";
 
 // ---------------------------------------------------------------------------
@@ -140,6 +142,82 @@ describe("createWayfinderTracker", () => {
 	it("builds a local tracker", async () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));
+
+		const tracker = await createWayfinderTracker({
+			cwd: dir.path,
+			mode: "local",
+		});
+		expect(tracker).toBeDefined();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Repo-aware project selection (Ticket 4)
+// ---------------------------------------------------------------------------
+
+function writeRc(dir: string, projects: unknown) {
+	writeFileSync(join(dir, ".doistrc"), JSON.stringify({ projects }), "utf8");
+}
+
+describe("pickRepoProjectId over a real .doistrc", () => {
+	it("picks the project marked repo: true over the first-listed one", () => {
+		using dir = tempDir();
+		writeRc(dir.path, [
+			{ id: "inbox", label: "Inbox" },
+			{ id: "dotfiles", label: "Dotfiles", repo: true },
+			{ id: "personal", label: "Personal" },
+		]);
+		vi.stubEnv("TODOIST_API_TOKEN", "test");
+		vi.stubEnv("TODOIST_RC_DIR", dir.path);
+		const container = createContainer();
+		expect(pickRepoProjectId(container)).toBe("dotfiles");
+	});
+
+	it("falls back to the first-listed project when no marker is present", () => {
+		using dir = tempDir();
+		writeRc(dir.path, [
+			{ id: "first", label: "First" },
+			{ id: "second", label: "Second" },
+		]);
+		vi.stubEnv("TODOIST_API_TOKEN", "test");
+		vi.stubEnv("TODOIST_RC_DIR", dir.path);
+		const container = createContainer();
+		expect(pickRepoProjectId(container)).toBe("first");
+	});
+
+	it("works on a shared .doistrc (personal projects + a marked repo project)", () => {
+		using dir = tempDir();
+		writeRc(dir.path, [
+			{ id: "dotfiles", label: "Dotfiles", repo: true },
+			{ id: "inbox", label: "Inbox" },
+			{ id: "personal", label: "Personal" },
+			{ id: "routines", label: "Routines" },
+		]);
+		vi.stubEnv("TODOIST_API_TOKEN", "test");
+		vi.stubEnv("TODOIST_RC_DIR", dir.path);
+		const container = createContainer();
+		expect(pickRepoProjectId(container)).toBe("dotfiles");
+	});
+
+	it("returns undefined when no .doistrc is found", () => {
+		using dir = tempDir();
+		vi.stubEnv("TODOIST_API_TOKEN", "test");
+		vi.stubEnv("TODOIST_RC_DIR", dir.path);
+		const container = createContainer();
+		expect(pickRepoProjectId(container)).toBeUndefined();
+	});
+});
+
+describe("createWayfinderTracker repo-aware project selection", () => {
+	it("the local tracker ignores repo selection (always .scratch)", async () => {
+		using dir = tempDir();
+		mkdirSync(join(dir.path, ".scratch"));
+		writeRc(dir.path, [
+			{ id: "first", label: "First" },
+			{ id: "repo", label: "Repo", repo: true },
+		]);
+		process.env["TODOIST_API_TOKEN"] = "test";
+		process.env["TODOIST_RC_DIR"] = dir.path;
 
 		const tracker = await createWayfinderTracker({
 			cwd: dir.path,

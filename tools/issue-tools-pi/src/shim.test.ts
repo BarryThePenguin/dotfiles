@@ -8,13 +8,18 @@ describe("extension surface", () => {
 			registerTool(def: { name: string }) {
 				tools[def.name] = (tools[def.name] ?? 0) + 1;
 			},
+			registerCommand() {},
 			on() {},
 		};
 		wayfinderExtension(api as never);
 
 		const names = Object.keys(tools).sort();
 		expect(names).toEqual([
+			"issue_close",
+			"issue_comment",
 			"issue_create",
+			"issue_label",
+			"issue_list",
 			"issue_read",
 			"wayfinder_chart",
 			"wayfinder_claim",

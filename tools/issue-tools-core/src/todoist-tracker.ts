@@ -4,7 +4,13 @@ import {
 	ticketTypeToTodoistLabel,
 } from "./labels.ts";
 import { parseMapBody, renderMapBody, type MapSectionKey } from "./map-body.ts";
-import type { CreateIssueInput, Issue } from "./issue.ts";
+import type {
+	CreateIssueInput,
+	Issue,
+	ListIssuesFilter,
+	UpdateIssueLabelsInput,
+} from "./issue.ts";
+import { filterIssues } from "./issue-filter.ts";
 import {
 	parseTicketBody,
 	renderTicketBody,
@@ -312,6 +318,58 @@ export class TodoistTracker {
 
 	async readIssue(id: string): Promise<Issue> {
 		return toIssue(await this.#gateway.getTask(extractTodoistTaskId(id)));
+	}
+
+	async updateIssueLabels(
+		id: string,
+		input: UpdateIssueLabelsInput,
+	): Promise<Issue> {
+		const taskId = extractTodoistTaskId(id);
+		const update: {
+			addLabels?: string[];
+			removeLabels?: string[];
+		} = {};
+		if (input.add) {
+			update.addLabels = [...input.add];
+		}
+		if (input.remove) {
+			update.removeLabels = [...input.remove];
+		}
+		const updated = await this.#gateway.updateTask(taskId, update);
+		return toIssue(updated);
+	}
+
+	async commentOnIssue(
+		id: string,
+		body: string,
+	): Promise<{ comment: { content: string; postedAt?: string } }> {
+		const taskId = extractTodoistTaskId(id);
+		await this.#gateway.addComment(taskId, body);
+		const updated = await this.#gateway.getTask(taskId);
+		const lastComment = updated.comments.at(-1);
+		return {
+			comment: {
+				content: body,
+				...(lastComment?.postedAt ? { postedAt: lastComment.postedAt } : {}),
+			},
+		};
+	}
+
+	async closeIssue(
+		id: string,
+		options?: { comment?: string },
+	): Promise<{ status: "open" | "closed" }> {
+		const taskId = extractTodoistTaskId(id);
+		await this.#gateway.completeTask(taskId, options?.comment);
+		return { status: "closed" as const };
+	}
+
+	async listIssues(filter: ListIssuesFilter): Promise<Issue[]> {
+		const tasks = await this.#gateway.listTasks();
+		const scoped = this.#projectId
+			? tasks.filter((task) => task.projectId === this.#projectId)
+			: tasks;
+		return filterIssues(scoped.map(toIssue), filter);
 	}
 }
 
