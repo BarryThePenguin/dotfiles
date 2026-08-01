@@ -1,6 +1,8 @@
 export { createContainer, syncAndPersist } from "doist-core";
 export type { Container } from "doist-core";
 export * from "./doist-core-gateway.ts";
+export * from "./issue-file-format.ts";
+export * from "./issue.ts";
 export * from "./labels.ts";
 export * from "./local-tracker.ts";
 export * from "./map-body.ts";

@@ -1,6 +1,7 @@
 import { Database, type AllData, type SyncCommand } from "doist-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { DoistCoreTodoistGateway } from "./doist-core-gateway.ts";
+import { TodoistTracker } from "./todoist-tracker.ts";
 import type { TodoistClient } from "doist-core";
 import type { DbTask } from "doist-core";
 
@@ -77,25 +78,10 @@ class FakeTodoistClient implements TodoistClient {
 			if (command.type === "item_update") {
 				const task = this.#tasks.get(command.args.id);
 				if (task) {
-					let labels = task.labels;
-					if (
-						command.args.addLabels !== undefined ||
-						command.args.removeLabels !== undefined
-					) {
-						const remove = new Set(command.args.removeLabels ?? []);
-						const stored: string[] = JSON.parse(task.labels) as string[];
-						const base = new Set(
-							stored.filter((label: string) => !remove.has(label)),
-						);
-						const additions = new Set(
-							(command.args.addLabels ?? []).filter(
-								(label: string) => !remove.has(label),
-							),
-						);
-						labels = JSON.stringify([...base.union(additions)]);
-					} else if (command.args.labels !== undefined) {
-						labels = JSON.stringify(command.args.labels);
-					}
+					const labels =
+						command.args.labels !== undefined
+							? JSON.stringify(command.args.labels)
+							: task.labels;
 					this.#tasks.set(command.args.id, {
 						...task,
 						...(command.args.description !== undefined
@@ -388,5 +374,39 @@ describe("DoistCoreTodoistGateway", () => {
 		expect(result.comments[0]?.postedAt).toMatch(
 			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
 		);
+	});
+
+	// -- Generic issue round-trip through the real gateway ----------------
+
+	it("creates and reads a generic Issue through the TodoistTracker over the real gateway", async () => {
+		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+		const client = new FakeTodoistClient();
+		const gateway = new DoistCoreTodoistGateway({ db, client });
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Add a generic issue surface",
+			body: "Spec is at /path/to/spec.md.",
+			labels: ["needs-triage", "bug"],
+		});
+
+		expect(created).toMatchObject({
+			title: "Add a generic issue surface",
+			status: "open",
+			labels: ["needs-triage", "bug"],
+			comments: [],
+		});
+		expect(created.createdAt).toBeDefined();
+		expect(created.updatedAt).toBeDefined();
+
+		const read = await tracker.readIssue(created.id);
+		expect(read).toMatchObject({
+			id: created.id,
+			url: created.url,
+			title: created.title,
+			body: created.body,
+			labels: ["needs-triage", "bug"],
+			status: "open",
+		});
 	});
 });

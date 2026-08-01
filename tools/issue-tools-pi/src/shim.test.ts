@@ -14,6 +14,8 @@ describe("extension surface", () => {
 
 		const names = Object.keys(tools).sort();
 		expect(names).toEqual([
+			"issue_create",
+			"issue_read",
 			"wayfinder_chart",
 			"wayfinder_claim",
 			"wayfinder_create_ticket",

@@ -25,6 +25,8 @@ import {
 	type CreateTicketParams,
 	type GetMapParams,
 	type GetTicketParams,
+	type IssueCreateParams,
+	type IssueReadParams,
 	type ListFrontierParams,
 	type LocalMap,
 	type LocalTicket,
@@ -58,6 +60,8 @@ export interface ActionMap {
 	set_blocking: SetBlockingParams;
 	list_frontier: ListFrontierParams;
 	claim: ClaimParams;
+	issue_create: IssueCreateParams;
+	issue_read: IssueReadParams;
 }
 
 export interface ToolContext {
@@ -104,6 +108,8 @@ const handlers: { [K in keyof ActionMap]: Handler<K> } = {
 	set_blocking: setBlocking,
 	list_frontier: listFrontier,
 	claim,
+	issue_create: createIssue,
+	issue_read: readIssue,
 };
 
 export function handleAction<K extends keyof ActionMap>(
@@ -573,6 +579,97 @@ async function claim(
 		`${shouldClaim ? "Claimed" : "Unclaimed"} ticket ${params.ticket_id}`,
 		mapDetails(ext, ctx, { ticketId: params.ticket_id, claimed: shouldClaim }),
 	);
+}
+
+// ---------------------------------------------------------------------------
+// Generic issue surface
+// ---------------------------------------------------------------------------
+
+async function createIssue(
+	params: IssueCreateParams,
+	ctx: ToolContext,
+	ext: ExtensionContext,
+): Promise<ActionResult> {
+	const tracker = await createTracker(ext, ctx);
+	const issue = await tracker.createIssue({
+		title: params.title,
+		...(params.body !== undefined ? { body: params.body } : {}),
+		...(params.labels !== undefined ? { labels: params.labels } : {}),
+	});
+	return ok(
+		`Issue created: ${issue.title}\nID: ${issue.id}\nURL: ${issue.url}`,
+		mapDetails(ext, ctx, {
+			id: issue.id,
+			url: issue.url,
+			title: issue.title,
+		}),
+	);
+}
+
+async function readIssue(
+	params: IssueReadParams,
+	ctx: ToolContext,
+	ext: ExtensionContext,
+): Promise<ActionResult> {
+	const tracker = await createTracker(ext, ctx);
+	const issue = await tracker.readIssue(params.id);
+	return ok(
+		renderIssueDetails(issue),
+		mapDetails(ext, ctx, {
+			id: issue.id,
+			url: issue.url,
+			title: issue.title,
+			labels: issue.labels,
+			status: issue.status,
+			comments: issue.comments.length,
+		}),
+	);
+}
+
+function renderIssueDetails(issue: {
+	id: string;
+	url: string;
+	title: string;
+	body: string;
+	labels: string[];
+	status: "open" | "closed";
+	comments: { content: string; postedAt?: string }[];
+	createdAt?: string;
+	updatedAt?: string;
+}): string {
+	const body = markdownBlocks(issue.body);
+	const labelLine = issue.labels.length > 0 ? issue.labels.join(", ") : "(none)";
+	const timestamps: string[] = [];
+	if (issue.createdAt) {
+		timestamps.push(`Created: ${issue.createdAt}`);
+	}
+	if (issue.updatedAt) {
+		timestamps.push(`Updated: ${issue.updatedAt}`);
+	}
+	const nodes: RootContent[] = [
+		heading(2, [text(issue.title)]),
+		paragraph([
+			text(`ID: ${issue.id}`),
+			{ type: "break" },
+			text(`URL: ${issue.url}`),
+		]),
+		paragraph(`Status: ${issue.status} | Labels: ${labelLine}`),
+	];
+	if (timestamps.length > 0) {
+		nodes.push(paragraph(timestamps.join(" | ")));
+	}
+	nodes.push(heading(2, [text("Body")]), ...body);
+	if (issue.comments.length > 0) {
+		nodes.push(
+			heading(2, [text(`Comments (${issue.comments.length})`)]),
+			...issue.comments.map((comment) =>
+				comment.postedAt
+					? blockquote([`${comment.content}\n`, `Posted: ${comment.postedAt}`].join("\n"))
+					: blockquote(comment.content),
+			),
+		);
+	}
+	return stringifyChildren(nodes);
 }
 
 // ---------------------------------------------------------------------------

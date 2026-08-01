@@ -12,6 +12,8 @@ import {
 	CreateTicketParams,
 	GetMapParams,
 	GetTicketParams,
+	IssueCreateParams,
+	IssueReadParams,
 	ListFrontierParams,
 	ListMapsParams,
 	ResolveParams,
@@ -251,4 +253,31 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		renderResult,
 	});
 
+	// -- Generic issue tools ---------------------------------------------
+
+	pi.registerTool({
+		name: "issue_create",
+		label: "Issue: Create",
+		description: "Create a generic issue on the selected tracker.",
+		promptSnippet: "Create a generic issue on the selected tracker",
+		parameters: IssueCreateParams,
+		async execute(_id, params, _signal, _onUpdate, ctx) {
+			return handleAction("issue_create", params, getState(), ctx);
+		},
+		renderCall: (args, theme) => renderCall("issue_create", args, theme),
+		renderResult,
+	});
+
+	pi.registerTool({
+		name: "issue_read",
+		label: "Issue: Read",
+		description: "Read a generic issue from the selected tracker.",
+		promptSnippet: "Read a generic issue from the selected tracker",
+		parameters: IssueReadParams,
+		async execute(_id, params, _signal, _onUpdate, ctx) {
+			return handleAction("issue_read", params, getState(), ctx);
+		},
+		renderCall: (args, theme) => renderCall("issue_read", args, theme),
+		renderResult,
+	});
 }

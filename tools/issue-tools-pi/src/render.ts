@@ -12,6 +12,7 @@ type RenderCallArgs = {
 	type?: string;
 	section?: string;
 	map_id?: string;
+	id?: string;
 };
 
 export function renderCall(
@@ -19,14 +20,18 @@ export function renderCall(
 	args: RenderCallArgs,
 	theme: Theme,
 ): Text {
-	let text =
-		theme.fg("toolTitle", theme.bold("wayfinder ")) +
+	const isIssueAction = action === "issue_create" || action === "issue_read";
+	const label = isIssueAction ? "issue" : "wayfinder";
+	let text = theme.fg("toolTitle", theme.bold(`${label} `)) +
 		theme.fg("accent", action);
 	if (args.title) {
 		text += ` ${theme.fg("dim", `"${args.title}"`)}`;
 	}
 	if (args.ticket_id) {
 		text += ` ${theme.fg("muted", args.ticket_id)}`;
+	}
+	if (args.id) {
+		text += ` ${theme.fg("muted", args.id)}`;
 	}
 	if (args.type) {
 		text += ` ${theme.fg("muted", `[${args.type}]`)}`;

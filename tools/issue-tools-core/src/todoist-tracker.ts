@@ -4,6 +4,7 @@ import {
 	ticketTypeToTodoistLabel,
 } from "./labels.ts";
 import { parseMapBody, renderMapBody, type MapSectionKey } from "./map-body.ts";
+import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
 	parseTicketBody,
 	renderTicketBody,
@@ -295,4 +296,45 @@ export class TodoistTracker {
 				),
 		};
 	}
+
+	// -- Generic issue surface -------------------------------------------
+
+	async createIssue(input: CreateIssueInput): Promise<Issue> {
+		const labels = input.labels ?? [];
+		const task = await this.#gateway.createTask({
+			content: input.title,
+			description: input.body ?? "",
+			labels,
+			...(this.#projectId ? { projectId: this.#projectId } : {}),
+		});
+		return toIssue(task);
+	}
+
+	async readIssue(id: string): Promise<Issue> {
+		return toIssue(await this.#gateway.getTask(extractTodoistTaskId(id)));
+	}
+}
+
+function toIssue(task: TodoistTask): Issue {
+	return {
+		id: task.id,
+		url: task.url,
+		title: task.content,
+		body: task.description,
+		labels: task.labels,
+		status: taskStatus(task),
+		comments: task.comments.map((comment) => ({
+			content: comment.content,
+			...(comment.postedAt ? { postedAt: comment.postedAt } : {}),
+		})),
+		...(task.createdAt ? { createdAt: task.createdAt } : {}),
+		...(task.updatedAt ? { updatedAt: task.updatedAt } : {}),
+	};
+}
+
+const TODOIST_TASK_ID_FROM_URL = /\/app\/task\/([A-Za-z0-9_-]+)\b/;
+
+function extractTodoistTaskId(idOrUrl: string): string {
+	const match = TODOIST_TASK_ID_FROM_URL.exec(idOrUrl);
+	return match?.[1] ?? idOrUrl;
 }

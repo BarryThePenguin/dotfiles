@@ -69,3 +69,75 @@ describe("Wayfinder actions", () => {
 		);
 	});
 });
+
+describe("Generic issue actions", () => {
+	it("creates and reads a generic issue end-to-end on the local tracker", async () => {
+		using dir = tempDir();
+		const { extensionContext, toolContext } = makeContext(dir.path);
+
+		const createResult = await handleAction(
+			"issue_create",
+			{
+				title: "Add a generic issue surface",
+				body: "Spec is at /path/to/spec.md.",
+				labels: ["needs-triage", "bug"],
+			},
+			toolContext,
+			extensionContext,
+		);
+		expect(createResult.content[0]?.text).toContain(
+			"Issue created: Add a generic issue surface",
+		);
+		const idMatch = /ID: (\S+)/.exec(createResult.content[0]?.text ?? "");
+		const issueId = idMatch?.[1];
+		expect(issueId).toBeDefined();
+		const details = createResult.details as {
+			id: string;
+			url: string;
+			title: string;
+		};
+		expect(details.id).toBe(issueId);
+		expect(details.url).toBe(`${issueId}.md`);
+
+		const readResult = await handleAction(
+			"issue_read",
+			{ id: issueId ?? "" },
+			toolContext,
+			extensionContext,
+		);
+		expect(readResult.content[0]?.text).toContain(
+			"## Add a generic issue surface",
+		);
+		expect(readResult.content[0]?.text).toContain("Status: open");
+		expect(readResult.content[0]?.text).toContain("Labels: needs-triage, bug");
+		expect(readResult.content[0]?.text).toContain("Spec is at /path/to/spec.md.");
+
+		const readByUrl = await handleAction(
+			"issue_read",
+			{ id: `${issueId}.md` },
+			toolContext,
+			extensionContext,
+		);
+		expect(readByUrl.content[0]?.text).toContain(
+			"## Add a generic issue surface",
+		);
+	});
+
+	it("reads a generic issue by its URL", async () => {
+		using dir = tempDir();
+		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const issue = await tracker.createIssue({
+			title: "Untracked question",
+			body: "Body.",
+		});
+
+		const { extensionContext, toolContext } = makeContext(dir.path);
+		const result = await handleAction(
+			"issue_read",
+			{ id: issue.url },
+			toolContext,
+			extensionContext,
+		);
+		expect(result.content[0]?.text).toContain("## Untracked question");
+	});
+});

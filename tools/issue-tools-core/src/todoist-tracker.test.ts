@@ -269,4 +269,57 @@ describe("TodoistTracker", () => {
 			},
 		]);
 	});
+
+	// -- Generic issue surface -------------------------------------------
+
+	it("creates and reads a generic issue via the Todoist gateway", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Add a generic issue surface",
+			body: "Spec is at /path/to/spec.md.",
+			labels: ["needs-triage", "bug"],
+		});
+
+		expect(created).toMatchObject({
+			title: "Add a generic issue surface",
+			status: "open",
+			labels: ["needs-triage", "bug"],
+			comments: [],
+			url: `https://app.todoist.com/app/task/${created.id}`,
+		});
+		expect(gateway.tasks.get(created.id)).toMatchObject({
+			content: "Add a generic issue surface",
+			description: "Spec is at /path/to/spec.md.",
+			labels: ["needs-triage", "bug"],
+			projectId: "project-1",
+		});
+
+		const read = await tracker.readIssue(created.id);
+		expect(read).toMatchObject({
+			id: created.id,
+			url: created.url,
+			title: created.title,
+			body: "Spec is at /path/to/spec.md.",
+			labels: ["needs-triage", "bug"],
+			status: "open",
+			comments: [],
+		});
+		expect(read.createdAt).toBeDefined();
+		expect(read.updatedAt).toBeDefined();
+	});
+
+	it("reads a generic issue by its URL", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+
+		const created = await tracker.createIssue({
+			title: "Untracked question",
+			body: "Body.",
+		});
+
+		const read = await tracker.readIssue(created.url);
+		expect(read.id).toBe(created.id);
+	});
 });

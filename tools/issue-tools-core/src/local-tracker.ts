@@ -1,5 +1,10 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import {
+	issueFileBodyFromMarkdown,
+	issueMarkdown,
+} from "./issue-file-format.ts";
+import type { CreateIssueInput, Issue } from "./issue.ts";
 import { mapBodyFromDocument, type MapSectionKey } from "./map-body.ts";
 import { stringifyMarkdown } from "./markdown.ts";
 import {
@@ -64,13 +69,9 @@ export class LocalMarkdownTracker {
 	async createMap(input: CreateLocalMapInput): Promise<LocalMap> {
 		return this.#withIndexLock(async () => {
 			await this.#ensureLayout();
-			const baseSlug = slugify(input.title);
-			let id = baseSlug;
-			let suffix = 2;
-			while (await this.#mapExists(id)) {
-				id = `${baseSlug}-${suffix}`;
-				suffix += 1;
-			}
+			const id = await this.#allocateSlug(input.title, (slug) =>
+				this.#mapExists(slug),
+			);
 
 			await mkdir(this.#mapDir(id), { recursive: true });
 			await mkdir(this.#issuesDir(id), { recursive: true });
@@ -334,6 +335,47 @@ export class LocalMarkdownTracker {
 		return run;
 	}
 
+	// -- Generic issue surface -------------------------------------------
+
+	async createIssue(input: CreateIssueInput): Promise<Issue> {
+		return this.#withIndexLock(async () => {
+			await this.#ensureLayout();
+			const labels = input.labels ?? [];
+			const slug = await this.#nextIssueSlug(input.title);
+			const updatedAt = new Date().toISOString();
+			const body = issueMarkdown({
+				title: input.title,
+				body: input.body ?? "",
+				labels,
+				status: "open",
+				updatedAt,
+			});
+			await writeFile(this.#issuePath(slug), body);
+			return this.readIssue(slug);
+		});
+	}
+
+	async readIssue(id: string): Promise<Issue> {
+		const slug = this.#issueSlugFromIdOrUrl(id);
+		const path = this.#issuePath(slug);
+		const markdown = await readFile(path, "utf8");
+		const parsed = issueFileBodyFromMarkdown(markdown);
+		const fallbackUpdatedAt = parsed.updatedAt
+			? undefined
+			: await this.#statMtime(path);
+		const updatedAt = parsed.updatedAt ?? fallbackUpdatedAt;
+		return {
+			id: slug,
+			url: `${slug}.md`,
+			title: parsed.title,
+			body: parsed.body,
+			labels: parsed.labels,
+			status: parsed.status,
+			comments: parsed.comments.map((content) => ({ content })),
+			...(updatedAt ? { updatedAt } : {}),
+		};
+	}
+
 	async #ensureLayout(): Promise<void> {
 		await mkdir(this.#rootDir, { recursive: true });
 	}
@@ -402,19 +444,7 @@ export class LocalMarkdownTracker {
 	}
 
 	async #mapExists(id: string): Promise<boolean> {
-		try {
-			await this.#readMapBody(id);
-			return true;
-		} catch (error) {
-			if (
-				error instanceof Error &&
-				"code" in error &&
-				error.code === "ENOENT"
-			) {
-				return false;
-			}
-			throw error;
-		}
+		return this.#fileExists(this.#mapPath(id));
 	}
 
 	async #nextTicketNumber(mapId: string): Promise<number> {
@@ -437,6 +467,66 @@ export class LocalMarkdownTracker {
 				return 1;
 			}
 			throw error;
+		}
+	}
+
+	#issuePath(slug: string): string {
+		return join(this.#rootDir, `${slug}.md`);
+	}
+
+	#issueSlugFromIdOrUrl(idOrUrl: string): string {
+		const trimmed = idOrUrl.trim();
+		const fileNameMatch = /([^/]+)\.md$/.exec(trimmed);
+		if (fileNameMatch?.[1]) {
+			return fileNameMatch[1];
+		}
+		return trimmed;
+	}
+
+	async #nextIssueSlug(title: string): Promise<string> {
+		return this.#allocateSlug(title, (slug) => this.#issueExists(slug));
+	}
+
+	async #allocateSlug(
+		title: string,
+		exists: (slug: string) => Promise<boolean>,
+	): Promise<string> {
+		const baseSlug = slugify(title);
+		let slug = baseSlug;
+		let suffix = 2;
+		while (await exists(slug)) {
+			slug = `${baseSlug}-${suffix}`;
+			suffix += 1;
+		}
+		return slug;
+	}
+
+	async #issueExists(slug: string): Promise<boolean> {
+		return this.#fileExists(this.#issuePath(slug));
+	}
+
+	async #fileExists(path: string): Promise<boolean> {
+		try {
+			await readFile(path, "utf8");
+			return true;
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				"code" in error &&
+				error.code === "ENOENT"
+			) {
+				return false;
+			}
+			throw error;
+		}
+	}
+
+	async #statMtime(path: string): Promise<string | undefined> {
+		try {
+			const stats = await stat(path);
+			return stats.mtime.toISOString();
+		} catch {
+			return undefined;
 		}
 	}
 }

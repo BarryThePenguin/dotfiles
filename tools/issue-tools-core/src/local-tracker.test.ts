@@ -181,4 +181,70 @@ describe("LocalMarkdownTracker", () => {
 			},
 		]);
 	});
+
+	// -- Generic issue surface -------------------------------------------
+
+	it("creates and reads a generic issue as a Markdown file", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Add a generic issue surface",
+			body: "Spec is at /path/to/spec.md.",
+			labels: ["needs-triage", "bug"],
+		});
+
+		expect(created).toMatchObject({
+			title: "Add a generic issue surface",
+			url: `${created.id}.md`,
+			status: "open",
+			labels: ["needs-triage", "bug"],
+			comments: [],
+		});
+		expect(created.body).toBe("Spec is at /path/to/spec.md.");
+
+		const read = await tracker.readIssue(created.id);
+		expect(read).toMatchObject({
+			id: created.id,
+			url: created.url,
+			title: created.title,
+			body: created.body,
+			labels: ["needs-triage", "bug"],
+			status: "open",
+			comments: [],
+		});
+		expect(read.createdAt).toBeUndefined();
+		expect(read.updatedAt).toBeDefined();
+	});
+
+	it("reads a generic issue by its URL", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Untracked question",
+			body: "Body.",
+		});
+
+		const read = await tracker.readIssue(created.url);
+		expect(read.id).toBe(created.id);
+	});
+
+	it("treats a file with no Status line as unlabeled", async () => {
+		using rootDir = setupDir();
+		const tracker = new LocalMarkdownTracker(rootDir.path);
+
+		const created = await tracker.createIssue({
+			title: "Unlabeled question",
+			body: "Body.",
+		});
+
+		expect(created.labels).toEqual([]);
+		const body = await readFile(
+			join(rootDir.path, `${created.id}.md`),
+			"utf8",
+		);
+		expect(body).not.toMatch(/^Status:/m);
+		expect((await tracker.readIssue(created.id)).labels).toEqual([]);
+	});
 });

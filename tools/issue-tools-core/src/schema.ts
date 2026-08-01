@@ -273,4 +273,51 @@ export const ClaimParams = Type.Object({
 });
 export type ClaimParams = Static<typeof ClaimParams>;
 
+// -- Generic issue tool surface -------------------------------------------
+
+export const IssueCommentSchema = Type.Object({
+	content: Type.String(),
+	postedAt: Type.Optional(Type.String()),
+});
+
+export const IssueOutputSchema = Type.Object({
+	id: Type.String(),
+	url: Type.String(),
+	title: Type.String(),
+	body: Type.String(),
+	labels: Type.Array(Type.String()),
+	status: stringEnum(["open", "closed"] as const),
+	comments: Type.Array(IssueCommentSchema),
+	createdAt: Type.Optional(Type.String()),
+	updatedAt: Type.Optional(Type.String()),
+});
+
+export const IssueIdOrUrl = Type.String({
+	description: "Issue id or URL on the selected tracker",
+});
+export type IssueIdOrUrl = Static<typeof IssueIdOrUrl>;
+
+export const IssueCreateParams = Type.Object({
+	title: Type.String(),
+	body: Type.Optional(Type.String()),
+	labels: Type.Optional(Type.Array(Type.String())),
+});
+export type IssueCreateParams = Static<typeof IssueCreateParams>;
+
+export const IssueCreateOutputSchema = Type.Object({
+	id: Type.String(),
+	url: Type.String(),
+});
+export type IssueCreateOutput = Static<typeof IssueCreateOutputSchema>;
+
+export const IssueReadParams = Type.Object({ id: IssueIdOrUrl });
+export type IssueReadParams = Static<typeof IssueReadParams>;
+
+export const GenericIssueToolNames = [
+	"issue_create",
+	"issue_read",
+] as const;
+export const GenericIssueToolNameSchema = stringEnum(GenericIssueToolNames);
+export type GenericIssueToolName = Static<typeof GenericIssueToolNameSchema>;
+
 export type AnyWayfinderTypeBoxSchema = TSchema;
