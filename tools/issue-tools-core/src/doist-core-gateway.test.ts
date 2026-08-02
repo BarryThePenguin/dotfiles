@@ -1,7 +1,8 @@
 import { Database, type AllData, type SyncCommand } from "doist-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { DoistCoreTodoistGateway } from "./doist-core-gateway.ts";
-import { TodoistTracker } from "./todoist-adapter.ts";
+import { createTrackerModules } from "./modules.ts";
+import { TodoistPersistenceAdapter } from "./todoist-adapter.ts";
 import type { TodoistClient } from "doist-core";
 import type { DbTask } from "doist-core";
 
@@ -378,13 +379,14 @@ describe("DoistCoreTodoistGateway", () => {
 
 	// -- Generic issue round-trip through the real gateway ----------------
 
-	it("creates and reads a generic Issue through the TodoistTracker over the real gateway", async () => {
+	it("creates and reads a generic Issue through the TodoistPersistenceAdapter over the real gateway", async () => {
 		db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
 		const client = new FakeTodoistClient();
 		const gateway = new DoistCoreTodoistGateway({ db, client });
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const issues = createTrackerModules(adapter).issues;
 
-		const created = await tracker.createIssue({
+		const created = await issues.createIssue({
 			title: "Add a generic issue surface",
 			body: "Spec is at /path/to/spec.md.",
 			labels: ["needs-triage", "bug"],
@@ -399,7 +401,7 @@ describe("DoistCoreTodoistGateway", () => {
 		expect(created.createdAt).toBeDefined();
 		expect(created.updatedAt).toBeDefined();
 
-		const read = await tracker.readIssue(created.id);
+		const read = await issues.readIssue(created.id);
 		expect(read).toMatchObject({
 			id: created.id,
 			url: created.url,

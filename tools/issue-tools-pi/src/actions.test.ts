@@ -3,7 +3,10 @@ import { mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { LocalMarkdownTracker } from "issue-tools-core";
+import {
+	LocalMarkdownPersistenceAdapter,
+	createTrackerModules,
+} from "issue-tools-core";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { localTrackerRoot } from "./tracker.ts";
 
@@ -38,7 +41,9 @@ function makeContext(cwd: string) {
 describe("Wayfinder actions", () => {
 	it("makes the only listed map active so follow-up map tools can omit map_id", async () => {
 		using dir = tempDir();
-		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(dir.path));
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "GENIE 2780",
 			destination: "A clear handoff exists.",
@@ -73,7 +78,9 @@ describe("Wayfinder actions", () => {
 describe("Resolution actions", () => {
 	it("renders complete and terminal outcomes without using the active map", async () => {
 		using dir = tempDir();
-		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(dir.path));
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Resolution map",
 			destination: "A decision is recorded after closure.",
@@ -189,8 +196,10 @@ describe("Generic issue actions", () => {
 
 	it("reads a generic issue by its URL", async () => {
 		using dir = tempDir();
-		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
-		const issue = await tracker.createIssue({
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(dir.path));
+		const modules = createTrackerModules(adapter);
+		const issues = modules.issues;
+		const issue = await issues.createIssue({
 			title: "Untracked question",
 			body: "Body.",
 		});
@@ -207,8 +216,10 @@ describe("Generic issue actions", () => {
 
 	it("applies and removes labels via issue_label and returns the resulting set", async () => {
 		using dir = tempDir();
-		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
-		const issue = await tracker.createIssue({
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(dir.path));
+		const modules = createTrackerModules(adapter);
+		const issues = modules.issues;
+		const issue = await issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 			labels: ["needs-triage"],
@@ -234,8 +245,10 @@ describe("Generic issue actions", () => {
 
 	it("posts a comment via issue_comment and reports the post", async () => {
 		using dir = tempDir();
-		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
-		const issue = await tracker.createIssue({
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(dir.path));
+		const modules = createTrackerModules(adapter);
+		const issues = modules.issues;
+		const issue = await issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 		});
@@ -254,8 +267,10 @@ describe("Generic issue actions", () => {
 
 	it("closes an issue via issue_close with an optional closing note", async () => {
 		using dir = tempDir();
-		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
-		const issue = await tracker.createIssue({
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(dir.path));
+		const modules = createTrackerModules(adapter);
+		const issues = modules.issues;
+		const issue = await issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 			labels: ["wontfix"],
@@ -274,7 +289,7 @@ describe("Generic issue actions", () => {
 		const details = result.details as { status: "open" | "closed" };
 		expect(details.status).toBe("closed");
 
-		const after = await tracker.readIssue(issue.id);
+		const after = await issues.readIssue(issue.id);
 		expect(after.status).toBe("closed");
 		expect(after.comments.map((c) => c.content)).toEqual([
 			"Won't fix in this milestone.",
@@ -283,23 +298,25 @@ describe("Generic issue actions", () => {
 
 	it("lists issues via issue_list with state/labels/unlabeled filters", async () => {
 		using dir = tempDir();
-		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(dir.path));
+		const modules = createTrackerModules(adapter);
+		const issues = modules.issues;
 
-		const unlabeled = await tracker.createIssue({
+		const unlabeled = await issues.createIssue({
 			title: "Unlabeled",
 			body: "Body.",
 		});
-		await tracker.createIssue({
+		await issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
-		const closed = await tracker.createIssue({
+		const closed = await issues.createIssue({
 			title: "Closed triage",
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
-		await tracker.closeIssue(closed.id);
+		await issues.closeIssue(closed.id);
 
 		const { extensionContext, toolContext } = makeContext(dir.path);
 

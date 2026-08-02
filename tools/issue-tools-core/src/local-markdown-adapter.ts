@@ -4,13 +4,7 @@ import {
 	issueFileBodyFromMarkdown,
 	issueMarkdown,
 } from "./issue-file-format.ts";
-import type {
-	CreateIssueInput,
-	Issue,
-	IssueComment,
-	ListIssuesFilter,
-	UpdateIssueLabelsInput,
-} from "./issue.ts";
+import type { CreateIssueInput, Issue, IssueComment } from "./issue.ts";
 import {
 	mapBodyFromDocument,
 	renderMapBody,
@@ -41,7 +35,6 @@ import {
 } from "./wayfinder-markdown.ts";
 import type { DecisionSummary } from "./schema.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
-import { IssueModule, WayfinderModule } from "./modules.ts";
 import {
 	ClosedTicketWithoutResolutionError,
 	type CreateWayfinderChildTicketInput,
@@ -52,13 +45,6 @@ import {
 	type WayfinderTrackerTicket,
 } from "./tracker.ts";
 
-export type LocalTicketStatus = WayfinderTicketStatus;
-export type LocalMap = WayfinderTrackerMap;
-export type LocalTicket = WayfinderTrackerTicket;
-export type CreateLocalMapInput = CreateWayfinderMapInput;
-export type CreateLocalChildTicketInput = CreateWayfinderChildTicketInput;
-export type LocalClaimResult = WayfinderClaimResult;
-
 type TicketFileInfo = {
 	mapId: string;
 	ref: string;
@@ -66,7 +52,7 @@ type TicketFileInfo = {
 };
 
 /** Persistence adapter for the Local Markdown Issue tracker. */
-export class LocalMarkdownTracker {
+export class LocalMarkdownPersistenceAdapter {
 	readonly #rootDir: string;
 	#indexLock = Promise.resolve();
 
@@ -74,7 +60,7 @@ export class LocalMarkdownTracker {
 		this.#rootDir = rootDir;
 	}
 
-	async createMap(input: CreateLocalMapInput): Promise<LocalMap> {
+	async createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap> {
 		return this.#withIndexLock(async () => {
 			await this.#ensureLayout();
 			const id = await this.#allocateSlug(input.title, (slug) =>
@@ -90,8 +76,8 @@ export class LocalMarkdownTracker {
 	}
 
 	async createChildTicket(
-		input: CreateLocalChildTicketInput,
-	): Promise<LocalTicket> {
+		input: CreateWayfinderChildTicketInput,
+	): Promise<WayfinderTrackerTicket> {
 		return this.#withIndexLock(async () => {
 			const mapId = this.#mapId(input.mapId);
 			await this.getMap(mapId);
@@ -117,7 +103,7 @@ export class LocalMarkdownTracker {
 		});
 	}
 
-	async getMap(id: string): Promise<LocalMap> {
+	async getMap(id: string): Promise<WayfinderTrackerMap> {
 		const mapId = this.#mapId(id);
 		const document = await this.#readMapDocument(mapId);
 		return {
@@ -128,11 +114,11 @@ export class LocalMarkdownTracker {
 		};
 	}
 
-	async getTicket(id: string): Promise<LocalTicket> {
+	async getTicket(id: string): Promise<WayfinderTrackerTicket> {
 		const info = this.#ticketInfo(id);
 		const document = await this.#readTicketDocument(info);
 		const parsed = ticketFileBodyFromDocument(document);
-		const status: LocalTicketStatus =
+		const status: WayfinderTicketStatus =
 			parsed.status.toLowerCase() === "resolved" ? "closed" : "open";
 		const blockerIds = parsed.blockerRefs.map((ref) =>
 			normalizeTicketIdForMap(info.mapId, ref),
@@ -156,14 +142,14 @@ export class LocalMarkdownTracker {
 		};
 	}
 
-	async listMaps(): Promise<LocalMap[]> {
+	async listMaps(): Promise<WayfinderTrackerMap[]> {
 		await this.#ensureLayout();
 		const entries = await readdir(this.#rootDir, { withFileTypes: true });
 		const ids = entries
 			.filter((entry) => entry.isDirectory())
 			.map((entry) => entry.name)
 			.toSorted();
-		const maps: LocalMap[] = [];
+		const maps: WayfinderTrackerMap[] = [];
 		for (const id of ids) {
 			if (await this.#mapExists(id)) {
 				maps.push(await this.getMap(id));
@@ -172,7 +158,7 @@ export class LocalMarkdownTracker {
 		return maps;
 	}
 
-	async listTickets(): Promise<LocalTicket[]> {
+	async listTickets(): Promise<WayfinderTrackerTicket[]> {
 		const maps = await this.listMaps();
 		const ticketLists = await Promise.all(
 			maps.map((map) => this.listChildTickets(map.id)),
@@ -180,7 +166,7 @@ export class LocalMarkdownTracker {
 		return ticketLists.flat().toSorted((a, b) => compareTicketIds(a.id, b.id));
 	}
 
-	async listChildTickets(mapId: string): Promise<LocalTicket[]> {
+	async listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
 		const normalizedMapId = this.#mapId(mapId);
 		await this.getMap(normalizedMapId);
 		try {
@@ -208,14 +194,10 @@ export class LocalMarkdownTracker {
 		}
 	}
 
-	async listFrontierTickets(mapId: string): Promise<LocalTicket[]> {
-		return new WayfinderModule(this).listFrontierTickets(this.#mapId(mapId));
-	}
-
 	async claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,
-	): Promise<LocalClaimResult> {
+	): Promise<WayfinderClaimResult> {
 		return this.#withIndexLock(async () => {
 			const ticket = await this.getTicket(id);
 			if (!canClaimTicket(ticket)) {
@@ -238,21 +220,21 @@ export class LocalMarkdownTracker {
 		return this.#readMapBody(mapId);
 	}
 
-	async writeMapBody(id: string, body: string): Promise<LocalMap> {
+	async writeMapBody(id: string, body: string): Promise<WayfinderTrackerMap> {
 		const mapId = this.#mapId(id);
 		await this.getMap(mapId);
 		await this.#writeMapBody(mapId, body);
 		return this.getMap(mapId);
 	}
 
-	async updateMapBody(id: string, body: string): Promise<LocalMap> {
+	async updateMapBody(id: string, body: string): Promise<WayfinderTrackerMap> {
 		return this.writeMapBody(id, body);
 	}
 
 	async writeMapDecisions(
 		mapId: string,
 		decisions: DecisionSummary[],
-	): Promise<LocalMap> {
+	): Promise<WayfinderTrackerMap> {
 		const normalizedMapId = this.#mapId(mapId);
 		await this.getMap(normalizedMapId);
 		const current = mapBodyFromDocument(
@@ -269,7 +251,7 @@ export class LocalMarkdownTracker {
 		mapId: string,
 		section: MapSectionKey,
 		content: string,
-	): Promise<LocalMap> {
+	): Promise<WayfinderTrackerMap> {
 		const normalizedMapId = this.#mapId(mapId);
 		await this.getMap(normalizedMapId);
 		const nextBody = replaceMapSection(
@@ -281,14 +263,14 @@ export class LocalMarkdownTracker {
 		return this.getMap(normalizedMapId);
 	}
 
-	async updateTicketBody(id: string, body: string): Promise<LocalTicket> {
+	async updateTicketBody(id: string, body: string): Promise<WayfinderTrackerTicket> {
 		const info = this.#ticketInfo(id);
 		await this.getTicket(id);
 		await writeFile(info.path, body);
 		return this.getTicket(id);
 	}
 
-	async unclaimTicket(id: string): Promise<LocalTicket> {
+	async unclaimTicket(id: string): Promise<WayfinderTrackerTicket> {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);
 			await this.getTicket(id);
@@ -300,7 +282,7 @@ export class LocalMarkdownTracker {
 		});
 	}
 
-	async closeTicket(id: string): Promise<LocalTicket> {
+	async closeTicket(id: string): Promise<WayfinderTrackerTicket> {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);
 			await this.getTicket(id);
@@ -311,7 +293,7 @@ export class LocalMarkdownTracker {
 		});
 	}
 
-	async resolveTicket(id: string, resolution: string): Promise<LocalTicket> {
+	async resolveTicket(id: string, resolution: string): Promise<WayfinderTrackerTicket> {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);
 			const document = await this.#readTicketDocument(info);
@@ -346,7 +328,7 @@ export class LocalMarkdownTracker {
 	async setBlockingDependencies(
 		id: string,
 		blockerIds: string[],
-	): Promise<LocalTicket> {
+	): Promise<WayfinderTrackerTicket> {
 		const info = this.#ticketInfo(id);
 		await this.getTicket(id);
 		await Promise.all(blockerIds.map((blockerId) => this.getTicket(blockerId)));
@@ -354,36 +336,6 @@ export class LocalMarkdownTracker {
 		setBlockedBySectionOnRoot(root, blockerIds.map(ticketRefFromId));
 		await writeFile(info.path, stringifyMarkdown(root));
 		return this.getTicket(id);
-	}
-
-	async addBlockingDependency(
-		id: string,
-		blockerId: string,
-	): Promise<LocalTicket> {
-		return new WayfinderModule(this).addBlockingDependency(id, blockerId);
-	}
-
-	async recordDecision(
-		mapId: string,
-		decision: DecisionSummary,
-	): Promise<LocalMap> {
-		const normalizedMapId = this.#mapId(mapId);
-		await this.getMap(normalizedMapId);
-		return new WayfinderModule(this).recordDecision(normalizedMapId, decision);
-	}
-
-	async updateMapSection(
-		mapId: string,
-		section: MapSectionKey,
-		content: string,
-	): Promise<LocalMap> {
-		const normalizedMapId = this.#mapId(mapId);
-		await this.getMap(normalizedMapId);
-		return new WayfinderModule(this).updateMapSection(
-			normalizedMapId,
-			section,
-			content,
-		);
 	}
 
 	#withIndexLock<Result>(operation: () => Promise<Result>): Promise<Result> {
@@ -524,35 +476,6 @@ export class LocalMarkdownTracker {
 			}
 		}
 		return issues;
-	}
-
-	// -- Compatibility surface ------------------------------------------
-
-	createIssue(input: CreateIssueInput): Promise<Issue> {
-		return new IssueModule(this).createIssue(input);
-	}
-
-	readIssue(id: string): Promise<Issue> {
-		return new IssueModule(this).readIssue(id);
-	}
-
-	updateIssueLabels(id: string, input: UpdateIssueLabelsInput): Promise<Issue> {
-		return new IssueModule(this).updateIssueLabels(id, input);
-	}
-
-	commentOnIssue(id: string, body: string): Promise<{ comment: IssueComment }> {
-		return new IssueModule(this).commentOnIssue(id, body);
-	}
-
-	closeIssue(
-		id: string,
-		options?: { comment?: string },
-	): Promise<{ status: "open" | "closed" }> {
-		return new IssueModule(this).closeIssue(id, options);
-	}
-
-	listIssues(filter: ListIssuesFilter = {}): Promise<Issue[]> {
-		return new IssueModule(this).listIssues(filter);
 	}
 
 	async #ensureLayout(): Promise<void> {
@@ -711,5 +634,3 @@ export class LocalMarkdownTracker {
 		}
 	}
 }
-
-export { LocalMarkdownTracker as LocalMarkdownPersistenceAdapter };

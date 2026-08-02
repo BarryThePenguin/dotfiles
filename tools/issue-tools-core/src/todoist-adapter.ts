@@ -9,12 +9,7 @@ import {
 	replaceMapSection,
 	type MapSectionKey,
 } from "./map-body.ts";
-import type {
-	CreateIssueInput,
-	Issue,
-	ListIssuesFilter,
-	UpdateIssueLabelsInput,
-} from "./issue.ts";
+import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
 	parseTicketBody,
 	renderTicketBody,
@@ -24,7 +19,6 @@ import {
 } from "./ticket-body.ts";
 import type { DecisionSummary, TicketType } from "./schema.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
-import { IssueModule, WayfinderModule } from "./modules.ts";
 import {
 	ClosedTicketWithoutResolutionError,
 	type CreateWayfinderChildTicketInput,
@@ -34,9 +28,6 @@ import {
 	type WayfinderTrackerMap,
 	type WayfinderTrackerTicket,
 } from "./tracker.ts";
-
-export type TodoistMap = WayfinderTrackerMap;
-export type TodoistTicket = WayfinderTrackerTicket;
 
 export type TodoistTaskComment = {
 	content: string;
@@ -86,7 +77,7 @@ export interface TodoistGateway {
 	addComment(taskId: string, body: string): Promise<void>;
 }
 
-export type TodoistTrackerOptions = {
+export type TodoistPersistenceAdapterOptions = {
 	projectId?: string;
 };
 
@@ -136,11 +127,14 @@ function sortById<T extends { id: string }>(records: T[]): T[] {
 }
 
 /** Persistence adapter for the Todoist Issue tracker. */
-export class TodoistTracker {
+export class TodoistPersistenceAdapter {
 	readonly #gateway: TodoistGateway;
 	readonly #projectId: string | undefined;
 
-	constructor(gateway: TodoistGateway, options: TodoistTrackerOptions) {
+	constructor(
+		gateway: TodoistGateway,
+		options: TodoistPersistenceAdapterOptions,
+	) {
 		this.#gateway = gateway;
 		this.#projectId = options.projectId;
 	}
@@ -207,10 +201,6 @@ export class TodoistTracker {
 	async listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
 		await this.#gateway.getTask(mapId);
 		return sortById(await this.#gateway.listSubtasks(mapId)).map(toTicket);
-	}
-
-	async listFrontierTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
-		return new WayfinderModule(this).listFrontierTickets(mapId);
 	}
 
 	async claimTicketIfUnclaimed(
@@ -288,13 +278,6 @@ export class TodoistTracker {
 		);
 	}
 
-	async addBlockingDependency(
-		id: string,
-		blockerId: string,
-	): Promise<WayfinderTrackerTicket> {
-		return new WayfinderModule(this).addBlockingDependency(id, blockerId);
-	}
-
 	async readMapBody(mapId: string): Promise<string> {
 		return (await this.#gateway.getTask(mapId)).description;
 	}
@@ -330,21 +313,6 @@ export class TodoistTracker {
 			mapId,
 			replaceMapSection(await this.readMapBody(mapId), section, content),
 		);
-	}
-
-	async recordDecision(
-		mapId: string,
-		decision: DecisionSummary,
-	): Promise<WayfinderTrackerMap> {
-		return new WayfinderModule(this).recordDecision(mapId, decision);
-	}
-
-	async updateMapSection(
-		mapId: string,
-		section: MapSectionKey,
-		content: string,
-	): Promise<WayfinderTrackerMap> {
-		return new WayfinderModule(this).updateMapSection(mapId, section, content);
 	}
 
 	// -- Generic issue persistence --------------------------------------
@@ -411,38 +379,6 @@ export class TodoistTracker {
 			: tasks;
 		return scoped.map(toIssue);
 	}
-
-	// -- Compatibility surface ------------------------------------------
-
-	createIssue(input: CreateIssueInput): Promise<Issue> {
-		return new IssueModule(this).createIssue(input);
-	}
-
-	readIssue(id: string): Promise<Issue> {
-		return new IssueModule(this).readIssue(id);
-	}
-
-	updateIssueLabels(id: string, input: UpdateIssueLabelsInput): Promise<Issue> {
-		return new IssueModule(this).updateIssueLabels(id, input);
-	}
-
-	commentOnIssue(
-		id: string,
-		body: string,
-	): Promise<{ comment: { content: string; postedAt?: string } }> {
-		return new IssueModule(this).commentOnIssue(id, body);
-	}
-
-	closeIssue(
-		id: string,
-		options?: { comment?: string },
-	): Promise<{ status: "open" | "closed" }> {
-		return new IssueModule(this).closeIssue(id, options);
-	}
-
-	listIssues(filter: ListIssuesFilter = {}): Promise<Issue[]> {
-		return new IssueModule(this).listIssues(filter);
-	}
 }
 
 function toIssue(task: TodoistTask): Issue {
@@ -468,5 +404,3 @@ function extractTodoistTaskId(idOrUrl: string): string {
 	const match = TODOIST_TASK_ID_FROM_URL.exec(idOrUrl);
 	return match?.[1] ?? idOrUrl;
 }
-
-export { TodoistTracker as TodoistPersistenceAdapter };

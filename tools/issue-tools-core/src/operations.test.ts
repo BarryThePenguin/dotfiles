@@ -2,26 +2,24 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LocalMarkdownTracker } from "./local-markdown-adapter.ts";
+import { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
+import { createTrackerModules } from "./modules.ts";
 import { inspectFrontier, resolveTicket } from "./operations.ts";
 
 let root: string;
-let tracker: LocalMarkdownTracker;
+let tracker: ReturnType<typeof createTrackerModules>["wayfinder"];
 
-class MapWriteFailingTracker extends LocalMarkdownTracker {
-	override recordDecision(
-		mapId: string,
-		decision: { title: string; url: string; gist: string },
-	): Promise<never> {
-		void mapId;
-		void decision;
+class MapWriteFailingAdapter extends LocalMarkdownPersistenceAdapter {
+	override writeMapDecisions(): Promise<never> {
 		return Promise.reject(new Error("map write failed"));
 	}
 }
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "wayfinder-operation-"));
-	tracker = new LocalMarkdownTracker(root);
+	tracker = createTrackerModules(
+		new LocalMarkdownPersistenceAdapter(root),
+	).wayfinder;
 });
 
 afterEach(async () => {
@@ -154,7 +152,9 @@ describe("resolveTicket", () => {
 			blockerIds: [blocker.id],
 		});
 
-		const failingTracker = new MapWriteFailingTracker(root);
+		const failingTracker = createTrackerModules(
+			new MapWriteFailingAdapter(root),
+		).wayfinder;
 		const result = await resolveTicket(failingTracker, {
 			ticketId: blocker.id,
 			mapId: map.id,

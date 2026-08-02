@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { TODOIST_TICKET_TYPE_LABELS, WAYFINDER_MAP_LABEL } from "./labels.ts";
+import { createTrackerModules } from "./modules.ts";
 import {
-	TodoistTracker,
+	TodoistPersistenceAdapter,
 	type TodoistCreateTaskInput,
 	type TodoistGateway,
 	type TodoistListTasksInput,
@@ -127,10 +128,12 @@ class InMemoryTodoistGateway implements TodoistGateway {
 	}
 }
 
-describe("TodoistTracker", () => {
+describe("TodoistPersistenceAdapter", () => {
 	it("creates a map task and ticket subtasks using Todoist labels", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
 
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -165,7 +168,9 @@ describe("TodoistTracker", () => {
 
 	it("uses the Todoist parent relationship as the ticket's map id", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
@@ -185,9 +190,11 @@ describe("TodoistTracker", () => {
 
 	it("lists frontier tickets using completion, claim metadata, and blocker metadata", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, {
+		const adapter = new TodoistPersistenceAdapter(gateway, {
 			projectId: "project-1",
 		});
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
@@ -232,7 +239,9 @@ describe("TodoistTracker", () => {
 
 	it("claims, resolves, records, and reads Todoist tickets", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
@@ -288,7 +297,9 @@ describe("TodoistTracker", () => {
 
 	it("keeps historical Todoist comments native on fresh ticket reads", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Historical comments",
 			destination: "Existing comments retain their tracker meaning.",
@@ -311,9 +322,10 @@ describe("TodoistTracker", () => {
 
 	it("creates and reads a generic issue via the Todoist gateway", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Add a generic issue surface",
 			body: "Spec is at /path/to/spec.md.",
 			labels: ["needs-triage", "bug"],
@@ -333,7 +345,7 @@ describe("TodoistTracker", () => {
 			projectId: "project-1",
 		});
 
-		const read = await tracker.readIssue(created.id);
+		const read = await modules.issues.readIssue(created.id);
 		expect(read).toMatchObject({
 			id: created.id,
 			url: created.url,
@@ -349,14 +361,15 @@ describe("TodoistTracker", () => {
 
 	it("reads a generic issue by its URL", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Untracked question",
 			body: "Body.",
 		});
 
-		const read = await tracker.readIssue(created.url);
+		const read = await modules.issues.readIssue(created.url);
 		expect(read.id).toBe(created.id);
 	});
 
@@ -364,16 +377,17 @@ describe("TodoistTracker", () => {
 
 	it("updateIssueLabels applies delta addLabels/removeLabels in one round trip", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
 
 		const updateSpy = vi.spyOn(gateway, "updateTask");
-		const after = await tracker.updateIssueLabels(created.id, {
+		const after = await modules.issues.updateIssueLabels(created.id, {
 			add: ["bug"],
 		});
 
@@ -386,16 +400,17 @@ describe("TodoistTracker", () => {
 
 	it("updateIssueLabels removes the right labels and never sends an absolute set", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Multi-label",
 			body: "Body.",
 			labels: ["needs-triage", "bug", "home"],
 		});
 
 		const updateSpy = vi.spyOn(gateway, "updateTask");
-		const after = await tracker.updateIssueLabels(created.id, {
+		const after = await modules.issues.updateIssueLabels(created.id, {
 			remove: ["needs-triage", "home"],
 		});
 
@@ -408,15 +423,16 @@ describe("TodoistTracker", () => {
 
 	it("updateIssueLabels preserves wayfinder: labels across a triage state transition", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Map parent",
 			body: "Body.",
 			labels: ["wayfinder_map", "needs-triage"],
 		});
 
-		const after = await tracker.updateIssueLabels(created.id, {
+		const after = await modules.issues.updateIssueLabels(created.id, {
 			add: ["ready-for-agent"],
 			remove: ["needs-triage"],
 		});
@@ -426,15 +442,16 @@ describe("TodoistTracker", () => {
 
 	it("updateIssueLabels makes remove win when the same label is in both add and remove", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Tricky",
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
 
-		const after = await tracker.updateIssueLabels(created.id, {
+		const after = await modules.issues.updateIssueLabels(created.id, {
 			add: ["needs-triage"],
 			remove: ["needs-triage"],
 		});
@@ -446,14 +463,15 @@ describe("TodoistTracker", () => {
 
 	it("comments on a generic issue and reads it back with postedAt", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 		});
 
-		const { comment } = await tracker.commentOnIssue(
+		const { comment } = await modules.issues.commentOnIssue(
 			created.id,
 			"First agent note",
 		);
@@ -462,7 +480,7 @@ describe("TodoistTracker", () => {
 			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
 		);
 
-		const read = await tracker.readIssue(created.id);
+		const read = await modules.issues.readIssue(created.id);
 		expect(read.comments).toHaveLength(1);
 		expect(read.comments[0]?.content).toBe("First agent note");
 		expect(read.comments[0]?.postedAt).toBeDefined();
@@ -470,40 +488,42 @@ describe("TodoistTracker", () => {
 
 	it("closes a generic issue through the gateway's completeTask", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
 
 		const completeSpy = vi.spyOn(gateway, "completeTask");
-		const { status } = await tracker.closeIssue(created.id);
+		const { status } = await modules.issues.closeIssue(created.id);
 		expect(status).toBe("closed");
 		expect(completeSpy).toHaveBeenCalledWith(created.id, undefined);
 
-		const read = await tracker.readIssue(created.id);
+		const read = await modules.issues.readIssue(created.id);
 		expect(read.status).toBe("closed");
 		expect(read.labels).toEqual(["needs-triage"]);
 	});
 
 	it("closes with a comment, lands the closing note in one atomic sync", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const created = await tracker.createIssue({
+		const created = await modules.issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 			labels: ["wontfix"],
 		});
 
-		const { status } = await tracker.closeIssue(created.id, {
+		const { status } = await modules.issues.closeIssue(created.id, {
 			comment: "Closing: wontfix",
 		});
 		expect(status).toBe("closed");
 
-		const read = await tracker.readIssue(created.id);
+		const read = await modules.issues.readIssue(created.id);
 		expect(read.status).toBe("closed");
 		expect(read.comments.map((c) => c.content)).toEqual(["Closing: wontfix"]);
 	});
@@ -512,43 +532,45 @@ describe("TodoistTracker", () => {
 
 	it("lists open issues by default, oldest first, with status on every row", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const first = await tracker.createIssue({
+		const first = await modules.issues.createIssue({
 			title: "First issue",
 			body: "Body.",
 		});
 		// Force distinct createdAt on the in-memory tasks.
 		gateway.tickClock();
-		const second = await tracker.createIssue({
+		const second = await modules.issues.createIssue({
 			title: "Second issue",
 			body: "Body.",
 		});
-		await tracker.closeIssue(second.id);
+		await modules.issues.closeIssue(second.id);
 
-		const issues = await tracker.listIssues({});
+		const issues = await modules.issues.listIssues({});
 		expect(issues.map((issue) => issue.id)).toEqual([first.id]);
 		expect(issues.every((issue) => issue.status === "open")).toBe(true);
 	});
 
 	it("lists closed issues when state is 'closed' and all when state is 'any'", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const open = await tracker.createIssue({
+		const open = await modules.issues.createIssue({
 			title: "Open issue",
 			body: "Body.",
 		});
-		const closed = await tracker.createIssue({
+		const closed = await modules.issues.createIssue({
 			title: "Closed issue",
 			body: "Body.",
 		});
-		await tracker.closeIssue(closed.id);
+		await modules.issues.closeIssue(closed.id);
 
-		const closedIssues = await tracker.listIssues({ state: "closed" });
+		const closedIssues = await modules.issues.listIssues({ state: "closed" });
 		expect(closedIssues.map((issue) => issue.id)).toEqual([closed.id]);
 
-		const all = await tracker.listIssues({ state: "any" });
+		const all = await modules.issues.listIssues({ state: "any" });
 		expect(new Set(all.map((issue) => issue.id))).toEqual(
 			new Set([open.id, closed.id]),
 		);
@@ -556,30 +578,31 @@ describe("TodoistTracker", () => {
 
 	it("filters by all-of labels", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const a = await tracker.createIssue({
+		const a = await modules.issues.createIssue({
 			title: "Triage me",
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
-		const b = await tracker.createIssue({
+		const b = await modules.issues.createIssue({
 			title: "Triage and bug",
 			body: "Body.",
 			labels: ["needs-triage", "bug"],
 		});
-		await tracker.createIssue({
+		await modules.issues.createIssue({
 			title: "Just bug",
 			body: "Body.",
 			labels: ["bug"],
 		});
 
-		const issues = await tracker.listIssues({ labels: ["needs-triage"] });
+		const issues = await modules.issues.listIssues({ labels: ["needs-triage"] });
 		expect(issues.map((issue) => issue.id).toSorted()).toEqual(
 			[a.id, b.id].toSorted(),
 		);
 
-		const both = await tracker.listIssues({
+		const both = await modules.issues.listIssues({
 			labels: ["needs-triage", "bug"],
 		});
 		expect(both.map((issue) => issue.id)).toEqual([b.id]);
@@ -587,25 +610,27 @@ describe("TodoistTracker", () => {
 
 	it("exclusively lists unlabeled issues when unlabeled: true", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
-		const unlabeled = await tracker.createIssue({
+		const unlabeled = await modules.issues.createIssue({
 			title: "Unlabeled",
 			body: "Body.",
 		});
-		await tracker.createIssue({
+		await modules.issues.createIssue({
 			title: "Labeled",
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
 
-		const issues = await tracker.listIssues({ unlabeled: true });
+		const issues = await modules.issues.listIssues({ unlabeled: true });
 		expect(issues.map((issue) => issue.id)).toEqual([unlabeled.id]);
 	});
 
 	it("scopes the list to the tracker's project (does not leak sibling projects)", async () => {
 		const gateway = new InMemoryTodoistGateway();
-		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const adapter = new TodoistPersistenceAdapter(gateway, { projectId: "project-1" });
+		const modules = createTrackerModules(adapter);
 
 		// A task in a different project should not appear in this list.
 		await gateway.createTask({
@@ -614,12 +639,12 @@ describe("TodoistTracker", () => {
 			labels: [],
 			projectId: "project-2",
 		});
-		const ours = await tracker.createIssue({
+		const ours = await modules.issues.createIssue({
 			title: "Our project",
 			body: "Body.",
 		});
 
-		const issues = await tracker.listIssues({});
+		const issues = await modules.issues.listIssues({});
 		expect(issues.map((issue) => issue.id)).toEqual([ours.id]);
 	});
 });

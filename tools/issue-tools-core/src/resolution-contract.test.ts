@@ -2,9 +2,10 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LocalMarkdownTracker } from "./local-markdown-adapter.ts";
+import { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
+import { createTrackerModules } from "./modules.ts";
 import {
-	TodoistTracker,
+	TodoistPersistenceAdapter,
 	type TodoistCreateTaskInput,
 	type TodoistGateway,
 	type TodoistListTasksInput,
@@ -103,14 +104,15 @@ class InMemoryTodoistGateway implements TodoistGateway {
 
 async function localFixture(): Promise<Fixture> {
 	const root = await mkdtemp(join(tmpdir(), "resolution-contract-local-"));
-	const tracker = new LocalMarkdownTracker(root);
+	const adapter = new LocalMarkdownPersistenceAdapter(root);
+	const tracker = createTrackerModules(adapter).wayfinder;
 	return {
 		tracker,
 		addOrdinaryComment: async (ticketId, body) => {
 			const ticket = await tracker.getTicket(ticketId);
 			const path = join(root, ticket.mapId, ticket.url);
 			const markdown = await readFile(path, "utf8");
-			await tracker.updateTicketBody(
+			await adapter.updateTicketBody(
 				ticketId,
 				`${markdown}\n## Comments\n\n> ${body}\n`,
 			);
@@ -121,9 +123,10 @@ async function localFixture(): Promise<Fixture> {
 
 function todoistFixture(): Fixture {
 	const gateway = new InMemoryTodoistGateway();
-	const tracker = new TodoistTracker(gateway, {
+	const adapter = new TodoistPersistenceAdapter(gateway, {
 		projectId: "project-1",
 	});
+	const tracker = createTrackerModules(adapter).wayfinder;
 	return {
 		tracker,
 		addOrdinaryComment: (ticketId, body) => gateway.addComment(ticketId, body),

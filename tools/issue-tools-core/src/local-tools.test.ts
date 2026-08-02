@@ -2,20 +2,23 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-	LocalMarkdownTracker,
-	type LocalMap,
-	type LocalTicket,
-} from "./local-markdown-adapter.ts";
+import { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
+import { createTrackerModules } from "./modules.ts";
+import type {
+	WayfinderTracker,
+	WayfinderTrackerMap,
+	WayfinderTrackerTicket,
+} from "./tracker.ts";
 import { createWayfinderTrackerTools } from "./tools.ts";
 
 let rootDir: string;
-let tracker: LocalMarkdownTracker;
+let tracker: WayfinderTracker;
 let tools: ReturnType<typeof createWayfinderTrackerTools>;
 
 beforeEach(async () => {
 	rootDir = await mkdtemp(join(tmpdir(), "wayfinder-local-tools-"));
-	tracker = new LocalMarkdownTracker(rootDir);
+	const adapter = new LocalMarkdownPersistenceAdapter(rootDir);
+	tracker = createTrackerModules(adapter).wayfinder;
 	tools = createWayfinderTrackerTools(tracker);
 });
 
@@ -30,7 +33,7 @@ describe("local Wayfinder tracker tools", () => {
 			destination: "A Todoist-backed MVP exists.",
 			notes: "Use local tracker in tests.",
 			notYetSpecified: ["How to claim Todoist tasks."],
-		})) as LocalMap;
+		})) as WayfinderTrackerMap;
 
 		expect(map).toMatchObject({
 			title: "Plan Todoist Wayfinder",
@@ -47,14 +50,14 @@ describe("local Wayfinder tracker tools", () => {
 		const map = (await tools.wayfinder_create_map.run({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
-		})) as LocalMap;
+		})) as WayfinderTrackerMap;
 
 		const ticket = (await tools.wayfinder_create_ticket.run({
 			mapId: map.id,
 			title: "Choose tracker",
 			type: "grilling",
 			question: "Which tracker owns durable state?",
-		})) as LocalTicket;
+		})) as WayfinderTrackerTicket;
 
 		expect(ticket).toMatchObject({
 			mapId: map.id,
@@ -74,7 +77,7 @@ describe("local Wayfinder tracker tools", () => {
 		const map = (await tools.wayfinder_create_map.run({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
-		})) as LocalMap;
+		})) as WayfinderTrackerMap;
 
 		const tickets = (await Promise.all(
 			Array.from({ length: 5 }, (_, index) =>
@@ -85,7 +88,7 @@ describe("local Wayfinder tracker tools", () => {
 					question: "Does local allocation stay unique?",
 				}),
 			),
-		)) as LocalTicket[];
+		)) as WayfinderTrackerTicket[];
 
 		const ticketIds = tickets.map((ticket) => ticket.id);
 		expect(ticketIds).toEqual([
@@ -100,7 +103,7 @@ describe("local Wayfinder tracker tools", () => {
 			(
 				(await tools.wayfinder_list_children.run({
 					mapId: map.id,
-				})) as LocalTicket[]
+				})) as WayfinderTrackerTicket[]
 			)
 				.map((ticket) => ticket.id)
 				.toSorted(),
@@ -111,19 +114,19 @@ describe("local Wayfinder tracker tools", () => {
 		const map = (await tools.wayfinder_create_map.run({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
-		})) as LocalMap;
+		})) as WayfinderTrackerMap;
 		const blocker = (await tools.wayfinder_create_ticket.run({
 			mapId: map.id,
 			title: "Blocking research",
 			type: "research",
 			question: "What blocks the next decision?",
-		})) as LocalTicket;
+		})) as WayfinderTrackerTicket;
 		const blocked = (await tools.wayfinder_create_ticket.run({
 			mapId: map.id,
 			title: "Blocked decision",
 			type: "grilling",
 			question: "What follows the research?",
-		})) as LocalTicket;
+		})) as WayfinderTrackerTicket;
 
 		await tools.wayfinder_wire_blocking.run({
 			ticketId: blocked.id,
@@ -134,7 +137,7 @@ describe("local Wayfinder tracker tools", () => {
 			(
 				(await tools.wayfinder_query_frontier.run({
 					mapId: map.id,
-				})) as LocalTicket[]
+				})) as WayfinderTrackerTicket[]
 			).map((ticket) => ticket.id),
 		).toEqual([blocker.id]);
 
@@ -144,7 +147,7 @@ describe("local Wayfinder tracker tools", () => {
 			(
 				(await tools.wayfinder_query_frontier.run({
 					mapId: map.id,
-				})) as LocalTicket[]
+				})) as WayfinderTrackerTicket[]
 			).map((ticket) => ticket.id),
 		).toEqual([blocked.id]);
 	});
@@ -153,13 +156,13 @@ describe("local Wayfinder tracker tools", () => {
 		const map = (await tools.wayfinder_create_map.run({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
-		})) as LocalMap;
+		})) as WayfinderTrackerMap;
 		const ticket = (await tools.wayfinder_create_ticket.run({
 			mapId: map.id,
 			title: "Choose tracker",
 			type: "grilling",
 			question: "Which tracker owns durable state?",
-		})) as LocalTicket;
+		})) as WayfinderTrackerTicket;
 
 		expect(
 			await tools.wayfinder_claim_ticket.run({

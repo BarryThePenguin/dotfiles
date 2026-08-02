@@ -32,8 +32,8 @@ import {
 	type IssueListParams,
 	type IssueReadParams,
 	type ListFrontierParams,
-	type LocalMap,
-	type LocalTicket,
+	type WayfinderTrackerMap,
+	type WayfinderTrackerTicket,
 	type MapSectionKey,
 	type ResolveParams,
 	type SetBlockingParams,
@@ -167,7 +167,10 @@ function requireMapId(
 	return params.map_id ?? ctx.activeMap;
 }
 
-function formatTicket(ticket: LocalTicket, opts?: { showState?: boolean }) {
+function formatTicket(
+	ticket: WayfinderTrackerTicket,
+	opts?: { showState?: boolean },
+) {
 	const state = opts?.showState ? ` [${ticketState(ticket)}]` : "";
 	return `${ticket.id} — ${ticket.title} (wayfinder:${ticket.type})${state}`;
 }
@@ -176,7 +179,7 @@ function emptyParagraph() {
 	return paragraph("(empty)");
 }
 
-function ticketState(ticket: LocalTicket) {
+function ticketState(ticket: WayfinderTrackerTicket) {
 	if (ticket.claimedBy) {
 		return "claimed";
 	}
@@ -213,7 +216,7 @@ function listSectionNodes(title: string, items: ListItem[]): RootContent[] {
 }
 
 function renderMapSummary(
-	map: LocalMap,
+	map: WayfinderTrackerMap,
 	openCount: number,
 	closedCount: number,
 ) {
@@ -258,7 +261,7 @@ function renderMapSummary(
 }
 
 function renderTicketDetails(
-	ticket: LocalTicket,
+	ticket: WayfinderTrackerTicket,
 	blockerTitles?: string[],
 ): string {
 	const question = markdownBlocks(ticket.question);
