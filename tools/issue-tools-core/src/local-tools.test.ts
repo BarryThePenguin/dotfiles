@@ -6,7 +6,7 @@ import {
 	LocalMarkdownTracker,
 	type LocalMap,
 	type LocalTicket,
-} from "./local-tracker.ts";
+} from "./local-markdown-adapter.ts";
 import { createWayfinderTrackerTools } from "./tools.ts";
 
 let rootDir: string;

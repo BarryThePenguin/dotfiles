@@ -136,6 +136,7 @@ function sortById<T extends { id: string }>(records: T[]): T[] {
 	);
 }
 
+/** Persistence adapter for the Todoist Issue tracker. */
 export class TodoistTracker {
 	readonly #gateway: TodoistGateway;
 	readonly #projectId: string | undefined;
@@ -422,3 +423,5 @@ function extractTodoistTaskId(idOrUrl: string): string {
 	const match = TODOIST_TASK_ID_FROM_URL.exec(idOrUrl);
 	return match?.[1] ?? idOrUrl;
 }
+
+export { TodoistTracker as TodoistPersistenceAdapter };

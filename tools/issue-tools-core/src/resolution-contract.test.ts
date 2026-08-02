@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LocalMarkdownTracker } from "./local-tracker.ts";
+import { LocalMarkdownTracker } from "./local-markdown-adapter.ts";
 import {
 	TodoistTracker,
 	type TodoistCreateTaskInput,
@@ -10,7 +10,7 @@ import {
 	type TodoistListTasksInput,
 	type TodoistTask,
 	type TodoistUpdateTaskInput,
-} from "./todoist-tracker.ts";
+} from "./todoist-adapter.ts";
 import type { WayfinderTracker } from "./tracker.ts";
 
 type Fixture = {

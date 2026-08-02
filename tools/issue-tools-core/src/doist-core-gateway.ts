@@ -14,7 +14,7 @@ import type {
 	TodoistTask,
 	TodoistTaskComment,
 	TodoistUpdateTaskInput,
-} from "./todoist-tracker.ts";
+} from "./todoist-adapter.ts";
 
 export type DoistCoreTodoistGatewayOptions = {
 	db: Database;

@@ -67,6 +67,7 @@ type TicketFileInfo = {
 	path: string;
 };
 
+/** Persistence adapter for the Local Markdown Issue tracker. */
 export class LocalMarkdownTracker {
 	readonly #rootDir: string;
 	#indexLock = Promise.resolve();
@@ -191,7 +192,9 @@ export class LocalMarkdownTracker {
 			return await Promise.all(
 				entries
 					.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
-					.map((entry) => `${normalizedMapId}/${entry.name.replace(/\.md$/, "")}`)
+					.map(
+						(entry) => `${normalizedMapId}/${entry.name.replace(/\.md$/, "")}`,
+					)
 					.toSorted(compareTicketIds)
 					.map((ticketId) => this.getTicket(ticketId)),
 			);
@@ -420,11 +423,7 @@ export class LocalMarkdownTracker {
 			const slug = this.#issueSlugFromIdOrUrl(id);
 			const path = this.#issuePath(slug);
 			const current = await this.readIssue(slug);
-			const nextLabels = mergeLabels(
-				current.labels,
-				input.add,
-				input.remove,
-			);
+			const nextLabels = mergeLabels(current.labels, input.add, input.remove);
 			const updatedAt = new Date().toISOString();
 			const body = issueMarkdown({
 				title: current.title,
@@ -435,9 +434,7 @@ export class LocalMarkdownTracker {
 					? { updatedAt: current.updatedAt }
 					: {}),
 				comments: current.comments,
-				...(current.comments.length === 0
-					? {}
-					: { updatedAt }),
+				...(current.comments.length === 0 ? {} : { updatedAt }),
 			});
 			await writeFile(path, body);
 			return this.readIssue(slug);
@@ -452,10 +449,7 @@ export class LocalMarkdownTracker {
 			const slug = this.#issueSlugFromIdOrUrl(id);
 			const path = this.#issuePath(slug);
 			const current = await this.readIssue(slug);
-			const nextComments = [
-				...current.comments,
-				{ content: body },
-			];
+			const nextComments = [...current.comments, { content: body }];
 			const updatedAt = new Date().toISOString();
 			const next = issueMarkdown({
 				title: current.title,
@@ -466,9 +460,7 @@ export class LocalMarkdownTracker {
 					? { updatedAt: current.updatedAt }
 					: {}),
 				comments: nextComments,
-				...(current.status === "closed"
-					? {}
-					: { updatedAt }),
+				...(current.status === "closed" ? {} : { updatedAt }),
 			});
 			await writeFile(path, next);
 			return { comment: { content: body } };
@@ -556,7 +548,9 @@ export class LocalMarkdownTracker {
 
 		const [mapId, ref] = withoutMarkdown.split("/", 2);
 		if (!mapId || !ref) {
-			throw new Error(`Local Wayfinder ticket id must be <map>/<NN-slug>: ${id}`);
+			throw new Error(
+				`Local Wayfinder ticket id must be <map>/<NN-slug>: ${id}`,
+			);
 		}
 		return {
 			mapId,
@@ -672,3 +666,5 @@ export class LocalMarkdownTracker {
 		}
 	}
 }
+
+export { LocalMarkdownTracker as LocalMarkdownPersistenceAdapter };

@@ -1,5 +1,4 @@
 import type { MapSectionKey } from "./map-body.ts";
-import type { IssueTracker } from "./issue.ts";
 import type {
 	DecisionSummary,
 	ParsedMapBody,
@@ -52,7 +51,7 @@ export type WayfinderClaimResult = {
 	ticket: WayfinderTrackerTicket;
 };
 
-export interface WayfinderTracker extends IssueTracker {
+export interface WayfinderTracker {
 	createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap>;
 	listMaps(): Promise<WayfinderTrackerMap[]>;
 	createChildTicket(

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { LocalMarkdownTracker } from "./local-tracker.ts";
+import { LocalMarkdownTracker } from "./local-markdown-adapter.ts";
 import { parseMapBody } from "./map-body.ts";
 
 function setupDir() {

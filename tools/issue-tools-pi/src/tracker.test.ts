@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createContainer } from "issue-tools-core";
 import {
-	buildTodoistTracker,
-	createWayfinderTracker,
+	buildTrackerModules,
+	createTrackerModules,
 	detectTrackerSelection,
 	localTrackerRoot,
 	pickRepoProjectId,
@@ -84,10 +84,10 @@ describe("detectTrackerSelection", () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildTodoistTracker
+// buildTrackerModules
 // ---------------------------------------------------------------------------
 
-describe("buildTodoistTracker", () => {
+describe("buildTrackerModules", () => {
 	it("throws when TODOIST_API_TOKEN is missing", async () => {
 		using dir = tempDir();
 		writeFileSync(
@@ -96,7 +96,7 @@ describe("buildTodoistTracker", () => {
 		);
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		await expect(buildTodoistTracker()).rejects.toThrow(
+		await expect(buildTrackerModules()).rejects.toThrow(
 			/Expected "TODOIST_API_TOKEN" but received undefined/,
 		);
 	});
@@ -107,7 +107,7 @@ describe("buildTodoistTracker", () => {
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		await expect(buildTodoistTracker()).rejects.toThrow(
+		await expect(buildTrackerModules()).rejects.toThrow(
 			"Could not create Todoist tracker: no-projects",
 		);
 	});
@@ -117,17 +117,17 @@ describe("buildTodoistTracker", () => {
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		await expect(buildTodoistTracker()).rejects.toThrow(
+		await expect(buildTrackerModules()).rejects.toThrow(
 			"Could not create Todoist tracker: no-config",
 		);
 	});
 });
 
 // ---------------------------------------------------------------------------
-// createWayfinderTracker (no silent fallback: throws on Todoist build error)
+// createTrackerModules (no silent fallback: throws on Todoist build error)
 // ---------------------------------------------------------------------------
 
-describe("createWayfinderTracker", () => {
+describe("createTrackerModules", () => {
 	it("throws when Todoist build fails", async () => {
 		using dir = tempDir();
 		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
@@ -135,19 +135,20 @@ describe("createWayfinderTracker", () => {
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
 		await expect(
-			createWayfinderTracker({ cwd: dir.path, mode: "todoist" }),
+			createTrackerModules({ cwd: dir.path, mode: "todoist" }),
 		).rejects.toThrow("Could not create Todoist tracker: no-projects");
 	});
 
-	it("builds a local tracker", async () => {
+	it("builds local Issue and Wayfinder modules", async () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));
 
-		const tracker = await createWayfinderTracker({
+		const modules = await createTrackerModules({
 			cwd: dir.path,
 			mode: "local",
 		});
-		expect(tracker).toBeDefined();
+		expect(modules.issues).toBeDefined();
+		expect(modules.wayfinder).toBeDefined();
 	});
 });
 
@@ -208,8 +209,8 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 	});
 });
 
-describe("createWayfinderTracker repo-aware project selection", () => {
-	it("the local tracker ignores repo selection (always .scratch)", async () => {
+describe("createTrackerModules repo-aware project selection", () => {
+	it("the local modules ignore repo selection (always .scratch)", async () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));
 		writeRc(dir.path, [
@@ -219,10 +220,11 @@ describe("createWayfinderTracker repo-aware project selection", () => {
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		const tracker = await createWayfinderTracker({
+		const modules = await createTrackerModules({
 			cwd: dir.path,
 			mode: "local",
 		});
-		expect(tracker).toBeDefined();
+		expect(modules.issues).toBeDefined();
+		expect(modules.wayfinder).toBeDefined();
 	});
 });

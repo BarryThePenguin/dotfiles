@@ -1,7 +1,7 @@
 import { Database, type AllData, type SyncCommand } from "doist-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { DoistCoreTodoistGateway } from "./doist-core-gateway.ts";
-import { TodoistTracker } from "./todoist-tracker.ts";
+import { TodoistTracker } from "./todoist-adapter.ts";
 import type { TodoistClient } from "doist-core";
 import type { DbTask } from "doist-core";
 

@@ -14,11 +14,12 @@ import {
 	type Container,
 	createContainer,
 	DoistCoreTodoistGateway,
-	LocalMarkdownTracker,
+	LocalMarkdownPersistenceAdapter,
 	selectRepoProject,
 	syncAndPersist,
-	TodoistTracker,
-	type WayfinderTracker,
+	TodoistPersistenceAdapter,
+	createTrackerModules as createDomainModules,
+	type TrackerModules,
 } from "issue-tools-core";
 
 export type TrackerMode = "local" | "todoist";
@@ -28,9 +29,7 @@ export type CreateWayfinderTrackerOptions = {
 	mode: TrackerMode;
 };
 
-export function pickRepoProjectId(
-	container: Container,
-): string | undefined {
+export function pickRepoProjectId(container: Container): string | undefined {
 	if (!container.paths) {
 		return undefined;
 	}
@@ -54,7 +53,7 @@ export function detectTrackerSelection(cwd: string): TrackerMode | null {
 	return null;
 }
 
-export async function buildTodoistTracker(): Promise<WayfinderTracker> {
+export async function buildTrackerModules(): Promise<TrackerModules> {
 	const container = createContainer();
 	if (!container.paths) {
 		throw new Error("Could not create Todoist tracker: no-config");
@@ -71,18 +70,20 @@ export async function buildTodoistTracker(): Promise<WayfinderTracker> {
 		client: container.client,
 	});
 	const repoProjectId = pickRepoProjectId(container);
-	return new TodoistTracker(
+	const adapter = new TodoistPersistenceAdapter(
 		gateway,
 		repoProjectId ? { projectId: repoProjectId } : {},
 	);
+	return createDomainModules({ issues: adapter, wayfinder: adapter });
 }
 
-export async function createWayfinderTracker({
+export async function createTrackerModules({
 	cwd,
 	mode,
-}: CreateWayfinderTrackerOptions): Promise<WayfinderTracker> {
+}: CreateWayfinderTrackerOptions): Promise<TrackerModules> {
 	if (mode === "local") {
-		return new LocalMarkdownTracker(localTrackerRoot(cwd));
+		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(cwd));
+		return createDomainModules({ issues: adapter, wayfinder: adapter });
 	}
-	return buildTodoistTracker();
+	return buildTrackerModules();
 }

@@ -7,7 +7,7 @@ import {
 	type TodoistListTasksInput,
 	type TodoistTask,
 	type TodoistUpdateTaskInput,
-} from "./todoist-tracker.ts";
+} from "./todoist-adapter.ts";
 
 class InMemoryTodoistGateway implements TodoistGateway {
 	readonly tasks = new Map<string, TodoistTask>();

@@ -40,7 +40,7 @@ import {
 	type UpdateMapParams,
 } from "issue-tools-core";
 import {
-	createWayfinderTracker,
+	createTrackerModules,
 	localTrackerRoot,
 	type TrackerMode,
 } from "./tracker.ts";
@@ -139,9 +139,17 @@ export function handleAction<K extends keyof ActionMap>(
 
 const DEFAULT_CLAIMANT = "pi-wayfinder";
 
-async function createTracker(ext: ExtensionContext, ctx: ToolContext) {
+async function createModules(ext: ExtensionContext, ctx: ToolContext) {
 	const mode = await ctx.resolveTrackerMode(ext);
-	return createWayfinderTracker({ cwd: ext.cwd, mode });
+	return createTrackerModules({ cwd: ext.cwd, mode });
+}
+
+async function createWayfinder(ext: ExtensionContext, ctx: ToolContext) {
+	return (await createModules(ext, ctx)).wayfinder;
+}
+
+async function createIssues(ext: ExtensionContext, ctx: ToolContext) {
+	return (await createModules(ext, ctx)).issues;
 }
 
 function trackerDetails(ext: ExtensionContext, ctx: ToolContext) {
@@ -304,7 +312,7 @@ async function listMaps(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const maps = await tracker.listMaps();
 	if (maps.length === 0) {
 		return ok("No open wayfinder maps.", mapDetails(ext, ctx, { maps: [] }));
@@ -331,7 +339,7 @@ async function chart(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const map = await tracker.createMap({
 		title: params.title,
 		destination: params.destination,
@@ -351,7 +359,7 @@ async function getMap(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id provided and no active map.");
@@ -392,7 +400,7 @@ async function createTicket(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id and no active map.");
@@ -419,7 +427,7 @@ async function getTicket(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const ticket = await tracker.getTicket(params.ticket_id);
 	const blockerTitles =
 		ticket.blockerIds.length > 0
@@ -448,7 +456,7 @@ async function resolve(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const result = await resolveTicket(tracker, {
 		mapId: params.map_id,
 		ticketId: params.ticket_id,
@@ -491,7 +499,7 @@ async function updateMap(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id and no active map.");
@@ -512,7 +520,7 @@ async function setBlocking(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	await tracker.setBlockingDependencies(params.ticket_id, params.blocked_by);
 	const status =
 		params.blocked_by.length > 0
@@ -532,7 +540,7 @@ async function listFrontier(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const mapId = requireMapId(params, ctx);
 	if (!mapId) {
 		return err("no map_id and no active map.");
@@ -582,7 +590,7 @@ async function claim(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createWayfinder(ext, ctx);
 	const shouldClaim = params.claim !== false;
 	if (shouldClaim) {
 		await tracker.claimTicketIfUnclaimed(params.ticket_id, DEFAULT_CLAIMANT);
@@ -604,7 +612,7 @@ async function createIssue(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createIssues(ext, ctx);
 	const issue = await tracker.createIssue({
 		title: params.title,
 		...(params.body !== undefined ? { body: params.body } : {}),
@@ -625,7 +633,7 @@ async function readIssue(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createIssues(ext, ctx);
 	const issue = await tracker.readIssue(params.id);
 	return ok(
 		renderIssueDetails(issue),
@@ -645,7 +653,7 @@ async function labelIssue(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createIssues(ext, ctx);
 	const issue = await tracker.updateIssueLabels(params.id, {
 		...(params.add ? { add: [...params.add] } : {}),
 		...(params.remove ? { remove: [...params.remove] } : {}),
@@ -669,13 +677,16 @@ async function commentIssue(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createIssues(ext, ctx);
 	const { comment } = await tracker.commentOnIssue(params.id, params.body);
 	return ok(
 		`Comment posted on ${params.id}${comment.postedAt ? ` at ${comment.postedAt}` : ""}.`,
 		mapDetails(ext, ctx, {
 			id: params.id,
-			comment: { content: comment.content, ...(comment.postedAt ? { postedAt: comment.postedAt } : {}) },
+			comment: {
+				content: comment.content,
+				...(comment.postedAt ? { postedAt: comment.postedAt } : {}),
+			},
 		}),
 	);
 }
@@ -685,7 +696,7 @@ async function closeIssue(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createIssues(ext, ctx);
 	const { status } = await tracker.closeIssue(
 		params.id,
 		params.comment ? { comment: params.comment } : undefined,
@@ -701,7 +712,7 @@ async function listIssues(
 	ctx: ToolContext,
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	const tracker = await createTracker(ext, ctx);
+	const tracker = await createIssues(ext, ctx);
 	const issues = await tracker.listIssues({
 		...(params.state ? { state: params.state } : {}),
 		...(params.labels ? { labels: [...params.labels] } : {}),
@@ -746,7 +757,8 @@ function renderIssueDetails(issue: {
 	updatedAt?: string;
 }): string {
 	const body = markdownBlocks(issue.body);
-	const labelLine = issue.labels.length > 0 ? issue.labels.join(", ") : "(none)";
+	const labelLine =
+		issue.labels.length > 0 ? issue.labels.join(", ") : "(none)";
 	const timestamps: string[] = [];
 	if (issue.createdAt) {
 		timestamps.push(`Created: ${issue.createdAt}`);
@@ -772,7 +784,11 @@ function renderIssueDetails(issue: {
 			heading(2, [text(`Comments (${issue.comments.length})`)]),
 			...issue.comments.map((comment) =>
 				comment.postedAt
-					? blockquote([`${comment.content}\n`, `Posted: ${comment.postedAt}`].join("\n"))
+					? blockquote(
+							[`${comment.content}\n`, `Posted: ${comment.postedAt}`].join(
+								"\n",
+							),
+						)
 					: blockquote(comment.content),
 			),
 		);

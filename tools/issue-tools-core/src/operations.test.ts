@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LocalMarkdownTracker } from "./local-tracker.ts";
+import { LocalMarkdownTracker } from "./local-markdown-adapter.ts";
 import { inspectFrontier, resolveTicket } from "./operations.ts";
 
 let root: string;
