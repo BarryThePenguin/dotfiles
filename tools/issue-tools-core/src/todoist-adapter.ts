@@ -3,7 +3,12 @@ import {
 	todoistLabelToTicketType,
 	ticketTypeToTodoistLabel,
 } from "./labels.ts";
-import { parseMapBody, renderMapBody, type MapSectionKey } from "./map-body.ts";
+import {
+	parseMapBody,
+	renderMapBody,
+	replaceMapSection,
+	type MapSectionKey,
+} from "./map-body.ts";
 import type {
 	CreateIssueInput,
 	Issue,
@@ -19,13 +24,8 @@ import {
 	type BlockerRef,
 } from "./ticket-body.ts";
 import type { DecisionSummary, TicketType } from "./schema.ts";
-import {
-	addBlockingDependency as addBlockingDependencyOperation,
-	canClaimTicket,
-	listFrontierTickets as listFrontierTicketsOperation,
-	recordDecision as recordDecisionOperation,
-	updateMapSection as updateMapSectionOperation,
-} from "./tracker-operations.ts";
+import { canClaimTicket } from "./tracker-operations.ts";
+import { WayfinderModule } from "./modules.ts";
 import {
 	ClosedTicketWithoutResolutionError,
 	type CreateWayfinderChildTicketInput,
@@ -211,7 +211,7 @@ export class TodoistTracker {
 	}
 
 	async listFrontierTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
-		return listFrontierTicketsOperation(this, mapId);
+		return new WayfinderModule(this).listFrontierTickets(mapId);
 	}
 
 	async claimTicketIfUnclaimed(
@@ -293,14 +293,51 @@ export class TodoistTracker {
 		id: string,
 		blockerId: string,
 	): Promise<WayfinderTrackerTicket> {
-		return addBlockingDependencyOperation(this, id, blockerId);
+		return new WayfinderModule(this).addBlockingDependency(id, blockerId);
+	}
+
+	async readMapBody(mapId: string): Promise<string> {
+		return (await this.#gateway.getTask(mapId)).description;
+	}
+
+	async writeMapBody(
+		mapId: string,
+		body: string,
+	): Promise<WayfinderTrackerMap> {
+		return toMap(
+			await this.#gateway.updateTask(mapId, {
+				description: body,
+			}),
+		);
+	}
+
+	async writeMapDecisions(
+		mapId: string,
+		decisions: DecisionSummary[],
+	): Promise<WayfinderTrackerMap> {
+		const current = parseMapBody(await this.readMapBody(mapId));
+		return this.writeMapBody(
+			mapId,
+			renderMapBody({ ...current, decisionsSoFar: decisions }),
+		);
+	}
+
+	async writeMapSection(
+		mapId: string,
+		section: MapSectionKey,
+		content: string,
+	): Promise<WayfinderTrackerMap> {
+		return this.writeMapBody(
+			mapId,
+			replaceMapSection(await this.readMapBody(mapId), section, content),
+		);
 	}
 
 	async recordDecision(
 		mapId: string,
 		decision: DecisionSummary,
 	): Promise<WayfinderTrackerMap> {
-		return recordDecisionOperation(this.#mapBodyAccessor(), mapId, decision);
+		return new WayfinderModule(this).recordDecision(mapId, decision);
 	}
 
 	async updateMapSection(
@@ -308,26 +345,7 @@ export class TodoistTracker {
 		section: MapSectionKey,
 		content: string,
 	): Promise<WayfinderTrackerMap> {
-		return updateMapSectionOperation(
-			this.#mapBodyAccessor(),
-			mapId,
-			section,
-			content,
-		);
-	}
-
-	#mapBodyAccessor() {
-		return {
-			readMapBody: async (id: string) =>
-				(await this.#gateway.getTask(id)).description,
-			readMap: (id: string) => this.getMap(id),
-			writeMapBody: async (id: string, body: string) =>
-				toMap(
-					await this.#gateway.updateTask(id, {
-						description: body,
-					}),
-				),
-		};
+		return new WayfinderModule(this).updateMapSection(mapId, section, content);
 	}
 
 	// -- Generic issue surface -------------------------------------------

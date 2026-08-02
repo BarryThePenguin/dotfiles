@@ -1,13 +1,4 @@
-import {
-	appendDecision,
-	replaceMapSection,
-	type MapSectionKey,
-} from "./map-body.ts";
-import type { DecisionSummary } from "./schema.ts";
-import type {
-	WayfinderTrackerMap,
-	WayfinderTrackerTicket,
-} from "./tracker.ts";
+import type { WayfinderTrackerTicket } from "./tracker.ts";
 
 type TicketReader = {
 	getTicket(id: string): Promise<WayfinderTrackerTicket>;
@@ -22,12 +13,6 @@ type BlockingDependencyWriter = TicketReader & {
 		id: string,
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket>;
-};
-
-type MapBodyAccessor = {
-	readMapBody(mapId: string): Promise<string>;
-	readMap(mapId: string): Promise<WayfinderTrackerMap>;
-	writeMapBody(mapId: string, body: string): Promise<WayfinderTrackerMap>;
 };
 
 export async function listFrontierTickets(
@@ -66,30 +51,4 @@ export async function addBlockingDependency(
 	return tracker.setBlockingDependencies(id, [
 		...new Set([...ticket.blockerIds, blockerId]),
 	]);
-}
-
-export async function recordDecision(
-	accessor: MapBodyAccessor,
-	mapId: string,
-	decision: DecisionSummary,
-): Promise<WayfinderTrackerMap> {
-	const currentBody = await accessor.readMapBody(mapId);
-	const nextBody = appendDecision(currentBody, decision);
-	if (nextBody === currentBody) {
-		return accessor.readMap(mapId);
-	}
-
-	return accessor.writeMapBody(mapId, nextBody);
-}
-
-export async function updateMapSection(
-	accessor: MapBodyAccessor,
-	mapId: string,
-	section: MapSectionKey,
-	content: string,
-): Promise<WayfinderTrackerMap> {
-	return accessor.writeMapBody(
-		mapId,
-		replaceMapSection(await accessor.readMapBody(mapId), section, content),
-	);
 }

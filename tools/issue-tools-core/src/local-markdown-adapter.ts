@@ -13,7 +13,12 @@ import type {
 	UpdateIssueLabelsInput,
 } from "./issue.ts";
 import { mergeLabels } from "doist-core";
-import { mapBodyFromDocument, type MapSectionKey } from "./map-body.ts";
+import {
+	mapBodyFromDocument,
+	renderMapBody,
+	replaceMapSection,
+	type MapSectionKey,
+} from "./map-body.ts";
 import { stringifyMarkdown } from "./markdown.ts";
 import {
 	compareTicketIds,
@@ -37,13 +42,8 @@ import {
 	type WayfinderMarkdownDocument,
 } from "./wayfinder-markdown.ts";
 import type { DecisionSummary } from "./schema.ts";
-import {
-	addBlockingDependency as addBlockingDependencyOperation,
-	canClaimTicket,
-	listFrontierTickets as listFrontierTicketsOperation,
-	recordDecision as recordDecisionOperation,
-	updateMapSection as updateMapSectionOperation,
-} from "./tracker-operations.ts";
+import { canClaimTicket } from "./tracker-operations.ts";
+import { WayfinderModule } from "./modules.ts";
 import {
 	ClosedTicketWithoutResolutionError,
 	type CreateWayfinderChildTicketInput,
@@ -211,7 +211,7 @@ export class LocalMarkdownTracker {
 	}
 
 	async listFrontierTickets(mapId: string): Promise<LocalTicket[]> {
-		return listFrontierTicketsOperation(this, this.#mapId(mapId));
+		return new WayfinderModule(this).listFrontierTickets(this.#mapId(mapId));
 	}
 
 	async claimTicketIfUnclaimed(
@@ -234,11 +234,53 @@ export class LocalMarkdownTracker {
 		});
 	}
 
-	async updateMapBody(id: string, body: string): Promise<LocalMap> {
+	async readMapBody(id: string): Promise<string> {
+		const mapId = this.#mapId(id);
+		await this.getMap(mapId);
+		return this.#readMapBody(mapId);
+	}
+
+	async writeMapBody(id: string, body: string): Promise<LocalMap> {
 		const mapId = this.#mapId(id);
 		await this.getMap(mapId);
 		await this.#writeMapBody(mapId, body);
 		return this.getMap(mapId);
+	}
+
+	async updateMapBody(id: string, body: string): Promise<LocalMap> {
+		return this.writeMapBody(id, body);
+	}
+
+	async writeMapDecisions(
+		mapId: string,
+		decisions: DecisionSummary[],
+	): Promise<LocalMap> {
+		const normalizedMapId = this.#mapId(mapId);
+		await this.getMap(normalizedMapId);
+		const current = mapBodyFromDocument(
+			await this.#readMapDocument(normalizedMapId),
+		);
+		await this.#writeMapBody(
+			normalizedMapId,
+			renderMapBody({ ...current, decisionsSoFar: decisions }),
+		);
+		return this.getMap(normalizedMapId);
+	}
+
+	async writeMapSection(
+		mapId: string,
+		section: MapSectionKey,
+		content: string,
+	): Promise<LocalMap> {
+		const normalizedMapId = this.#mapId(mapId);
+		await this.getMap(normalizedMapId);
+		const nextBody = replaceMapSection(
+			await this.#readMapBody(normalizedMapId),
+			section,
+			content,
+		);
+		await this.#writeMapBody(normalizedMapId, nextBody);
+		return this.getMap(normalizedMapId);
 	}
 
 	async updateTicketBody(id: string, body: string): Promise<LocalTicket> {
@@ -320,7 +362,7 @@ export class LocalMarkdownTracker {
 		id: string,
 		blockerId: string,
 	): Promise<LocalTicket> {
-		return addBlockingDependencyOperation(this, id, blockerId);
+		return new WayfinderModule(this).addBlockingDependency(id, blockerId);
 	}
 
 	async recordDecision(
@@ -329,18 +371,7 @@ export class LocalMarkdownTracker {
 	): Promise<LocalMap> {
 		const normalizedMapId = this.#mapId(mapId);
 		await this.getMap(normalizedMapId);
-		return recordDecisionOperation(
-			{
-				readMapBody: (id) => this.#readMapBody(id),
-				readMap: (id) => this.getMap(id),
-				writeMapBody: async (id, body) => {
-					await this.#writeMapBody(id, body);
-					return this.getMap(id);
-				},
-			},
-			normalizedMapId,
-			decision,
-		);
+		return new WayfinderModule(this).recordDecision(normalizedMapId, decision);
 	}
 
 	async updateMapSection(
@@ -350,15 +381,7 @@ export class LocalMarkdownTracker {
 	): Promise<LocalMap> {
 		const normalizedMapId = this.#mapId(mapId);
 		await this.getMap(normalizedMapId);
-		return updateMapSectionOperation(
-			{
-				readMapBody: (id) => this.#readMapBody(id),
-				readMap: (id) => this.getMap(id),
-				writeMapBody: async (id, body) => {
-					await this.#writeMapBody(id, body);
-					return this.getMap(id);
-				},
-			},
+		return new WayfinderModule(this).updateMapSection(
 			normalizedMapId,
 			section,
 			content,

@@ -15,6 +15,11 @@ import type {
 	WayfinderTrackerTicket,
 } from "./tracker.ts";
 import type { MapSectionKey } from "./map-body.ts";
+import {
+	addBlockingDependency as addBlockingDependencyOperation,
+	canClaimTicket,
+	listFrontierTickets as listFrontierTicketsOperation,
+} from "./tracker-operations.ts";
 import type { DecisionSummary } from "./schema.ts";
 
 /**
@@ -46,7 +51,16 @@ export interface WayfinderPersistence {
 	getMap(id: string): Promise<WayfinderTrackerMap>;
 	getTicket(id: string): Promise<WayfinderTrackerTicket>;
 	listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]>;
-	listFrontierTickets(mapId: string): Promise<WayfinderTrackerTicket[]>;
+	/** Persist already-decoded map sections in the tracker's representation. */
+	writeMapDecisions(
+		mapId: string,
+		decisions: DecisionSummary[],
+	): Promise<WayfinderTrackerMap>;
+	writeMapSection(
+		mapId: string,
+		section: MapSectionKey,
+		content: string,
+	): Promise<WayfinderTrackerMap>;
 	claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,
@@ -61,19 +75,6 @@ export interface WayfinderPersistence {
 		id: string,
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket>;
-	addBlockingDependency(
-		id: string,
-		blockerId: string,
-	): Promise<WayfinderTrackerTicket>;
-	recordDecision(
-		mapId: string,
-		decision: DecisionSummary,
-	): Promise<WayfinderTrackerMap>;
-	updateMapSection(
-		mapId: string,
-		section: MapSectionKey,
-		content: string,
-	): Promise<WayfinderTrackerMap>;
 }
 
 /** The one selected adapter shared by both domain modules. */
@@ -153,13 +154,17 @@ export class WayfinderModule implements WayfinderTracker {
 	}
 
 	listFrontierTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
-		return this.#storage.listFrontierTickets(mapId);
+		return listFrontierTicketsOperation(this.#storage, mapId);
 	}
 
-	claimTicketIfUnclaimed(
+	async claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,
 	): Promise<WayfinderClaimResult> {
+		const ticket = await this.#storage.getTicket(id);
+		if (!canClaimTicket(ticket)) {
+			return { claimed: false, ticket };
+		}
 		return this.#storage.claimTicketIfUnclaimed(id, claimant);
 	}
 
@@ -189,22 +194,29 @@ export class WayfinderModule implements WayfinderTracker {
 		id: string,
 		blockerId: string,
 	): Promise<WayfinderTrackerTicket> {
-		return this.#storage.addBlockingDependency(id, blockerId);
+		return addBlockingDependencyOperation(this.#storage, id, blockerId);
 	}
 
-	recordDecision(
+	async recordDecision(
 		mapId: string,
 		decision: DecisionSummary,
 	): Promise<WayfinderTrackerMap> {
-		return this.#storage.recordDecision(mapId, decision);
+		const map = await this.#storage.getMap(mapId);
+		if (map.decisionsSoFar.some((existing) => existing.url === decision.url)) {
+			return map;
+		}
+		return this.#storage.writeMapDecisions(mapId, [
+			...map.decisionsSoFar,
+			decision,
+		]);
 	}
 
-	updateMapSection(
+	async updateMapSection(
 		mapId: string,
 		section: MapSectionKey,
 		content: string,
 	): Promise<WayfinderTrackerMap> {
-		return this.#storage.updateMapSection(mapId, section, content);
+		return this.#storage.writeMapSection(mapId, section, content);
 	}
 }
 
