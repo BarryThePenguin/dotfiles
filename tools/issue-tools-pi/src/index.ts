@@ -33,6 +33,8 @@ import { join } from "node:path";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult } from "./render.ts";
 import {
+	createTrackerModules,
+	createTrackerSession,
 	detectTrackerSelection,
 	localTrackerRoot,
 	type TrackerMode,
@@ -48,13 +50,9 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		pi.appendEntry("issue-tools-state", { activeMap });
 	};
 
-	const resolveTrackerMode = async (
+	const selectTrackerMode = async (
 		ctx: ExtensionContext,
 	): Promise<TrackerMode> => {
-		if (trackerMode) {
-			return trackerMode;
-		}
-
 		const selection = detectTrackerSelection(ctx.cwd);
 		if (selection) {
 			trackerMode = selection;
@@ -72,8 +70,13 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		]);
 		trackerMode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
 		ctx.ui.notify(`Wayfinder tracker: ${trackerMode}`, "info");
-		updateStatus(ctx);
 		return trackerMode;
+	};
+
+	const getTrackerModules = async (ctx: ExtensionContext) => {
+		const modules = await trackerSession.get(ctx);
+		updateStatus(ctx);
+		return modules;
 	};
 
 	const updateStatus = (ctx: ExtensionContext) => {
@@ -105,15 +108,27 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		get trackerMode() {
 			return trackerMode;
 		},
-		resolveTrackerMode,
+		getTrackerModules,
 		persistState,
 		updateStatus,
 	});
 
 	// -- Session lifecycle ---------------------------------------------------
 
+	let trackerSession = createTrackerSession({
+		cwd: ".",
+		selectMode: selectTrackerMode,
+		buildModules: createTrackerModules,
+	});
+
 	pi.on("session_start", (_event, ctx) => {
 		activeMap = null;
+		trackerMode = null;
+		trackerSession = createTrackerSession({
+			cwd: ctx.cwd,
+			selectMode: selectTrackerMode,
+			buildModules: createTrackerModules,
+		});
 		for (const entry of ctx.sessionManager.getBranch()) {
 			if (entry.type === "custom" && entry.customType === "issue-tools-state") {
 				// `maps` was dropped from the persisted shape; older sessions may

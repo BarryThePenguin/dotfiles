@@ -2,7 +2,12 @@ import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
-import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempDisposableSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,6 +52,7 @@ function setupTest(options: SetupOptions = {}) {
 
 	const notifications: CapturedNotify[] = [];
 	const selections: CapturedSelection[] = [];
+	const statuses: string[] = [];
 	let responseIdx = 0;
 	const responseQueue = options.selectResponses ?? [];
 
@@ -72,24 +78,58 @@ function setupTest(options: SetupOptions = {}) {
 	} as unknown as ExtensionCommandContext;
 
 	const toolNames: string[] = [];
+	const tools = new Map<
+		string,
+		{ execute?: (...args: unknown[]) => Promise<unknown> }
+	>();
 	let handler:
 		((args: string, ctx: ExtensionCommandContext) => Promise<void>) | undefined;
+	let sessionStart:
+		((event: unknown, ctx: ExtensionCommandContext) => void) | undefined;
 	const api = {
-		registerTool(def: { name: string }) {
+		registerTool(def: {
+			name: string;
+			execute?: (...args: unknown[]) => Promise<unknown>;
+		}) {
 			toolNames.push(def.name);
+			tools.set(def.name, def);
 		},
 		registerCommand(_name: string, options: { handler: typeof handler }) {
 			handler = options.handler;
 		},
-		on() {},
+		on(event: string, listener: typeof sessionStart) {
+			if (event === "session_start") {
+				sessionStart = listener;
+			}
+		},
 	} as unknown as ExtensionAPI;
 	wayfinderExtension(api);
+
+	const sessionContext = {
+		...ctx,
+		sessionManager: { getBranch: () => [] },
+		ui: {
+			...ctx.ui,
+			setStatus: (_key: string, text: string) => {
+				statuses.push(text);
+			},
+			theme: { fg: (_color: string, text: string) => text },
+		},
+	} as unknown as ExtensionCommandContext;
 
 	return {
 		dir,
 		notifications,
 		selections,
+		statuses,
 		toolNames,
+		tool: (name: string) => tools.get(name),
+		startSession: () => {
+			if (!sessionStart) {
+				throw new Error("session_start handler was not registered");
+			}
+			sessionStart({}, sessionContext);
+		},
 		run: () => {
 			if (!handler) {
 				throw new Error("setup-issue-tracker command was not registered");
@@ -106,6 +146,45 @@ function setupTest(options: SetupOptions = {}) {
 beforeEach(() => {
 	vi.stubEnv("TODOIST_API_TOKEN", undefined);
 	vi.stubEnv("TODOIST_RC_DIR", undefined);
+});
+
+describe("Tracker session lifecycle", () => {
+	it("rebuilds Tracker state when a new session selects a different Issue tracker", async () => {
+		using t = setupTest({ dirs: [".scratch"] });
+		const issueList = t.tool("issue_list");
+		if (!issueList?.execute) {
+			throw new Error("issue_list tool was not registered");
+		}
+
+		const toolContext = {
+			cwd: t.dir.path,
+			hasUI: false,
+			ui: {
+				setStatus: () => {},
+				theme: { fg: (_color: string, text: string) => text },
+			},
+		};
+
+		// Bind the session to the test repo before the first tool call so the
+		// local tracker is materialized under the temp dir, never the repo root.
+		t.startSession();
+		await issueList.execute("first", {}, undefined, undefined, toolContext);
+
+		rmSync(join(t.dir.path, ".scratch"), { recursive: true, force: true });
+		writeFileSync(
+			join(t.dir.path, ".doistrc"),
+			JSON.stringify({ projects: [{ id: "p1", label: "Work" }] }),
+		);
+		vi.stubEnv("TODOIST_API_TOKEN", "test");
+		vi.stubEnv("TODOIST_RC_DIR", t.dir.path);
+
+		t.startSession();
+
+		// The new session sees Todoist instead of reusing the prior local mode.
+		// This status is produced by the session lifecycle after it resets the
+		// cached Tracker and mode.
+		expect(t.statuses.at(-1)).toContain("todoist");
+	});
 });
 
 describe("/setup-issue-tracker command", () => {

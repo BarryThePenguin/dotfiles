@@ -6,7 +6,6 @@
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { ListItem, RootContent } from "mdast";
 import {
 	blockquote,
 	heading,
@@ -32,18 +31,16 @@ import {
 	type IssueListParams,
 	type IssueReadParams,
 	type ListFrontierParams,
-	type WayfinderTrackerMap,
-	type WayfinderTrackerTicket,
 	type MapSectionKey,
 	type ResolveParams,
 	type SetBlockingParams,
+	type TrackerModules,
 	type UpdateMapParams,
+	type WayfinderTrackerMap,
+	type WayfinderTrackerTicket,
 } from "issue-tools-core";
-import {
-	createTrackerModules,
-	localTrackerRoot,
-	type TrackerMode,
-} from "./tracker.ts";
+import type { ListItem, RootContent } from "mdast";
+import { localTrackerRoot, type TrackerMode } from "./tracker.ts";
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
@@ -75,7 +72,7 @@ export interface ActionMap {
 export interface ToolContext {
 	activeMap: string | null;
 	trackerMode: TrackerMode | null;
-	resolveTrackerMode: (ext: ExtensionContext) => Promise<TrackerMode>;
+	getTrackerModules: (ext: ExtensionContext) => Promise<TrackerModules>;
 	persistState: () => void;
 	updateStatus: (ext: ExtensionContext) => void;
 }
@@ -140,16 +137,17 @@ export function handleAction<K extends keyof ActionMap>(
 const DEFAULT_CLAIMANT = "pi-wayfinder";
 
 async function createModules(ext: ExtensionContext, ctx: ToolContext) {
-	const mode = await ctx.resolveTrackerMode(ext);
-	return createTrackerModules({ cwd: ext.cwd, mode });
+	return ctx.getTrackerModules(ext);
 }
 
 async function createWayfinder(ext: ExtensionContext, ctx: ToolContext) {
-	return (await createModules(ext, ctx)).wayfinder;
+	const { wayfinder } = await createModules(ext, ctx);
+	return wayfinder;
 }
 
 async function createIssues(ext: ExtensionContext, ctx: ToolContext) {
-	return (await createModules(ext, ctx)).issues;
+	const { issues } = await createModules(ext, ctx);
+	return issues;
 }
 
 function trackerDetails(ext: ExtensionContext, ctx: ToolContext) {

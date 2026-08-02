@@ -2,10 +2,11 @@ import { mkdirSync, writeFileSync, mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createContainer } from "issue-tools-core";
+import { createContainer, type TrackerModules } from "issue-tools-core";
 import {
 	buildTrackerModules,
 	createTrackerModules,
+	createTrackerSession,
 	detectTrackerSelection,
 	localTrackerRoot,
 	pickRepoProjectId,
@@ -120,6 +121,79 @@ describe("buildTrackerModules", () => {
 		await expect(buildTrackerModules()).rejects.toThrow(
 			"Could not create Todoist tracker: no-config",
 		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// createTrackerSession
+// ---------------------------------------------------------------------------
+
+describe("createTrackerSession", () => {
+	const cwd = "/repo";
+
+	function modules(): TrackerModules {
+		return { issues: {}, wayfinder: {} } as unknown as TrackerModules;
+	}
+
+	it("selects and builds once for concurrent and subsequent requests", async () => {
+		const built = modules();
+		const selectMode = vi.fn(() => Promise.resolve("local" as const));
+		const buildModules = vi.fn(() => Promise.resolve(built));
+		const session = createTrackerSession({ cwd, selectMode, buildModules });
+
+		const [first, concurrent, subsequent] = await Promise.all([
+			session.get(),
+			session.get(),
+			session.get(),
+		]);
+
+		expect(selectMode).toHaveBeenCalledOnce();
+		expect(buildModules).toHaveBeenCalledExactlyOnceWith({
+			cwd,
+			mode: "local",
+		});
+		expect(first).toBe(built);
+		expect(concurrent).toBe(built);
+		expect(subsequent).toBe(built);
+	});
+
+	it("starts fresh selection and construction after reset", async () => {
+		const firstModules = modules();
+		const secondModules = modules();
+		const selectMode = vi
+			.fn()
+			.mockResolvedValueOnce("local" as const)
+			.mockResolvedValueOnce("todoist" as const);
+		const buildModules = vi
+			.fn()
+			.mockResolvedValueOnce(firstModules)
+			.mockResolvedValueOnce(secondModules);
+		const session = createTrackerSession({ cwd, selectMode, buildModules });
+
+		const first = await session.get();
+		session.reset();
+		const second = await session.get();
+
+		expect(selectMode).toHaveBeenCalledTimes(2);
+		expect(buildModules).toHaveBeenCalledTimes(2);
+		expect(second).toBe(secondModules);
+		expect(second).not.toBe(first);
+	});
+
+	it("does not cache a failed selection or construction", async () => {
+		const error = new Error("temporary construction failure");
+		const built = modules();
+		const selectMode = vi.fn(() => Promise.resolve("local" as const));
+		const buildModules = vi
+			.fn()
+			.mockRejectedValueOnce(error)
+			.mockResolvedValueOnce(built);
+		const session = createTrackerSession({ cwd, selectMode, buildModules });
+
+		await expect(session.get()).rejects.toThrow(error);
+		await expect(session.get()).resolves.toBe(built);
+		expect(selectMode).toHaveBeenCalledTimes(2);
+		expect(buildModules).toHaveBeenCalledTimes(2);
 	});
 });
 
