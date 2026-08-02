@@ -205,22 +205,7 @@ export function parseMapBody(markdown: string): ParsedMapBody {
 	return mapBodyFromDocument(markdownDocument(markdown));
 }
 
-export function appendDecision(
-	markdown: string,
-	decision: DecisionSummary,
-): string {
-	const parsed = parseMapBody(markdown);
-	if (parsed.decisionsSoFar.some((existing) => existing.url === decision.url)) {
-		return markdown;
-	}
-
-	return renderMapBody({
-		...parsed,
-		decisionsSoFar: [...parsed.decisionsSoFar, decision],
-	});
-}
-
-export function replaceMapSectionOnRoot(
+function replaceMapSectionOnRoot(
 	root: Root,
 	section: MapSectionKey,
 	content: RootContent[],
@@ -236,15 +221,4 @@ export function replaceMapSection(
 	const root = parseMarkdown(markdown);
 	replaceMapSectionOnRoot(root, section, markdownBlocks(content));
 	return stringifyMarkdown(root);
-}
-
-export function appendOutOfScope(
-	markdown: string,
-	entry: OutOfScopeEntry,
-): string {
-	const parsed = parseMapBody(markdown);
-	return renderMapBody({
-		...parsed,
-		outOfScope: [...parsed.outOfScope, entry],
-	});
 }

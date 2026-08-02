@@ -27,12 +27,12 @@ export type BlockerRef = {
 	url: string;
 };
 
-export type TicketBodyRootInput = {
+type TicketBodyRootInput = {
 	question: RootContent[];
 	blockers: BlockerRef[];
 };
 
-export function ticketBodyRoot(input: TicketBodyRootInput): Root {
+function ticketBodyRoot(input: TicketBodyRootInput): Root {
 	const root = u("root", [heading(2, [text("Question")]), ...input.question]);
 	setBlockedBySectionOnRoot(root, input.blockers);
 	return root;
@@ -56,7 +56,7 @@ function parseBlockerNodes(nodes: RootContent[]): string[] {
 	return Array.from(new Set(ids));
 }
 
-export function setBlockedBySectionOnRoot(
+function setBlockedBySectionOnRoot(
 	root: Root,
 	blockers: BlockerRef[],
 ): void {
@@ -84,7 +84,7 @@ export function setBlockedBySection(
 
 // `Claimed by` lives as a header line ("Claimed by: <name>") at the top of the
 // body, mirroring the local file format.
-export function setClaimedByOnRoot(
+function setClaimedByOnRoot(
 	root: Root,
 	claimant: string | undefined,
 ): void {
@@ -121,7 +121,7 @@ export function renderTicketBody(input: {
 	return stringifyMarkdown(root);
 }
 
-export function ticketBodyFromDocument(
+function ticketBodyFromDocument(
 	document: WayfinderMarkdownDocument,
 ): ParsedTicketBody {
 	const question = stringifyChildren(questionChildren(document));

@@ -122,7 +122,7 @@ export function heading(
 	return u("heading", { depth }, children);
 }
 
-export function sectionRange(
+function sectionRange(
 	root: Root,
 	title: string | string[],
 	options: { depth?: number } = {},
@@ -157,15 +157,6 @@ export function sectionRange(
 	}
 
 	return { start, end: end ?? max };
-}
-
-export function sectionChildren(
-	root: Root,
-	title: string | string[],
-	options: { depth?: number } = {},
-): RootContent[] {
-	const range = sectionRange(root, title, options);
-	return range ? root.children.slice(range.start + 1, range.end) : [];
 }
 
 export function removeSection(

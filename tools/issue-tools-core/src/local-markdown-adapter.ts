@@ -214,23 +214,6 @@ export class LocalMarkdownPersistenceAdapter {
 		});
 	}
 
-	async readMapBody(id: string): Promise<string> {
-		const mapId = this.#mapId(id);
-		await this.getMap(mapId);
-		return this.#readMapBody(mapId);
-	}
-
-	async writeMapBody(id: string, body: string): Promise<WayfinderTrackerMap> {
-		const mapId = this.#mapId(id);
-		await this.getMap(mapId);
-		await this.#writeMapBody(mapId, body);
-		return this.getMap(mapId);
-	}
-
-	async updateMapBody(id: string, body: string): Promise<WayfinderTrackerMap> {
-		return this.writeMapBody(id, body);
-	}
-
 	async writeMapDecisions(
 		mapId: string,
 		decisions: DecisionSummary[],
@@ -261,13 +244,6 @@ export class LocalMarkdownPersistenceAdapter {
 		);
 		await this.#writeMapBody(normalizedMapId, nextBody);
 		return this.getMap(normalizedMapId);
-	}
-
-	async updateTicketBody(id: string, body: string): Promise<WayfinderTrackerTicket> {
-		const info = this.#ticketInfo(id);
-		await this.getTicket(id);
-		await writeFile(info.path, body);
-		return this.getTicket(id);
 	}
 
 	async unclaimTicket(id: string): Promise<WayfinderTrackerTicket> {

@@ -278,11 +278,11 @@ export class TodoistPersistenceAdapter {
 		);
 	}
 
-	async readMapBody(mapId: string): Promise<string> {
+	async #readMapBody(mapId: string): Promise<string> {
 		return (await this.#gateway.getTask(mapId)).description;
 	}
 
-	async writeMapBody(
+	async #writeMapBody(
 		mapId: string,
 		body: string,
 	): Promise<WayfinderTrackerMap> {
@@ -297,8 +297,8 @@ export class TodoistPersistenceAdapter {
 		mapId: string,
 		decisions: DecisionSummary[],
 	): Promise<WayfinderTrackerMap> {
-		const current = parseMapBody(await this.readMapBody(mapId));
-		return this.writeMapBody(
+		const current = parseMapBody(await this.#readMapBody(mapId));
+		return this.#writeMapBody(
 			mapId,
 			renderMapBody({ ...current, decisionsSoFar: decisions }),
 		);
@@ -309,9 +309,9 @@ export class TodoistPersistenceAdapter {
 		section: MapSectionKey,
 		content: string,
 	): Promise<WayfinderTrackerMap> {
-		return this.writeMapBody(
+		return this.#writeMapBody(
 			mapId,
-			replaceMapSection(await this.readMapBody(mapId), section, content),
+			replaceMapSection(await this.#readMapBody(mapId), section, content),
 		);
 	}
 

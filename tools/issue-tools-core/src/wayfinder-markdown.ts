@@ -46,7 +46,7 @@ function normalizeSectionTitle(title: string): string {
 	return title.trim().replace(/:$/, "").toLowerCase();
 }
 
-export function headerParagraphIndex(root: Root): number | undefined {
+function headerParagraphIndex(root: Root): number | undefined {
 	const firstSectionIndex = root.children.findIndex(
 		(node) => node.type === "heading" && node.depth >= 2,
 	);
@@ -60,7 +60,7 @@ export function headerParagraphIndex(root: Root): number | undefined {
 	return index === -1 ? undefined : index;
 }
 
-export function headerLines(root: Root): string[] {
+function headerLines(root: Root): string[] {
 	const index = headerParagraphIndex(root);
 	if (index === undefined) {
 		return [];
@@ -114,7 +114,7 @@ export function setHeaderOnRoot(
 	}
 }
 
-export function indexWayfinderMarkdown(root: Root): WayfinderMarkdownIndex {
+function indexWayfinderMarkdown(root: Root): WayfinderMarkdownIndex {
 	const sections: WayfinderMarkdownSection[] = [];
 	let title: string | undefined;
 
@@ -150,7 +150,7 @@ export function indexWayfinderMarkdown(root: Root): WayfinderMarkdownIndex {
 	};
 }
 
-export function remarkWayfinderIndex(): Transformer<Root> {
+function remarkWayfinderIndex(): Transformer<Root> {
 	return (tree, file) => {
 		file.data.wayfinder = indexWayfinderMarkdown(tree);
 	};
@@ -191,7 +191,7 @@ export function markdownDocument(markdown: string): WayfinderMarkdownDocument {
 	);
 }
 
-export function documentSectionRange(
+function documentSectionRange(
 	document: Pick<WayfinderMarkdownDocument, "root" | "index">,
 	title: string | string[],
 	options: { depth?: Heading["depth"] } = {},
@@ -207,7 +207,7 @@ export function documentSectionRange(
 	return section ? { start: section.start, end: section.end } : undefined;
 }
 
-export function documentSectionChildren(
+function documentSectionChildren(
 	document: Pick<WayfinderMarkdownDocument, "root" | "index">,
 	title: string | string[],
 	options: { depth?: Heading["depth"] } = {},

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -104,18 +104,16 @@ class InMemoryTodoistGateway implements TodoistGateway {
 
 async function localFixture(): Promise<Fixture> {
 	const root = await mkdtemp(join(tmpdir(), "resolution-contract-local-"));
-	const adapter = new LocalMarkdownPersistenceAdapter(root);
-	const tracker = createTrackerModules(adapter).wayfinder;
+	const tracker = createTrackerModules(
+		new LocalMarkdownPersistenceAdapter(root),
+	).wayfinder;
 	return {
 		tracker,
 		addOrdinaryComment: async (ticketId, body) => {
 			const ticket = await tracker.getTicket(ticketId);
 			const path = join(root, ticket.mapId, ticket.url);
 			const markdown = await readFile(path, "utf8");
-			await adapter.updateTicketBody(
-				ticketId,
-				`${markdown}\n## Comments\n\n> ${body}\n`,
-			);
+			await writeFile(path, `${markdown}\n## Comments\n\n> ${body}\n`);
 		},
 		cleanup: () => rm(root, { recursive: true, force: true }),
 	};

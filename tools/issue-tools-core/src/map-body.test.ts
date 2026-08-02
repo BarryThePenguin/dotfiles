@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	appendDecision,
-	appendOutOfScope,
-	parseMapBody,
-	renderMapBody,
-} from "./map-body.ts";
+import { parseMapBody, renderMapBody } from "./map-body.ts";
 
 describe("Wayfinder map body", () => {
 	it("renders and parses required map sections", () => {
@@ -81,83 +76,6 @@ describe("Wayfinder map body", () => {
 			destination: "Ship the thing.\n\n- works locally\n- works in Todoist",
 			notes: "Context.\n\n### Detail\n\n```ts\nconst x = 1;\n```",
 		});
-	});
-
-	it("appends a decision without removing existing map sections", () => {
-		const body = renderMapBody({
-			destination: "Find the way.",
-			notes: "Planning only.",
-			decisionsSoFar: [],
-			notYetSpecified: ["Future question."],
-			outOfScope: [],
-		});
-
-		const updated = appendDecision(body, {
-			title: "Choose tracker",
-			url: "todoist://task/1",
-			gist: "Todoist owns durable state.",
-		});
-
-		const parsed = parseMapBody(updated);
-		expect(parsed.destination).toBe("Find the way.");
-		expect(parsed.notYetSpecified).toEqual(["Future question."]);
-		expect(parsed.decisionsSoFar).toEqual([
-			{
-				title: "Choose tracker",
-				url: "todoist://task/1",
-				gist: "Todoist owns durable state.",
-			},
-		]);
-	});
-
-	it("does not duplicate a decision when its ticket URL is already recorded", () => {
-		const body = renderMapBody({
-			destination: "Find the way.",
-			notes: "Planning only.",
-			decisionsSoFar: [
-				{
-					title: "Choose tracker",
-					url: "todoist://task/1",
-					gist: "The first gist wins.",
-				},
-			],
-			notYetSpecified: [],
-			outOfScope: [],
-		});
-
-		const updated = appendDecision(body, {
-			title: "Choose a different tracker title",
-			url: "todoist://task/1",
-			gist: "This retry must not replace the first gist.",
-		});
-
-		expect(updated).toBe(body);
-		expect(parseMapBody(updated).decisionsSoFar).toEqual([
-			{
-				title: "Choose tracker",
-				url: "todoist://task/1",
-				gist: "The first gist wins.",
-			},
-		]);
-	});
-
-	it("appends out-of-scope entries", () => {
-		const body = renderMapBody({
-			destination: "Find the way.",
-			notes: "Planning only.",
-			decisionsSoFar: [],
-			notYetSpecified: [],
-			outOfScope: [],
-		});
-
-		const updated = appendOutOfScope(body, {
-			text: "Linear backend",
-			reason: "Todoist is first.",
-		});
-
-		expect(parseMapBody(updated).outOfScope).toEqual([
-			{ text: "Linear backend", reason: "Todoist is first." },
-		]);
 	});
 
 	it("keeps lower-depth subheadings inside their parent section", () => {

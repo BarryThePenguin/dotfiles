@@ -11,7 +11,7 @@
  * fallback is the issue's `updatedAt`, then its id as a final tiebreak.
  */
 
-import type { Issue, IssueStatus, ListIssuesFilter } from "./issue.ts";
+import type { Issue, ListIssuesFilter } from "./issue.ts";
 
 export function filterIssues(
 	issues: readonly Issue[],
@@ -53,4 +53,3 @@ function createdAtKey(issue: Issue): string {
 	return issue.createdAt ?? issue.updatedAt ?? issue.id;
 }
 
-export type { IssueStatus };
