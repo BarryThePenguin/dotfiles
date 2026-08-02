@@ -1,8 +1,8 @@
-import type { TicketType } from "./schema.ts";
-import type {
-	WayfinderTracker,
-	WayfinderTrackerMap,
-	WayfinderTrackerTicket,
+import {
+	ClosedTicketWithoutResolutionError,
+	type WayfinderTracker,
+	type WayfinderTrackerMap,
+	type WayfinderTrackerTicket,
 } from "./tracker.ts";
 
 export type BlockedFrontierTicket = {
@@ -49,140 +49,119 @@ export async function inspectFrontier(
 	return { frontier, blocked, claimed };
 }
 
+export type ResolveOutcome = "complete" | "partial" | "terminal";
+
 export type ResolveTicketInput = {
 	ticketId: string;
+	mapId: string;
 	resolution: string;
 	gist: string;
-	mapId?: string;
 };
 
 export type ResolveTicketResult = {
+	outcome: ResolveOutcome;
 	resolvedTicket: WayfinderTrackerTicket;
 	map?: WayfinderTrackerMap;
-	mapId?: string;
+	mapId: string;
 	unblocked: string[];
-	usedFallback: boolean;
-	resolutionPosted: true;
+	error?: string;
+	resolutionPosted: boolean;
 	decisionRecorded: boolean;
 };
+
+async function findNewlyUnblocked(
+	tracker: WayfinderTracker,
+	mapId: string,
+	resolvedTicketId: string,
+): Promise<string[]> {
+	const siblings = await tracker.listChildTickets(mapId);
+	const candidates = siblings.filter(
+		(sibling) =>
+			sibling.status === "open" &&
+			sibling.blockerIds.includes(resolvedTicketId),
+	);
+	const newlyUnblocked: string[] = [];
+
+	for (const candidate of candidates) {
+		const blockers = await Promise.all(
+			candidate.blockerIds.map((blockerId) => tracker.getTicket(blockerId)),
+		);
+		if (blockers.every((blocker) => blocker.status === "closed")) {
+			newlyUnblocked.push(candidate.id);
+		}
+	}
+
+	return newlyUnblocked;
+}
 
 export async function resolveTicket(
 	tracker: WayfinderTracker,
 	input: ResolveTicketInput,
 ): Promise<ResolveTicketResult> {
 	const ticket = await tracker.getTicket(input.ticketId);
-	const mapId = ticket.mapId || input.mapId;
-	const usedFallback = !ticket.mapId && !!mapId;
+	if (!ticket.mapId) {
+		throw new Error(`Ticket ${input.ticketId} has no map identity.`);
+	}
+	if (ticket.mapId !== input.mapId) {
+		throw new Error(
+			`Ticket ${input.ticketId} has map identity ${ticket.mapId}, not ${input.mapId}.`,
+		);
+	}
 
-	const resolvedTicket = await tracker.resolveTicket(
+	// Validate the map before the ticket adapter is allowed to mutate anything.
+	await tracker.getMap(input.mapId);
+
+	let resolvedTicket: WayfinderTrackerTicket;
+	try {
+		resolvedTicket = await tracker.resolveTicket(
+			input.ticketId,
+			input.resolution,
+		);
+	} catch (error) {
+		if (!(error instanceof ClosedTicketWithoutResolutionError)) {
+			throw error;
+		}
+		return {
+			outcome: "terminal",
+			resolvedTicket: ticket,
+			mapId: input.mapId,
+			unblocked: [],
+			error: error.message,
+			resolutionPosted: false,
+			decisionRecorded: false,
+		};
+	}
+
+	const unblocked = await findNewlyUnblocked(
+		tracker,
+		input.mapId,
 		input.ticketId,
-		input.resolution,
 	);
 
-	let map: WayfinderTrackerMap | undefined;
-	let unblocked: string[] = [];
-	if (mapId) {
-		map = await tracker.recordDecision(mapId, {
+	try {
+		const map = await tracker.recordDecision(input.mapId, {
 			title: ticket.title,
 			url: ticket.url,
 			gist: input.gist,
 		});
-		const siblings = await tracker.listChildTickets(mapId);
-		unblocked = siblings
-			.filter((sibling) => {
-				if (
-					sibling.status !== "open" ||
-					!sibling.blockerIds.includes(input.ticketId)
-				) {
-					return false;
-				}
-				const remaining = sibling.blockerIds.filter(
-					(blockerId) => blockerId !== input.ticketId,
-				);
-				return remaining.length === 0;
-			})
-			.map((sibling) => sibling.id);
+		return {
+			outcome: "complete",
+			resolvedTicket,
+			map,
+			mapId: input.mapId,
+			unblocked,
+			resolutionPosted: true,
+			decisionRecorded: true,
+		};
+	} catch (error) {
+		return {
+			outcome: "partial",
+			resolvedTicket,
+			mapId: input.mapId,
+			unblocked,
+			error: error instanceof Error ? error.message : String(error),
+			resolutionPosted: true,
+			decisionRecorded: false,
+		};
 	}
-
-	return {
-		resolvedTicket,
-		...(map ? { map } : {}),
-		...(mapId ? { mapId } : {}),
-		unblocked,
-		usedFallback,
-		resolutionPosted: true,
-		decisionRecorded: Boolean(map),
-	};
-}
-
-export type ResolveWayfinderTicketInput = {
-	mapId: string;
-	ticketId?: string;
-	claimant?: string;
-	resolution: string;
-	decisionGist: string;
-	newTickets?: Array<{
-		title: string;
-		type: TicketType;
-		question: string;
-		blockerIds?: string[];
-	}>;
-};
-
-export type ResolveWayfinderTicketOptions = {
-	defaultClaimant?: string;
-};
-
-export async function resolveWayfinderTicket(
-	tracker: WayfinderTracker,
-	input: ResolveWayfinderTicketInput,
-	options: ResolveWayfinderTicketOptions = {},
-) {
-	const ticket = input.ticketId
-		? await tracker.getTicket(input.ticketId)
-		: (await tracker.listFrontierTickets(input.mapId))[0];
-
-	if (!ticket) {
-		throw new Error(`No frontier tickets found for map ${input.mapId}.`);
-	}
-
-	const claimant = input.claimant ?? options.defaultClaimant;
-	if (claimant) {
-		const claim = await tracker.claimTicketIfUnclaimed(ticket.id, claimant);
-		if (!claim.claimed && claim.ticket.claimedBy !== claimant) {
-			throw new Error(
-				`Ticket ${ticket.id} is already claimed by ${claim.ticket.claimedBy ?? "another actor"}.`,
-			);
-		}
-	}
-
-	const resolved = await resolveTicket(tracker, {
-		ticketId: ticket.id,
-		mapId: input.mapId,
-		resolution: input.resolution,
-		gist: input.decisionGist,
-	});
-
-	const createdTickets = [];
-	for (const newTicket of input.newTickets ?? []) {
-		createdTickets.push(
-			await tracker.createChildTicket({
-				mapId: input.mapId,
-				title: newTicket.title,
-				type: newTicket.type,
-				question: newTicket.question,
-				...(newTicket.blockerIds !== undefined
-					? { blockerIds: newTicket.blockerIds }
-					: {}),
-			}),
-		);
-	}
-
-	return {
-		map: resolved.map,
-		resolvedTicket: resolved.resolvedTicket,
-		createdTickets,
-		resolutionPosted: true as const,
-		decisionRecorded: true as const,
-	};
 }

@@ -26,13 +26,14 @@ import {
 	recordDecision as recordDecisionOperation,
 	updateMapSection as updateMapSectionOperation,
 } from "./tracker-operations.ts";
-import type {
-	CreateWayfinderChildTicketInput,
-	CreateWayfinderMapInput,
-	WayfinderClaimResult,
-	WayfinderTicketStatus,
-	WayfinderTrackerMap,
-	WayfinderTrackerTicket,
+import {
+	ClosedTicketWithoutResolutionError,
+	type CreateWayfinderChildTicketInput,
+	type CreateWayfinderMapInput,
+	type WayfinderClaimResult,
+	type WayfinderTicketStatus,
+	type WayfinderTrackerMap,
+	type WayfinderTrackerTicket,
 } from "./tracker.ts";
 
 export type TodoistMap = WayfinderTrackerMap;
@@ -255,9 +256,7 @@ export class TodoistTracker {
 		);
 		if (task.isCompleted) {
 			if (!matchingResolution) {
-				throw new Error(
-					`Ticket ${id} is already closed without the requested Resolution.`,
-				);
+				throw new ClosedTicketWithoutResolutionError(id);
 			}
 			return toTicket(task);
 		}

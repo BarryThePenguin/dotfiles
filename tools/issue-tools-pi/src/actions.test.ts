@@ -70,6 +70,60 @@ describe("Wayfinder actions", () => {
 	});
 });
 
+describe("Resolution actions", () => {
+	it("renders complete and terminal outcomes without using the active map", async () => {
+		using dir = tempDir();
+		const tracker = new LocalMarkdownTracker(localTrackerRoot(dir.path));
+		const map = await tracker.createMap({
+			title: "Resolution map",
+			destination: "A decision is recorded after closure.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Choose a path",
+			type: "task",
+			question: "Which path wins?",
+		});
+		const { extensionContext, toolContext } = makeContext(dir.path);
+		toolContext.activeMap = "wrong-map";
+
+		const complete = await handleAction(
+			"resolve",
+			{
+				map_id: map.id,
+				ticket_id: ticket.id,
+				resolution: "Take path A.",
+				gist: "Take path A.",
+			},
+			toolContext,
+			extensionContext,
+		);
+		expect(complete.content[0]?.text).toContain("Outcome: complete");
+		expect(complete.content[0]?.text).toContain("map decision recorded");
+
+		const closed = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Already closed",
+			type: "research",
+			question: "What happened?",
+		});
+		await tracker.closeTicket(closed.id);
+		const terminal = await handleAction(
+			"resolve",
+			{
+				map_id: map.id,
+				ticket_id: closed.id,
+				resolution: "Too late.",
+				gist: "Inspect it.",
+			},
+			toolContext,
+			extensionContext,
+		);
+		expect(terminal.content[0]?.text).toContain("Outcome: terminal");
+		expect(terminal.content[0]?.text).toContain("Human inspection is required");
+	});
+});
+
 describe("Generic issue actions", () => {
 	it("creates and reads a generic issue end-to-end on the local tracker", async () => {
 		using dir = tempDir();

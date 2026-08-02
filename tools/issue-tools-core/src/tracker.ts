@@ -9,6 +9,17 @@ import type {
 
 export type WayfinderTicketStatus = "open" | "closed";
 
+export class ClosedTicketWithoutResolutionError extends Error {
+	readonly code = "closed_ticket_without_resolution" as const;
+
+	constructor(ticketId: string) {
+		super(
+			`Ticket ${ticketId} is already closed without the requested Resolution.`,
+		);
+		this.name = "ClosedTicketWithoutResolutionError";
+	}
+}
+
 export type WayfinderTrackerMap = ParsedMapBody & {
 	id: string;
 	title: string;

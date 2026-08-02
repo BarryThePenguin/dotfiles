@@ -455,31 +455,38 @@ async function resolve(
 ): Promise<ActionResult> {
 	const tracker = await createTracker(ext, ctx);
 	const result = await resolveTicket(tracker, {
+		mapId: params.map_id,
 		ticketId: params.ticket_id,
-		...(ctx.activeMap ? { mapId: ctx.activeMap } : {}),
 		resolution: renderResolution(params.resolution),
 		gist: params.gist,
 	});
 
 	const lines = [
-		`Ticket ${params.ticket_id} resolved.`,
+		`Outcome: ${result.outcome}`,
+		`Ticket: ${params.ticket_id}`,
+		result.outcome === "complete"
+			? "Resolution recorded, ticket closed, and map decision recorded."
+			: result.outcome === "partial"
+				? "Resolution recorded and ticket closed, but the map decision was not recorded. Retry this operation."
+				: "Ticket is closed without a matching Resolution. Human inspection is required; no map decision was recorded.",
+		result.error ? `Error: ${result.error}` : "",
 		`Gist: ${params.gist}`,
-		result.usedFallback
-			? `\nWarning: ticket was missing its map metadata — used the active map (${result.mapId}).`
-			: "",
 		result.unblocked.length > 0
-			? `\nUnblocked tickets: ${result.unblocked.join(", ")}`
-			: "\nNo tickets unblocked.",
+			? `Unblocked tickets: ${result.unblocked.join(", ")}`
+			: "No tickets unblocked.",
 	];
 
 	return ok(
-		lines.join("\n"),
+		lines.filter(Boolean).join("\n"),
 		mapDetails(ext, ctx, {
 			resolved: params.ticket_id,
 			gist: params.gist,
 			mapId: result.mapId,
+			outcome: result.outcome,
 			unblocked: result.unblocked,
-			usedFallback: result.usedFallback,
+			resolutionPosted: result.resolutionPosted,
+			decisionRecorded: result.decisionRecorded,
+			...(result.error ? { error: result.error } : {}),
 		}),
 	);
 }

@@ -44,13 +44,14 @@ import {
 	recordDecision as recordDecisionOperation,
 	updateMapSection as updateMapSectionOperation,
 } from "./tracker-operations.ts";
-import type {
-	CreateWayfinderChildTicketInput,
-	CreateWayfinderMapInput,
-	WayfinderClaimResult,
-	WayfinderTicketStatus,
-	WayfinderTrackerMap,
-	WayfinderTrackerTicket,
+import {
+	ClosedTicketWithoutResolutionError,
+	type CreateWayfinderChildTicketInput,
+	type CreateWayfinderMapInput,
+	type WayfinderClaimResult,
+	type WayfinderTicketStatus,
+	type WayfinderTrackerMap,
+	type WayfinderTrackerTicket,
 } from "./tracker.ts";
 
 export type LocalTicketStatus = WayfinderTicketStatus;
@@ -287,9 +288,7 @@ export class LocalMarkdownTracker {
 					return this.getTicket(id);
 				}
 			} else if (isClosed) {
-				throw new Error(
-					`Ticket ${id} is already closed without the requested Resolution.`,
-				);
+				throw new ClosedTicketWithoutResolutionError(id);
 			}
 
 			setSectionOnRoot(root, "Answer", canonicalResolution);
@@ -359,6 +358,7 @@ export class LocalMarkdownTracker {
 		return updateMapSectionOperation(
 			{
 				readMapBody: (id) => this.#readMapBody(id),
+				readMap: (id) => this.getMap(id),
 				writeMapBody: async (id, body) => {
 					await this.#writeMapBody(id, body);
 					return this.getMap(id);

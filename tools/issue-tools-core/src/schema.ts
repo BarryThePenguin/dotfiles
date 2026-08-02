@@ -235,6 +235,9 @@ export const GetTicketParams = Type.Object({ ticket_id: TicketId });
 export type GetTicketParams = Static<typeof GetTicketParams>;
 
 export const ResolveParams = Type.Object({
+	map_id: Type.String({
+		description: "The map that owns the Decision ticket",
+	}),
 	ticket_id: TicketId,
 	resolution: Type.String({
 		description: "The answer or decision (posted as comment)",
