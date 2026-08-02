@@ -74,7 +74,7 @@ export async function buildTrackerModules(): Promise<TrackerModules> {
 		gateway,
 		repoProjectId ? { projectId: repoProjectId } : {},
 	);
-	return createDomainModules({ issues: adapter, wayfinder: adapter });
+	return createDomainModules(adapter);
 }
 
 export async function createTrackerModules({
@@ -83,7 +83,7 @@ export async function createTrackerModules({
 }: CreateWayfinderTrackerOptions): Promise<TrackerModules> {
 	if (mode === "local") {
 		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(cwd));
-		return createDomainModules({ issues: adapter, wayfinder: adapter });
+		return createDomainModules(adapter);
 	}
 	return buildTrackerModules();
 }
