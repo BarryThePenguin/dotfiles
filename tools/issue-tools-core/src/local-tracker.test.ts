@@ -128,7 +128,7 @@ describe("LocalMarkdownTracker", () => {
 		).toEqual([blocked.id]);
 	});
 
-	it("claims, comments on, records, and closes a ticket", async () => {
+	it("claims, resolves, records, and reads a ticket", async () => {
 		using rootDir = setupDir();
 		const tracker = new LocalMarkdownTracker(rootDir.path);
 		const map = await tracker.createMap({
@@ -153,7 +153,7 @@ describe("LocalMarkdownTracker", () => {
 		expect(secondClaim.claimed).toBe(false);
 		expect(secondClaim.ticket.claimedBy).toBe("agent-1");
 
-		await tracker.postComment(ticket.id, "Resolution: use Todoist.");
+		await tracker.resolveTicket(ticket.id, "Resolution: use Todoist.");
 		await tracker.recordDecision(map.id, {
 			title: ticket.title,
 			url: ticket.url,
@@ -164,11 +164,10 @@ describe("LocalMarkdownTracker", () => {
 			url: ticket.url,
 			gist: "A retried gist must not replace the first one.",
 		});
-		await tracker.closeTicket(ticket.id);
 
 		const resolvedTicket = await tracker.getTicket(ticket.id);
 		expect(resolvedTicket.status).toBe("closed");
-		expect(resolvedTicket.answer).toBe("Resolution: use Todoist.");
+		expect(resolvedTicket.comments).toEqual(["Resolution: use Todoist."]);
 		const resolvedBody = await readFile(
 			join(rootDir.path, map.id, "issues", "01-choose-tracker.md"),
 			"utf8",

@@ -10,8 +10,6 @@ import {
 	LocalMapOutputSchema,
 	LocalTicketOutputSchema,
 	MapIdInputSchema,
-	OkOutputSchema,
-	PostResolutionInputSchema,
 	TicketIdInputSchema,
 	TicketListOutputSchema,
 	UpdateMapInputSchema,
@@ -176,25 +174,6 @@ export function createWayfinderTrackerTools(
 			input: TicketIdInputSchema,
 			output: LocalTicketOutputSchema,
 			run: ({ ticketId }) => tracker.getTicket(ticketId),
-		}),
-
-		wayfinder_post_resolution: defineTool({
-			name: "wayfinder_post_resolution",
-			description: "Record a resolution on a Wayfinder ticket.",
-			input: PostResolutionInputSchema,
-			output: OkOutputSchema,
-			async run({ ticketId, body }) {
-				await tracker.postComment(ticketId, body);
-				return { ok: true as const };
-			},
-		}),
-
-		wayfinder_close_ticket: defineTool({
-			name: "wayfinder_close_ticket",
-			description: "Close a resolved Wayfinder ticket.",
-			input: TicketIdInputSchema,
-			output: LocalTicketOutputSchema,
-			run: ({ ticketId }) => tracker.closeTicket(ticketId),
 		}),
 
 		wayfinder_update_map: defineTool({

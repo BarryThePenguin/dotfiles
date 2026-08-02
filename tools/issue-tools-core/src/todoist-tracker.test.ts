@@ -230,7 +230,7 @@ describe("TodoistTracker", () => {
 		).toEqual([blocked.id]);
 	});
 
-	it("claims, comments on, records, and closes Todoist tickets", async () => {
+	it("claims, resolves, records, and reads Todoist tickets", async () => {
 		const gateway = new InMemoryTodoistGateway();
 		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
 		const map = await tracker.createMap({
@@ -254,7 +254,6 @@ describe("TodoistTracker", () => {
 			await tracker.claimTicketIfUnclaimed(ticket.id, "agent-2"),
 		).toMatchObject({ claimed: false, ticket: { claimedBy: "agent-1" } });
 
-		await tracker.postComment(ticket.id, "Resolution: use Todoist.");
 		const updateSpy = vi.spyOn(gateway, "updateTask");
 		await tracker.recordDecision(map.id, {
 			title: ticket.title,
@@ -267,7 +266,7 @@ describe("TodoistTracker", () => {
 			gist: "A retried gist must not replace the first one.",
 		});
 		expect(updateSpy).toHaveBeenCalledTimes(1);
-		await tracker.closeTicket(ticket.id);
+		await tracker.resolveTicket(ticket.id, "Resolution: use Todoist.");
 
 		expect(await tracker.getTicket(ticket.id)).toMatchObject({
 			status: "closed",
@@ -285,6 +284,27 @@ describe("TodoistTracker", () => {
 				gist: "Todoist owns durable state.",
 			},
 		]);
+	});
+
+	it("keeps historical Todoist comments native on fresh ticket reads", async () => {
+		const gateway = new InMemoryTodoistGateway();
+		const tracker = new TodoistTracker(gateway, { projectId: "project-1" });
+		const map = await tracker.createMap({
+			title: "Historical comments",
+			destination: "Existing comments retain their tracker meaning.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Read old comments",
+			type: "research",
+			question: "Are old comments still ordinary comments?",
+		});
+
+		await gateway.addComment(ticket.id, "Historical note");
+
+		expect(await tracker.getTicket(ticket.id)).toMatchObject({
+			comments: ["Historical note"],
+		});
 	});
 
 	// -- Generic issue surface -------------------------------------------

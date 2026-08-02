@@ -106,7 +106,6 @@ export const LocalTicketOutputSchema = Type.Object({
 	url: Type.String(),
 	status: stringEnum(["open", "closed"] as const),
 	comments: Type.Array(Type.String()),
-	answer: Type.Optional(Type.String()),
 });
 export type LocalTicketOutput = Static<typeof LocalTicketOutputSchema>;
 
@@ -117,8 +116,6 @@ export const WayfinderToolNames = [
 	"wayfinder_query_frontier",
 	"wayfinder_claim_ticket",
 	"wayfinder_get_ticket",
-	"wayfinder_post_resolution",
-	"wayfinder_close_ticket",
 	"wayfinder_update_map",
 	"wayfinder_wire_blocking",
 	"wayfinder_list_children",
@@ -160,15 +157,6 @@ export const ClaimTicketOutputSchema = Type.Object({
 	ticket: LocalTicketOutputSchema,
 });
 export type ClaimTicketOutput = Static<typeof ClaimTicketOutputSchema>;
-
-export const PostResolutionInputSchema = Type.Object({
-	ticketId: Type.String(),
-	body: Type.String(),
-});
-export type PostResolutionInput = Static<typeof PostResolutionInputSchema>;
-
-export const OkOutputSchema = Type.Object({ ok: Type.Literal(true) });
-export type OkOutput = Static<typeof OkOutputSchema>;
 
 export const UpdateMapInputSchema = Type.Object({
 	mapId: Type.String(),

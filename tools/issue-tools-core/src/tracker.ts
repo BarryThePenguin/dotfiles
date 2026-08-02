@@ -30,7 +30,6 @@ export type WayfinderTrackerTicket = WayfinderTicket & {
 	url: string;
 	status: WayfinderTicketStatus;
 	comments: string[];
-	answer?: string;
 };
 
 export type CreateWayfinderMapInput = {
@@ -73,7 +72,6 @@ export interface WayfinderTracker extends IssueTracker {
 		id: string,
 		resolution: string,
 	): Promise<WayfinderTrackerTicket>;
-	postComment(id: string, body: string): Promise<void>;
 	setBlockingDependencies(
 		id: string,
 		blockerIds: string[],

@@ -101,6 +101,16 @@ describe("Resolution actions", () => {
 		expect(complete.content[0]?.text).toContain("Outcome: complete");
 		expect(complete.content[0]?.text).toContain("map decision recorded");
 
+		const ticketDetails = await handleAction(
+			"get_ticket",
+			{ ticket_id: ticket.id },
+			toolContext,
+			extensionContext,
+		);
+		expect(ticketDetails.content[0]?.text).toContain("Comments (1)");
+		expect(ticketDetails.content[0]?.text).toContain("Take path A.");
+		expect(ticketDetails.content[0]?.text).not.toContain("Answer");
+
 		const closed = await tracker.createChildTicket({
 			mapId: map.id,
 			title: "Already closed",

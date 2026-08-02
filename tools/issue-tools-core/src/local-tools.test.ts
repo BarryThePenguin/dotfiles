@@ -10,11 +10,13 @@ import {
 import { createWayfinderTrackerTools } from "./tools.ts";
 
 let rootDir: string;
+let tracker: LocalMarkdownTracker;
 let tools: ReturnType<typeof createWayfinderTrackerTools>;
 
 beforeEach(async () => {
 	rootDir = await mkdtemp(join(tmpdir(), "wayfinder-local-tools-"));
-	tools = createWayfinderTrackerTools(new LocalMarkdownTracker(rootDir));
+	tracker = new LocalMarkdownTracker(rootDir);
+	tools = createWayfinderTrackerTools(tracker);
 });
 
 afterEach(async () => {
@@ -136,7 +138,7 @@ describe("local Wayfinder tracker tools", () => {
 			).map((ticket) => ticket.id),
 		).toEqual([blocker.id]);
 
-		await tools.wayfinder_close_ticket.run({ ticketId: blocker.id });
+		await tracker.closeTicket(blocker.id);
 
 		expect(
 			(
@@ -147,7 +149,7 @@ describe("local Wayfinder tracker tools", () => {
 		).toEqual([blocked.id]);
 	});
 
-	it("claims tickets, posts resolutions, closes tickets, and updates maps", async () => {
+	it("claims tickets, reads resolutions, and updates maps", async () => {
 		const map = (await tools.wayfinder_create_map.run({
 			title: "Plan Todoist Wayfinder",
 			destination: "A Todoist-backed MVP exists.",
@@ -172,10 +174,7 @@ describe("local Wayfinder tracker tools", () => {
 			}),
 		).toMatchObject({ claimed: false, ticket: { claimedBy: "agent-1" } });
 
-		await tools.wayfinder_post_resolution.run({
-			ticketId: ticket.id,
-			body: "Resolution: use Todoist.",
-		});
+		await tracker.resolveTicket(ticket.id, "Resolution: use Todoist.");
 		await tools.wayfinder_update_map.run({
 			mapId: map.id,
 			decision: {
@@ -184,14 +183,11 @@ describe("local Wayfinder tracker tools", () => {
 				gist: "Todoist owns durable state.",
 			},
 		});
-		await tools.wayfinder_close_ticket.run({ ticketId: ticket.id });
-
 		expect(
 			await tools.wayfinder_get_ticket.run({ ticketId: ticket.id }),
 		).toMatchObject({
 			status: "closed",
-			answer: "Resolution: use Todoist.",
-			comments: [],
+			comments: ["Resolution: use Todoist."],
 		});
 		expect(await tools.wayfinder_get_map.run({ mapId: map.id })).toMatchObject({
 			decisionsSoFar: [

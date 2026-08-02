@@ -270,11 +270,6 @@ export class TodoistTracker {
 			),
 		);
 	}
-
-	async postComment(id: string, body: string): Promise<void> {
-		await this.#gateway.addComment(id, body);
-	}
-
 	async setBlockingDependencies(
 		id: string,
 		blockerIds: string[],

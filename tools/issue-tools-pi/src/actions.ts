@@ -254,7 +254,6 @@ function renderTicketDetails(
 	blockerTitles?: string[],
 ): string {
 	const question = markdownBlocks(ticket.question);
-	const answer = ticket.answer ? markdownBlocks(ticket.answer) : [];
 	const blockedBy =
 		blockerTitles && blockerTitles.length > 0
 			? blockerTitles.join(", ")
@@ -274,10 +273,6 @@ function renderTicketDetails(
 		heading(2, [text("Question")]),
 		...question,
 	);
-
-	if (answer.length > 0) {
-		nodes.push(heading(2, [text("Answer")]), ...answer);
-	}
 
 	if (ticket.comments.length > 0) {
 		nodes.push(

@@ -170,11 +170,19 @@ export function ticketFileBodyFromDocument(
 		blockerRefs,
 		...(claimedBy ? { claimedBy } : {}),
 		...(answer ? { answer } : {}),
-		comments: sectionContent(document, "Comments")
-			.split(/\n\s*\n/)
-			.map((comment) => comment.trim())
-			.filter(Boolean),
+		comments: ticketCommentsFromNodes(document.section("Comments")),
 	};
+}
+
+function ticketCommentsFromNodes(nodes: RootContent[]): string[] {
+	return nodes
+		.map((node) =>
+			node.type === "blockquote"
+				? stringifyChildren(node.children)
+				: stringifyChildren([node]),
+		)
+		.map((comment) => comment.trim())
+		.filter(Boolean);
 }
 
 export function ticketRefFromId(id: string): string {

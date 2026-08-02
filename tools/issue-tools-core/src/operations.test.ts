@@ -93,7 +93,7 @@ describe("resolveTicket", () => {
 		expect(result.resolvedTicket).toMatchObject({
 			id: blocker.id,
 			status: "closed",
-			answer: "Resolved.",
+			comments: ["Resolved."],
 		});
 		expect(result.map?.decisionsSoFar).toEqual([
 			{

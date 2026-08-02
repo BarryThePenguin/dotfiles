@@ -120,12 +120,13 @@ async function localFixture(): Promise<Fixture> {
 }
 
 function todoistFixture(): Fixture {
-	const tracker = new TodoistTracker(new InMemoryTodoistGateway(), {
+	const gateway = new InMemoryTodoistGateway();
+	const tracker = new TodoistTracker(gateway, {
 		projectId: "project-1",
 	});
 	return {
 		tracker,
-		addOrdinaryComment: (ticketId, body) => tracker.postComment(ticketId, body),
+		addOrdinaryComment: (ticketId, body) => gateway.addComment(ticketId, body),
 		cleanup: async () => {},
 	};
 }
@@ -167,9 +168,7 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 		);
 
 		expect(resolved.status).toBe("closed");
-		expect(resolved.answer ?? resolved.comments.at(-1)).toBe(
-			"Use the tracker-native seam.",
-		);
+		expect(resolved.comments).toContain("Use the tracker-native seam.");
 	});
 
 	it("makes a repeated matching Resolution a no-op", async () => {
@@ -181,14 +180,7 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 		);
 
 		expect(repeated.status).toBe("closed");
-		expect(repeated.answer ?? repeated.comments.at(-1)).toBe(
-			"Keep the first answer.",
-		);
-		expect(
-			repeated.comments.filter(
-				(comment) => comment === "Keep the first answer.",
-			),
-		).toHaveLength(repeated.answer === undefined ? 1 : 0);
+		expect(repeated.comments).toEqual(["Keep the first answer."]);
 	});
 
 	it("does not replace a different first Resolution", async () => {
@@ -199,7 +191,7 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 		).rejects.toThrow(/Resolution/i);
 
 		const ticket = await fixture.tracker.getTicket(ticketId);
-		expect(ticket.answer ?? ticket.comments.at(-1)).toBe("The first answer.");
+		expect(ticket.comments).toContain("The first answer.");
 	});
 
 	it("rejects a closed ticket that has no matching Resolution", async () => {
@@ -215,9 +207,7 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 		await fixture.tracker.resolveTicket(ticketId, "The durable answer.");
 
 		const ticket = await fixture.tracker.getTicket(ticketId);
-		expect(
-			ticket.comments.some((comment) => comment.includes("An existing note.")),
-		).toBe(true);
-		expect(ticket.answer ?? ticket.comments.at(-1)).toBe("The durable answer.");
+		expect(ticket.comments).toContain("An existing note.");
+		expect(ticket.comments).toContain("The durable answer.");
 	});
 });

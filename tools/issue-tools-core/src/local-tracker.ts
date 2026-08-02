@@ -149,8 +149,11 @@ export class LocalMarkdownTracker {
 			...(parsed.claimedBy ? { claimedBy: parsed.claimedBy } : {}),
 			url: ticketFileUrl(info.ref),
 			status,
-			comments: parsed.comments,
-			...(parsed.answer ? { answer: parsed.answer } : {}),
+			// The local adapter stores the Resolution in its first `## Answer`
+			// section, but the shared ticket model exposes it as a comment.
+			comments: parsed.answer
+				? [parsed.answer, ...parsed.comments]
+				: parsed.comments,
 		};
 	}
 
@@ -297,17 +300,6 @@ export class LocalMarkdownTracker {
 			return this.getTicket(id);
 		});
 	}
-
-	async postComment(id: string, body: string): Promise<void> {
-		return this.#withIndexLock(async () => {
-			const info = this.#ticketInfo(id);
-			await this.getTicket(id);
-			const { root } = await this.#readTicketDocument(info);
-			setSectionOnRoot(root, "Answer", stripResolutionHeading(body));
-			await writeFile(info.path, stringifyMarkdown(root));
-		});
-	}
-
 	async setBlockingDependencies(
 		id: string,
 		blockerIds: string[],
