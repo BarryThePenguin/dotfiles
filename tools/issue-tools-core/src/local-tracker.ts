@@ -338,6 +338,7 @@ export class LocalMarkdownTracker {
 		return recordDecisionOperation(
 			{
 				readMapBody: (id) => this.#readMapBody(id),
+				readMap: (id) => this.getMap(id),
 				writeMapBody: async (id, body) => {
 					await this.#writeMapBody(id, body);
 					return this.getMap(id);

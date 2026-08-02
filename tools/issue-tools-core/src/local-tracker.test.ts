@@ -159,6 +159,11 @@ describe("LocalMarkdownTracker", () => {
 			url: ticket.url,
 			gist: "Todoist owns durable state.",
 		});
+		await tracker.recordDecision(map.id, {
+			title: "A retried title",
+			url: ticket.url,
+			gist: "A retried gist must not replace the first one.",
+		});
 		await tracker.closeTicket(ticket.id);
 
 		const resolvedTicket = await tracker.getTicket(ticket.id);

@@ -110,6 +110,37 @@ describe("Wayfinder map body", () => {
 		]);
 	});
 
+	it("does not duplicate a decision when its ticket URL is already recorded", () => {
+		const body = renderMapBody({
+			destination: "Find the way.",
+			notes: "Planning only.",
+			decisionsSoFar: [
+				{
+					title: "Choose tracker",
+					url: "todoist://task/1",
+					gist: "The first gist wins.",
+				},
+			],
+			notYetSpecified: [],
+			outOfScope: [],
+		});
+
+		const updated = appendDecision(body, {
+			title: "Choose a different tracker title",
+			url: "todoist://task/1",
+			gist: "This retry must not replace the first gist.",
+		});
+
+		expect(updated).toBe(body);
+		expect(parseMapBody(updated).decisionsSoFar).toEqual([
+			{
+				title: "Choose tracker",
+				url: "todoist://task/1",
+				gist: "The first gist wins.",
+			},
+		]);
+	});
+
 	it("appends out-of-scope entries", () => {
 		const body = renderMapBody({
 			destination: "Find the way.",

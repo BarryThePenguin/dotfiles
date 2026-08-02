@@ -325,6 +325,7 @@ export class TodoistTracker {
 		return {
 			readMapBody: async (id: string) =>
 				(await this.#gateway.getTask(id)).description,
+			readMap: (id: string) => this.getMap(id),
 			writeMapBody: async (id: string, body: string) =>
 				toMap(
 					await this.#gateway.updateTask(id, {

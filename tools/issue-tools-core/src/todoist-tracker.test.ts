@@ -255,11 +255,18 @@ describe("TodoistTracker", () => {
 		).toMatchObject({ claimed: false, ticket: { claimedBy: "agent-1" } });
 
 		await tracker.postComment(ticket.id, "Resolution: use Todoist.");
+		const updateSpy = vi.spyOn(gateway, "updateTask");
 		await tracker.recordDecision(map.id, {
 			title: ticket.title,
 			url: ticket.url,
 			gist: "Todoist owns durable state.",
 		});
+		await tracker.recordDecision(map.id, {
+			title: "A retried title",
+			url: ticket.url,
+			gist: "A retried gist must not replace the first one.",
+		});
+		expect(updateSpy).toHaveBeenCalledTimes(1);
 		await tracker.closeTicket(ticket.id);
 
 		expect(await tracker.getTicket(ticket.id)).toMatchObject({

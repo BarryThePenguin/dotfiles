@@ -26,6 +26,7 @@ type BlockingDependencyWriter = TicketReader & {
 
 type MapBodyAccessor = {
 	readMapBody(mapId: string): Promise<string>;
+	readMap(mapId: string): Promise<WayfinderTrackerMap>;
 	writeMapBody(mapId: string, body: string): Promise<WayfinderTrackerMap>;
 };
 
@@ -72,10 +73,13 @@ export async function recordDecision(
 	mapId: string,
 	decision: DecisionSummary,
 ): Promise<WayfinderTrackerMap> {
-	return accessor.writeMapBody(
-		mapId,
-		appendDecision(await accessor.readMapBody(mapId), decision),
-	);
+	const currentBody = await accessor.readMapBody(mapId);
+	const nextBody = appendDecision(currentBody, decision);
+	if (nextBody === currentBody) {
+		return accessor.readMap(mapId);
+	}
+
+	return accessor.writeMapBody(mapId, nextBody);
 }
 
 export async function updateMapSection(

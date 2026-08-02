@@ -210,6 +210,10 @@ export function appendDecision(
 	decision: DecisionSummary,
 ): string {
 	const parsed = parseMapBody(markdown);
+	if (parsed.decisionsSoFar.some((existing) => existing.url === decision.url)) {
+		return markdown;
+	}
+
 	return renderMapBody({
 		...parsed,
 		decisionsSoFar: [...parsed.decisionsSoFar, decision],
