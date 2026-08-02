@@ -15,7 +15,6 @@ import type {
 	ListIssuesFilter,
 	UpdateIssueLabelsInput,
 } from "./issue.ts";
-import { filterIssues } from "./issue-filter.ts";
 import {
 	parseTicketBody,
 	renderTicketBody,
@@ -25,7 +24,7 @@ import {
 } from "./ticket-body.ts";
 import type { DecisionSummary, TicketType } from "./schema.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
-import { WayfinderModule } from "./modules.ts";
+import { IssueModule, WayfinderModule } from "./modules.ts";
 import {
 	ClosedTicketWithoutResolutionError,
 	type CreateWayfinderChildTicketInput,
@@ -348,43 +347,39 @@ export class TodoistTracker {
 		return new WayfinderModule(this).updateMapSection(mapId, section, content);
 	}
 
-	// -- Generic issue surface -------------------------------------------
+	// -- Generic issue persistence --------------------------------------
 
-	async createIssue(input: CreateIssueInput): Promise<Issue> {
-		const labels = input.labels ?? [];
+	async createIssueRecord(input: CreateIssueInput): Promise<Issue> {
 		const task = await this.#gateway.createTask({
 			content: input.title,
 			description: input.body ?? "",
-			labels,
+			labels: input.labels ?? [],
 			...(this.#projectId ? { projectId: this.#projectId } : {}),
 		});
 		return toIssue(task);
 	}
 
-	async readIssue(id: string): Promise<Issue> {
+	async readIssueRecord(id: string): Promise<Issue> {
 		return toIssue(await this.#gateway.getTask(extractTodoistTaskId(id)));
 	}
 
-	async updateIssueLabels(
-		id: string,
-		input: UpdateIssueLabelsInput,
-	): Promise<Issue> {
+	async writeIssueLabels(id: string, labels: string[]): Promise<Issue> {
 		const taskId = extractTodoistTaskId(id);
-		const update: {
-			addLabels?: string[];
-			removeLabels?: string[];
-		} = {};
-		if (input.add) {
-			update.addLabels = [...input.add];
-		}
-		if (input.remove) {
-			update.removeLabels = [...input.remove];
-		}
-		const updated = await this.#gateway.updateTask(taskId, update);
+		const current = await this.#gateway.getTask(taskId);
+		const currentLabels = new Set(current.labels);
+		const nextLabels = new Set(labels);
+		const removeLabels = current.labels.filter(
+			(label) => !nextLabels.has(label),
+		);
+		const addLabels = labels.filter((label) => !currentLabels.has(label));
+		const updated = await this.#gateway.updateTask(taskId, {
+			...(addLabels.length > 0 ? { addLabels } : {}),
+			...(removeLabels.length > 0 ? { removeLabels } : {}),
+		});
 		return toIssue(updated);
 	}
 
-	async commentOnIssue(
+	async appendIssueComment(
 		id: string,
 		body: string,
 	): Promise<{ comment: { content: string; postedAt?: string } }> {
@@ -400,7 +395,7 @@ export class TodoistTracker {
 		};
 	}
 
-	async closeIssue(
+	async closeIssueRecord(
 		id: string,
 		options?: { comment?: string },
 	): Promise<{ status: "open" | "closed" }> {
@@ -409,12 +404,44 @@ export class TodoistTracker {
 		return { status: "closed" as const };
 	}
 
-	async listIssues(filter: ListIssuesFilter): Promise<Issue[]> {
+	async listIssueRecords(): Promise<Issue[]> {
 		const tasks = await this.#gateway.listTasks();
 		const scoped = this.#projectId
 			? tasks.filter((task) => task.projectId === this.#projectId)
 			: tasks;
-		return filterIssues(scoped.map(toIssue), filter);
+		return scoped.map(toIssue);
+	}
+
+	// -- Compatibility surface ------------------------------------------
+
+	createIssue(input: CreateIssueInput): Promise<Issue> {
+		return new IssueModule(this).createIssue(input);
+	}
+
+	readIssue(id: string): Promise<Issue> {
+		return new IssueModule(this).readIssue(id);
+	}
+
+	updateIssueLabels(id: string, input: UpdateIssueLabelsInput): Promise<Issue> {
+		return new IssueModule(this).updateIssueLabels(id, input);
+	}
+
+	commentOnIssue(
+		id: string,
+		body: string,
+	): Promise<{ comment: { content: string; postedAt?: string } }> {
+		return new IssueModule(this).commentOnIssue(id, body);
+	}
+
+	closeIssue(
+		id: string,
+		options?: { comment?: string },
+	): Promise<{ status: "open" | "closed" }> {
+		return new IssueModule(this).closeIssue(id, options);
+	}
+
+	listIssues(filter: ListIssuesFilter = {}): Promise<Issue[]> {
+		return new IssueModule(this).listIssues(filter);
 	}
 }
 

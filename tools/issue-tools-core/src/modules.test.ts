@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Issue } from "./issue.ts";
+import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
 	createTrackerModules,
 	IssueModule,
@@ -23,19 +23,116 @@ describe("IssueModule", () => {
 			comments: [],
 		};
 		const persistence: IssuePersistence = {
-			createIssue: () => Promise.resolve(issue),
-			readIssue: () => Promise.resolve(issue),
-			updateIssueLabels: () => Promise.resolve(issue),
-			commentOnIssue: () =>
+			createIssueRecord: () => Promise.resolve(issue),
+			readIssueRecord: () => Promise.resolve(issue),
+			writeIssueLabels: () => Promise.resolve(issue),
+			appendIssueComment: () =>
 				Promise.resolve({ comment: { content: "comment" } }),
-			closeIssue: () => Promise.resolve({ status: "closed" }),
-			listIssues: () => Promise.resolve([issue]),
+			closeIssueRecord: () => Promise.resolve({ status: "closed" }),
+			listIssueRecords: () => Promise.resolve([issue]),
 		};
 		const module = new IssueModule(persistence);
 
 		expect(await module.createIssue({ title: issue.title })).toEqual(issue);
 		expect(await module.readIssue(issue.id)).toEqual(issue);
 		expect(await module.listIssues({})).toEqual([issue]);
+	});
+
+	it("owns label deltas, comments, closing, and list filtering", async () => {
+		const first: Issue = {
+			id: "issue-1",
+			url: "issue-1.md",
+			title: "First issue",
+			body: "",
+			labels: ["needs-triage", "bug"],
+			status: "open",
+			comments: [],
+			createdAt: "2026-01-01T00:00:00.000Z",
+		};
+		const second: Issue = {
+			...first,
+			id: "issue-2",
+			url: "issue-2.md",
+			title: "Second issue",
+			labels: [],
+			createdAt: "2026-01-02T00:00:00.000Z",
+		};
+		let records = [first, second];
+		const recordOrThrow = (id: string): Issue => {
+			const record = records.find((item) => item.id === id);
+			if (!record) {
+				throw new Error(`Missing issue: ${id}`);
+			}
+			return record;
+		};
+		const persistence: IssuePersistence = {
+			createIssueRecord: vi.fn((input: CreateIssueInput) => {
+				const created: Issue = {
+					...first,
+					...input,
+					labels: input.labels ?? [],
+					id: "created",
+					url: "created.md",
+				};
+				records.push(created);
+				return Promise.resolve(created);
+			}),
+			readIssueRecord: vi.fn((id: string) =>
+				Promise.resolve(recordOrThrow(id)),
+			),
+			writeIssueLabels: vi.fn((id: string, labels: string[]) => {
+				records = records.map((record) =>
+					record.id === id ? { ...record, labels } : record,
+				);
+				return Promise.resolve(recordOrThrow(id));
+			}),
+			appendIssueComment: vi.fn((id: string, content: string) => {
+				records = records.map((record) =>
+					record.id === id
+						? { ...record, comments: [...record.comments, { content }] }
+						: record,
+				);
+				return Promise.resolve({ comment: { content } });
+			}),
+			closeIssueRecord: vi.fn((id: string, options?: { comment?: string }) => {
+				records = records.map((record) =>
+					record.id === id
+						? {
+								...record,
+								status: "closed",
+								comments: options?.comment
+									? [...record.comments, { content: options.comment }]
+									: record.comments,
+							}
+						: record,
+				);
+				return Promise.resolve({ status: "closed" as const });
+			}),
+			listIssueRecords: vi.fn(() => Promise.resolve(records)),
+		};
+		const module = new IssueModule(persistence);
+
+		await module.createIssue({ title: "Created without labels" });
+		expect(persistence.createIssueRecord).toHaveBeenCalledWith({
+			title: "Created without labels",
+			labels: [],
+		});
+		await module.updateIssueLabels(first.id, {
+			add: ["home", "bug"],
+			remove: ["needs-triage", "home"],
+		});
+		expect((await module.readIssue(first.id)).labels).toEqual(["bug"]);
+		await module.commentOnIssue(first.id, "Agent note");
+		await module.closeIssue(first.id, { comment: "Done" });
+		expect(
+			(await module.readIssue(first.id)).comments.map(
+				(comment) => comment.content,
+			),
+		).toEqual(["Agent note", "Done"]);
+		expect(await module.listIssues({ state: "closed" })).toHaveLength(1);
+		expect(
+			(await module.listIssues({ unlabeled: true })).map((item) => item.id),
+		).toEqual(["created", second.id]);
 	});
 });
 
@@ -121,28 +218,31 @@ describe("WayfinderModule", () => {
 			blockerIds: [blocker.id],
 		};
 		let currentTickets = [blocker, blocked];
-		const claim = vi.fn(async (id: string, claimant: string) => {
+		const ticketOrThrow = (id: string): WayfinderTrackerTicket => {
+			const ticket = currentTickets.find((item) => item.id === id);
+			if (!ticket) {
+				throw new Error(`Missing ticket: ${id}`);
+			}
+			return ticket;
+		};
+		const claim = vi.fn((id: string, claimant: string) => {
 			currentTickets = currentTickets.map((current) =>
 				current.id === id ? { ...current, claimedBy: claimant } : current,
 			);
-			return {
-				claimed: true,
-				ticket: currentTickets.find((current) => current.id === id)!,
-			};
+			return Promise.resolve({ claimed: true, ticket: ticketOrThrow(id) });
 		});
-		const setBlocking = vi.fn(async (id: string, blockerIds: string[]) => {
+		const setBlocking = vi.fn((id: string, blockerIds: string[]) => {
 			currentTickets = currentTickets.map((current) =>
 				current.id === id ? { ...current, blockerIds } : current,
 			);
-			return currentTickets.find((current) => current.id === id)!;
+			return Promise.resolve(ticketOrThrow(id));
 		});
 		const persistence: WayfinderPersistence = {
 			createMap: () => Promise.resolve(map()),
 			listMaps: () => Promise.resolve([map()]),
 			createChildTicket: () => Promise.resolve(blocker),
 			getMap: () => Promise.resolve(map()),
-			getTicket: (id) =>
-				Promise.resolve(currentTickets.find((current) => current.id === id)!),
+			getTicket: (id) => Promise.resolve(ticketOrThrow(id)),
 			listChildTickets: () => Promise.resolve(currentTickets),
 			writeMapDecisions: (_id, decisions) => {
 				const current = parseMapBody(mapBody);
@@ -197,12 +297,12 @@ describe("createTrackerModules", () => {
 	it("exposes separate modules over one shared persistence adapter", () => {
 		const unused = () => Promise.reject(new Error("not used"));
 		const persistence = {
-			createIssue: unused,
-			readIssue: unused,
-			updateIssueLabels: unused,
-			commentOnIssue: unused,
-			closeIssue: unused,
-			listIssues: unused,
+			createIssueRecord: unused,
+			readIssueRecord: unused,
+			writeIssueLabels: unused,
+			appendIssueComment: unused,
+			closeIssueRecord: unused,
+			listIssueRecords: unused,
 			createMap: unused,
 			listMaps: unused,
 			createChildTicket: unused,

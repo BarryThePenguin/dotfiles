@@ -4,7 +4,6 @@ import {
 	issueFileBodyFromMarkdown,
 	issueMarkdown,
 } from "./issue-file-format.ts";
-import { filterIssues } from "./issue-filter.ts";
 import type {
 	CreateIssueInput,
 	Issue,
@@ -12,7 +11,6 @@ import type {
 	ListIssuesFilter,
 	UpdateIssueLabelsInput,
 } from "./issue.ts";
-import { mergeLabels } from "doist-core";
 import {
 	mapBodyFromDocument,
 	renderMapBody,
@@ -43,7 +41,7 @@ import {
 } from "./wayfinder-markdown.ts";
 import type { DecisionSummary } from "./schema.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
-import { WayfinderModule } from "./modules.ts";
+import { IssueModule, WayfinderModule } from "./modules.ts";
 import {
 	ClosedTicketWithoutResolutionError,
 	type CreateWayfinderChildTicketInput,
@@ -397,27 +395,26 @@ export class LocalMarkdownTracker {
 		return run;
 	}
 
-	// -- Generic issue surface -------------------------------------------
+	// -- Generic issue persistence --------------------------------------
 
-	async createIssue(input: CreateIssueInput): Promise<Issue> {
+	async createIssueRecord(input: CreateIssueInput): Promise<Issue> {
 		return this.#withIndexLock(async () => {
 			await this.#ensureLayout();
-			const labels = input.labels ?? [];
 			const slug = await this.#nextIssueSlug(input.title);
 			const updatedAt = new Date().toISOString();
 			const body = issueMarkdown({
 				title: input.title,
 				body: input.body ?? "",
-				labels,
+				labels: input.labels ?? [],
 				status: "open",
 				updatedAt,
 			});
 			await writeFile(this.#issuePath(slug), body);
-			return this.readIssue(slug);
+			return this.readIssueRecord(slug);
 		});
 	}
 
-	async readIssue(id: string): Promise<Issue> {
+	async readIssueRecord(id: string): Promise<Issue> {
 		const slug = this.#issueSlugFromIdOrUrl(id);
 		const path = this.#issuePath(slug);
 		const markdown = await readFile(path, "utf8");
@@ -438,20 +435,16 @@ export class LocalMarkdownTracker {
 		};
 	}
 
-	async updateIssueLabels(
-		id: string,
-		input: UpdateIssueLabelsInput,
-	): Promise<Issue> {
+	async writeIssueLabels(id: string, labels: string[]): Promise<Issue> {
 		return this.#withIndexLock(async () => {
 			const slug = this.#issueSlugFromIdOrUrl(id);
 			const path = this.#issuePath(slug);
-			const current = await this.readIssue(slug);
-			const nextLabels = mergeLabels(current.labels, input.add, input.remove);
+			const current = await this.readIssueRecord(slug);
 			const updatedAt = new Date().toISOString();
 			const body = issueMarkdown({
 				title: current.title,
 				body: current.body,
-				labels: nextLabels,
+				labels,
 				status: current.status,
 				...(current.status === "closed" && current.updatedAt
 					? { updatedAt: current.updatedAt }
@@ -460,18 +453,18 @@ export class LocalMarkdownTracker {
 				...(current.comments.length === 0 ? {} : { updatedAt }),
 			});
 			await writeFile(path, body);
-			return this.readIssue(slug);
+			return this.readIssueRecord(slug);
 		});
 	}
 
-	async commentOnIssue(
+	async appendIssueComment(
 		id: string,
 		body: string,
 	): Promise<{ comment: IssueComment }> {
 		return this.#withIndexLock(async () => {
 			const slug = this.#issueSlugFromIdOrUrl(id);
 			const path = this.#issuePath(slug);
-			const current = await this.readIssue(slug);
+			const current = await this.readIssueRecord(slug);
 			const nextComments = [...current.comments, { content: body }];
 			const updatedAt = new Date().toISOString();
 			const next = issueMarkdown({
@@ -490,14 +483,14 @@ export class LocalMarkdownTracker {
 		});
 	}
 
-	async closeIssue(
+	async closeIssueRecord(
 		id: string,
 		options?: { comment?: string },
 	): Promise<{ status: "open" | "closed" }> {
 		return this.#withIndexLock(async () => {
 			const slug = this.#issueSlugFromIdOrUrl(id);
 			const path = this.#issuePath(slug);
-			const current = await this.readIssue(slug);
+			const current = await this.readIssueRecord(slug);
 			const comments = options?.comment
 				? [...current.comments, { content: options.comment }]
 				: current.comments;
@@ -515,7 +508,7 @@ export class LocalMarkdownTracker {
 		});
 	}
 
-	async listIssues(filter: ListIssuesFilter): Promise<Issue[]> {
+	async listIssueRecords(): Promise<Issue[]> {
 		await this.#ensureLayout();
 		const entries = await readdir(this.#rootDir, { withFileTypes: true });
 		const slugs = entries
@@ -525,12 +518,41 @@ export class LocalMarkdownTracker {
 		const issues: Issue[] = [];
 		for (const slug of slugs) {
 			try {
-				issues.push(await this.readIssue(slug));
+				issues.push(await this.readIssueRecord(slug));
 			} catch {
 				// Skip unreadable files
 			}
 		}
-		return filterIssues(issues, filter);
+		return issues;
+	}
+
+	// -- Compatibility surface ------------------------------------------
+
+	createIssue(input: CreateIssueInput): Promise<Issue> {
+		return new IssueModule(this).createIssue(input);
+	}
+
+	readIssue(id: string): Promise<Issue> {
+		return new IssueModule(this).readIssue(id);
+	}
+
+	updateIssueLabels(id: string, input: UpdateIssueLabelsInput): Promise<Issue> {
+		return new IssueModule(this).updateIssueLabels(id, input);
+	}
+
+	commentOnIssue(id: string, body: string): Promise<{ comment: IssueComment }> {
+		return new IssueModule(this).commentOnIssue(id, body);
+	}
+
+	closeIssue(
+		id: string,
+		options?: { comment?: string },
+	): Promise<{ status: "open" | "closed" }> {
+		return new IssueModule(this).closeIssue(id, options);
+	}
+
+	listIssues(filter: ListIssuesFilter = {}): Promise<Issue[]> {
+		return new IssueModule(this).listIssues(filter);
 	}
 
 	async #ensureLayout(): Promise<void> {

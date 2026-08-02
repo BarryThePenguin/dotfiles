@@ -14,6 +14,8 @@ import type {
 	WayfinderTrackerMap,
 	WayfinderTrackerTicket,
 } from "./tracker.ts";
+import { mergeLabels } from "doist-core";
+import { filterIssues } from "./issue-filter.ts";
 import type { MapSectionKey } from "./map-body.ts";
 import {
 	addBlockingDependency as addBlockingDependencyOperation,
@@ -30,15 +32,18 @@ import type { DecisionSummary } from "./schema.ts";
  * module can be tested with an in-memory implementation.
  */
 export interface IssuePersistence {
-	createIssue(input: CreateIssueInput): Promise<Issue>;
-	readIssue(id: string): Promise<Issue>;
-	updateIssueLabels(id: string, input: UpdateIssueLabelsInput): Promise<Issue>;
-	commentOnIssue(id: string, body: string): Promise<{ comment: IssueComment }>;
-	closeIssue(
+	createIssueRecord(input: CreateIssueInput): Promise<Issue>;
+	readIssueRecord(id: string): Promise<Issue>;
+	writeIssueLabels(id: string, labels: string[]): Promise<Issue>;
+	appendIssueComment(
+		id: string,
+		body: string,
+	): Promise<{ comment: IssueComment }>;
+	closeIssueRecord(
 		id: string,
 		options?: { comment?: string },
 	): Promise<{ status: "open" | "closed" }>;
-	listIssues(filter: ListIssuesFilter): Promise<Issue[]>;
+	listIssueRecords(): Promise<Issue[]>;
 }
 
 /** Persistence capability needed by the Wayfinder module. */
@@ -93,30 +98,38 @@ export class IssueModule implements IssueTracker {
 	}
 
 	createIssue(input: CreateIssueInput): Promise<Issue> {
-		return this.#storage.createIssue(input);
+		return this.#storage.createIssueRecord({
+			...input,
+			labels: input.labels ?? [],
+		});
 	}
 
 	readIssue(id: string): Promise<Issue> {
-		return this.#storage.readIssue(id);
+		return this.#storage.readIssueRecord(id);
 	}
 
-	updateIssueLabels(id: string, input: UpdateIssueLabelsInput): Promise<Issue> {
-		return this.#storage.updateIssueLabels(id, input);
+	async updateIssueLabels(
+		id: string,
+		input: UpdateIssueLabelsInput,
+	): Promise<Issue> {
+		const current = await this.#storage.readIssueRecord(id);
+		const labels = mergeLabels(current.labels, input.add, input.remove);
+		return this.#storage.writeIssueLabels(id, labels);
 	}
 
 	commentOnIssue(id: string, body: string): Promise<{ comment: IssueComment }> {
-		return this.#storage.commentOnIssue(id, body);
+		return this.#storage.appendIssueComment(id, body);
 	}
 
 	closeIssue(
 		id: string,
 		options?: { comment?: string },
 	): Promise<{ status: "open" | "closed" }> {
-		return this.#storage.closeIssue(id, options);
+		return this.#storage.closeIssueRecord(id, options);
 	}
 
-	listIssues(filter: ListIssuesFilter): Promise<Issue[]> {
-		return this.#storage.listIssues(filter);
+	async listIssues(filter: ListIssuesFilter): Promise<Issue[]> {
+		return filterIssues(await this.#storage.listIssueRecords(), filter);
 	}
 }
 
