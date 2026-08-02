@@ -1,4 +1,4 @@
-import type { Database, DbTask, DbLabel, DbNote, DbSection } from "./db.ts";
+import type { Database, DbFilter, DbTask, DbLabel, DbNote, DbSection } from "./db.ts";
 
 /**
  * SyncLifecycle manages the sync token and enforces the critical invariant:
@@ -51,7 +51,8 @@ export interface MutationPersistOptions {
 	labels?: DbLabel[];
 	sections?: DbSection[];
 	notes?: DbNote[];
-	customOperations?: (db: Database) => void;
+	filters?: DbFilter[];
+	deletedFilterIds?: string[];
 }
 
 /**
@@ -61,18 +62,20 @@ export interface MutationPersistOptions {
  * and the mutated resource(s). This function wraps them in a transaction
  * to ensure token and data always stay synchronized.
  *
- * For simple upserts, pass tasks/labels/sections/notes arrays.
- * For custom operations (e.g., markCompleted), use the customOperations callback.
+ * Pass tasks/labels/sections/notes/filters for upserts, and
+ * deletedFilterIds for filter deletions. The token is updated last
+ * to maintain the invariant that token and data stay synchronized.
  *
  * @param db Database instance
- * @param options Mutation data: token + resources and/or custom operations
+ * @param options Mutation data: token + resources to upsert or delete
  */
 export function persistMutations(
 	db: Database,
 	options: MutationPersistOptions,
 ): void {
 	db.transaction(() => {
-		const { token, tasks, labels, sections, notes, customOperations } = options;
+		const { token, tasks, labels, sections, notes, filters, deletedFilterIds } =
+			options;
 
 		if (tasks) {
 			for (const t of tasks) {
@@ -94,9 +97,15 @@ export function persistMutations(
 				db.upsertNote(n);
 			}
 		}
-
-		if (customOperations) {
-			customOperations(db);
+		if (filters) {
+			for (const f of filters) {
+				db.upsertFilter(f);
+			}
+		}
+		if (deletedFilterIds) {
+			for (const id of deletedFilterIds) {
+				db.deleteFilterById(id);
+			}
 		}
 
 		// Token update is last in the transaction; ensures atomicity

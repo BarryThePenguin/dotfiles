@@ -236,9 +236,6 @@ export async function completeTasks(
 	persistMutations(db, {
 		token: allData.syncToken,
 		tasks: allData.tasks,
-		customOperations: (db) => {
-			db.updateTasksAsCompleted(completedIds);
-		},
 	});
 
 	return { ok: true, result: completedIds.length };
@@ -262,13 +259,11 @@ export async function uncompleteTasks(
 
 	const commands = ids.map((id) => createItemUncompleteCommand({ id }));
 
-	const { syncToken } = await client.sync(getToken(db), ...commands);
+	const allData = await client.sync(getToken(db), ...commands);
 
 	persistMutations(db, {
-		token: syncToken,
-		customOperations: (db) => {
-			db.updateTasksAsIncomplete(ids);
-		},
+		token: allData.syncToken,
+		tasks: allData.tasks,
 	});
 
 	return { ok: true, result: ids.length };
@@ -310,9 +305,6 @@ export async function completeTask(
 		token: allData.syncToken,
 		tasks: allData.tasks,
 		notes: preparedNotes,
-		customOperations: (db) => {
-			db.updateTasksAsCompleted(completedIds);
-		},
 	});
 
 	return { ok: true, result: completedId };
@@ -356,7 +348,7 @@ export async function addFilter(
 		throw new Error(`created filter ${realId} not in sync response`);
 	}
 
-	persistMutations(db, { token: allData.syncToken });
+	persistMutations(db, { token: allData.syncToken, filters: [filter] });
 	return { ok: true, result: normalizeFilter(filter) };
 }
 
@@ -386,7 +378,7 @@ export async function updateFilter(
 		throw new Error(`updated filter ${id} not in sync response`);
 	}
 
-	persistMutations(db, { token: allData.syncToken });
+	persistMutations(db, { token: allData.syncToken, filters: [filter] });
 	return { ok: true, result: normalizeFilter(filter) };
 }
 
@@ -405,9 +397,7 @@ export async function deleteFilter(
 
 	persistMutations(db, {
 		token: allData.syncToken,
-		customOperations: (db) => {
-			db.deleteFilterById(id);
-		},
+		deletedFilterIds: [id],
 	});
 	return { ok: true, result: undefined };
 }

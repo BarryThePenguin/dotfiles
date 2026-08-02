@@ -1,5 +1,6 @@
 import * as undici from "undici";
 import { afterEach, describe, expect, it } from "vitest";
+import { SyncCommandError } from "./sdk.ts";
 import {
 	createMockApiFilter,
 	createMockApiLabel,
@@ -195,6 +196,65 @@ describe("createClient.sync", () => {
 		const data = await client.sync();
 
 		expect(data.filters).toEqual([]);
+	});
+
+	// ── sync_status handling ──────────────────────────────────────────────
+
+	it("returns AllData when sync_status has an ok entry", async () => {
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok-ok",
+				items: [createMockApiTask({ id: TASK_IDS.alpha })],
+				sync_status: { "cmd-uuid-1": "ok" },
+			}),
+		);
+
+		const client = createClient("mytoken");
+		const data = await client.sync("*");
+
+		expect(data.syncToken).toBe("tok-ok");
+		expect(data.tasks.map((t) => t.id)).toEqual([TASK_IDS.alpha]);
+	});
+
+	it("throws SyncCommandError when sync_status has an error for a command", async () => {
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok-err",
+				sync_status: {
+					"cmd-uuid-1": { error: "Filter not found", error_code: 404 },
+				},
+			}),
+		);
+
+		const client = createClient("mytoken");
+		await expect(client.sync()).rejects.toBeInstanceOf(SyncCommandError);
+	});
+
+	it("throws SyncCommandError listing every failure when sync_status is mixed", async () => {
+		interceptSync(
+			mockAgent,
+			createMockSyncResponse({
+				sync_token: "tok-mixed",
+				sync_status: {
+					"cmd-uuid-ok": "ok",
+					"cmd-uuid-bad-1": { error: "invalid", error_code: 400 },
+					"cmd-uuid-bad-2": { error: "not found", error_code: 404 },
+				},
+			}),
+		);
+
+		const client = createClient("mytoken");
+		const caught = await client.sync().catch((e: unknown) => e);
+
+		expect(caught).toBeInstanceOf(SyncCommandError);
+		const err = caught as SyncCommandError;
+		expect(err.failures).toHaveLength(2);
+		const uuids = err.failures.map((f) => f.uuid).sort();
+		expect(uuids).toEqual(["cmd-uuid-bad-1", "cmd-uuid-bad-2"]);
+		const messages = err.failures.map((f) => f.error).sort();
+		expect(messages).toEqual(["invalid", "not found"]);
 	});
 });
 

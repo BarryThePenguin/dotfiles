@@ -6,12 +6,14 @@ import {
 	addTaskComment,
 	completeTask,
 	completeTasks,
+	deleteFilter,
 	listTaskComments,
 	moveTask,
 	resolveProject,
 	uncompleteTasks,
 	updateTask,
 } from "./operations.ts";
+import { SyncCommandError } from "./sdk.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
 import {
 	createMockApiNote,
@@ -881,6 +883,57 @@ describe("mock HTTP client", () => {
 			const client = createClient("test-token");
 			await addTaskComment(container.db, client, "t1", "hi");
 			expect(getToken(container.db)).toBe("tok-1");
+		});
+	});
+
+	// ── deleteFilter tests ────────────────────────────────────────────────
+
+	describe("deleteFilter", () => {
+		let container: TestContainer;
+
+		beforeEach(() => {
+			container = createTestContainer({
+				projects: [PROJECT_IDS.inbox],
+			});
+			setToken(container.db, "tok-0");
+		});
+
+		afterEach(() => {
+			container.db.close();
+		});
+
+		it("throws SyncCommandError and does NOT clear the local row when the server rejects the delete", async () => {
+			// Pre-populate the local DB with a filter that doesn't exist on the server.
+			container.db.upsertFilter({
+				id: "f-ghost",
+				name: "Stale",
+				query: "today",
+				color: null,
+				item_order: 1,
+				is_favorite: 0,
+				synced_at: NOW,
+			});
+
+			// Server returns a sync_status error for the filter_delete command.
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-1",
+					sync_status: {
+						"cmd-uuid-1": { error: "Filter not found", error_code: 404 },
+					},
+				}),
+			);
+
+			const client = createClient("test-token");
+			await expect(
+				deleteFilter(container.db, client, "f-ghost"),
+			).rejects.toBeInstanceOf(SyncCommandError);
+
+			// The local row must still be there — persistMutations never ran.
+			const stillThere = container.db.getFilterById("f-ghost");
+			expect(stillThere).not.toBeNull();
+			expect(stillThere?.name).toBe("Stale");
 		});
 	});
 });
