@@ -264,6 +264,41 @@ export class LocalMarkdownTracker {
 		});
 	}
 
+	async resolveTicket(id: string, resolution: string): Promise<LocalTicket> {
+		return this.#withIndexLock(async () => {
+			const info = this.#ticketInfo(id);
+			const document = await this.#readTicketDocument(info);
+			const { root } = document;
+			const parsed = ticketFileBodyFromDocument(document);
+			const canonicalResolution = stripResolutionHeading(resolution);
+			const existingResolution = parsed.answer?.trim();
+			const isClosed = parsed.status.toLowerCase() === "resolved";
+
+			if (canonicalResolution.length === 0) {
+				throw new Error("Resolution must not be empty.");
+			}
+			if (existingResolution !== undefined) {
+				if (existingResolution !== canonicalResolution) {
+					throw new Error(
+						`Resolution for ticket ${id} is already recorded and cannot be replaced.`,
+					);
+				}
+				if (isClosed) {
+					return this.getTicket(id);
+				}
+			} else if (isClosed) {
+				throw new Error(
+					`Ticket ${id} is already closed without the requested Resolution.`,
+				);
+			}
+
+			setSectionOnRoot(root, "Answer", canonicalResolution);
+			setHeaderOnRoot(root, "Status", "resolved");
+			await writeFile(info.path, stringifyMarkdown(root));
+			return this.getTicket(id);
+		});
+	}
+
 	async postComment(id: string, body: string): Promise<void> {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);

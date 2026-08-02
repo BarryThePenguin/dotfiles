@@ -74,8 +74,10 @@ export async function resolveTicket(
 	const mapId = ticket.mapId || input.mapId;
 	const usedFallback = !ticket.mapId && !!mapId;
 
-	await tracker.postComment(input.ticketId, input.resolution);
-	const resolvedTicket = await tracker.closeTicket(input.ticketId);
+	const resolvedTicket = await tracker.resolveTicket(
+		input.ticketId,
+		input.resolution,
+	);
 
 	let map: WayfinderTrackerMap | undefined;
 	let unblocked: string[] = [];

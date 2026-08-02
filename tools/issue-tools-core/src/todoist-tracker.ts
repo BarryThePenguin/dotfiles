@@ -241,6 +241,37 @@ export class TodoistTracker {
 		return toTicket(await this.#gateway.completeTask(id));
 	}
 
+	async resolveTicket(
+		id: string,
+		resolution: string,
+	): Promise<WayfinderTrackerTicket> {
+		if (resolution.length === 0) {
+			throw new Error("Resolution must not be empty.");
+		}
+
+		const task = await this.#gateway.getTask(id);
+		const matchingResolution = task.comments.some(
+			(comment) => comment.content === resolution,
+		);
+		if (task.isCompleted) {
+			if (!matchingResolution) {
+				throw new Error(
+					`Ticket ${id} is already closed without the requested Resolution.`,
+				);
+			}
+			return toTicket(task);
+		}
+
+		// If a prior attempt persisted the native comment before completion was
+		// observed, finish the retry without adding a duplicate comment.
+		return toTicket(
+			await this.#gateway.completeTask(
+				id,
+				matchingResolution ? undefined : resolution,
+			),
+		);
+	}
+
 	async postComment(id: string, body: string): Promise<void> {
 		await this.#gateway.addComment(id, body);
 	}

@@ -58,6 +58,10 @@ export interface WayfinderTracker extends IssueTracker {
 	): Promise<WayfinderClaimResult>;
 	unclaimTicket(id: string): Promise<WayfinderTrackerTicket>;
 	closeTicket(id: string): Promise<WayfinderTrackerTicket>;
+	resolveTicket(
+		id: string,
+		resolution: string,
+	): Promise<WayfinderTrackerTicket>;
 	postComment(id: string, body: string): Promise<void>;
 	setBlockingDependencies(
 		id: string,
