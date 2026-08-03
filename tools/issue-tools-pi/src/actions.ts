@@ -9,7 +9,6 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	blockquote,
 	heading,
-	inspectFrontier,
 	link,
 	list,
 	listItem,
@@ -164,26 +163,12 @@ function requireMapId(
 	return params.map_id ?? ctx.activeMap;
 }
 
-function formatTicket(
-	ticket: WayfinderTrackerTicket,
-	opts?: { showState?: boolean },
-) {
-	const state = opts?.showState ? ` [${ticketState(ticket)}]` : "";
-	return `${ticket.id} — ${ticket.title} (wayfinder:${ticket.type})${state}`;
+function formatTicket(ticket: WayfinderTrackerTicket) {
+	return `${ticket.id} — ${ticket.title} (wayfinder:${ticket.type})`;
 }
 
 function emptyParagraph() {
 	return paragraph("(empty)");
-}
-
-function ticketState(ticket: WayfinderTrackerTicket) {
-	if (ticket.claimedBy) {
-		return "claimed";
-	}
-	if (ticket.blockerIds.length > 0) {
-		return "blocked";
-	}
-	return "frontier";
 }
 
 function sectionKey(section: UpdateMapParams["section"]): MapSectionKey {
@@ -545,7 +530,7 @@ async function listFrontier(
 	if (!mapId) {
 		return err("no map_id and no active map.");
 	}
-	const { frontier, blocked, claimed } = await inspectFrontier(tracker, mapId);
+	const { frontier, blocked, claimed } = await tracker.inspectFrontier(mapId);
 
 	if (frontier.length === 0 && blocked.length === 0 && claimed.length === 0) {
 		return ok(

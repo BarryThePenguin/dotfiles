@@ -227,13 +227,13 @@ describe("TodoistPersistenceAdapter", () => {
 		await tracker.claimTicketIfUnclaimed(claimed.id, "agent-1");
 
 		expect(
-			(await tracker.listFrontierTickets(map.id)).map((t) => t.id),
+			(await tracker.inspectFrontier(map.id)).frontier.map((t) => t.id),
 		).toEqual([blocker.id]);
 
 		await tracker.closeTicket(blocker.id);
 
 		expect(
-			(await tracker.listFrontierTickets(map.id)).map((t) => t.id),
+			(await tracker.inspectFrontier(map.id)).frontier.map((t) => t.id),
 		).toEqual([blocked.id]);
 	});
 

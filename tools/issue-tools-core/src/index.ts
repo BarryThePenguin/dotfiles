@@ -37,8 +37,10 @@ export { filterIssues } from "./issue-filter.ts";
 // -- Wayfinder domain -----------------------------------------------------
 
 export type {
+	BlockedFrontierTicket,
 	CreateWayfinderChildTicketInput,
 	CreateWayfinderMapInput,
+	FrontierInspection,
 	ResolveOutcome,
 	ResolveTicketInput,
 	ResolveTicketResult,
@@ -62,9 +64,7 @@ export type {
 
 // -- Wayfinder operations -------------------------------------------------
 
-export { addBlockingDependency, canClaimTicket, listFrontierTickets } from "./tracker-operations.ts";
-export { inspectFrontier } from "./operations.ts";
-export type { BlockedFrontierTicket, FrontierInspection } from "./operations.ts";
+export { addBlockingDependency, canClaimTicket } from "./tracker-operations.ts";
 
 // -- Persistence adapters --------------------------------------------------
 

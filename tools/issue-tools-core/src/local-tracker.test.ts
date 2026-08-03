@@ -125,13 +125,17 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		await tracker.claimTicketIfUnclaimed(claimed.id, "agent-1");
 
 		expect(
-			(await tracker.listFrontierTickets(map.id)).map((ticket) => ticket.id),
+			(await tracker.inspectFrontier(map.id)).frontier.map(
+				(ticket) => ticket.id,
+			),
 		).toEqual([blocker.id]);
 
 		await tracker.closeTicket(blocker.id);
 
 		expect(
-			(await tracker.listFrontierTickets(map.id)).map((ticket) => ticket.id),
+			(await tracker.inspectFrontier(map.id)).frontier.map(
+				(ticket) => ticket.id,
+			),
 		).toEqual([blocked.id]);
 	});
 

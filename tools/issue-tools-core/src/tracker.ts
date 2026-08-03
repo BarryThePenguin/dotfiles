@@ -51,6 +51,17 @@ export type WayfinderClaimResult = {
 	ticket: WayfinderTrackerTicket;
 };
 
+export type BlockedFrontierTicket = {
+	ticket: WayfinderTrackerTicket;
+	blockers: string[];
+};
+
+export type FrontierInspection = {
+	frontier: WayfinderTrackerTicket[];
+	blocked: BlockedFrontierTicket[];
+	claimed: WayfinderTrackerTicket[];
+};
+
 export type ResolveOutcome = "complete" | "partial" | "terminal";
 
 export type ResolveTicketInput = {
@@ -80,7 +91,7 @@ export interface WayfinderTracker {
 	getMap(id: string): Promise<WayfinderTrackerMap>;
 	getTicket(id: string): Promise<WayfinderTrackerTicket>;
 	listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]>;
-	listFrontierTickets(mapId: string): Promise<WayfinderTrackerTicket[]>;
+	inspectFrontier(mapId: string): Promise<FrontierInspection>;
 	claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,

@@ -7,9 +7,12 @@ import type {
 	UpdateIssueLabelsInput,
 } from "./issue.ts";
 import type {
+	BlockedFrontierTicket,
 	CreateWayfinderChildTicketInput,
 	CreateWayfinderMapInput,
+	FrontierInspection,
 	WayfinderClaimResult,
+	WayfinderTicketStatus,
 	WayfinderTracker,
 	WayfinderTrackerMap,
 	WayfinderTrackerTicket,
@@ -25,7 +28,6 @@ import type { MapSectionKey } from "./map-body.ts";
 import {
 	addBlockingDependency as addBlockingDependencyOperation,
 	canClaimTicket,
-	listFrontierTickets as listFrontierTicketsOperation,
 } from "./tracker-operations.ts";
 import type { DecisionSummary } from "./schema.ts";
 
@@ -172,8 +174,31 @@ export class WayfinderModule implements WayfinderTracker {
 		return this.#storage.listChildTickets(mapId);
 	}
 
-	listFrontierTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
-		return listFrontierTicketsOperation(this.#storage, mapId);
+	async inspectFrontier(mapId: string): Promise<FrontierInspection> {
+		const tickets = await this.#storage.listChildTickets(mapId);
+		const openTickets = tickets.filter((ticket) => ticket.status === "open");
+		const blockerStatuses = await this.#readBlockerStatuses(openTickets);
+
+		const frontier: WayfinderTrackerTicket[] = [];
+		const blocked: BlockedFrontierTicket[] = [];
+		const claimed: WayfinderTrackerTicket[] = [];
+
+		for (const ticket of openTickets) {
+			if (ticket.claimedBy) {
+				claimed.push(ticket);
+				continue;
+			}
+			const openBlockers = ticket.blockerIds.filter(
+				(blockerId) => blockerStatuses.get(blockerId) !== "closed",
+			);
+			if (openBlockers.length > 0) {
+				blocked.push({ ticket, blockers: openBlockers });
+			} else {
+				frontier.push(ticket);
+			}
+		}
+
+		return { frontier, blocked, claimed };
 	}
 
 	async claimTicketIfUnclaimed(
@@ -275,20 +300,31 @@ export class WayfinderModule implements WayfinderTracker {
 				sibling.status === "open" &&
 				sibling.blockerIds.includes(resolvedTicketId),
 		);
-		const newlyUnblocked: string[] = [];
-
-		for (const candidate of candidates) {
-			const blockers = await Promise.all(
-				candidate.blockerIds.map((blockerId) =>
-					this.#storage.getTicket(blockerId),
+		const blockerStatuses = await this.#readBlockerStatuses(candidates);
+		return candidates
+			.filter((candidate) =>
+				candidate.blockerIds.every(
+					(blockerId) => blockerStatuses.get(blockerId) === "closed",
 				),
-			);
-			if (blockers.every((blocker) => blocker.status === "closed")) {
-				newlyUnblocked.push(candidate.id);
-			}
-		}
+			)
+			.map((candidate) => candidate.id);
+	}
 
-		return newlyUnblocked;
+	/** Read each unique blocker once across the given tickets. */
+	async #readBlockerStatuses(
+		tickets: WayfinderTrackerTicket[],
+	): Promise<Map<string, WayfinderTicketStatus>> {
+		const blockerIds = [
+			...new Set(tickets.flatMap((ticket) => ticket.blockerIds)),
+		];
+		const statuses = new Map<string, WayfinderTicketStatus>();
+		for (const blockerId of blockerIds) {
+			statuses.set(
+				blockerId,
+				(await this.#storage.getTicket(blockerId)).status,
+			);
+		}
+		return statuses;
 	}
 
 	setBlockingDependencies(

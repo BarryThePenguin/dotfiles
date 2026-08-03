@@ -184,7 +184,7 @@ describe("WayfinderModule", () => {
 			await module.createMap({ title: map.title, destination: "" }),
 		).toEqual(map);
 		expect(await module.getTicket(ticket.id)).toEqual(ticket);
-		expect(await module.listFrontierTickets(map.id)).toEqual([ticket]);
+		expect((await module.inspectFrontier(map.id)).frontier).toEqual([ticket]);
 	});
 
 	it("owns frontier, claim, blocker, and map document behavior", async () => {
@@ -269,7 +269,9 @@ describe("WayfinderModule", () => {
 		};
 		const module = new WayfinderModule(persistence);
 
-		expect(await module.listFrontierTickets(mapShape.id)).toEqual([blocker]);
+		expect((await module.inspectFrontier(mapShape.id)).frontier).toEqual([
+			blocker,
+		]);
 		expect(
 			await module.claimTicketIfUnclaimed(blocker.id, "agent-1"),
 		).toMatchObject({
@@ -294,6 +296,135 @@ describe("WayfinderModule", () => {
 				gist: "The blocker is the first decision.",
 			},
 		]);
+	});
+});
+
+describe("WayfinderModule inspectFrontier", () => {
+	function makeFixture() {
+		const map: WayfinderTrackerMap = {
+			id: "map",
+			title: "A map",
+			url: "map.md",
+			destination: "",
+			notes: "",
+			decisionsSoFar: [],
+			notYetSpecified: [],
+			outOfScope: [],
+		};
+		const base = (
+			overrides: Partial<WayfinderTrackerTicket>,
+		): WayfinderTrackerTicket => ({
+			id: "map/01",
+			mapId: "map",
+			title: "Ticket",
+			type: "task",
+			question: "Question",
+			blockerIds: [],
+			url: "issues/01.md",
+			status: "open",
+			comments: [],
+			...overrides,
+		});
+		const frontierTicket = base({ id: "map/01-frontier", title: "Frontier" });
+		const blockerC = base({ id: "map/01-blocker-c", title: "Blocker C" });
+		const blockerA = base({
+			id: "map/01-blocker-a",
+			title: "Blocker A",
+			blockerIds: [blockerC.id],
+		});
+		const blockerB = base({
+			id: "map/01-blocker-b",
+			title: "Blocker B",
+			status: "closed",
+		});
+		const blockedTicket = base({
+			id: "map/02-blocked",
+			title: "Blocked",
+			blockerIds: [blockerA.id, blockerB.id],
+		});
+		const claimedTicket = base({
+			id: "map/03-claimed",
+			title: "Claimed",
+			claimedBy: "agent-1",
+			blockerIds: [blockerA.id],
+		});
+		const closedTicket = base({
+			id: "map/04-closed",
+			title: "Closed",
+			status: "closed",
+		});
+		const allTickets = [
+			frontierTicket,
+			blockedTicket,
+			blockerA,
+			blockerB,
+			blockerC,
+			claimedTicket,
+			closedTicket,
+		];
+		const ticketOrThrow = (id: string): WayfinderTrackerTicket => {
+			const ticket = allTickets.find((item) => item.id === id);
+			if (!ticket) {
+				throw new Error(`Missing ticket: ${id}`);
+			}
+			return ticket;
+		};
+		const getTicket = vi.fn((id: string) =>
+			Promise.resolve(ticketOrThrow(id)),
+		);
+		const listChildTickets = vi.fn(() => Promise.resolve(allTickets));
+		const persistence: WayfinderPersistence = {
+			createMap: () => Promise.resolve(map),
+			listMaps: () => Promise.resolve([map]),
+			createChildTicket: () => Promise.resolve(frontierTicket),
+			getMap: () => Promise.resolve(map),
+			getTicket,
+			listChildTickets,
+			writeMapDecisions: () => Promise.resolve(map),
+			writeMapSection: () => Promise.resolve(map),
+			claimTicketIfUnclaimed: () =>
+				Promise.resolve({ claimed: true, ticket: claimedTicket }),
+			unclaimTicket: () => Promise.resolve(claimedTicket),
+			closeTicket: () => Promise.resolve(blockerA),
+			recordResolution: () => Promise.resolve(blockerA),
+			setBlockingDependencies: () => Promise.resolve(blockedTicket),
+		};
+		return { module: new WayfinderModule(persistence), getTicket };
+	}
+
+	it("partitions open tickets into frontier, blocked, and claimed", async () => {
+		const { module } = makeFixture();
+		const inspection = await module.inspectFrontier("map");
+
+		expect(inspection.frontier.map((ticket) => ticket.id)).toEqual([
+			"map/01-frontier",
+			"map/01-blocker-c",
+		]);
+		expect(inspection.blocked).toEqual([
+			{
+				ticket: expect.objectContaining({ id: "map/02-blocked" }),
+				blockers: ["map/01-blocker-a"],
+			},
+			{
+				ticket: expect.objectContaining({ id: "map/01-blocker-a" }),
+				blockers: ["map/01-blocker-c"],
+			},
+		]);
+		expect(inspection.claimed.map((ticket) => ticket.id)).toEqual([
+			"map/03-claimed",
+		]);
+	});
+
+	it("reads each unique blocker once", async () => {
+		const { module, getTicket } = makeFixture();
+		await module.inspectFrontier("map");
+
+		// blocker-a is referenced by the blocked and claimed tickets; blocker-c
+		// blocks blocker-a. Each unique blocker id is read exactly once.
+		expect(getTicket).toHaveBeenCalledTimes(3);
+		expect(getTicket).toHaveBeenCalledWith("map/01-blocker-a");
+		expect(getTicket).toHaveBeenCalledWith("map/01-blocker-b");
+		expect(getTicket).toHaveBeenCalledWith("map/01-blocker-c");
 	});
 });
 
@@ -455,7 +586,7 @@ describe("WayfinderModule resolveTicket workflow", () => {
 	});
 
 	it("rejects a mismatched map identity before touching the adapter", async () => {
-		const { module, map } = makeFixture();
+		const { module } = makeFixture();
 		await expect(
 			module.resolveTicket({
 				ticketId: "map/01-blocker",

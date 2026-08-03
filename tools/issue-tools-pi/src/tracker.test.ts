@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync, mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { createContainer, type TrackerModules } from "issue-tools-core";
 import {
 	buildTrackerModules,
@@ -142,9 +143,9 @@ describe("createTrackerSession", () => {
 		const session = createTrackerSession({ cwd, selectMode, buildModules });
 
 		const [first, concurrent, subsequent] = await Promise.all([
-			session.get(),
-			session.get(),
-			session.get(),
+			session.get({} as ExtensionContext),
+			session.get({} as ExtensionContext),
+			session.get({} as ExtensionContext),
 		]);
 
 		expect(selectMode).toHaveBeenCalledOnce();
@@ -170,9 +171,9 @@ describe("createTrackerSession", () => {
 			.mockResolvedValueOnce(secondModules);
 		const session = createTrackerSession({ cwd, selectMode, buildModules });
 
-		const first = await session.get();
+		const first = await session.get({} as ExtensionContext);
 		session.reset();
-		const second = await session.get();
+		const second = await session.get({} as ExtensionContext);
 
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildModules).toHaveBeenCalledTimes(2);
@@ -190,8 +191,8 @@ describe("createTrackerSession", () => {
 			.mockResolvedValueOnce(built);
 		const session = createTrackerSession({ cwd, selectMode, buildModules });
 
-		await expect(session.get()).rejects.toThrow(error);
-		await expect(session.get()).resolves.toBe(built);
+		await expect(session.get({} as ExtensionContext)).rejects.toThrow(error);
+		await expect(session.get({} as ExtensionContext)).resolves.toBe(built);
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildModules).toHaveBeenCalledTimes(2);
 	});
