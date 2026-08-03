@@ -78,11 +78,13 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 			destination: "A Todoist-backed Wayfinder MVP exists.",
 		});
 
-		expect(await tracker.getMap(map.url)).toMatchObject({
+		const detail = await tracker.getMapDetail(map.url);
+		expect(detail.map).toMatchObject({
 			id: map.id,
 			title: "Plan Todoist Wayfinder",
 		});
-		expect(await tracker.listChildTickets(map.url)).toEqual([]);
+		expect(detail.frontier).toEqual([]);
+		expect(detail.openCount).toBe(0);
 	});
 
 	it("lists only incomplete, unclaimed, unblocked child tickets as frontier", async () => {
@@ -125,15 +127,15 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		await tracker.claimTicketIfUnclaimed(claimed.id, "agent-1");
 
 		expect(
-			(await tracker.inspectFrontier(map.id)).frontier.map(
+			(await tracker.getMapDetail(map.id)).frontier.map(
 				(ticket) => ticket.id,
 			),
 		).toEqual([blocker.id]);
 
-		await tracker.closeTicket(blocker.id);
+		await adapter.closeTicket(blocker.id);
 
 		expect(
-			(await tracker.inspectFrontier(map.id)).frontier.map(
+			(await tracker.getMapDetail(map.id)).frontier.map(
 				(ticket) => ticket.id,
 			),
 		).toEqual([blocked.id]);
@@ -166,19 +168,15 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		expect(secondClaim.claimed).toBe(false);
 		expect(secondClaim.ticket.claimedBy).toBe("agent-1");
 
-		await adapter.recordResolution(ticket.id, "Resolution: use Todoist.");
-		await tracker.recordDecision(map.id, {
-			title: ticket.title,
-			url: ticket.url,
+		const result = await tracker.resolveTicket({
+			ticketId: ticket.id,
+			mapId: map.id,
+			resolution: "Resolution: use Todoist.",
 			gist: "Todoist owns durable state.",
 		});
-		await tracker.recordDecision(map.id, {
-			title: "A retried title",
-			url: ticket.url,
-			gist: "A retried gist must not replace the first one.",
-		});
+		expect(result.outcome).toBe("complete");
 
-		const resolvedTicket = await tracker.getTicket(ticket.id);
+		const resolvedTicket = (await tracker.getTicketDetail(ticket.id)).ticket;
 		expect(resolvedTicket.status).toBe("closed");
 		expect(resolvedTicket.comments).toEqual(["Resolution: use Todoist."]);
 		const resolvedBody = await readFile(
@@ -190,7 +188,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		expect(resolvedBody).not.toContain("Blocked by: None");
 		expect(resolvedBody).toContain("Claimed by: agent-1");
 		expect(resolvedBody).toContain("## Answer\n\nResolution: use Todoist.");
-		expect((await tracker.getMap(map.id)).decisionsSoFar).toEqual([
+		expect((await tracker.getMapDetail(map.id)).map.decisionsSoFar).toEqual([
 			{
 				title: "Choose tracker",
 				url: ticket.url,
@@ -230,7 +228,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		body = await readFile(ticketPath, "utf8");
 		expect(body).toContain("Status: open");
 		expect(body).not.toContain("Claimed by:");
-		expect((await tracker.getTicket(ticket.id)).claimedBy).toBeUndefined();
+		expect((await tracker.getTicketDetail(ticket.id)).ticket.claimedBy).toBeUndefined();
 	});
 
 	it("unclaiming a closed ticket leaves it closed", async () => {
@@ -250,11 +248,15 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		});
 
 		await tracker.claimTicketIfUnclaimed(ticket.id, "agent-1");
-		await tracker.closeTicket(ticket.id);
-		expect((await tracker.getTicket(ticket.id)).status).toBe("closed");
+		await adapter.closeTicket(ticket.id);
+		expect((await tracker.getTicketDetail(ticket.id)).ticket.status).toBe(
+			"closed",
+		);
 
 		await tracker.unclaimTicket(ticket.id);
-		expect((await tracker.getTicket(ticket.id)).status).toBe("closed");
+		expect((await tracker.getTicketDetail(ticket.id)).ticket.status).toBe(
+			"closed",
+		);
 	});
 
 	it("rejects a ticket file with an unknown Status", async () => {
@@ -284,7 +286,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 			original.replace("Status: open", "Status: in-progress"),
 		);
 
-		await expect(tracker.getTicket(ticket.id)).rejects.toThrow(
+		await expect(tracker.getTicketDetail(ticket.id)).rejects.toThrow(
 			"Invalid Wayfinder ticket Status",
 		);
 	});
@@ -316,7 +318,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 			original.replace("Status: open", "Status: claimed"),
 		);
 
-		await expect(tracker.getTicket(ticket.id)).rejects.toThrow(
+		await expect(tracker.getTicketDetail(ticket.id)).rejects.toThrow(
 			"Invalid Wayfinder ticket Status",
 		);
 	});

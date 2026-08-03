@@ -1,6 +1,5 @@
 import type { MapSectionKey } from "./map-body.ts";
 import type {
-	DecisionSummary,
 	ParsedMapBody,
 	TicketType,
 	WayfinderTicket,
@@ -93,35 +92,51 @@ export type ResolveTicketResult = {
 	decisionRecorded: boolean;
 };
 
+/** A blocker as resolved by getTicketDetail: sibling info for a blockerId. */
+export type WayfinderBlockerDetail = {
+	id: string;
+	title: string;
+	url: string;
+};
+
+/**
+ * The map read-model: the Wayfinder map plus its Frontier partition and the
+ * open/closed counts both map tools render. One call replaces the caller
+ * composing getMap + listChildTickets + partition themselves.
+ */
+export type WayfinderMapDetail = {
+	map: WayfinderTrackerMap;
+	frontier: WayfinderTrackerTicket[];
+	blocked: BlockedFrontierTicket[];
+	claimed: WayfinderTrackerTicket[];
+	openCount: number;
+	closedCount: number;
+};
+
+/** The ticket read-model: the Decision ticket plus its resolved blockers. */
+export type WayfinderTicketDetail = {
+	ticket: WayfinderTrackerTicket;
+	blockers: WayfinderBlockerDetail[];
+};
+
 export interface WayfinderTracker {
 	createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap>;
 	listMaps(): Promise<WayfinderTrackerMap[]>;
 	createChildTicket(
 		input: CreateWayfinderChildTicketInput,
 	): Promise<WayfinderTrackerTicket>;
-	getMap(id: string): Promise<WayfinderTrackerMap>;
-	getTicket(id: string): Promise<WayfinderTrackerTicket>;
-	listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]>;
-	inspectFrontier(mapId: string): Promise<FrontierInspection>;
+	getMapDetail(mapId: string): Promise<WayfinderMapDetail>;
+	getTicketDetail(id: string): Promise<WayfinderTicketDetail>;
 	claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,
 	): Promise<WayfinderClaimResult>;
 	unclaimTicket(id: string): Promise<WayfinderTrackerTicket>;
-	closeTicket(id: string): Promise<WayfinderTrackerTicket>;
 	resolveTicket(input: ResolveTicketInput): Promise<ResolveTicketResult>;
 	setBlockingDependencies(
 		id: string,
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket>;
-	addBlockingDependency(
-		id: string,
-		blockerId: string,
-	): Promise<WayfinderTrackerTicket>;
-	recordDecision(
-		mapId: string,
-		decision: DecisionSummary,
-	): Promise<WayfinderTrackerMap>;
 	updateMapSection(
 		mapId: string,
 		section: MapSectionKey,

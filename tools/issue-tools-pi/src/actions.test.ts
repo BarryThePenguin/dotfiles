@@ -137,7 +137,7 @@ describe("Resolution actions", () => {
 			type: "research",
 			question: "What happened?",
 		});
-		await tracker.closeTicket(closed.id);
+		await adapter.closeTicket(closed.id);
 		const terminal = await handleAction(
 			"resolve",
 			{

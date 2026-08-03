@@ -9,8 +9,10 @@ import type {
 import type {
 	CreateWayfinderChildTicketInput,
 	CreateWayfinderMapInput,
-	FrontierInspection,
+	WayfinderBlockerDetail,
 	WayfinderClaimResult,
+	WayfinderMapDetail,
+	WayfinderTicketDetail,
 	WayfinderTracker,
 	WayfinderTrackerMap,
 	WayfinderTrackerTicket,
@@ -24,11 +26,7 @@ import {
 import { mergeLabels } from "doist-core";
 import { filterIssues } from "./issue-filter.ts";
 import type { MapSectionKey } from "./map-body.ts";
-import {
-	addBlockingDependency as addBlockingDependencyOperation,
-	canClaimTicket,
-	partitionOpenTickets,
-} from "./tracker-operations.ts";
+import { partitionOpenTickets } from "./tracker-operations.ts";
 import type { DecisionSummary } from "./schema.ts";
 
 /**
@@ -164,41 +162,54 @@ export class WayfinderModule implements WayfinderTracker {
 		);
 	}
 
-	getMap(id: string): Promise<WayfinderTrackerMap> {
-		return this.#storage.getMap(id);
+	async getMapDetail(mapId: string): Promise<WayfinderMapDetail> {
+		const [map, children] = await Promise.all([
+			this.#storage.getMap(mapId),
+			this.#storage.listChildTickets(mapId),
+		]);
+		const partition = partitionOpenTickets(children);
+		const openCount =
+			partition.frontier.length +
+			partition.blocked.length +
+			partition.claimed.length;
+		return {
+			map,
+			...partition,
+			openCount,
+			closedCount: children.length - openCount,
+		};
 	}
 
-	getTicket(id: string): Promise<WayfinderTrackerTicket> {
-		return this.#storage.getTicket(id);
+	async getTicketDetail(id: string): Promise<WayfinderTicketDetail> {
+		const ticket = await this.#storage.getTicket(id);
+		// Blockers are always same-map siblings (enforced at the write seam), so
+		// the sibling list is the complete source of blocker titles on both
+		// trackers — no per-blocker reads.
+		const siblings = await this.#storage.listChildTickets(ticket.mapId);
+		const blockers: WayfinderBlockerDetail[] = [];
+		for (const blockerId of ticket.blockerIds) {
+			const sibling = siblings.find((candidate) => candidate.id === blockerId);
+			if (sibling) {
+				blockers.push({
+					id: sibling.id,
+					title: sibling.title,
+					url: sibling.url,
+				});
+			}
+		}
+		return { ticket, blockers };
 	}
 
-	listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
-		return this.#storage.listChildTickets(mapId);
-	}
-
-	async inspectFrontier(mapId: string): Promise<FrontierInspection> {
-		return partitionOpenTickets(
-			await this.#storage.listChildTickets(mapId),
-		);
-	}
-
-	async claimTicketIfUnclaimed(
+	claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,
 	): Promise<WayfinderClaimResult> {
-		const ticket = await this.#storage.getTicket(id);
-		if (!canClaimTicket(ticket)) {
-			return { claimed: false, ticket };
-		}
+		// The persistence seam owns atomic claim-or-report; the module delegates.
 		return this.#storage.claimTicketIfUnclaimed(id, claimant);
 	}
 
 	unclaimTicket(id: string): Promise<WayfinderTrackerTicket> {
 		return this.#storage.unclaimTicket(id);
-	}
-
-	closeTicket(id: string): Promise<WayfinderTrackerTicket> {
-		return this.#storage.closeTicket(id);
 	}
 
 	async resolveTicket(
@@ -250,7 +261,7 @@ export class WayfinderModule implements WayfinderTracker {
 			.filter((ticket) => unblockedIds.has(ticket.id))
 			.map((ticket) => ticket.id);
 		try {
-			const map = await this.recordDecision(input.mapId, {
+			const map = await this.#recordDecision(input.mapId, {
 				title: ticket.title,
 				url: ticket.url,
 				gist: input.gist,
@@ -306,16 +317,11 @@ export class WayfinderModule implements WayfinderTracker {
 		return this.#storage.setBlockingDependencies(id, blockerIds);
 	}
 
-	addBlockingDependency(
-		id: string,
-		blockerId: string,
-	): Promise<WayfinderTrackerTicket> {
-		// Route through the module's own validated setBlockingDependencies so
-		// the same-map invariant cannot be bypassed by a sibling operation.
-		return addBlockingDependencyOperation(this, id, blockerId);
-	}
-
-	async recordDecision(
+	/**
+	 * Record a decision on the Wayfinder map: first entry wins by ticket
+	 * id/URL, later entries are ignored. Internal to the resolve workflow.
+	 */
+	async #recordDecision(
 		mapId: string,
 		decision: DecisionSummary,
 	): Promise<WayfinderTrackerMap> {

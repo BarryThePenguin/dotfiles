@@ -185,7 +185,9 @@ describe("TodoistPersistenceAdapter", () => {
 		const task = gateway.tasks.get(ticket.id);
 		expect(task?.parentId).toBe(map.id);
 		expect(task?.description).not.toContain("wayfinder:map");
-		expect(await tracker.getTicket(ticket.id)).toMatchObject({ mapId: map.id });
+		expect((await tracker.getTicketDetail(ticket.id)).ticket).toMatchObject({
+			mapId: map.id,
+		});
 	});
 
 	it("lists frontier tickets using completion, claim metadata, and blocker metadata", async () => {
@@ -227,13 +229,13 @@ describe("TodoistPersistenceAdapter", () => {
 		await tracker.claimTicketIfUnclaimed(claimed.id, "agent-1");
 
 		expect(
-			(await tracker.inspectFrontier(map.id)).frontier.map((t) => t.id),
+			(await tracker.getMapDetail(map.id)).frontier.map((t) => t.id),
 		).toEqual([blocker.id]);
 
-		await tracker.closeTicket(blocker.id);
+		await adapter.closeTicket(blocker.id);
 
 		expect(
-			(await tracker.inspectFrontier(map.id)).frontier.map((t) => t.id),
+			(await tracker.getMapDetail(map.id)).frontier.map((t) => t.id),
 		).toEqual([blocked.id]);
 	});
 
@@ -263,21 +265,15 @@ describe("TodoistPersistenceAdapter", () => {
 			await tracker.claimTicketIfUnclaimed(ticket.id, "agent-2"),
 		).toMatchObject({ claimed: false, ticket: { claimedBy: "agent-1" } });
 
-		const updateSpy = vi.spyOn(gateway, "updateTask");
-		await tracker.recordDecision(map.id, {
-			title: ticket.title,
-			url: ticket.url,
+		const result = await tracker.resolveTicket({
+			ticketId: ticket.id,
+			mapId: map.id,
+			resolution: "Resolution: use Todoist.",
 			gist: "Todoist owns durable state.",
 		});
-		await tracker.recordDecision(map.id, {
-			title: "A retried title",
-			url: ticket.url,
-			gist: "A retried gist must not replace the first one.",
-		});
-		expect(updateSpy).toHaveBeenCalledTimes(1);
-		await adapter.recordResolution(ticket.id, "Resolution: use Todoist.");
+		expect(result.outcome).toBe("complete");
 
-		expect(await tracker.getTicket(ticket.id)).toMatchObject({
+		expect((await tracker.getTicketDetail(ticket.id)).ticket).toMatchObject({
 			status: "closed",
 			comments: ["Resolution: use Todoist."],
 		});
@@ -286,7 +282,7 @@ describe("TodoistPersistenceAdapter", () => {
 		const unclaimedDescription = gateway.tasks.get(ticket.id)?.description ?? "";
 		expect(unclaimedDescription).not.toContain("Claimed by:");
 		expect(unclaimedDescription).not.toContain("wayfinder:claimed-by");
-		expect((await tracker.getMap(map.id)).decisionsSoFar).toEqual([
+		expect((await tracker.getMapDetail(map.id)).map.decisionsSoFar).toEqual([
 			{
 				title: "Choose tracker",
 				url: ticket.url,
@@ -313,7 +309,7 @@ describe("TodoistPersistenceAdapter", () => {
 
 		await gateway.addComment(ticket.id, "Historical note");
 
-		expect(await tracker.getTicket(ticket.id)).toMatchObject({
+		expect((await tracker.getTicketDetail(ticket.id)).ticket).toMatchObject({
 			comments: ["Historical note"],
 		});
 	});

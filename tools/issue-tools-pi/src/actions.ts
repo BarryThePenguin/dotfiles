@@ -349,14 +349,11 @@ async function getMap(
 	if (!mapId) {
 		return err("no map_id provided and no active map.");
 	}
-	const [map, tickets] = await Promise.all([
-		tracker.getMap(mapId),
-		tracker.listChildTickets(mapId),
-	]);
-	const open = tickets.filter((ticket) => ticket.status === "open");
-	const closed = tickets.filter((ticket) => ticket.status === "closed");
+	const detail = await tracker.getMapDetail(mapId);
+	const open = detail.openCount;
+	const closed = detail.closedCount;
 
-	const summary = renderMapSummary(map, open.length, closed.length);
+	const summary = renderMapSummary(detail.map, open, closed);
 
 	ctx.activeMap = mapId;
 	ctx.persistState();
@@ -364,18 +361,18 @@ async function getMap(
 	return ok(
 		summary,
 		mapDetails(ext, ctx, {
-			id: map.id,
-			title: map.title,
-			url: map.url,
+			id: detail.map.id,
+			title: detail.map.title,
+			url: detail.map.url,
 			sections: {
-				destination: map.destination,
-				notes: map.notes,
-				decisions: map.decisionsSoFar,
-				notYetSpecified: map.notYetSpecified,
-				outOfScope: map.outOfScope,
+				destination: detail.map.destination,
+				notes: detail.map.notes,
+				decisions: detail.map.decisionsSoFar,
+				notYetSpecified: detail.map.notYetSpecified,
+				outOfScope: detail.map.outOfScope,
 			},
-			openTickets: open.length,
-			closedTickets: closed.length,
+			openTickets: open,
+			closedTickets: closed,
 		}),
 	);
 }
@@ -413,22 +410,15 @@ async function getTicket(
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
 	const tracker = await createWayfinder(ext, ctx);
-	const ticket = await tracker.getTicket(params.ticket_id);
-	const blockerTitles =
-		ticket.blockerIds.length > 0
-			? await Promise.all(
-					ticket.blockerIds.map((id) =>
-						tracker.getTicket(id).then((t) => t.title),
-					),
-				)
-			: undefined;
+	const { ticket, blockers } = await tracker.getTicketDetail(params.ticket_id);
+	const blockerTitles = blockers.map((blocker) => blocker.title);
 	return ok(
 		renderTicketDetails(ticket, blockerTitles),
 		mapDetails(ext, ctx, {
 			id: ticket.id,
 			title: ticket.title,
 			type: ticket.type,
-			blockers: ticket.blockerIds,
+			blockers: blockers.map((blocker) => blocker.id),
 			blockerTitles,
 			claimed: Boolean(ticket.claimedBy),
 			comments: ticket.comments.length,
@@ -530,7 +520,7 @@ async function listFrontier(
 	if (!mapId) {
 		return err("no map_id and no active map.");
 	}
-	const { frontier, blocked, claimed } = await tracker.inspectFrontier(mapId);
+	const { frontier, blocked, claimed } = await tracker.getMapDetail(mapId);
 
 	if (frontier.length === 0 && blocked.length === 0 && claimed.length === 0) {
 		return ok(

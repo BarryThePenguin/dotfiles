@@ -184,8 +184,8 @@ describe("WayfinderModule", () => {
 		expect(
 			await module.createMap({ title: map.title, destination: "" }),
 		).toEqual(map);
-		expect(await module.getTicket(ticket.id)).toEqual(ticket);
-		expect((await module.inspectFrontier(map.id)).frontier).toEqual([ticket]);
+		expect((await module.getTicketDetail(ticket.id)).ticket).toEqual(ticket);
+		expect((await module.getMapDetail(map.id)).frontier).toEqual([ticket]);
 	});
 
 	it("owns frontier, claim, blocker, and map document behavior", async () => {
@@ -270,7 +270,7 @@ describe("WayfinderModule", () => {
 		};
 		const module = new WayfinderModule(persistence);
 
-		expect((await module.inspectFrontier(mapShape.id)).frontier).toEqual([
+		expect((await module.getMapDetail(mapShape.id)).frontier).toEqual([
 			blocker,
 		]);
 		expect(
@@ -280,27 +280,15 @@ describe("WayfinderModule", () => {
 			ticket: { claimedBy: "agent-1" },
 		});
 		expect(claim).toHaveBeenCalledWith(blocker.id, "agent-1");
-		await module.addBlockingDependency(blocker.id, blocked.id);
-		expect(setBlocking).toHaveBeenCalledWith(blocker.id, [blocked.id]);
 
 		await module.updateMapSection(mapShape.id, "notes", "Updated notes");
-		expect((await module.getMap(mapShape.id)).notes).toBe("Updated notes");
-		await module.recordDecision(mapShape.id, {
-			title: blocker.title,
-			url: blocker.url,
-			gist: "The blocker is the first decision.",
-		});
-		expect((await module.getMap(mapShape.id)).decisionsSoFar).toEqual([
-			{
-				title: blocker.title,
-				url: blocker.url,
-				gist: "The blocker is the first decision.",
-			},
-		]);
+		expect((await module.getMapDetail(mapShape.id)).map.notes).toBe(
+			"Updated notes",
+		);
 	});
 });
 
-describe("WayfinderModule inspectFrontier", () => {
+describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 	function makeFixture() {
 		const map: WayfinderTrackerMap = {
 			id: "map",
@@ -401,35 +389,36 @@ describe("WayfinderModule inspectFrontier", () => {
 		};
 	}
 
-	it("partitions open tickets into frontier, blocked, and claimed", async () => {
+	it("partitions open tickets into frontier, blocked, and claimed with counts", async () => {
 		const { module } = makeFixture();
-		const inspection = await module.inspectFrontier("map");
+		const detail = await module.getMapDetail("map");
 
-		expect(inspection.frontier.map((ticket) => ticket.id)).toEqual([
+		expect(detail.map.id).toBe("map");
+		expect(detail.frontier.map((ticket) => ticket.id)).toEqual([
 			"map/01-frontier",
 			"map/01-blocker-c",
 		]);
-		expect(inspection.blocked).toEqual([
-			{
-				ticket: expect.objectContaining({ id: "map/02-blocked" }),
-				blockers: ["map/01-blocker-a"],
-			},
-			{
-				ticket: expect.objectContaining({ id: "map/01-blocker-a" }),
-				blockers: ["map/01-blocker-c"],
-			},
+		expect(detail.blocked.map((entry) => entry.ticket.id)).toEqual([
+			"map/02-blocked",
+			"map/01-blocker-a",
 		]);
-		expect(inspection.claimed.map((ticket) => ticket.id)).toEqual([
+		expect(detail.blocked.map((entry) => entry.blockers)).toEqual([
+			["map/01-blocker-a"],
+			["map/01-blocker-c"],
+		]);
+		expect(detail.claimed.map((ticket) => ticket.id)).toEqual([
 			"map/03-claimed",
 		]);
+		expect(detail.openCount).toBe(5);
+		expect(detail.closedCount).toBe(2);
 	});
 
-	it("classifies the frontier from a single sibling read", async () => {
+	it("reads the map and children in one call, with no per-ticket reads", async () => {
 		const { module, getTicket, listChildTickets } = makeFixture();
-		await module.inspectFrontier("map");
+		await module.getMapDetail("map");
 
-		// Blocker statuses derive from the sibling list, so the frontier needs
-		// one storage call and no per-blocker reads.
+		// Blocker statuses derive from the sibling list, so the detail needs
+		// one child read and no per-blocker reads.
 		expect(listChildTickets).toHaveBeenCalledTimes(1);
 		expect(getTicket).not.toHaveBeenCalled();
 	});
@@ -455,13 +444,6 @@ describe("WayfinderModule inspectFrontier", () => {
 		).rejects.toBeInstanceOf(BlockerNotOnMapError);
 	});
 
-	it("routes addBlockingDependency through the same-map check", async () => {
-		const { module } = makeFixture();
-		await expect(
-			module.addBlockingDependency("map/01-frontier", "other-map/01"),
-		).rejects.toBeInstanceOf(BlockerNotOnMapError);
-	});
-
 	it("accepts same-map blockers and passes them through", async () => {
 		const { module, setBlockingDependencies } = makeFixture();
 		await module.setBlockingDependencies("map/01-frontier", [
@@ -478,6 +460,28 @@ describe("WayfinderModule inspectFrontier", () => {
 		await module.setBlockingDependencies("map/01-frontier", []);
 		expect(listChildTickets).not.toHaveBeenCalled();
 		expect(setBlockingDependencies).toHaveBeenCalledWith("map/01-frontier", []);
+	});
+
+	it("composes blocker titles from the ticket's map siblings", async () => {
+		const { module, getTicket, listChildTickets } = makeFixture();
+		const detail = await module.getTicketDetail("map/02-blocked");
+
+		expect(detail.ticket.id).toBe("map/02-blocked");
+		expect(detail.blockers).toEqual([
+			{
+				id: "map/01-blocker-a",
+				title: "Blocker A",
+				url: "issues/01.md",
+			},
+			{
+				id: "map/01-blocker-b",
+				title: "Blocker B",
+				url: "issues/01.md",
+			},
+		]);
+		// One read for the ticket, one sibling read — no per-blocker reads.
+		expect(getTicket).toHaveBeenCalledTimes(1);
+		expect(listChildTickets).toHaveBeenCalledTimes(1);
 	});
 });
 
@@ -525,6 +529,7 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			}
 			return ticket;
 		};
+		const resolved = new Map<string, string>();
 		const persistence: WayfinderPersistence = {
 			createMap: () => Promise.resolve(map()),
 			listMaps: () => Promise.resolve([map()]),
@@ -559,8 +564,14 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			recordResolution: (id, resolution) => {
 				const current = ticketOrThrow(id);
 				if (current.status === "closed") {
+					// A retry of an already-recorded Resolution is accepted; a
+					// closed ticket without one is terminal.
+					if (resolved.get(id) === resolution) {
+						return Promise.resolve(current);
+					}
 					return Promise.reject(new ClosedTicketWithoutResolutionError(id));
 				}
+				resolved.set(id, resolution);
 				currentTickets = currentTickets.map((ticket) =>
 					ticket.id === id
 						? { ...ticket, status: "closed", comments: [resolution] }
@@ -570,7 +581,18 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			},
 			setBlockingDependencies: () => Promise.resolve(blocker),
 		};
-		return { module: new WayfinderModule(persistence), map: map(), blocked };
+		return {
+			module: new WayfinderModule(persistence),
+			map: map(),
+			blocked,
+			// The seam still owns the close primitive; tests reach it directly
+			// now that the module interface no longer exposes it.
+			closeTicket(id: string) {
+				currentTickets = currentTickets.map((current) =>
+					current.id === id ? { ...current, status: "closed" } : current,
+				);
+			},
+		};
 	}
 
 	it("resolves, records the decision, and reports unblocked tickets", async () => {
@@ -620,8 +642,8 @@ describe("WayfinderModule resolveTicket workflow", () => {
 	});
 
 	it("returns a terminal result for a closed ticket without a Resolution", async () => {
-		const { module, map } = makeFixture();
-		await module.closeTicket("map/01-blocker");
+		const { module, map, closeTicket } = makeFixture();
+		closeTicket("map/01-blocker");
 		const result = await module.resolveTicket({
 			ticketId: "map/01-blocker",
 			mapId: map.id,
@@ -649,7 +671,35 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			}),
 		).rejects.toThrow(/map identity/i);
 
-		expect((await module.getTicket("map/01-blocker")).status).toBe("open");
+		expect((await module.getTicketDetail("map/01-blocker")).ticket.status).toBe(
+			"open",
+		);
+	});
+
+	it("records the decision once across a retry (first-wins)", async () => {
+		const { module, map } = makeFixture();
+		const input = {
+			ticketId: "map/01-blocker",
+			mapId: map.id,
+			resolution: "Resolved.",
+			gist: "Take the simplest path.",
+		};
+
+		const first = await module.resolveTicket(input);
+		const retry = await module.resolveTicket(input);
+
+		expect(first.outcome).toBe("complete");
+		expect(retry.outcome).toBe("complete");
+		expect(retry.decisionRecorded).toBe(true);
+		expect(retry.resolvedTicket.status).toBe("closed");
+		expect(retry.map?.decisionsSoFar).toHaveLength(1);
+		expect(retry.map?.decisionsSoFar).toEqual([
+			{
+				title: "Blocker",
+				url: "issues/01-blocker.md",
+				gist: "Take the simplest path.",
+			},
+		]);
 	});
 });
 

@@ -46,12 +46,8 @@ describe("partitionOpenTickets", () => {
 			ticket({ id: "map/03" }),
 		]);
 
-		expect(result.blocked).toEqual([
-			{
-				ticket: expect.objectContaining({ id: "map/01" }),
-				blockers: ["map/03"],
-			},
-		]);
+		expect(result.blocked.map((entry) => entry.ticket.id)).toEqual(["map/01"]);
+		expect(result.blocked.map((entry) => entry.blockers)).toEqual([["map/03"]]);
 	});
 
 	it("treats a blocker id not in the list as blocking", () => {
@@ -59,11 +55,9 @@ describe("partitionOpenTickets", () => {
 			ticket({ id: "map/01", blockerIds: ["foreign/01"] }),
 		]);
 
-		expect(result.blocked).toEqual([
-			{
-				ticket: expect.objectContaining({ id: "map/01" }),
-				blockers: ["foreign/01"],
-			},
+		expect(result.blocked.map((entry) => entry.ticket.id)).toEqual(["map/01"]);
+		expect(result.blocked.map((entry) => entry.blockers)).toEqual([
+			["foreign/01"],
 		]);
 		expect(result.frontier).toEqual([]);
 	});

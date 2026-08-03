@@ -44,7 +44,10 @@ export type {
 	ResolveOutcome,
 	ResolveTicketInput,
 	ResolveTicketResult,
+	WayfinderBlockerDetail,
 	WayfinderClaimResult,
+	WayfinderMapDetail,
+	WayfinderTicketDetail,
 	WayfinderTracker,
 	WayfinderTrackerMap,
 	WayfinderTrackerTicket,
@@ -65,7 +68,6 @@ export type {
 // -- Wayfinder operations -------------------------------------------------
 
 export {
-	addBlockingDependency,
 	canClaimTicket,
 	partitionOpenTickets,
 } from "./tracker-operations.ts";
