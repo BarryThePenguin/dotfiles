@@ -23,7 +23,7 @@ import {
 	PiIssueToolNames,
 	PiToolNames,
 	PiWayfinderToolNames,
-} from "./schema.ts";
+} from "./tool-schemas.ts";
 
 export { applyRepoMarker };
 

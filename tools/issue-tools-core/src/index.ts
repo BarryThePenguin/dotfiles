@@ -187,11 +187,10 @@ export {
 	PiWayfinderToolNames,
 	ResolveParams,
 	SetBlockingParams,
-	TICKET_TYPES,
 	TicketId,
 	TicketTypeSchema,
 	UpdateMapParams,
-} from "./schema.ts";
+} from "./tool-schemas.ts";
 export type {
 	BlockerLink,
 	DecisionSummary,
@@ -203,3 +202,7 @@ export type {
 	TicketType,
 	WayfinderTicket,
 } from "./schema.ts";
+
+// -- Domain constants (kept with the domain types) -------------------------
+
+export { TICKET_TYPES } from "./schema.ts";
