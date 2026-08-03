@@ -1,105 +1,17 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { addTaskComment } from "doist-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
 import type { WayfinderPersistence } from "./modules.ts";
-import {
-	TodoistPersistenceAdapter,
-	type TodoistCreateTaskInput,
-	type TodoistGateway,
-	type TodoistListTasksInput,
-	type TodoistTask,
-	type TodoistUpdateTaskInput,
-} from "./todoist-adapter.ts";
+import { createTodoistFixture } from "./test-helpers/todoist-fixture.ts";
 
 type Fixture = {
 	tracker: WayfinderPersistence;
 	addOrdinaryComment: (ticketId: string, body: string) => Promise<void>;
 	cleanup: () => Promise<void>;
 };
-
-class InMemoryTodoistGateway implements TodoistGateway {
-	readonly tasks = new Map<string, TodoistTask>();
-	#nextId = 1;
-
-	createTask(input: TodoistCreateTaskInput): Promise<TodoistTask> {
-		const id = String(this.#nextId++);
-		const task: TodoistTask = {
-			id,
-			url: `https://app.todoist.com/app/task/${id}`,
-			content: input.content,
-			description: input.description,
-			labels: input.labels,
-			parentId: input.parentId ?? null,
-			projectId: input.projectId ?? null,
-			isCompleted: false,
-			createdAt: null,
-			updatedAt: null,
-			comments: [],
-		};
-		this.tasks.set(id, task);
-		return Promise.resolve(task);
-	}
-
-	getTask(id: string): Promise<TodoistTask> {
-		const task = this.tasks.get(id);
-		return task
-			? Promise.resolve(task)
-			: Promise.reject(new Error(`Todoist task not found: ${id}`));
-	}
-
-	async getTasks(ids: string[]): Promise<TodoistTask[]> {
-		return Promise.all(ids.map((id) => this.getTask(id)));
-	}
-
-	async updateTask(
-		id: string,
-		input: TodoistUpdateTaskInput,
-	): Promise<TodoistTask> {
-		const task = await this.getTask(id);
-		const updated = {
-			...task,
-			...(input.description === undefined
-				? {}
-				: { description: input.description }),
-		};
-		this.tasks.set(id, updated);
-		return updated;
-	}
-
-	async completeTask(id: string, comment?: string): Promise<TodoistTask> {
-		const task = await this.getTask(id);
-		const updated = {
-			...task,
-			isCompleted: true,
-			comments:
-				comment === undefined
-					? task.comments
-					: [...task.comments, { content: comment, postedAt: null }],
-		};
-		this.tasks.set(id, updated);
-		return updated;
-	}
-
-	listTasks(_input: TodoistListTasksInput = {}): Promise<TodoistTask[]> {
-		return Promise.resolve([...this.tasks.values()]);
-	}
-
-	listSubtasks(parentId: string): Promise<TodoistTask[]> {
-		return Promise.resolve(
-			[...this.tasks.values()].filter((task) => task.parentId === parentId),
-		);
-	}
-
-	async addComment(taskId: string, body: string): Promise<void> {
-		const task = await this.getTask(taskId);
-		this.tasks.set(taskId, {
-			...task,
-			comments: [...task.comments, { content: body, postedAt: null }],
-		});
-	}
-}
 
 async function localFixture(): Promise<Fixture> {
 	const root = await mkdtemp(join(tmpdir(), "resolution-contract-local-"));
@@ -117,14 +29,16 @@ async function localFixture(): Promise<Fixture> {
 }
 
 function todoistFixture(): Fixture {
-	const gateway = new InMemoryTodoistGateway();
-	const tracker = new TodoistPersistenceAdapter(gateway, {
-		projectId: "project-1",
-	});
+	const engine = createTodoistFixture({ projectId: "project-1" });
 	return {
-		tracker,
-		addOrdinaryComment: (ticketId, body) => gateway.addComment(ticketId, body),
-		cleanup: async () => {},
+		tracker: engine.adapter,
+		addOrdinaryComment: async (ticketId, body) => {
+			await addTaskComment(engine.db, engine.client, ticketId, body);
+		},
+		cleanup: () => {
+			engine.cleanup();
+			return Promise.resolve();
+		},
 	};
 }
 

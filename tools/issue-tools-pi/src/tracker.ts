@@ -14,11 +14,10 @@ import { resolve } from "node:path";
 import {
 	type Container,
 	createContainer,
-	DoistCoreTodoistGateway,
 	LocalMarkdownPersistenceAdapter,
 	selectRepoProject,
 	syncAndPersist,
-	TodoistPersistenceAdapter,
+	TodoistAdapter,
 	createTrackerModules as createDomainModules,
 	type TrackerModules,
 } from "issue-tools-core";
@@ -66,13 +65,10 @@ export async function buildTrackerModules(): Promise<TrackerModules> {
 
 	await syncAndPersist(container.db, container.client, projectIds, false);
 
-	const gateway = new DoistCoreTodoistGateway({
-		db: container.db,
-		client: container.client,
-	});
 	const repoProjectId = pickRepoProjectId(container);
-	const adapter = new TodoistPersistenceAdapter(
-		gateway,
+	const adapter = new TodoistAdapter(
+		container.db,
+		container.client,
 		repoProjectId ? { projectId: repoProjectId } : {},
 	);
 	return createDomainModules(adapter);

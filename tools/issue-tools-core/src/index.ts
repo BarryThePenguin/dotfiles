@@ -76,19 +76,8 @@ export {
 
 export { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
 
-export { TodoistPersistenceAdapter } from "./todoist-adapter.ts";
-export type {
-	TodoistCreateTaskInput,
-	TodoistGateway,
-	TodoistListTasksInput,
-	TodoistPersistenceAdapterOptions,
-	TodoistTask,
-	TodoistTaskComment,
-	TodoistUpdateTaskInput,
-} from "./todoist-adapter.ts";
-
-export { DoistCoreTodoistGateway } from "./doist-core-gateway.ts";
-export type { DoistCoreTodoistGatewayOptions } from "./doist-core-gateway.ts";
+export { TodoistAdapter } from "./todoist-adapter.ts";
+export type { TodoistAdapterOptions } from "./todoist-adapter.ts";
 
 // -- Map and ticket formats ----------------------------------------------
 
