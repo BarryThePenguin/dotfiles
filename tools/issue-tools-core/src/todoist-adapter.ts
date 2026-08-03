@@ -157,12 +157,12 @@ export class TodoistAdapter {
 
 	listMaps(): Promise<WayfinderTrackerMap[]> {
 		return Promise.resolve(
-			sortById(this.#selectTasks())
-				.filter(
+			this.#withCommentsBatch(
+				sortById(this.#selectTasks()).filter(
 					(task) =>
 						task.labels.includes(WAYFINDER_MAP_LABEL) && !task.isCompleted,
-				)
-				.map((task) => toMap(this.#withComments(task))),
+				),
+			).map(toMap),
 		);
 	}
 
@@ -201,9 +201,9 @@ export class TodoistAdapter {
 	listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
 		this.#readTask(mapId);
 		return Promise.resolve(
-			sortById(this.#selectTasks().filter((task) => task.parentId === mapId)).map(
-				(task) => toTicket(this.#withComments(task)),
-			),
+			this.#withCommentsBatch(
+				sortById(this.#selectTasks().filter((task) => task.parentId === mapId)),
+			).map(toTicket),
 		);
 	}
 
@@ -380,7 +380,7 @@ export class TodoistAdapter {
 		const scoped = this.#projectId
 			? tasks.filter((task) => task.projectId === this.#projectId)
 			: tasks;
-		return Promise.resolve(scoped.map((task) => toIssue(this.#withComments(task))));
+		return Promise.resolve(this.#withCommentsBatch(scoped).map(toIssue));
 	}
 
 	// -- doist-core reads -------------------------------------------------
@@ -390,14 +390,34 @@ export class TodoistAdapter {
 	}
 
 	#withComments(task: AppTask): TodoistTaskRead {
-		return {
+		return this.#withCommentsBatch([task])[0]!;
+	}
+
+	/**
+	 * Enrich a batch of tasks with their comments in one notes query. Notes
+	 * come back ordered by item_id then posted_at, so one grouping pass keeps
+	 * each task's comment order.
+	 */
+	#withCommentsBatch(tasks: AppTask[]): TodoistTaskRead[] {
+		const ids = tasks.map((task) => task.id);
+		const notes =
+			ids.length > 0 ? this.#db.selectNotesByTaskIds(ids) : [];
+		const commentsByTaskId = new Map<string, TodoistTaskRead["comments"]>();
+		for (const note of notes) {
+			const comments = commentsByTaskId.get(note.itemId);
+			if (comments) {
+				comments.push({ content: note.content, postedAt: note.postedAt });
+			} else {
+				commentsByTaskId.set(note.itemId, [
+					{ content: note.content, postedAt: note.postedAt },
+				]);
+			}
+		}
+		return tasks.map((task) => ({
 			...task,
 			description: task.description ?? "",
-			comments: this.#db.selectNotesByTask(task.id).map((note) => ({
-				content: note.content,
-				postedAt: note.postedAt,
-			})),
-		};
+			comments: commentsByTaskId.get(task.id) ?? [],
+		}));
 	}
 
 	#readTask(id: string): TodoistTaskRead {

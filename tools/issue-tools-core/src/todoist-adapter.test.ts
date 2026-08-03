@@ -1,5 +1,5 @@
-import { addTask, addTaskComment } from "doist-core";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { addTask, addTaskComment, Database } from "doist-core";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TODOIST_TICKET_TYPE_LABELS, WAYFINDER_MAP_LABEL } from "./labels.ts";
 import { createTrackerModules, type TrackerModules } from "./modules.ts";
 import {
@@ -538,5 +538,114 @@ describe("TodoistAdapter", () => {
 
 		const issues = await modules.issues.listIssues({});
 		expect(issues.map((issue) => issue.id)).toEqual([ours.id]);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Batch reads: notes load in one query per list operation (no N+1)
+// ---------------------------------------------------------------------------
+
+describe("TodoistAdapter batch reads", () => {
+	let fixture: TodoistTestFixture;
+
+	beforeEach(() => {
+		fixture = createTodoistFixture({ projectId: "project-1" });
+	});
+
+	afterEach(() => {
+		fixture.cleanup();
+		vi.restoreAllMocks();
+	});
+
+	it("loads a map's children and their comments in one notes query", async () => {
+		const map = await fixture.adapter.createMap({
+			title: "Batch map",
+			destination: "Batched reads.",
+		});
+		await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "One",
+			type: "task",
+			question: "Q1",
+		});
+		await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "Two",
+			type: "task",
+			question: "Q2",
+		});
+
+		const batchSpy = vi.spyOn(Database.prototype, "selectNotesByTaskIds");
+		const perTaskSpy = vi.spyOn(Database.prototype, "selectNotesByTask");
+
+		const children = await fixture.adapter.listChildTickets(map.id);
+
+		const childrenIds = children.map((ticket) => ticket.id);
+		expect(childrenIds).toHaveLength(2);
+		// The map-existence validation read is its own batched query; the
+		// children (with their comments) come back in one more.
+		expect(batchSpy).toHaveBeenCalledWith(
+			expect.arrayContaining(childrenIds),
+		);
+		expect(perTaskSpy).not.toHaveBeenCalled();
+	});
+
+	it("loads maps with their comments in one notes query", async () => {
+		await fixture.adapter.createMap({
+			title: "Map one",
+			destination: "One.",
+		});
+		await fixture.adapter.createMap({
+			title: "Map two",
+			destination: "Two.",
+		});
+
+		const batchSpy = vi.spyOn(Database.prototype, "selectNotesByTaskIds");
+		const perTaskSpy = vi.spyOn(Database.prototype, "selectNotesByTask");
+
+		const maps = await fixture.adapter.listMaps();
+
+		expect(maps).toHaveLength(2);
+		expect(batchSpy).toHaveBeenCalledTimes(1);
+		expect(perTaskSpy).not.toHaveBeenCalled();
+	});
+
+	it("loads issues with their comments in one notes query", async () => {
+		await fixture.adapter.createIssueRecord({
+			title: "Issue A",
+			body: "A.",
+		});
+		await fixture.adapter.createIssueRecord({
+			title: "Issue B",
+			body: "B.",
+		});
+
+		const batchSpy = vi.spyOn(Database.prototype, "selectNotesByTaskIds");
+		const perTaskSpy = vi.spyOn(Database.prototype, "selectNotesByTask");
+
+		const issues = await fixture.adapter.listIssueRecords();
+
+		expect(issues).toHaveLength(2);
+		expect(batchSpy).toHaveBeenCalledTimes(1);
+		expect(perTaskSpy).not.toHaveBeenCalled();
+	});
+
+	it("preserves posted_at comment order through the batched read", async () => {
+		const map = await fixture.adapter.createMap({
+			title: "Order map",
+			destination: "Order.",
+		});
+		const ticket = await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "Order ticket",
+			type: "task",
+			question: "Q",
+		});
+		await addTaskComment(fixture.db, fixture.client, ticket.id, "first");
+		await addTaskComment(fixture.db, fixture.client, ticket.id, "second");
+
+		const children = await fixture.adapter.listChildTickets(map.id);
+
+		expect(children[0]?.comments).toEqual(["first", "second"]);
 	});
 });

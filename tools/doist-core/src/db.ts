@@ -587,6 +587,25 @@ export class Database {
 		).map(normalizeNote);
 	}
 
+	/**
+	 * Notes for many tasks in one query. Ordered by item_id then posted_at so
+	 * a caller can group by itemId in one pass and keep each task's notes in
+	 * the same order `selectNotesByTask` returns.
+	 */
+	selectNotesByTaskIds(itemIds: string[]): AppNote[] {
+		if (itemIds.length === 0) {
+			return [];
+		}
+		return this.all(
+			this.notes()
+				.where("item_id", "in", itemIds)
+				.where("is_deleted", "=", 0)
+				.orderBy("item_id")
+				.orderBy("posted_at", "asc")
+				.compile(),
+		).map(normalizeNote);
+	}
+
 	// Filter queries
 	private filters() {
 		return this.#q.selectFrom("filters").selectAll();
