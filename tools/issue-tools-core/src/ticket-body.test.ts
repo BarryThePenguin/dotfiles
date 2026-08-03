@@ -10,8 +10,8 @@ describe("Wayfinder ticket body", () => {
 		const body = renderTicketBody({
 			question: "Which tracker should own durable Wayfinder state?",
 			blockers: [
-				{ id: "ticket-1", title: "Ticket 1", url: "https://example.com/ticket-1" },
-				{ id: "ticket-2", title: "Ticket 2", url: "https://example.com/ticket-2" },
+				{ text: "Ticket 1", url: "https://example.com/ticket-1" },
+				{ text: "Ticket 2", url: "https://example.com/ticket-2" },
 			],
 			claimedBy: "agent-1",
 		});
@@ -26,7 +26,10 @@ describe("Wayfinder ticket body", () => {
 
 		expect(parseTicketBody(body)).toEqual({
 			question: "Which tracker should own durable Wayfinder state?",
-			blockerIds: ["ticket-1", "ticket-2"],
+			blockers: [
+				{ text: "Ticket 1", url: "https://example.com/ticket-1" },
+				{ text: "Ticket 2", url: "https://example.com/ticket-2" },
+			],
 			claimedBy: "agent-1",
 		});
 	});
@@ -61,7 +64,7 @@ Choose a first implementation slice.
 
 		expect(parseTicketBody(body)).toEqual({
 			question: "Choose a first implementation slice.",
-			blockerIds: [],
+			blockers: [],
 		});
 	});
 
@@ -76,7 +79,9 @@ Continue the work.
 - [Ticket 1 again](https://example.com/ticket-1)
 `;
 
-		expect(parseTicketBody(body).blockerIds).toEqual(["ticket-1"]);
+		expect(parseTicketBody(body).blockers).toEqual([
+			{ text: "Ticket 1", url: "https://example.com/ticket-1" },
+		]);
 	});
 
 	it("round-trips a blocker whose title contains a comma", () => {
@@ -84,15 +89,16 @@ Continue the work.
 			question: "Continue the work.",
 			blockers: [
 				{
-					id: "ticket-1",
-					title: "Pick A, B, or C",
+					text: "Pick A, B, or C",
 					url: "https://example.com/ticket-1",
 				},
 			],
 		});
 
 		const parsed = parseTicketBody(body);
-		expect(parsed.blockerIds).toEqual(["ticket-1"]);
+		expect(parsed.blockers).toEqual([
+			{ text: "Pick A, B, or C", url: "https://example.com/ticket-1" },
+		]);
 	});
 
 	it("picks up links in non-list sections", () => {
@@ -105,7 +111,10 @@ Continue the work.
 See [Ticket 1](https://example.com/ticket-1) and [Ticket 2](https://example.com/ticket-2).
 `;
 
-		expect(parseTicketBody(body).blockerIds).toEqual(["ticket-1", "ticket-2"]);
+		expect(parseTicketBody(body).blockers).toEqual([
+			{ text: "Ticket 1", url: "https://example.com/ticket-1" },
+			{ text: "Ticket 2", url: "https://example.com/ticket-2" },
+		]);
 	});
 
 	it("renders the claimed-by field as a header line above the Question section", () => {

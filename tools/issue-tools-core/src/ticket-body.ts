@@ -1,4 +1,5 @@
 import type { Root, RootContent } from "mdast";
+import { toString } from "mdast-util-to-string";
 import { u } from "unist-builder";
 import { visit } from "unist-util-visit";
 import {
@@ -14,51 +15,50 @@ import {
 	stringifyMarkdown,
 	text,
 } from "./markdown.ts";
-import type { ParsedTicketBody } from "./schema.ts";
+import type { BlockerLink, ParsedTicketBody } from "./schema.ts";
 import {
 	markdownDocument,
 	setHeaderOnRoot,
 	type WayfinderMarkdownDocument,
 } from "./wayfinder-markdown.ts";
 
-export type BlockerRef = {
-	id: string;
-	title: string;
-	url: string;
-};
-
-type TicketBodyRootInput = {
+/**
+ * The shared Decision ticket body: a Question section, a Blocked by section
+ * (a list of links), and a Claimed by header line. This is the format both
+ * trackers write — Todoist as the task description, Local Markdown as the
+ * body of a ticket file with its own envelope (title, Type/Status headers,
+ * Answer, Comments) on top. Blockers are format-neutral links: each tracker
+ * interprets text/url as its own id style.
+ */
+export function ticketBodyRoot(input: {
 	question: RootContent[];
-	blockers: BlockerRef[];
-};
-
-function ticketBodyRoot(input: TicketBodyRootInput): Root {
+	blockers: BlockerLink[];
+}): Root {
 	const root = u("root", [heading(2, [text("Question")]), ...input.question]);
 	setBlockedBySectionOnRoot(root, input.blockers);
 	return root;
 }
 
-// Wayfinder writes `## Blocked by` as a list of links whose URL ends in the
-// ticket id (the last path segment). Since we control the format, we parse
-// exactly that — no legacy text fallback.
-function blockerIdFromLink(url: string): string {
-	return new URL(url).pathname.split("/").at(-1) ?? "";
-}
-
-function parseBlockerNodes(nodes: RootContent[]): string[] {
-	const ids: string[] = [];
+function parseBlockerLinks(nodes: RootContent[]): BlockerLink[] {
+	const links: BlockerLink[] = [];
 	visit({ type: "root", children: nodes }, "link", (node) => {
-		const id = blockerIdFromLink(node.url);
-		if (id) {
-			ids.push(id);
-		}
+		links.push({ text: toString(node), url: node.url });
 	});
-	return Array.from(new Set(ids));
+	// Dedupe by url, first occurrence wins.
+	const seen = new Set<string>();
+	const unique: BlockerLink[] = [];
+	for (const link of links) {
+		if (!seen.has(link.url)) {
+			seen.add(link.url);
+			unique.push(link);
+		}
+	}
+	return unique;
 }
 
-function setBlockedBySectionOnRoot(
+export function setBlockedBySectionOnRoot(
 	root: Root,
-	blockers: BlockerRef[],
+	blockers: BlockerLink[],
 ): void {
 	removeSection(root, "Blocked by");
 	if (blockers.length > 0) {
@@ -66,7 +66,7 @@ function setBlockedBySectionOnRoot(
 			heading(2, [text("Blocked by:")]),
 			list(
 				blockers.map((blocker) =>
-					listItem([paragraph([link(blocker.url, [text(blocker.title)])])]),
+					listItem([paragraph([link(blocker.url, [text(blocker.text)])])]),
 				),
 			),
 		);
@@ -75,7 +75,7 @@ function setBlockedBySectionOnRoot(
 
 export function setBlockedBySection(
 	markdown: string,
-	blockers: BlockerRef[],
+	blockers: BlockerLink[],
 ): string {
 	const root = parseMarkdown(markdown);
 	setBlockedBySectionOnRoot(root, blockers);
@@ -83,8 +83,8 @@ export function setBlockedBySection(
 }
 
 // `Claimed by` lives as a header line ("Claimed by: <name>") at the top of the
-// body, mirroring the local file format.
-function setClaimedByOnRoot(
+// body.
+export function setClaimedByOnRoot(
 	root: Root,
 	claimant: string | undefined,
 ): void {
@@ -108,7 +108,7 @@ function questionChildren(document: WayfinderMarkdownDocument): RootContent[] {
 
 export function renderTicketBody(input: {
 	question: string;
-	blockers: BlockerRef[];
+	blockers: BlockerLink[];
 	claimedBy?: string;
 }): string {
 	const root = ticketBodyRoot({
@@ -121,17 +121,15 @@ export function renderTicketBody(input: {
 	return stringifyMarkdown(root);
 }
 
-function ticketBodyFromDocument(
+export function ticketBodyFromDocument(
 	document: WayfinderMarkdownDocument,
 ): ParsedTicketBody {
 	const question = stringifyChildren(questionChildren(document));
 	const claimedBy = document.header("Claimed by");
 
-	const blockerNodes = document.section("Blocked by");
-
 	return {
 		question,
-		blockerIds: parseBlockerNodes(blockerNodes),
+		blockers: parseBlockerLinks(document.section("Blocked by")),
 		...(claimedBy ? { claimedBy } : {}),
 	};
 }

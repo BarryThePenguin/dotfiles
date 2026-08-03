@@ -12,6 +12,7 @@ import {
 	type MapSectionKey,
 } from "./map-body.ts";
 import { stringifyMarkdown } from "./markdown.ts";
+import { setClaimedByOnRoot } from "./ticket-body.ts";
 import {
 	compareTicketIds,
 	mapFileUrl,
@@ -207,7 +208,7 @@ export class LocalMarkdownPersistenceAdapter {
 			const info = this.#ticketInfo(id);
 			const { root } = await this.#readTicketDocument(info);
 			setHeaderOnRoot(root, "Status", "claimed");
-			setHeaderOnRoot(root, "Claimed by", claimant);
+			setClaimedByOnRoot(root, claimant);
 			await writeFile(info.path, stringifyMarkdown(root));
 
 			return { claimed: true, ticket: await this.getTicket(id) };
@@ -252,7 +253,7 @@ export class LocalMarkdownPersistenceAdapter {
 			await this.getTicket(id);
 			const { root } = await this.#readTicketDocument(info);
 			setHeaderOnRoot(root, "Status", "open");
-			setHeaderOnRoot(root, "Claimed by", undefined);
+			setClaimedByOnRoot(root, undefined);
 			await writeFile(info.path, stringifyMarkdown(root));
 			return this.getTicket(id);
 		});

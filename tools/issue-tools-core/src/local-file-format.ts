@@ -1,21 +1,20 @@
 import { basename } from "node:path";
-import type { List, Root, RootContent } from "mdast";
-import { u } from "unist-builder";
+import type { Root, RootContent } from "mdast";
 import { mapBodyRoot } from "./map-body.ts";
 import {
-	listItemTexts,
 	heading,
-	link,
-	list,
-	listItem,
 	markdownBlocks,
 	paragraph,
-	text,
-	removeSection,
 	replaceSection,
 	stringifyChildren,
 	stringifyMarkdown,
+	text,
 } from "./markdown.ts";
+import {
+	setBlockedBySectionOnRoot as setTicketBlockedBySectionOnRoot,
+	ticketBodyFromDocument,
+	ticketBodyRoot,
+} from "./ticket-body.ts";
 import { TICKET_TYPES, type TicketType } from "./schema.ts";
 import type { CreateWayfinderMapInput } from "./tracker.ts";
 import type { WayfinderMarkdownDocument } from "./wayfinder-markdown.ts";
@@ -71,28 +70,12 @@ function sectionContent(
 	return stringifyChildren(document.section(heading));
 }
 
-function ticketRefList(refs: string[]): List {
-	return list(
-		refs.map((ref) => listItem([paragraph([link(`${ref}.md`, [text(ref)])])])),
-	);
-}
-
-function ticketRefsFromNodes(nodes: RootContent[]): string[] {
-	const looseLines = nodes
-		.filter((node) => node.type !== "html" && node.type !== "list")
-		.flatMap((node) => stringifyChildren([node]).split("\n"));
-
-	return [...listItemTexts(nodes), ...looseLines]
-		.flatMap((line) => line.split(/,/))
-		.map((ref) => ref.trim())
-		.filter((ref) => ref.length > 0 && !/^none$/i.test(ref));
-}
-
+/** Local layout: a blocker ref renders as a link to its sibling file. */
 export function setBlockedBySectionOnRoot(root: Root, refs: string[]): void {
-	removeSection(root, "Blocked by");
-	if (refs.length > 0) {
-		replaceSection(root, "Blocked by:", [ticketRefList(refs)]);
-	}
+	setTicketBlockedBySectionOnRoot(
+		root,
+		refs.map((ref) => ({ text: ref, url: `${ref}.md` })),
+	);
 }
 
 export function setSectionOnRoot(
@@ -123,22 +106,24 @@ export function ticketMarkdown(input: {
 	if (input.claimedBy) {
 		headers.push(`Claimed by: ${input.claimedBy}`);
 	}
-	const children: RootContent[] = [
+	const root = ticketBodyRoot({
+		question: markdownBlocks(input.question),
+		blockers: input.blockerRefs.map((ref) => ({
+			text: ref,
+			url: `${ref}.md`,
+		})),
+	});
+	root.children.unshift(
 		heading(1, [text(`${number} — ${input.title}`)]),
 		paragraph(headers.join("\n")),
-		heading(2, [text("Question")]),
-		...markdownBlocks(input.question),
-	];
-	if (input.blockerRefs.length > 0) {
-		children.push(heading(2, [text("Blocked by:")]), ticketRefList(input.blockerRefs));
-	}
+	);
 	if (input.answer) {
-		children.push(heading(2, [text("Answer")]), ...input.answer);
+		root.children.push(heading(2, [text("Answer")]), ...input.answer);
 	}
 	if (input.comments && input.comments.length > 0) {
-		children.push(heading(2, [text("Comments")]), ...input.comments);
+		root.children.push(heading(2, [text("Comments")]), ...input.comments);
 	}
-	return stringifyMarkdown(u("root", children));
+	return stringifyMarkdown(root);
 }
 
 export function ticketFileBodyFromDocument(
@@ -149,26 +134,25 @@ export function ticketFileBodyFromDocument(
 		throw new Error(`Invalid or missing Wayfinder ticket Type: ${type ?? ""}`);
 	}
 
-	const blockedByNodes = document.section("Blocked by");
-	const legacyBlockedBy = document.header("Blocked by") ?? "None";
-	const blockerRefs = blockedByNodes.length > 0
-		? ticketRefsFromNodes(blockedByNodes)
-		: /^none\b/i.test(legacyBlockedBy)
-			? []
-			: legacyBlockedBy
-					.split(/[,\n]/)
-					.map((ref) => ref.trim())
-					.filter(Boolean);
+	const body = ticketBodyFromDocument(document);
+	const blockerRefs = body.blockers.map((link) => link.text);
 	const answer = sectionContent(document, "Answer");
-	const claimedBy = document.header("Claimed by");
+	const title = document.title();
+	if (!title) {
+		throw new Error("Invalid or missing Wayfinder ticket title");
+	}
+	const status = document.header("Status");
+	if (!status) {
+		throw new Error("Invalid or missing Wayfinder ticket Status");
+	}
 
 	return {
-		title: (document.title() ?? "Untitled").replace(/^\d+\s+—\s+/, ""),
+		title: title.replace(/^\d+\s+—\s+/, ""),
 		type: type as TicketType,
-		status: document.header("Status") ?? "open",
-		question: sectionContent(document, "Question"),
+		status,
+		question: body.question,
 		blockerRefs,
-		...(claimedBy ? { claimedBy } : {}),
+		...(body.claimedBy ? { claimedBy: body.claimedBy } : {}),
 		...(answer ? { answer } : {}),
 		comments: ticketCommentsFromNodes(document.section("Comments")),
 	};

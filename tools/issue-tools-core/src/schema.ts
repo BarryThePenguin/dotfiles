@@ -47,9 +47,14 @@ export type ParsedMapBody = {
 
 export type RenderMapBodyInput = ParsedMapBody;
 
+export type BlockerLink = {
+	text: string;
+	url: string;
+};
+
 export type ParsedTicketBody = {
 	question: string;
-	blockerIds: string[];
+	blockers: BlockerLink[];
 	claimedBy?: string;
 };
 

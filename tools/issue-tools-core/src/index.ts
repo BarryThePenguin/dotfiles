@@ -102,9 +102,12 @@ export {
 	parseTicketBody,
 	renderTicketBody,
 	setBlockedBySection,
+	setBlockedBySectionOnRoot,
 	setClaimedBy,
+	setClaimedByOnRoot,
+	ticketBodyFromDocument,
+	ticketBodyRoot,
 } from "./ticket-body.ts";
-export type { BlockerRef } from "./ticket-body.ts";
 
 export { issueFileBodyFromDocument, issueFileBodyFromMarkdown, issueMarkdown } from "./issue-file-format.ts";
 export type { IssueFileBody } from "./issue-file-format.ts";
@@ -202,6 +205,7 @@ export {
 	UpdateMapParams,
 } from "./schema.ts";
 export type {
+	BlockerLink,
 	DecisionSummary,
 	MapSection,
 	OutOfScopeEntry,

@@ -15,9 +15,12 @@ import {
 	renderTicketBody,
 	setBlockedBySection,
 	setClaimedBy,
-	type BlockerRef,
 } from "./ticket-body.ts";
-import type { DecisionSummary, TicketType } from "./schema.ts";
+import type {
+	BlockerLink,
+	DecisionSummary,
+	TicketType,
+} from "./schema.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
 import {
 	ClosedTicketWithoutResolutionError,
@@ -112,7 +115,7 @@ function toTicket(task: TodoistTask): WayfinderTrackerTicket {
 		title: task.content,
 		type: ticketTypeFromLabels(task.labels),
 		question: parsed.question,
-		blockerIds: parsed.blockerIds,
+		blockerIds: parsed.blockers.map((blocker) => blockerIdFromLink(blocker.url)),
 		...(parsed.claimedBy ? { claimedBy: parsed.claimedBy } : {}),
 		url: task.url,
 		status: taskStatus(task),
@@ -172,9 +175,8 @@ export class TodoistPersistenceAdapter {
 		const blockerIds = input.blockerIds ?? [];
 		const blockerTasks =
 			blockerIds.length > 0 ? await this.#gateway.getTasks(blockerIds) : [];
-		const blockers: BlockerRef[] = blockerTasks.map((task) => ({
-			id: task.id,
-			title: task.content,
+		const blockers: BlockerLink[] = blockerTasks.map((task) => ({
+			text: task.content,
 			url: task.url,
 		}));
 		const task = await this.#gateway.createTask({
@@ -265,9 +267,8 @@ export class TodoistPersistenceAdapter {
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket> {
 		const blockerTasks = await this.#gateway.getTasks(blockerIds);
-		const blockers: BlockerRef[] = blockerTasks.map((task) => ({
-			id: task.id,
-			title: task.content,
+		const blockers: BlockerLink[] = blockerTasks.map((task) => ({
+			text: task.content,
 			url: task.url,
 		}));
 		const task = await this.#gateway.getTask(id);
@@ -403,4 +404,11 @@ const TODOIST_TASK_ID_FROM_URL = /\/app\/task\/([A-Za-z0-9_-]+)\b/;
 function extractTodoistTaskId(idOrUrl: string): string {
 	const match = TODOIST_TASK_ID_FROM_URL.exec(idOrUrl);
 	return match?.[1] ?? idOrUrl;
+}
+
+// Wayfinder writes the blocked-by section as links whose URL ends in the
+// blocker's task id (the last path segment). Since we control the format, we
+// parse exactly that.
+function blockerIdFromLink(url: string): string {
+	return new URL(url).pathname.split("/").at(-1) ?? "";
 }
