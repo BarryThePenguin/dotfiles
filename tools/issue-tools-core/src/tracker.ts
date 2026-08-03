@@ -19,6 +19,17 @@ export class ClosedTicketWithoutResolutionError extends Error {
 	}
 }
 
+export class BlockerNotOnMapError extends Error {
+	readonly code = "blocker_not_on_map" as const;
+
+	constructor(mapId: string, blockerIds: string[]) {
+		super(
+			`Blockers ${blockerIds.join(", ")} are not on Wayfinder map ${mapId}.`,
+		);
+		this.name = "BlockerNotOnMapError";
+	}
+}
+
 export type WayfinderTrackerMap = ParsedMapBody & {
 	id: string;
 	title: string;

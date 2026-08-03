@@ -10,6 +10,7 @@ import {
 } from "./modules.ts";
 import { parseMapBody, renderMapBody } from "./map-body.ts";
 import {
+	BlockerNotOnMapError,
 	ClosedTicketWithoutResolutionError,
 	type WayfinderTrackerMap,
 	type WayfinderTrackerTicket,
@@ -373,6 +374,9 @@ describe("WayfinderModule inspectFrontier", () => {
 			Promise.resolve(ticketOrThrow(id)),
 		);
 		const listChildTickets = vi.fn(() => Promise.resolve(allTickets));
+		const setBlockingDependencies = vi.fn(() =>
+			Promise.resolve(blockedTicket),
+		);
 		const persistence: WayfinderPersistence = {
 			createMap: () => Promise.resolve(map),
 			listMaps: () => Promise.resolve([map]),
@@ -387,9 +391,14 @@ describe("WayfinderModule inspectFrontier", () => {
 			unclaimTicket: () => Promise.resolve(claimedTicket),
 			closeTicket: () => Promise.resolve(blockerA),
 			recordResolution: () => Promise.resolve(blockerA),
-			setBlockingDependencies: () => Promise.resolve(blockedTicket),
+			setBlockingDependencies,
 		};
-		return { module: new WayfinderModule(persistence), getTicket };
+		return {
+			module: new WayfinderModule(persistence),
+			getTicket,
+			listChildTickets,
+			setBlockingDependencies,
+		};
 	}
 
 	it("partitions open tickets into frontier, blocked, and claimed", async () => {
@@ -415,16 +424,60 @@ describe("WayfinderModule inspectFrontier", () => {
 		]);
 	});
 
-	it("reads each unique blocker once", async () => {
-		const { module, getTicket } = makeFixture();
+	it("classifies the frontier from a single sibling read", async () => {
+		const { module, getTicket, listChildTickets } = makeFixture();
 		await module.inspectFrontier("map");
 
-		// blocker-a is referenced by the blocked and claimed tickets; blocker-c
-		// blocks blocker-a. Each unique blocker id is read exactly once.
-		expect(getTicket).toHaveBeenCalledTimes(3);
-		expect(getTicket).toHaveBeenCalledWith("map/01-blocker-a");
-		expect(getTicket).toHaveBeenCalledWith("map/01-blocker-b");
-		expect(getTicket).toHaveBeenCalledWith("map/01-blocker-c");
+		// Blocker statuses derive from the sibling list, so the frontier needs
+		// one storage call and no per-blocker reads.
+		expect(listChildTickets).toHaveBeenCalledTimes(1);
+		expect(getTicket).not.toHaveBeenCalled();
+	});
+
+	it("rejects a blocker that is not on the ticket's map", async () => {
+		const { module, setBlockingDependencies } = makeFixture();
+		await expect(
+			module.setBlockingDependencies("map/01-frontier", ["other-map/01"]),
+		).rejects.toBeInstanceOf(BlockerNotOnMapError);
+		expect(setBlockingDependencies).not.toHaveBeenCalled();
+	});
+
+	it("rejects a foreign blocker when creating a child ticket", async () => {
+		const { module } = makeFixture();
+		await expect(
+			module.createChildTicket({
+				mapId: "map",
+				title: "A ticket",
+				type: "task",
+				question: "Question",
+				blockerIds: ["map/01-frontier", "other-map/01"],
+			}),
+		).rejects.toBeInstanceOf(BlockerNotOnMapError);
+	});
+
+	it("routes addBlockingDependency through the same-map check", async () => {
+		const { module } = makeFixture();
+		await expect(
+			module.addBlockingDependency("map/01-frontier", "other-map/01"),
+		).rejects.toBeInstanceOf(BlockerNotOnMapError);
+	});
+
+	it("accepts same-map blockers and passes them through", async () => {
+		const { module, setBlockingDependencies } = makeFixture();
+		await module.setBlockingDependencies("map/01-frontier", [
+			"map/02-blocked",
+		]);
+		expect(setBlockingDependencies).toHaveBeenCalledWith("map/01-frontier", [
+			"map/02-blocked",
+		]);
+	});
+
+	it("clears blocking without a map validation read", async () => {
+		const { module, listChildTickets, setBlockingDependencies } =
+			makeFixture();
+		await module.setBlockingDependencies("map/01-frontier", []);
+		expect(listChildTickets).not.toHaveBeenCalled();
+		expect(setBlockingDependencies).toHaveBeenCalledWith("map/01-frontier", []);
 	});
 });
 

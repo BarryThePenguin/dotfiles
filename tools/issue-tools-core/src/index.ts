@@ -50,7 +50,7 @@ export type {
 	WayfinderTrackerTicket,
 	WayfinderTicketStatus,
 } from "./tracker.ts";
-export { ClosedTicketWithoutResolutionError } from "./tracker.ts";
+export { ClosedTicketWithoutResolutionError, BlockerNotOnMapError } from "./tracker.ts";
 
 // -- Domain modules -------------------------------------------------------
 
@@ -64,7 +64,11 @@ export type {
 
 // -- Wayfinder operations -------------------------------------------------
 
-export { addBlockingDependency, canClaimTicket } from "./tracker-operations.ts";
+export {
+	addBlockingDependency,
+	canClaimTicket,
+	partitionOpenTickets,
+} from "./tracker-operations.ts";
 
 // -- Persistence adapters --------------------------------------------------
 

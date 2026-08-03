@@ -7,17 +7,16 @@ import type {
 	UpdateIssueLabelsInput,
 } from "./issue.ts";
 import type {
-	BlockedFrontierTicket,
 	CreateWayfinderChildTicketInput,
 	CreateWayfinderMapInput,
 	FrontierInspection,
 	WayfinderClaimResult,
-	WayfinderTicketStatus,
 	WayfinderTracker,
 	WayfinderTrackerMap,
 	WayfinderTrackerTicket,
 } from "./tracker.ts";
 import {
+	BlockerNotOnMapError,
 	ClosedTicketWithoutResolutionError,
 	type ResolveTicketInput,
 	type ResolveTicketResult,
@@ -28,6 +27,7 @@ import type { MapSectionKey } from "./map-body.ts";
 import {
 	addBlockingDependency as addBlockingDependencyOperation,
 	canClaimTicket,
+	partitionOpenTickets,
 } from "./tracker-operations.ts";
 import type { DecisionSummary } from "./schema.ts";
 
@@ -159,7 +159,9 @@ export class WayfinderModule implements WayfinderTracker {
 	createChildTicket(
 		input: CreateWayfinderChildTicketInput,
 	): Promise<WayfinderTrackerTicket> {
-		return this.#storage.createChildTicket(input);
+		return this.#validateBlockersOnMap(input.mapId, input.blockerIds ?? []).then(
+			() => this.#storage.createChildTicket(input),
+		);
 	}
 
 	getMap(id: string): Promise<WayfinderTrackerMap> {
@@ -175,30 +177,9 @@ export class WayfinderModule implements WayfinderTracker {
 	}
 
 	async inspectFrontier(mapId: string): Promise<FrontierInspection> {
-		const tickets = await this.#storage.listChildTickets(mapId);
-		const openTickets = tickets.filter((ticket) => ticket.status === "open");
-		const blockerStatuses = await this.#readBlockerStatuses(openTickets);
-
-		const frontier: WayfinderTrackerTicket[] = [];
-		const blocked: BlockedFrontierTicket[] = [];
-		const claimed: WayfinderTrackerTicket[] = [];
-
-		for (const ticket of openTickets) {
-			if (ticket.claimedBy) {
-				claimed.push(ticket);
-				continue;
-			}
-			const openBlockers = ticket.blockerIds.filter(
-				(blockerId) => blockerStatuses.get(blockerId) !== "closed",
-			);
-			if (openBlockers.length > 0) {
-				blocked.push({ ticket, blockers: openBlockers });
-			} else {
-				frontier.push(ticket);
-			}
-		}
-
-		return { frontier, blocked, claimed };
+		return partitionOpenTickets(
+			await this.#storage.listChildTickets(mapId),
+		);
 	}
 
 	async claimTicketIfUnclaimed(
@@ -257,11 +238,17 @@ export class WayfinderModule implements WayfinderTracker {
 			};
 		}
 
-		const unblocked = await this.#findNewlyUnblocked(
-			input.mapId,
-			input.ticketId,
+		const siblings = await this.#storage.listChildTickets(input.mapId);
+		const partition = partitionOpenTickets(siblings);
+		const unblockedIds = new Set(
+			[...partition.frontier, ...partition.claimed]
+				.filter((ticket) => ticket.blockerIds.includes(input.ticketId))
+				.map((ticket) => ticket.id),
 		);
-
+		// Preserve sibling order in the report.
+		const unblocked = siblings
+			.filter((ticket) => unblockedIds.has(ticket.id))
+			.map((ticket) => ticket.id);
 		try {
 			const map = await this.recordDecision(input.mapId, {
 				title: ticket.title,
@@ -290,47 +277,32 @@ export class WayfinderModule implements WayfinderTracker {
 		}
 	}
 
-	async #findNewlyUnblocked(
+	/**
+	 * Blockers are Decision tickets on the same Wayfinder map. Enforce that
+	 * here, at the write seam, so the frontier classification can derive all
+	 * blocker statuses from a map's own sibling list.
+	 */
+	async #validateBlockersOnMap(
 		mapId: string,
-		resolvedTicketId: string,
-	): Promise<string[]> {
-		const siblings = await this.#storage.listChildTickets(mapId);
-		const candidates = siblings.filter(
-			(sibling) =>
-				sibling.status === "open" &&
-				sibling.blockerIds.includes(resolvedTicketId),
-		);
-		const blockerStatuses = await this.#readBlockerStatuses(candidates);
-		return candidates
-			.filter((candidate) =>
-				candidate.blockerIds.every(
-					(blockerId) => blockerStatuses.get(blockerId) === "closed",
-				),
-			)
-			.map((candidate) => candidate.id);
-	}
-
-	/** Read each unique blocker once across the given tickets. */
-	async #readBlockerStatuses(
-		tickets: WayfinderTrackerTicket[],
-	): Promise<Map<string, WayfinderTicketStatus>> {
-		const blockerIds = [
-			...new Set(tickets.flatMap((ticket) => ticket.blockerIds)),
-		];
-		const statuses = new Map<string, WayfinderTicketStatus>();
-		for (const blockerId of blockerIds) {
-			statuses.set(
-				blockerId,
-				(await this.#storage.getTicket(blockerId)).status,
-			);
+		blockerIds: string[],
+	): Promise<void> {
+		if (blockerIds.length === 0) {
+			return;
 		}
-		return statuses;
+		const siblings = await this.#storage.listChildTickets(mapId);
+		const siblingIds = new Set(siblings.map((ticket) => ticket.id));
+		const missing = blockerIds.filter((blockerId) => !siblingIds.has(blockerId));
+		if (missing.length > 0) {
+			throw new BlockerNotOnMapError(mapId, missing);
+		}
 	}
 
-	setBlockingDependencies(
+	async setBlockingDependencies(
 		id: string,
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket> {
+		const ticket = await this.#storage.getTicket(id);
+		await this.#validateBlockersOnMap(ticket.mapId, blockerIds);
 		return this.#storage.setBlockingDependencies(id, blockerIds);
 	}
 
@@ -338,7 +310,9 @@ export class WayfinderModule implements WayfinderTracker {
 		id: string,
 		blockerId: string,
 	): Promise<WayfinderTrackerTicket> {
-		return addBlockingDependencyOperation(this.#storage, id, blockerId);
+		// Route through the module's own validated setBlockingDependencies so
+		// the same-map invariant cannot be bypassed by a sibling operation.
+		return addBlockingDependencyOperation(this, id, blockerId);
 	}
 
 	async recordDecision(
