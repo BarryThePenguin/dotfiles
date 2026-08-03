@@ -1,71 +1,68 @@
+import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-	applyRepoMarker,
-	detectSetupMode,
+	detectTrackerSelection,
 	extensionToolCount,
 	toolInventory,
 } from "./setup-issue-tracker.ts";
 
-describe("detectSetupMode", () => {
-	const cwd = "/repo";
+function tempRepo() {
+	const dir = mkdtempDisposableSync(join(tmpdir(), "issue-tools-setup-"));
+	mkdirSync(join(dir.path, ".git")); // stop the upward .doistrc walk
+	return dir;
+}
+
+function writeRc(dir: string, projects: unknown) {
+	writeFileSync(join(dir, ".doistrc"), JSON.stringify({ projects }), "utf8");
+}
+
+describe("detectTrackerSelection", () => {
 	it("returns 'local' when .scratch exists", () => {
-		expect(
-			detectSetupMode(cwd, { hasScratchDir: true, hasDoistrc: false }),
-		).toBe("local");
+		using dir = tempRepo();
+		mkdirSync(join(dir.path, ".scratch"));
+		expect(detectTrackerSelection(dir.path)).toBe("local");
 	});
 
-	it("returns 'todoist' when .doistrc exists", () => {
-		expect(
-			detectSetupMode(cwd, { hasScratchDir: false, hasDoistrc: true }),
-		).toBe("todoist");
+	it("returns 'todoist' when a .doistrc with projects is reachable", () => {
+		using dir = tempRepo();
+		writeRc(dir.path, [{ id: "p1", label: "Test" }]);
+		expect(detectTrackerSelection(dir.path)).toBe("todoist");
 	});
 
-	it("returns 'ambiguous' when both .scratch and .doistrc exist", () => {
-		expect(
-			detectSetupMode(cwd, { hasScratchDir: true, hasDoistrc: true }),
-		).toBe("ambiguous");
+	it("returns 'both' when .scratch and a populated .doistrc exist", () => {
+		using dir = tempRepo();
+		mkdirSync(join(dir.path, ".scratch"));
+		writeRc(dir.path, [{ id: "p1", label: "Test" }]);
+		expect(detectTrackerSelection(dir.path)).toBe("both");
 	});
 
-	it("returns 'ambiguous' when neither exists", () => {
-		expect(
-			detectSetupMode(cwd, { hasScratchDir: false, hasDoistrc: false }),
-		).toBe("ambiguous");
-	});
-});
-
-describe("applyRepoMarker", () => {
-	it("sets repo: true on the given project, removing it from others", () => {
-		const before = [
-			{ id: "a", label: "A" },
-			{ id: "b", label: "B", repo: true },
-		];
-		expect(applyRepoMarker(before, "a")).toEqual([
-			{ id: "a", label: "A", repo: true },
-			{ id: "b", label: "B" },
-		]);
+	it("returns 'neither' when no markers exist", () => {
+		using dir = tempRepo();
+		expect(detectTrackerSelection(dir.path)).toBe("neither");
 	});
 
-	it("preserves order and other project fields", () => {
-		const before = [
-			{ id: "x", label: "X" },
-			{ id: "y", label: "Y" },
-			{ id: "z", label: "Z" },
-		];
-		expect(applyRepoMarker(before, "z")).toEqual([
-			{ id: "x", label: "X" },
-			{ id: "y", label: "Y" },
-			{ id: "z", label: "Z", repo: true },
-		]);
+	it("returns 'neither' when .doistrc has no projects", () => {
+		using dir = tempRepo();
+		writeRc(dir.path, []);
+		expect(detectTrackerSelection(dir.path)).toBe("neither");
 	});
 
-	it("returns the same list when the marker is already on the right project", () => {
-		const before = [
-			{ id: "a", label: "A" },
-			{ id: "b", label: "B", repo: true },
-		];
-		const after = applyRepoMarker(before, "b");
-		// The entries are the same; no allocation needed.
-		expect(after).toEqual(before);
+	it("returns 'neither' for a malformed .doistrc", () => {
+		using dir = tempRepo();
+		writeFileSync(join(dir.path, ".doistrc"), "not json", "utf8");
+		expect(detectTrackerSelection(dir.path)).toBe("neither");
+	});
+
+	it("reports the repo's own markers, not the process cwd's", () => {
+		using dir = tempRepo();
+		writeRc(dir.path, [{ id: "p1", label: "Test" }]);
+		// A sibling repo with a scratch dir must not flip this repo's result.
+		const sibling = tempRepo();
+		mkdirSync(join(sibling.path, ".scratch"));
+		expect(detectTrackerSelection(dir.path)).toBe("todoist");
+		expect(detectTrackerSelection(sibling.path)).toBe("local");
 	});
 });
 

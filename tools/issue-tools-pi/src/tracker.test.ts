@@ -3,12 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createContainer, type TrackerModules } from "issue-tools-core";
+import { createContainer } from "doist-core";
+import type { TrackerModules } from "issue-tools-core";
 import {
 	buildTrackerModules,
 	createTrackerModules,
 	createTrackerSession,
-	detectTrackerSelection,
 	localTrackerRoot,
 	pickRepoProjectId,
 } from "./tracker.ts";
@@ -29,55 +29,10 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// detectTrackerSelection
+// localTrackerRoot
 // ---------------------------------------------------------------------------
 
-describe("detectTrackerSelection", () => {
-	it("returns 'local' when .scratch exists", () => {
-		using dir = tempDir();
-		mkdirSync(join(dir.path, ".scratch"));
-		expect(detectTrackerSelection(dir.path)).toBe("local");
-	});
-
-	it("returns 'todoist' when TODOIST_API_TOKEN and .doistrc are set", () => {
-		using dir = tempDir();
-		writeFileSync(
-			join(dir.path, ".doistrc"),
-			'{"projects":[{"id":"p1","label":"Test"}]}\n',
-		);
-		process.env["TODOIST_API_TOKEN"] = "test";
-		process.env["TODOIST_RC_DIR"] = dir.path;
-
-		expect(detectTrackerSelection(dir.path)).toBe("todoist");
-	});
-
-	it("returns null when no .scratch, no .doistrc, or no projects", () => {
-		using dir = tempDir();
-		process.env["TODOIST_API_TOKEN"] = "test";
-		process.env["TODOIST_RC_DIR"] = dir.path;
-		expect(detectTrackerSelection(dir.path)).toBeNull();
-	});
-
-	it("returns null when .doistrc has no projects", () => {
-		using dir = tempDir();
-		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
-		process.env["TODOIST_API_TOKEN"] = "test";
-		process.env["TODOIST_RC_DIR"] = dir.path;
-		expect(detectTrackerSelection(dir.path)).toBeNull();
-	});
-
-	it("prefers local over Todoist when both are configured", () => {
-		using dir = tempDir();
-		mkdirSync(join(dir.path, ".scratch"));
-		writeFileSync(
-			join(dir.path, ".doistrc"),
-			'{"projects":[{"id":"p1","label":"Test"}]}\n',
-		);
-		process.env["TODOIST_API_TOKEN"] = "test";
-		process.env["TODOIST_RC_DIR"] = dir.path;
-		expect(detectTrackerSelection(dir.path)).toBe("local");
-	});
-
+describe("localTrackerRoot", () => {
 	it("uses .scratch for the local tracker path", () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));

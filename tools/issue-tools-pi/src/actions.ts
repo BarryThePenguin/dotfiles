@@ -7,16 +7,11 @@
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
-	blockquote,
-	heading,
-	link,
-	list,
-	listItem,
-	markdownBlocks,
-	paragraph,
-	stringifyChildren,
-	strong,
-	text,
+	renderIssueDetails,
+	renderMapSummary,
+	renderResolution,
+	renderTicketDetails,
+	stripPrefix,
 	type ChartParams,
 	type ClaimParams,
 	type CreateTicketParams,
@@ -34,10 +29,8 @@ import {
 	type SetBlockingParams,
 	type TrackerModules,
 	type UpdateMapParams,
-	type WayfinderTrackerMap,
 	type WayfinderTrackerTicket,
 } from "issue-tools-core";
-import type { ListItem, RootContent } from "mdast";
 import { localTrackerRoot, type TrackerMode } from "./tracker.ts";
 // ---------------------------------------------------------------------------
 // Public types
@@ -81,21 +74,6 @@ type Handler<K extends keyof ActionMap> = (
 	ext: ExtensionContext,
 ) => Promise<ActionResult>;
 
-const WAYFINDER_PREFIX = "Wayfinder:";
-
-function ok(text: string, details: unknown = {}): ActionResult {
-	return {
-		content: [{ type: "text", text }],
-		details,
-	};
-}
-
-function stripPrefix(title: string): string {
-	return title.startsWith(`${WAYFINDER_PREFIX} `)
-		? title.slice(WAYFINDER_PREFIX.length + 1)
-		: title;
-}
-
 // ---------------------------------------------------------------------------
 // Dispatch table
 // ---------------------------------------------------------------------------
@@ -134,6 +112,13 @@ export function handleAction<K extends keyof ActionMap>(
 
 const DEFAULT_CLAIMANT = "pi-wayfinder";
 
+function ok(text: string, details: unknown = {}): ActionResult {
+	return {
+		content: [{ type: "text", text }],
+		details,
+	};
+}
+
 async function createModules(ext: ExtensionContext, ctx: ToolContext) {
 	return ctx.getTrackerModules(ext);
 }
@@ -167,10 +152,6 @@ function formatTicket(ticket: WayfinderTrackerTicket) {
 	return `${ticket.id} — ${ticket.title} (wayfinder:${ticket.type})`;
 }
 
-function emptyParagraph() {
-	return paragraph("(empty)");
-}
-
 function sectionKey(section: UpdateMapParams["section"]): MapSectionKey {
 	return section === "decisions" ? "decisions" : section;
 }
@@ -181,111 +162,6 @@ function mapDetails(
 	details: Record<string, unknown>,
 ) {
 	return { ...trackerDetails(ext, ctx), ...details };
-}
-
-function sectionNodes(title: string, content: RootContent[]): RootContent[] {
-	return [
-		heading(3, [text(title)]),
-		...(content.length > 0 ? content : [emptyParagraph()]),
-	];
-}
-
-function listSectionNodes(title: string, items: ListItem[]): RootContent[] {
-	return [
-		heading(3, [text(title)]),
-		items.length > 0 ? list(items) : emptyParagraph(),
-	];
-}
-
-function renderMapSummary(
-	map: WayfinderTrackerMap,
-	openCount: number,
-	closedCount: number,
-) {
-	const destination = markdownBlocks(map.destination);
-	const notes = markdownBlocks(map.notes);
-
-	return stringifyChildren([
-		heading(2, [text(map.title)]),
-		paragraph([
-			text(`ID: ${map.id}`),
-			{ type: "break" },
-			text(`URL: ${map.url}`),
-		]),
-		...sectionNodes("destination", destination),
-		...sectionNodes("notes", notes),
-		...listSectionNodes(
-			"decisions",
-			map.decisionsSoFar.map((decision) =>
-				listItem([
-					paragraph([
-						link(decision.url, [text(decision.title)]),
-						text(` — ${decision.gist}`),
-					]),
-				]),
-			),
-		),
-		...listSectionNodes(
-			"notYetSpecified",
-			map.notYetSpecified.map((item) => listItem([paragraph([text(item)])])),
-		),
-		...listSectionNodes(
-			"outOfScope",
-			map.outOfScope.map((item) =>
-				listItem([paragraph([text(`${item.text} — ${item.reason}`)])]),
-			),
-		),
-		paragraph(
-			`Open tickets: ${openCount} (use wayfinder_list_frontier to choose the next ticket)`,
-		),
-		paragraph(`Closed tickets: ${closedCount}`),
-	]);
-}
-
-function renderTicketDetails(
-	ticket: WayfinderTrackerTicket,
-	blockerTitles?: string[],
-): string {
-	const question = markdownBlocks(ticket.question);
-	const blockedBy =
-		blockerTitles && blockerTitles.length > 0
-			? blockerTitles.join(", ")
-			: "nothing";
-	const nodes: RootContent[] = [
-		heading(2, [text(ticket.title)]),
-		paragraph([
-			text(`ID: ${ticket.id}`),
-			{ type: "break" },
-			text(`URL: ${ticket.url}`),
-		]),
-		paragraph(`Type: ${ticket.type} | Blocked by: ${blockedBy}`),
-	];
-
-	nodes.push(
-		paragraph(`Claimed: ${ticket.claimedBy ?? "no"}`),
-		heading(2, [text("Question")]),
-		...question,
-	);
-
-	if (ticket.comments.length > 0) {
-		nodes.push(
-			heading(3, [text(`Comments (${ticket.comments.length})`)]),
-			...ticket.comments.map((comment) => blockquote(comment)),
-		);
-	}
-
-	return stringifyChildren(nodes);
-}
-
-function renderResolutionBody(resolution: RootContent[]): string {
-	return stringifyChildren([
-		paragraph([strong([text("Resolution:")])]),
-		...resolution,
-	]);
-}
-
-function renderResolution(resolution: string): string {
-	return renderResolutionBody(markdownBlocks(resolution));
 }
 
 // ---------------------------------------------------------------------------
@@ -718,57 +594,6 @@ async function listIssues(
 			})),
 		}),
 	);
-}
-
-function renderIssueDetails(issue: {
-	id: string;
-	url: string;
-	title: string;
-	body: string;
-	labels: string[];
-	status: "open" | "closed";
-	comments: { content: string; postedAt?: string }[];
-	createdAt?: string;
-	updatedAt?: string;
-}): string {
-	const body = markdownBlocks(issue.body);
-	const labelLine =
-		issue.labels.length > 0 ? issue.labels.join(", ") : "(none)";
-	const timestamps: string[] = [];
-	if (issue.createdAt) {
-		timestamps.push(`Created: ${issue.createdAt}`);
-	}
-	if (issue.updatedAt) {
-		timestamps.push(`Updated: ${issue.updatedAt}`);
-	}
-	const nodes: RootContent[] = [
-		heading(2, [text(issue.title)]),
-		paragraph([
-			text(`ID: ${issue.id}`),
-			{ type: "break" },
-			text(`URL: ${issue.url}`),
-		]),
-		paragraph(`Status: ${issue.status} | Labels: ${labelLine}`),
-	];
-	if (timestamps.length > 0) {
-		nodes.push(paragraph(timestamps.join(" | ")));
-	}
-	nodes.push(heading(2, [text("Body")]), ...body);
-	if (issue.comments.length > 0) {
-		nodes.push(
-			heading(2, [text(`Comments (${issue.comments.length})`)]),
-			...issue.comments.map((comment) =>
-				comment.postedAt
-					? blockquote(
-							[`${comment.content}\n`, `Posted: ${comment.postedAt}`].join(
-								"\n",
-							),
-						)
-					: blockquote(comment.content),
-			),
-		);
-	}
-	return stringifyChildren(nodes);
 }
 
 // ---------------------------------------------------------------------------

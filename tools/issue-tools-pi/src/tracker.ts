@@ -9,14 +9,15 @@
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
-	type Container,
 	createContainer,
-	LocalMarkdownPersistenceAdapter,
 	selectRepoProject,
 	syncAndPersist,
+	type Container,
+} from "doist-core";
+import {
+	LocalMarkdownPersistenceAdapter,
 	TodoistAdapter,
 	createTrackerModules as createDomainModules,
 	type TrackerModules,
@@ -40,17 +41,6 @@ export function pickRepoProjectId(container: Container): string | undefined {
 
 export function localTrackerRoot(cwd: string): string {
 	return resolve(cwd, ".scratch");
-}
-
-export function detectTrackerSelection(cwd: string): TrackerMode | null {
-	if (existsSync(localTrackerRoot(cwd))) {
-		return "local";
-	}
-	const container = createContainer();
-	if (container.paths && container.listProjectIds().length > 0) {
-		return "todoist";
-	}
-	return null;
 }
 
 export async function buildTrackerModules(): Promise<TrackerModules> {

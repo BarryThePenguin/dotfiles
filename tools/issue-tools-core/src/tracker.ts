@@ -1,4 +1,4 @@
-import type { MapSectionKey } from "./map-body.ts";
+import type { MapSectionKey } from "./schema.ts";
 import type {
 	ParsedMapBody,
 	TicketType,

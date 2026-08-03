@@ -58,6 +58,25 @@ describe("createContainer", () => {
 		expect(existsSync(join(tempDir.path, "todoist.db"))).toBe(true);
 	});
 
+	it("resolves config from a passed rcDir instead of env or cwd", () => {
+		using tempDir = setupContainer();
+		const otherDir = mkdtempDisposableSync(join(tmpdir(), "doist-rc-dir-"));
+		mkdirSync(join(otherDir.path, ".git"));
+		writeFileSync(
+			join(otherDir.path, ".doistrc"),
+			JSON.stringify({ projects: [{ id: "q1", label: "Other" }] }),
+			"utf8",
+		);
+		// TODOIST_RC_DIR points at tempDir; the passed dir must win.
+		const container = createContainer(otherDir.path);
+		onTestFinished(() => {
+			container.close();
+		});
+
+		expect(container.listProjectIds()).toEqual(["q1"]);
+		expect(existsSync(join(tempDir.path, ".doistrc"))).toBe(false);
+	});
+
 	it("can still create a new .doistrc via projects add", () => {
 		using tempDir = setupContainer();
 		const container = createContainer();

@@ -9,8 +9,8 @@ import {
 	mapBodyFromDocument,
 	renderMapBody,
 	replaceMapSection,
-	type MapSectionKey,
 } from "./map-body.ts";
+import type { MapSectionKey } from "./schema.ts";
 
 import { setClaimedByOnDocument } from "./ticket-body.ts";
 import {

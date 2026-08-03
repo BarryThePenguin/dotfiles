@@ -20,7 +20,7 @@ import {
 } from "./wayfinder-markdown.ts";
 import type {
 	DecisionSummary,
-	MapSection,
+	MapSectionKey,
 	OutOfScopeEntry,
 	ParsedMapBody,
 	RenderMapBodyInput,
@@ -33,15 +33,13 @@ type SectionTitle =
 	| "Not yet specified"
 	| "Out of scope";
 
-export type MapSectionKey = MapSection;
-
-const SECTION_KEY_TO_TITLE = {
+const SECTION_KEY_TO_TITLE: Record<MapSectionKey, SectionTitle> = {
 	destination: "Destination",
 	notes: "Notes",
 	decisions: "Decisions so far",
 	notYetSpecified: "Not yet specified",
 	outOfScope: "Out of scope",
-} as const satisfies Record<MapSectionKey, SectionTitle>;
+};
 
 function plainSection(document: WayfinderMarkdownDocument, title: SectionTitle) {
 	return stringifyChildren(document.section(title)).trim();

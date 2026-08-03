@@ -222,6 +222,9 @@ importers:
       '@earendil-works/pi-tui':
         specifier: 0.83.0
         version: 0.83.0
+      doist-core:
+        specifier: workspace:*
+        version: link:../doist-core
       issue-tools-core:
         specifier: workspace:*
         version: link:../issue-tools-core

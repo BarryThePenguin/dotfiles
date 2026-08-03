@@ -10,9 +10,7 @@ import type {
 import {
 	ChartParams,
 	ClaimParams,
-	createContainer,
 	CreateTicketParams,
-	detectSetupMode,
 	GetMapParams,
 	GetTicketParams,
 	IssueCloseParams,
@@ -25,17 +23,16 @@ import {
 	ListMapsParams,
 	ResolveParams,
 	SetBlockingParams,
+	detectTrackerSelection,
 	toolInventory,
 	UpdateMapParams,
 } from "issue-tools-core";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { createContainer } from "doist-core";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult } from "./render.ts";
 import {
 	createTrackerModules,
 	createTrackerSession,
-	detectTrackerSelection,
 	localTrackerRoot,
 	type TrackerMode,
 } from "./tracker.ts";
@@ -54,11 +51,12 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		ctx: ExtensionContext,
 	): Promise<TrackerMode> => {
 		const selection = detectTrackerSelection(ctx.cwd);
-		if (selection) {
+		if (selection === "local" || selection === "todoist") {
 			trackerMode = selection;
 			return trackerMode;
 		}
 
+		// both markers or neither: ask the user
 		if (!ctx.hasUI) {
 			trackerMode = "local";
 			return trackerMode;
@@ -81,7 +79,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 
 	const updateStatus = (ctx: ExtensionContext) => {
 		const mode = trackerMode ?? detectTrackerSelection(ctx.cwd);
-		if (!mode) {
+		if (mode === "both" || mode === "neither") {
 			ctx.ui.setStatus(
 				STATUS_KEY,
 				ctx.ui.theme.fg("warning", "🗺 choose tracker"),
@@ -374,17 +372,13 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 
 async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 	const cwd = ctx.cwd;
-	const scratchPath = join(cwd, ".scratch");
-	const doistrcPath = join(cwd, ".doistrc");
-	const hasScratch = existsSync(scratchPath);
-	const hasRc = existsSync(doistrcPath);
-	const mode = detectSetupMode(cwd, {
-		hasScratchDir: hasScratch,
-		hasDoistrc: hasRc,
-	});
+	const selection = detectTrackerSelection(cwd);
 
 	let resolvedMode: "local" | "todoist";
-	if (mode === "ambiguous") {
+	if (selection === "local" || selection === "todoist") {
+		resolvedMode = selection;
+	} else {
+		// both markers or neither: the repo is ambiguous
 		if (!ctx.hasUI) {
 			ctx.ui.notify(
 				"Cannot determine tracker: no UI available to prompt.",
@@ -397,8 +391,6 @@ async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 			"Todoist (.doistrc)",
 		]);
 		resolvedMode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
-	} else {
-		resolvedMode = mode;
 	}
 
 	if (resolvedMode === "local") {

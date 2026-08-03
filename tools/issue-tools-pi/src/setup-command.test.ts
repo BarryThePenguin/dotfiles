@@ -11,7 +11,8 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createContainer, toolInventory } from "issue-tools-core";
+import { createContainer } from "doist-core";
+import { toolInventory } from "issue-tools-core";
 import wayfinderExtension from "./index.ts";
 
 type CapturedNotify = {
@@ -264,10 +265,13 @@ describe("/setup-issue-tracker command", () => {
 		expect(err?.message).toContain("Cannot determine tracker");
 	});
 
-	it("errors when .doistrc has no projects", async () => {
+	it("errors when the user picks Todoist with an empty .doistrc", async () => {
 		using t = setupTest({
 			files: { ".doistrc": JSON.stringify({ projects: [] }) },
 			hasUI: true,
+			// An empty .doistrc reads as "neither", so the command prompts
+			// first; picking Todoist then hits the no-projects error.
+			selectResponses: ["Todoist (.doistrc)"],
 		});
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", t.dir.path);

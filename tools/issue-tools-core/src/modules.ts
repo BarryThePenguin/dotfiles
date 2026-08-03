@@ -25,7 +25,7 @@ import {
 } from "./tracker.ts";
 import { mergeLabels } from "doist-core";
 import { filterIssues } from "./issue-filter.ts";
-import type { MapSectionKey } from "./map-body.ts";
+import type { MapSectionKey } from "./schema.ts";
 import { partitionOpenTickets } from "./tracker-operations.ts";
 import type { DecisionSummary } from "./schema.ts";
 

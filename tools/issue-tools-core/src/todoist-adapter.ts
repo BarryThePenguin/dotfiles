@@ -16,8 +16,8 @@ import {
 	parseMapBody,
 	renderMapBody,
 	replaceMapSection,
-	type MapSectionKey,
 } from "./map-body.ts";
+import type { MapSectionKey } from "./schema.ts";
 import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
 	parseTicketBody,

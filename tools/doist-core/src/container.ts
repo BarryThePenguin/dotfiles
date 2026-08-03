@@ -61,15 +61,15 @@ export interface Container {
 /**
  * Create a production container with real dependencies.
  *
- * @param apiToken Todoist API token (required; must not be empty)
- * @param config Optional overrides for filesystem paths
+ * @param rcDir Optional directory to start the `.doistrc` search from;
+ *   defaults to `TODOIST_RC_DIR` or the process cwd
  * @returns A fully initialized container
  *
  * @throws If Database initialization fails or paths cannot be resolved
  *
  * Example:
  * ```ts
- * const container = createContainer(env.TODOIST_API_TOKEN);
+ * const container = createContainer();
  * try {
  *   await runCli(container);
  * } finally {
@@ -77,10 +77,10 @@ export interface Container {
  * }
  * ```
  */
-export function createContainer(): Container {
+export function createContainer(rcDir?: string): Container {
 	const env = parseEnv(process.env);
-	const rcDir = env.success ? env.output.TODOIST_RC_DIR : cwd();
-	let paths = findPaths(rcDir, { exists: existsSync });
+	const dir = rcDir ?? (env.success ? env.output.TODOIST_RC_DIR : cwd());
+	let paths = findPaths(dir, { exists: existsSync });
 	let client: TodoistClient | null = null;
 	let db: Database | null = null;
 
@@ -89,11 +89,11 @@ export function createContainer(): Container {
 	let cachedProjects: ProjectRef[] | null = null;
 
 	function getPaths(): ConfigPaths | null {
-		return (paths ??= findPaths(rcDir, { exists: existsSync }));
+		return (paths ??= findPaths(dir, { exists: existsSync }));
 	}
 
 	function getRcPath(): string {
-		return getPaths()?.rcPath ?? join(rcDir, ".doistrc");
+		return getPaths()?.rcPath ?? join(dir, ".doistrc");
 	}
 
 	function getDb() {

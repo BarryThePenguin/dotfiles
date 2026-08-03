@@ -25,6 +25,9 @@ export const MAP_SECTION_KEYS = [
 ] as const;
 export type MapSection = (typeof MAP_SECTION_KEYS)[number];
 
+/** The map section a write targets; the Wayfinder module's section key. */
+export type MapSectionKey = MapSection;
+
 export type DecisionSummary = {
 	title: string;
 	url: string;

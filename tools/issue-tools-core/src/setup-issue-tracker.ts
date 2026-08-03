@@ -3,12 +3,10 @@
  *
  * Pure setup helpers used by the Pi `/setup-issue-tracker` command:
  *
- * - `detectSetupMode(cwd)` — figures out which tracker the repo wants
- *   (`.scratch/` → local, `.doistrc` → Todoist, otherwise ambiguous).
- * - `applyRepoMarker(projects, projectId)` — returns the new list with
- *   `repo: true` set on the given project, cleared on every other. The
- *   implementation lives in `doist-core` so the on-disk format
- *   invariants are owned in one place; this module re-exports it.
+ * - `detectTrackerSelection(cwd)` — the raw fact of which Issue tracker the
+ *   repo can use: a `.scratch/` directory selects Local Markdown; a `.doistrc`
+ *   with at least one Project selects Todoist. Call sites keep their own
+ *   interpretation of `both` and `neither` (prompt vs. default).
  * - `toolInventory()` — the extension's full tool list, derived from
  *   the schema constants so the docs cannot drift from the registered
  *   surface.
@@ -18,32 +16,51 @@
  * pieces so they can be tested.
  */
 
-import { applyRepoMarker } from "doist-core";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { createContainer } from "doist-core";
 import {
 	PiIssueToolNames,
 	PiToolNames,
 	PiWayfinderToolNames,
 } from "./tool-schemas.ts";
 
-export { applyRepoMarker };
+export type TrackerSelection = "local" | "todoist" | "both" | "neither";
 
-export type SetupMode = "local" | "todoist" | "ambiguous";
+/** The directory marker that selects the Local Markdown tracker. */
+const LOCAL_TRACKER_MARKER = ".scratch";
 
-export function detectSetupMode(
-	cwd: string,
-	options: { hasScratchDir: boolean; hasDoistrc: boolean },
-): SetupMode {
-	if (options.hasScratchDir && options.hasDoistrc) {
-		return "ambiguous";
+export function detectTrackerSelection(cwd: string): TrackerSelection {
+	const hasScratch = existsSync(join(cwd, LOCAL_TRACKER_MARKER));
+	const hasTodoist = hasTodoistProjects(cwd);
+	if (hasScratch && hasTodoist) {
+		return "both";
 	}
-	if (options.hasScratchDir) {
+	if (hasScratch) {
 		return "local";
 	}
-	if (options.hasDoistrc) {
+	if (hasTodoist) {
 		return "todoist";
 	}
-	void cwd;
-	return "ambiguous";
+	return "neither";
+}
+
+/**
+ * A repo can use Todoist when a `.doistrc` with at least one Project is
+ * reachable from the cwd. A missing or malformed config reads as "no" —
+ * the detector reports what the tracker can actually build.
+ */
+function hasTodoistProjects(cwd: string): boolean {
+	try {
+		const container = createContainer(cwd);
+		try {
+			return container.listProjectIds().length > 0;
+		} finally {
+			container.close();
+		}
+	} catch {
+		return false;
+	}
 }
 
 export type ToolInventoryEntry = {
