@@ -61,19 +61,20 @@ describe("Wayfinder Markdown document mutation", () => {
 			].join("\n"),
 		);
 
-		document.setHeader("Status", "claimed");
-		expect(document.header("Status")).toBe("claimed");
+		document.setHeader("Claimed by", "pi");
+		expect(document.header("Claimed by")).toBe("pi");
 		expect(document.index.localHeaders).toEqual([
 			{ name: "Type", value: "research" },
-			{ name: "Status", value: "claimed" },
+			{ name: "Status", value: "open" },
+			{ name: "Claimed by", value: "pi" },
 		]);
 		expect(document.section("Question").length).toBeGreaterThan(0);
 
-		document.setHeader("Claimed by", "pi");
-		expect(document.header("Claimed by")).toBe("pi");
+		document.setHeader("Claimed by", "agent-2");
+		expect(document.header("Claimed by")).toBe("agent-2");
 
-		document.setHeader("Status", undefined);
-		expect(document.header("Status")).toBeUndefined();
+		document.setHeader("Claimed by", undefined);
+		expect(document.header("Claimed by")).toBeUndefined();
 	});
 
 	it("setSection replaces an existing section in place", () => {

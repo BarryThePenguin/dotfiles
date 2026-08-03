@@ -21,13 +21,34 @@ import type { WayfinderMarkdownDocument } from "./wayfinder-markdown.ts";
 export type LocalTicketFileBody = {
 	title: string;
 	type: TicketType;
-	status: string;
+	/** Domain status: the file's `Status` header (open | resolved) translated. */
+	status: "open" | "closed";
 	question: string;
 	blockerRefs: string[];
 	claimedBy?: string;
 	answer?: string;
 	comments: string[];
 };
+
+/** The local ticket file's Status vocabulary — owned here, not by callers. */
+export const LOCAL_TICKET_STATUS_OPEN = "open" as const;
+export const LOCAL_TICKET_STATUS_RESOLVED = "resolved" as const;
+export type LocalTicketFileStatus =
+	| typeof LOCAL_TICKET_STATUS_OPEN
+	| typeof LOCAL_TICKET_STATUS_RESOLVED;
+
+function parseTicketFileStatus(value: string | undefined): LocalTicketFileStatus {
+	const normalized = value?.trim().toLowerCase();
+	if (normalized === LOCAL_TICKET_STATUS_OPEN) {
+		return LOCAL_TICKET_STATUS_OPEN;
+	}
+	if (normalized === LOCAL_TICKET_STATUS_RESOLVED) {
+		return LOCAL_TICKET_STATUS_RESOLVED;
+	}
+	throw new Error(
+		`Invalid Wayfinder ticket Status: ${value ?? "(missing)"} (expected ${LOCAL_TICKET_STATUS_OPEN} or ${LOCAL_TICKET_STATUS_RESOLVED})`,
+	);
+}
 
 const VALID_TICKET_TYPES = new Set<TicketType>(TICKET_TYPES);
 
@@ -88,7 +109,7 @@ export function ticketMarkdown(input: {
 	number: number;
 	title: string;
 	type: TicketType;
-	status: string;
+	status: LocalTicketFileStatus;
 	question: string;
 	blockerRefs: string[];
 	claimedBy?: string;
@@ -135,15 +156,12 @@ export function ticketFileBodyFromDocument(
 	if (!title) {
 		throw new Error("Invalid or missing Wayfinder ticket title");
 	}
-	const status = document.header("Status");
-	if (!status) {
-		throw new Error("Invalid or missing Wayfinder ticket Status");
-	}
+	const status = parseTicketFileStatus(document.header("Status"));
 
 	return {
 		title: title.replace(/^\d+\s+—\s+/, ""),
 		type: type as TicketType,
-		status,
+		status: status === LOCAL_TICKET_STATUS_RESOLVED ? "closed" : "open",
 		question: body.question,
 		blockerRefs,
 		...(body.claimedBy ? { claimedBy: body.claimedBy } : {}),

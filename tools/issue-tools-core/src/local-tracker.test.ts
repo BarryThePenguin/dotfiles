@@ -1,5 +1,5 @@
 import { mkdtempDisposableSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -197,6 +197,128 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 				gist: "Todoist owns durable state.",
 			},
 		]);
+	});
+
+	it("claim and unclaim move only the Claimed by header, never the Status", async () => {
+		using rootDir = setupDir();
+		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
+		const map = await tracker.createMap({
+			title: "Plan Todoist Wayfinder",
+			destination: "A Todoist-backed Wayfinder MVP exists.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Choose tracker",
+			type: "grilling",
+			question: "Which tracker owns durable state?",
+		});
+		const ticketPath = join(
+			rootDir.path,
+			map.id,
+			"issues",
+			"01-choose-tracker.md",
+		);
+
+		await tracker.claimTicketIfUnclaimed(ticket.id, "agent-1");
+		let body = await readFile(ticketPath, "utf8");
+		expect(body).toContain("Status: open");
+		expect(body).toContain("Claimed by: agent-1");
+
+		await tracker.unclaimTicket(ticket.id);
+		body = await readFile(ticketPath, "utf8");
+		expect(body).toContain("Status: open");
+		expect(body).not.toContain("Claimed by:");
+		expect((await tracker.getTicket(ticket.id)).claimedBy).toBeUndefined();
+	});
+
+	it("unclaiming a closed ticket leaves it closed", async () => {
+		using rootDir = setupDir();
+		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
+		const map = await tracker.createMap({
+			title: "Plan Todoist Wayfinder",
+			destination: "A Todoist-backed Wayfinder MVP exists.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Choose tracker",
+			type: "grilling",
+			question: "Which tracker owns durable state?",
+		});
+
+		await tracker.claimTicketIfUnclaimed(ticket.id, "agent-1");
+		await tracker.closeTicket(ticket.id);
+		expect((await tracker.getTicket(ticket.id)).status).toBe("closed");
+
+		await tracker.unclaimTicket(ticket.id);
+		expect((await tracker.getTicket(ticket.id)).status).toBe("closed");
+	});
+
+	it("rejects a ticket file with an unknown Status", async () => {
+		using rootDir = setupDir();
+		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
+		const map = await tracker.createMap({
+			title: "Plan Todoist Wayfinder",
+			destination: "A Todoist-backed Wayfinder MVP exists.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Choose tracker",
+			type: "grilling",
+			question: "Which tracker owns durable state?",
+		});
+		const ticketPath = join(
+			rootDir.path,
+			map.id,
+			"issues",
+			"01-choose-tracker.md",
+		);
+		const original = await readFile(ticketPath, "utf8");
+		await writeFile(
+			ticketPath,
+			original.replace("Status: open", "Status: in-progress"),
+		);
+
+		await expect(tracker.getTicket(ticket.id)).rejects.toThrow(
+			"Invalid Wayfinder ticket Status",
+		);
+	});
+
+	it("rejects a legacy claimed Status", async () => {
+		using rootDir = setupDir();
+		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
+		const modules = createTrackerModules(adapter);
+		const tracker = modules.wayfinder;
+		const map = await tracker.createMap({
+			title: "Plan Todoist Wayfinder",
+			destination: "A Todoist-backed Wayfinder MVP exists.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Choose tracker",
+			type: "grilling",
+			question: "Which tracker owns durable state?",
+		});
+		const ticketPath = join(
+			rootDir.path,
+			map.id,
+			"issues",
+			"01-choose-tracker.md",
+		);
+		const original = await readFile(ticketPath, "utf8");
+		await writeFile(
+			ticketPath,
+			original.replace("Status: open", "Status: claimed"),
+		);
+
+		await expect(tracker.getTicket(ticket.id)).rejects.toThrow(
+			"Invalid Wayfinder ticket Status",
+		);
 	});
 
 	// -- Generic issue surface -------------------------------------------

@@ -15,6 +15,8 @@ import {
 import { setClaimedByOnDocument } from "./ticket-body.ts";
 import {
 	compareTicketIds,
+	LOCAL_TICKET_STATUS_OPEN,
+	LOCAL_TICKET_STATUS_RESOLVED,
 	mapFileUrl,
 	mapMarkdown,
 	normalizeTicketIdForMap,
@@ -40,7 +42,6 @@ import {
 	type CreateWayfinderChildTicketInput,
 	type CreateWayfinderMapInput,
 	type WayfinderClaimResult,
-	type WayfinderTicketStatus,
 	type WayfinderTrackerMap,
 	type WayfinderTrackerTicket,
 } from "./tracker.ts";
@@ -93,7 +94,7 @@ export class LocalMarkdownPersistenceAdapter {
 					number: nextNumber,
 					title: input.title,
 					type: input.type,
-					status: "open",
+					status: LOCAL_TICKET_STATUS_OPEN,
 					question: input.question,
 					blockerRefs,
 				}),
@@ -118,8 +119,6 @@ export class LocalMarkdownPersistenceAdapter {
 		const info = this.#ticketInfo(id);
 		const document = await this.#readTicketDocument(info);
 		const parsed = ticketFileBodyFromDocument(document);
-		const status: WayfinderTicketStatus =
-			parsed.status.toLowerCase() === "resolved" ? "closed" : "open";
 		const blockerIds = parsed.blockerRefs.map((ref) =>
 			normalizeTicketIdForMap(info.mapId, ref),
 		);
@@ -133,7 +132,7 @@ export class LocalMarkdownPersistenceAdapter {
 			blockerIds,
 			...(parsed.claimedBy ? { claimedBy: parsed.claimedBy } : {}),
 			url: ticketFileUrl(info.ref),
-			status,
+			status: parsed.status,
 			// The local adapter stores the Resolution in its first `## Answer`
 			// section, but the shared ticket model exposes it as a comment.
 			comments: parsed.answer
@@ -206,7 +205,6 @@ export class LocalMarkdownPersistenceAdapter {
 
 			const info = this.#ticketInfo(id);
 			const document = await this.#readTicketDocument(info);
-			document.setHeader("Status", "claimed");
 			setClaimedByOnDocument(document, claimant);
 			await writeFile(info.path, document.stringify());
 
@@ -251,7 +249,6 @@ export class LocalMarkdownPersistenceAdapter {
 			const info = this.#ticketInfo(id);
 			await this.getTicket(id);
 			const document = await this.#readTicketDocument(info);
-			document.setHeader("Status", "open");
 			setClaimedByOnDocument(document, undefined);
 			await writeFile(info.path, document.stringify());
 			return this.getTicket(id);
@@ -263,7 +260,7 @@ export class LocalMarkdownPersistenceAdapter {
 			const info = this.#ticketInfo(id);
 			await this.getTicket(id);
 			const document = await this.#readTicketDocument(info);
-			document.setHeader("Status", "resolved");
+			document.setHeader("Status", LOCAL_TICKET_STATUS_RESOLVED);
 			await writeFile(info.path, document.stringify());
 			return this.getTicket(id);
 		});
@@ -279,7 +276,7 @@ export class LocalMarkdownPersistenceAdapter {
 			const parsed = ticketFileBodyFromDocument(document);
 			const canonicalResolution = stripResolutionHeading(resolution);
 			const existingResolution = parsed.answer?.trim();
-			const isClosed = parsed.status.toLowerCase() === "resolved";
+			const isClosed = parsed.status === "closed";
 
 			if (canonicalResolution.length === 0) {
 				throw new Error("Resolution must not be empty.");
@@ -298,7 +295,7 @@ export class LocalMarkdownPersistenceAdapter {
 			}
 
 			setAnswerOnDocument(document, canonicalResolution);
-			document.setHeader("Status", "resolved");
+			document.setHeader("Status", LOCAL_TICKET_STATUS_RESOLVED);
 			await writeFile(info.path, document.stringify());
 			return this.getTicket(id);
 		});
