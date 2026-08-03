@@ -84,13 +84,6 @@ export function issueMarkdown(input: {
 	return stringifyMarkdown(u("root", children));
 }
 
-function sectionContent(
-	document: WayfinderMarkdownDocument,
-	heading: string,
-): string {
-	return stringifyChildren(document.section(heading));
-}
-
 function parseLabels(headerValue: string | undefined): string[] {
 	if (!headerValue) {
 		return [];
@@ -115,7 +108,7 @@ export function issueFileBodyFromDocument(
 
 	const answerSection = document.section("Answer");
 	const answer =
-		answerSection.length > 0 ? sectionContent(document, "Answer") : undefined;
+		answerSection.length > 0 ? stringifyChildren(answerSection) : undefined;
 
 	const bodyNodes = bodyNodesBetweenHeaderAndSections(document);
 	const body = stringifyChildren(bodyNodes).trim();

@@ -9,8 +9,6 @@ import {
 	listItem,
 	markdownBlocks,
 	paragraph,
-	parseMarkdown,
-	removeSection,
 	stringifyChildren,
 	stringifyMarkdown,
 	text,
@@ -18,7 +16,7 @@ import {
 import type { BlockerLink, ParsedTicketBody } from "./schema.ts";
 import {
 	markdownDocument,
-	setHeaderOnRoot,
+	markdownDocumentFromRoot,
 	type WayfinderMarkdownDocument,
 } from "./wayfinder-markdown.ts";
 
@@ -35,8 +33,46 @@ export function ticketBodyRoot(input: {
 	blockers: BlockerLink[];
 }): Root {
 	const root = u("root", [heading(2, [text("Question")]), ...input.question]);
-	setBlockedBySectionOnRoot(root, input.blockers);
+	setBlockedByOnRoot(root, input.blockers);
 	return root;
+}
+
+function setBlockedByOnRoot(root: Root, blockers: BlockerLink[]): void {
+	if (blockers.length === 0) {
+		return;
+	}
+	root.children.push(
+		heading(2, [text("Blocked by:")]),
+		list(
+			blockers.map((blocker) =>
+				listItem([paragraph([link(blocker.url, [text(blocker.text)])])]),
+			),
+		),
+	);
+}
+
+/** Replace the Blocked by section on a parsed document (removes then appends). */
+export function setBlockedByOnDocument(
+	document: WayfinderMarkdownDocument,
+	blockers: BlockerLink[],
+): void {
+	document.removeSection("Blocked by");
+	if (blockers.length > 0) {
+		document.setSection(
+			"Blocked by:",
+			blockers.map((blocker) =>
+				listItem([paragraph([link(blocker.url, [text(blocker.text)])])]),
+			),
+		);
+	}
+}
+
+/** Set or clear the `Claimed by` header line on a parsed document. */
+export function setClaimedByOnDocument(
+	document: WayfinderMarkdownDocument,
+	claimant: string | undefined,
+): void {
+	document.setHeader("Claimed by", claimant);
 }
 
 function parseBlockerLinks(nodes: RootContent[]): BlockerLink[] {
@@ -56,48 +92,22 @@ function parseBlockerLinks(nodes: RootContent[]): BlockerLink[] {
 	return unique;
 }
 
-export function setBlockedBySectionOnRoot(
-	root: Root,
-	blockers: BlockerLink[],
-): void {
-	removeSection(root, "Blocked by");
-	if (blockers.length > 0) {
-		root.children.push(
-			heading(2, [text("Blocked by:")]),
-			list(
-				blockers.map((blocker) =>
-					listItem([paragraph([link(blocker.url, [text(blocker.text)])])]),
-				),
-			),
-		);
-	}
-}
-
 export function setBlockedBySection(
 	markdown: string,
 	blockers: BlockerLink[],
 ): string {
-	const root = parseMarkdown(markdown);
-	setBlockedBySectionOnRoot(root, blockers);
-	return stringifyMarkdown(root);
-}
-
-// `Claimed by` lives as a header line ("Claimed by: <name>") at the top of the
-// body.
-export function setClaimedByOnRoot(
-	root: Root,
-	claimant: string | undefined,
-): void {
-	setHeaderOnRoot(root, "Claimed by", claimant);
+	const document = markdownDocument(markdown);
+	setBlockedByOnDocument(document, blockers);
+	return document.stringify();
 }
 
 export function setClaimedBy(
 	markdown: string,
 	claimant: string | undefined,
 ): string {
-	const root = parseMarkdown(markdown);
-	setClaimedByOnRoot(root, claimant);
-	return stringifyMarkdown(root);
+	const document = markdownDocument(markdown);
+	setClaimedByOnDocument(document, claimant);
+	return document.stringify();
 }
 
 function questionChildren(document: WayfinderMarkdownDocument): RootContent[] {
@@ -115,10 +125,12 @@ export function renderTicketBody(input: {
 		question: markdownBlocks(input.question),
 		blockers: input.blockers,
 	});
-	if (input.claimedBy) {
-		setClaimedByOnRoot(root, input.claimedBy);
+	if (!input.claimedBy) {
+		return stringifyMarkdown(root);
 	}
-	return stringifyMarkdown(root);
+	const document = markdownDocumentFromRoot(root);
+	document.setHeader("Claimed by", input.claimedBy);
+	return document.stringify();
 }
 
 export function ticketBodyFromDocument(

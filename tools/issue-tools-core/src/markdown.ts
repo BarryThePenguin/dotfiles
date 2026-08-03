@@ -61,21 +61,6 @@ export function listItemTexts(children: RootContent[]): string[] {
 		.filter((item) => item.length > 0);
 }
 
-function normalizeSectionTitle(title: string): string {
-	return title.trim().replace(/:$/, "").toLowerCase();
-}
-
-function sectionTitleMatches(
-	actual: string,
-	expected: string | string[],
-): boolean {
-	const expectedTitles = Array.isArray(expected) ? expected : [expected];
-	const normalizedActual = normalizeSectionTitle(actual);
-	return expectedTitles.some(
-		(title) => normalizeSectionTitle(title) === normalizedActual,
-	);
-}
-
 export function text(value: string): Text {
 	return u("text", value);
 }
@@ -120,73 +105,4 @@ export function heading(
 	children: PhrasingContent[],
 ): Heading {
 	return u("heading", { depth }, children);
-}
-
-function sectionRange(
-	root: Root,
-	title: string | string[],
-	options: { depth?: number } = {},
-): { start: number; end: number } | undefined {
-	const depth = (options.depth ?? 2) as Heading["depth"];
-	const max = root.children.length;
-	let start: number | undefined;
-	let end: number | undefined;
-
-	visit(root, "heading", (node, position, parent) => {
-		if (parent !== root || position === undefined) {
-			return;
-		}
-
-		if (start === undefined) {
-			if (node.depth === depth && sectionTitleMatches(toString(node), title)) {
-				start = position;
-			}
-			return;
-		}
-
-		if (end === undefined && node.depth <= depth) {
-			end = position;
-			return false;
-		}
-
-		return undefined;
-	});
-
-	if (start === undefined) {
-		return undefined;
-	}
-
-	return { start, end: end ?? max };
-}
-
-export function removeSection(
-	root: Root,
-	title: string | string[],
-	options: { depth?: number } = {},
-): void {
-	const range = sectionRange(root, title, options);
-	if (!range) {
-		return;
-	}
-	root.children.splice(range.start, range.end - range.start);
-}
-
-export function replaceSection(
-	root: Root,
-	title: string,
-	children: RootContent[],
-	options: { depth?: Heading["depth"] } = {},
-): void {
-	const depth: Heading["depth"] = options.depth ?? 2;
-	const range = sectionRange(root, title, options);
-	if (!range) {
-		root.children.push(heading(depth, [text(title)]), ...children);
-		return;
-	}
-	root.children.splice(
-		range.start,
-		range.end - range.start,
-		heading(depth, [text(title)]),
-		...children,
-	);
 }

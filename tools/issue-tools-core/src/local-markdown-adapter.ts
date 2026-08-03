@@ -11,15 +11,15 @@ import {
 	replaceMapSection,
 	type MapSectionKey,
 } from "./map-body.ts";
-import { stringifyMarkdown } from "./markdown.ts";
-import { setClaimedByOnRoot } from "./ticket-body.ts";
+
+import { setClaimedByOnDocument } from "./ticket-body.ts";
 import {
 	compareTicketIds,
 	mapFileUrl,
 	mapMarkdown,
 	normalizeTicketIdForMap,
-	setBlockedBySectionOnRoot,
-	setSectionOnRoot,
+	setAnswerOnDocument,
+	setBlockedByRefsOnDocument,
 	slugify,
 	stripResolutionHeading,
 	ticketFileBodyFromDocument,
@@ -31,7 +31,6 @@ import {
 } from "./local-file-format.ts";
 import {
 	markdownDocument,
-	setHeaderOnRoot,
 	type WayfinderMarkdownDocument,
 } from "./wayfinder-markdown.ts";
 import type { DecisionSummary } from "./schema.ts";
@@ -206,10 +205,10 @@ export class LocalMarkdownPersistenceAdapter {
 			}
 
 			const info = this.#ticketInfo(id);
-			const { root } = await this.#readTicketDocument(info);
-			setHeaderOnRoot(root, "Status", "claimed");
-			setClaimedByOnRoot(root, claimant);
-			await writeFile(info.path, stringifyMarkdown(root));
+			const document = await this.#readTicketDocument(info);
+			document.setHeader("Status", "claimed");
+			setClaimedByOnDocument(document, claimant);
+			await writeFile(info.path, document.stringify());
 
 			return { claimed: true, ticket: await this.getTicket(id) };
 		});
@@ -251,10 +250,10 @@ export class LocalMarkdownPersistenceAdapter {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);
 			await this.getTicket(id);
-			const { root } = await this.#readTicketDocument(info);
-			setHeaderOnRoot(root, "Status", "open");
-			setClaimedByOnRoot(root, undefined);
-			await writeFile(info.path, stringifyMarkdown(root));
+			const document = await this.#readTicketDocument(info);
+			document.setHeader("Status", "open");
+			setClaimedByOnDocument(document, undefined);
+			await writeFile(info.path, document.stringify());
 			return this.getTicket(id);
 		});
 	}
@@ -263,9 +262,9 @@ export class LocalMarkdownPersistenceAdapter {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);
 			await this.getTicket(id);
-			const { root } = await this.#readTicketDocument(info);
-			setHeaderOnRoot(root, "Status", "resolved");
-			await writeFile(info.path, stringifyMarkdown(root));
+			const document = await this.#readTicketDocument(info);
+			document.setHeader("Status", "resolved");
+			await writeFile(info.path, document.stringify());
 			return this.getTicket(id);
 		});
 	}
@@ -277,7 +276,6 @@ export class LocalMarkdownPersistenceAdapter {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);
 			const document = await this.#readTicketDocument(info);
-			const { root } = document;
 			const parsed = ticketFileBodyFromDocument(document);
 			const canonicalResolution = stripResolutionHeading(resolution);
 			const existingResolution = parsed.answer?.trim();
@@ -299,9 +297,9 @@ export class LocalMarkdownPersistenceAdapter {
 				throw new ClosedTicketWithoutResolutionError(id);
 			}
 
-			setSectionOnRoot(root, "Answer", canonicalResolution);
-			setHeaderOnRoot(root, "Status", "resolved");
-			await writeFile(info.path, stringifyMarkdown(root));
+			setAnswerOnDocument(document, canonicalResolution);
+			document.setHeader("Status", "resolved");
+			await writeFile(info.path, document.stringify());
 			return this.getTicket(id);
 		});
 	}
@@ -312,9 +310,9 @@ export class LocalMarkdownPersistenceAdapter {
 		const info = this.#ticketInfo(id);
 		await this.getTicket(id);
 		await Promise.all(blockerIds.map((blockerId) => this.getTicket(blockerId)));
-		const { root } = await this.#readTicketDocument(info);
-		setBlockedBySectionOnRoot(root, blockerIds.map(ticketRefFromId));
-		await writeFile(info.path, stringifyMarkdown(root));
+		const document = await this.#readTicketDocument(info);
+		setBlockedByRefsOnDocument(document, blockerIds.map(ticketRefFromId));
+		await writeFile(info.path, document.stringify());
 		return this.getTicket(id);
 	}
 

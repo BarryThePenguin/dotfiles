@@ -10,8 +10,6 @@ import {
 	listItem,
 	markdownBlocks,
 	text,
-	parseMarkdown,
-	replaceSection,
 	stringifyChildren,
 	stringifyMarkdown,
 	paragraph,
@@ -205,20 +203,12 @@ export function parseMapBody(markdown: string): ParsedMapBody {
 	return mapBodyFromDocument(markdownDocument(markdown));
 }
 
-function replaceMapSectionOnRoot(
-	root: Root,
-	section: MapSectionKey,
-	content: RootContent[],
-): void {
-	replaceSection(root, SECTION_KEY_TO_TITLE[section], content);
-}
-
 export function replaceMapSection(
 	markdown: string,
 	section: MapSectionKey,
 	content: string,
 ): string {
-	const root = parseMarkdown(markdown);
-	replaceMapSectionOnRoot(root, section, markdownBlocks(content));
-	return stringifyMarkdown(root);
+	const document = markdownDocument(markdown);
+	document.setSection(SECTION_KEY_TO_TITLE[section], markdownBlocks(content));
+	return document.stringify();
 }

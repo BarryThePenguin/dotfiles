@@ -1,17 +1,16 @@
 import { basename } from "node:path";
-import type { Root, RootContent } from "mdast";
+import type { RootContent } from "mdast";
 import { mapBodyRoot } from "./map-body.ts";
 import {
 	heading,
 	markdownBlocks,
 	paragraph,
-	replaceSection,
 	stringifyChildren,
 	stringifyMarkdown,
 	text,
 } from "./markdown.ts";
 import {
-	setBlockedBySectionOnRoot as setTicketBlockedBySectionOnRoot,
+	setBlockedByOnDocument,
 	ticketBodyFromDocument,
 	ticketBodyRoot,
 } from "./ticket-body.ts";
@@ -63,27 +62,22 @@ export function mapMarkdown(
 	return stringifyMarkdown(root);
 }
 
-function sectionContent(
-	document: WayfinderMarkdownDocument,
-	heading: string,
-): string {
-	return stringifyChildren(document.section(heading));
-}
-
 /** Local layout: a blocker ref renders as a link to its sibling file. */
-export function setBlockedBySectionOnRoot(root: Root, refs: string[]): void {
-	setTicketBlockedBySectionOnRoot(
-		root,
+export function setBlockedByRefsOnDocument(
+	document: WayfinderMarkdownDocument,
+	refs: string[],
+): void {
+	setBlockedByOnDocument(
+		document,
 		refs.map((ref) => ({ text: ref, url: `${ref}.md` })),
 	);
 }
 
-export function setSectionOnRoot(
-	root: Root,
-	heading: string,
+export function setAnswerOnDocument(
+	document: WayfinderMarkdownDocument,
 	content: string,
 ): void {
-	replaceSection(root, heading, markdownBlocks(content));
+	document.setSection("Answer", markdownBlocks(content));
 }
 
 export function stripResolutionHeading(body: string): string {
@@ -136,7 +130,7 @@ export function ticketFileBodyFromDocument(
 
 	const body = ticketBodyFromDocument(document);
 	const blockerRefs = body.blockers.map((link) => link.text);
-	const answer = sectionContent(document, "Answer");
+	const answer = stringifyChildren(document.section("Answer"));
 	const title = document.title();
 	if (!title) {
 		throw new Error("Invalid or missing Wayfinder ticket title");

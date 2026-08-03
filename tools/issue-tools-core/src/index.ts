@@ -102,11 +102,10 @@ export {
 	parseTicketBody,
 	renderTicketBody,
 	setBlockedBySection,
-	setBlockedBySectionOnRoot,
+	setBlockedByOnDocument,
 	setClaimedBy,
-	setClaimedByOnRoot,
+	setClaimedByOnDocument,
 	ticketBodyFromDocument,
-	ticketBodyRoot,
 } from "./ticket-body.ts";
 
 export { issueFileBodyFromDocument, issueFileBodyFromMarkdown, issueMarkdown } from "./issue-file-format.ts";
@@ -130,8 +129,6 @@ export type { LocalTicketFileBody } from "./local-file-format.ts";
 
 export {
 	markdownDocument,
-	markdownDocumentFromRoot,
-	setHeaderOnRoot,
 } from "./wayfinder-markdown.ts";
 export type {
 	WayfinderMarkdownDocument,

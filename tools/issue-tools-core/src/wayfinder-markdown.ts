@@ -1,16 +1,12 @@
 import type { Heading, Root, RootContent } from "mdast";
 import { toString } from "mdast-util-to-string";
-import remarkParse from "remark-parse";
-import remarkStringify from "remark-stringify";
-import { unified, type Transformer } from "unified";
-import { VFile } from "vfile";
-import { paragraph } from "./markdown.ts";
-
-declare module "vfile" {
-	interface DataMap {
-		wayfinder?: WayfinderMarkdownIndex;
-	}
-}
+import {
+	heading,
+	paragraph,
+	parseMarkdown,
+	stringifyMarkdown,
+	text,
+} from "./markdown.ts";
 
 export type WayfinderMarkdownSection = {
 	title: string;
@@ -31,6 +27,13 @@ export type WayfinderMarkdownIndex = {
 	localHeaders: WayfinderMarkdownHeader[];
 };
 
+/**
+ * The Wayfinder Markdown document: the single read/mutate/render surface for
+ * every format in this package (map body, ticket body, local file envelope,
+ * generic issue envelope). One parse builds the index; mutations keep it
+ * fresh by re-indexing. Builders compose raw roots and wrap them here; nobody
+ * mutates a root behind the document's back.
+ */
 export type WayfinderMarkdownDocument = {
 	root: Root;
 	index: WayfinderMarkdownIndex;
@@ -40,6 +43,17 @@ export type WayfinderMarkdownDocument = {
 		options?: { depth?: Heading["depth"] },
 	) => RootContent[];
 	header: (name: string) => string | undefined;
+	setHeader: (name: string, value: string | undefined) => void;
+	setSection: (
+		title: string,
+		children: RootContent[],
+		options?: { depth?: Heading["depth"] },
+	) => void;
+	removeSection: (
+		title: string | string[],
+		options?: { depth?: Heading["depth"] },
+	) => void;
+	stringify: () => string;
 };
 
 function normalizeSectionTitle(title: string): string {
@@ -77,7 +91,7 @@ function headerEntries(root: Root): WayfinderMarkdownHeader[] {
 	});
 }
 
-export function setHeaderOnRoot(
+function setHeaderOnRoot(
 	root: Root,
 	name: string,
 	value: string | undefined,
@@ -150,47 +164,6 @@ function indexWayfinderMarkdown(root: Root): WayfinderMarkdownIndex {
 	};
 }
 
-function remarkWayfinderIndex(): Transformer<Root> {
-	return (tree, file) => {
-		file.data.wayfinder = indexWayfinderMarkdown(tree);
-	};
-}
-
-const processor = unified()
-	.use(remarkParse)
-	.use(remarkWayfinderIndex)
-	.use(remarkStringify, {
-		bullet: "-",
-		fences: true,
-		listItemIndent: "one",
-	});
-
-export function markdownDocumentFromRoot(
-	root: Root,
-	index = indexWayfinderMarkdown(root),
-): WayfinderMarkdownDocument {
-	return {
-		root,
-		index,
-		title: () => index.title,
-		section: (title, options) => documentSectionChildren({ root, index }, title, options),
-		header: (name) =>
-			index.localHeaders.find(
-				(header) => header.name.toLowerCase() === name.toLowerCase(),
-			)?.value,
-	};
-}
-
-export function markdownDocument(markdown: string): WayfinderMarkdownDocument {
-	const file = new VFile({ value: markdown });
-	const root = processor.parse(file);
-	processor.runSync(root, file);
-	return markdownDocumentFromRoot(
-		root,
-		file.data.wayfinder ?? indexWayfinderMarkdown(root),
-	);
-}
-
 function documentSectionRange(
 	document: Pick<WayfinderMarkdownDocument, "root" | "index">,
 	title: string | string[],
@@ -214,4 +187,74 @@ function documentSectionChildren(
 ): RootContent[] {
 	const range = documentSectionRange(document, title, options);
 	return range ? document.root.children.slice(range.start + 1, range.end) : [];
+}
+
+function removeSectionOnRoot(
+	document: Pick<WayfinderMarkdownDocument, "root" | "index">,
+	title: string | string[],
+	options: { depth?: Heading["depth"] } = {},
+): void {
+	const range = documentSectionRange(document, title, options);
+	if (!range) {
+		return;
+	}
+	document.root.children.splice(range.start, range.end - range.start);
+}
+
+function replaceSectionOnRoot(
+	document: Pick<WayfinderMarkdownDocument, "root" | "index">,
+	title: string,
+	children: RootContent[],
+	options: { depth?: Heading["depth"] } = {},
+): void {
+	const depth: Heading["depth"] = options.depth ?? 2;
+	const range = documentSectionRange(document, title, options);
+	if (!range) {
+		document.root.children.push(heading(depth, [text(title)]), ...children);
+		return;
+	}
+	document.root.children.splice(
+		range.start,
+		range.end - range.start,
+		heading(depth, [text(title)]),
+		...children,
+	);
+}
+
+export function markdownDocumentFromRoot(root: Root): WayfinderMarkdownDocument {
+	let index = indexWayfinderMarkdown(root);
+	const refresh = () => {
+		index = indexWayfinderMarkdown(root);
+	};
+
+	return {
+		root,
+		get index() {
+			return index;
+		},
+		title: () => index.title,
+		section: (title, options) =>
+			documentSectionChildren({ root, index }, title, options),
+		header: (name) =>
+			index.localHeaders.find(
+				(header) => header.name.toLowerCase() === name.toLowerCase(),
+			)?.value,
+		setHeader(name, value) {
+			setHeaderOnRoot(root, name, value);
+			refresh();
+		},
+		setSection(title, children, options) {
+			replaceSectionOnRoot({ root, index }, title, children, options);
+			refresh();
+		},
+		removeSection(title, options) {
+			removeSectionOnRoot({ root, index }, title, options);
+			refresh();
+		},
+		stringify: () => stringifyMarkdown(root),
+	};
+}
+
+export function markdownDocument(markdown: string): WayfinderMarkdownDocument {
+	return markdownDocumentFromRoot(parseMarkdown(markdown));
 }
