@@ -51,6 +51,26 @@ export type WayfinderClaimResult = {
 	ticket: WayfinderTrackerTicket;
 };
 
+export type ResolveOutcome = "complete" | "partial" | "terminal";
+
+export type ResolveTicketInput = {
+	ticketId: string;
+	mapId: string;
+	resolution: string;
+	gist: string;
+};
+
+export type ResolveTicketResult = {
+	outcome: ResolveOutcome;
+	resolvedTicket: WayfinderTrackerTicket;
+	map?: WayfinderTrackerMap;
+	mapId: string;
+	unblocked: string[];
+	error?: string;
+	resolutionPosted: boolean;
+	decisionRecorded: boolean;
+};
+
 export interface WayfinderTracker {
 	createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap>;
 	listMaps(): Promise<WayfinderTrackerMap[]>;
@@ -67,10 +87,7 @@ export interface WayfinderTracker {
 	): Promise<WayfinderClaimResult>;
 	unclaimTicket(id: string): Promise<WayfinderTrackerTicket>;
 	closeTicket(id: string): Promise<WayfinderTrackerTicket>;
-	resolveTicket(
-		id: string,
-		resolution: string,
-	): Promise<WayfinderTrackerTicket>;
+	resolveTicket(input: ResolveTicketInput): Promise<ResolveTicketResult>;
 	setBlockingDependencies(
 		id: string,
 		blockerIds: string[],

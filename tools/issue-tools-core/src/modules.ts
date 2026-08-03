@@ -14,6 +14,11 @@ import type {
 	WayfinderTrackerMap,
 	WayfinderTrackerTicket,
 } from "./tracker.ts";
+import {
+	ClosedTicketWithoutResolutionError,
+	type ResolveTicketInput,
+	type ResolveTicketResult,
+} from "./tracker.ts";
 import { mergeLabels } from "doist-core";
 import { filterIssues } from "./issue-filter.ts";
 import type { MapSectionKey } from "./map-body.ts";
@@ -72,7 +77,8 @@ export interface WayfinderPersistence {
 	): Promise<WayfinderClaimResult>;
 	unclaimTicket(id: string): Promise<WayfinderTrackerTicket>;
 	closeTicket(id: string): Promise<WayfinderTrackerTicket>;
-	resolveTicket(
+	/** Record a Resolution and close the ticket in one tracker-native operation (first-wins, retryable). */
+	recordResolution(
 		id: string,
 		resolution: string,
 	): Promise<WayfinderTrackerTicket>;
@@ -189,11 +195,100 @@ export class WayfinderModule implements WayfinderTracker {
 		return this.#storage.closeTicket(id);
 	}
 
-	resolveTicket(
-		id: string,
-		resolution: string,
-	): Promise<WayfinderTrackerTicket> {
-		return this.#storage.resolveTicket(id, resolution);
+	async resolveTicket(
+		input: ResolveTicketInput,
+	): Promise<ResolveTicketResult> {
+		const ticket = await this.#storage.getTicket(input.ticketId);
+		if (!ticket.mapId) {
+			throw new Error(`Ticket ${input.ticketId} has no map identity.`);
+		}
+		if (ticket.mapId !== input.mapId) {
+			throw new Error(
+				`Ticket ${input.ticketId} has map identity ${ticket.mapId}, not ${input.mapId}.`,
+			);
+		}
+
+		// Validate the map before the adapter is allowed to mutate anything.
+		await this.#storage.getMap(input.mapId);
+
+		let resolvedTicket: WayfinderTrackerTicket;
+		try {
+			resolvedTicket = await this.#storage.recordResolution(
+				input.ticketId,
+				input.resolution,
+			);
+		} catch (error) {
+			if (!(error instanceof ClosedTicketWithoutResolutionError)) {
+				throw error;
+			}
+			return {
+				outcome: "terminal",
+				resolvedTicket: ticket,
+				mapId: input.mapId,
+				unblocked: [],
+				error: error.message,
+				resolutionPosted: false,
+				decisionRecorded: false,
+			};
+		}
+
+		const unblocked = await this.#findNewlyUnblocked(
+			input.mapId,
+			input.ticketId,
+		);
+
+		try {
+			const map = await this.recordDecision(input.mapId, {
+				title: ticket.title,
+				url: ticket.url,
+				gist: input.gist,
+			});
+			return {
+				outcome: "complete",
+				resolvedTicket,
+				map,
+				mapId: input.mapId,
+				unblocked,
+				resolutionPosted: true,
+				decisionRecorded: true,
+			};
+		} catch (error) {
+			return {
+				outcome: "partial",
+				resolvedTicket,
+				mapId: input.mapId,
+				unblocked,
+				error: error instanceof Error ? error.message : String(error),
+				resolutionPosted: true,
+				decisionRecorded: false,
+			};
+		}
+	}
+
+	async #findNewlyUnblocked(
+		mapId: string,
+		resolvedTicketId: string,
+	): Promise<string[]> {
+		const siblings = await this.#storage.listChildTickets(mapId);
+		const candidates = siblings.filter(
+			(sibling) =>
+				sibling.status === "open" &&
+				sibling.blockerIds.includes(resolvedTicketId),
+		);
+		const newlyUnblocked: string[] = [];
+
+		for (const candidate of candidates) {
+			const blockers = await Promise.all(
+				candidate.blockerIds.map((blockerId) =>
+					this.#storage.getTicket(blockerId),
+				),
+			);
+			if (blockers.every((blocker) => blocker.status === "closed")) {
+				newlyUnblocked.push(candidate.id);
+			}
+		}
+
+		return newlyUnblocked;
 	}
 
 	setBlockingDependencies(

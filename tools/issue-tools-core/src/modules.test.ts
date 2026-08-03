@@ -9,7 +9,11 @@ import {
 	type WayfinderPersistence,
 } from "./modules.ts";
 import { parseMapBody, renderMapBody } from "./map-body.ts";
-import type { WayfinderTrackerMap, WayfinderTrackerTicket } from "./tracker.ts";
+import {
+	ClosedTicketWithoutResolutionError,
+	type WayfinderTrackerMap,
+	type WayfinderTrackerTicket,
+} from "./tracker.ts";
 
 describe("IssueModule", () => {
 	it("can be constructed from an Issue persistence capability", async () => {
@@ -171,7 +175,7 @@ describe("WayfinderModule", () => {
 			claimTicketIfUnclaimed: () => Promise.resolve({ claimed: true, ticket }),
 			unclaimTicket: () => Promise.resolve(ticket),
 			closeTicket: () => Promise.resolve({ ...ticket, status: "closed" }),
-			resolveTicket: () => Promise.resolve({ ...ticket, status: "closed" }),
+			recordResolution: () => Promise.resolve({ ...ticket, status: "closed" }),
 			setBlockingDependencies: () => Promise.resolve(ticket),
 		};
 		const module = new WayfinderModule(persistence);
@@ -260,7 +264,7 @@ describe("WayfinderModule", () => {
 			claimTicketIfUnclaimed: claim,
 			unclaimTicket: () => Promise.resolve(blocker),
 			closeTicket: () => Promise.resolve(blocker),
-			resolveTicket: () => Promise.resolve({ ...blocker, status: "closed" }),
+			recordResolution: () => Promise.resolve({ ...blocker, status: "closed" }),
 			setBlockingDependencies: setBlocking,
 		};
 		const module = new WayfinderModule(persistence);
@@ -293,6 +297,178 @@ describe("WayfinderModule", () => {
 	});
 });
 
+describe("WayfinderModule resolveTicket workflow", () => {
+	const mapShape = {
+		id: "map",
+		title: "A map",
+		url: "map.md",
+	};
+
+	function makeFixture(options?: { failMapWrite?: boolean }) {
+		let mapBody = renderMapBody({
+			destination: "Destination",
+			notes: "Notes",
+			decisionsSoFar: [],
+			notYetSpecified: [],
+			outOfScope: [],
+		});
+		const map = (): WayfinderTrackerMap => ({
+			...mapShape,
+			...parseMapBody(mapBody),
+		});
+		const blocker: WayfinderTrackerTicket = {
+			id: "map/01-blocker",
+			mapId: "map",
+			title: "Blocker",
+			type: "grilling",
+			question: "Which path should we take?",
+			blockerIds: [],
+			url: "issues/01-blocker.md",
+			status: "open",
+			comments: [],
+		};
+		const blocked: WayfinderTrackerTicket = {
+			...blocker,
+			id: "map/02-blocked",
+			title: "Blocked",
+			blockerIds: [blocker.id],
+		};
+		let currentTickets = [blocker, blocked];
+		const ticketOrThrow = (id: string): WayfinderTrackerTicket => {
+			const ticket = currentTickets.find((item) => item.id === id);
+			if (!ticket) {
+				throw new Error(`Missing ticket: ${id}`);
+			}
+			return ticket;
+		};
+		const persistence: WayfinderPersistence = {
+			createMap: () => Promise.resolve(map()),
+			listMaps: () => Promise.resolve([map()]),
+			createChildTicket: () => Promise.resolve(blocker),
+			getMap: () => Promise.resolve(map()),
+			getTicket: (id) => Promise.resolve(ticketOrThrow(id)),
+			listChildTickets: () => Promise.resolve(currentTickets),
+			writeMapDecisions: options?.failMapWrite
+				? () => Promise.reject(new Error("map write failed"))
+				: (_id, decisions) => {
+						const current = parseMapBody(mapBody);
+						mapBody = renderMapBody({ ...current, decisionsSoFar: decisions });
+						return Promise.resolve(map());
+					},
+			writeMapSection: (_id, section, content) => {
+				const current = parseMapBody(mapBody);
+				mapBody = renderMapBody({
+					...current,
+					...(section === "notes" ? { notes: content } : {}),
+				});
+				return Promise.resolve(map());
+			},
+			claimTicketIfUnclaimed: () =>
+				Promise.resolve({ claimed: true, ticket: blocker }),
+			unclaimTicket: () => Promise.resolve(blocker),
+			closeTicket: (id) => {
+				currentTickets = currentTickets.map((current) =>
+					current.id === id ? { ...current, status: "closed" } : current,
+				);
+				return Promise.resolve(ticketOrThrow(id));
+			},
+			recordResolution: (id, resolution) => {
+				const current = ticketOrThrow(id);
+				if (current.status === "closed") {
+					return Promise.reject(new ClosedTicketWithoutResolutionError(id));
+				}
+				currentTickets = currentTickets.map((ticket) =>
+					ticket.id === id
+						? { ...ticket, status: "closed", comments: [resolution] }
+						: ticket,
+				);
+				return Promise.resolve(ticketOrThrow(id));
+			},
+			setBlockingDependencies: () => Promise.resolve(blocker),
+		};
+		return { module: new WayfinderModule(persistence), map: map(), blocked };
+	}
+
+	it("resolves, records the decision, and reports unblocked tickets", async () => {
+		const { module, map, blocked } = makeFixture();
+		const result = await module.resolveTicket({
+			ticketId: "map/01-blocker",
+			mapId: map.id,
+			resolution: "Resolved.",
+			gist: "Take the simplest path.",
+		});
+
+		expect(result.outcome).toBe("complete");
+		expect(result.resolutionPosted).toBe(true);
+		expect(result.decisionRecorded).toBe(true);
+		expect(result.resolvedTicket).toMatchObject({
+			id: "map/01-blocker",
+			status: "closed",
+			comments: ["Resolved."],
+		});
+		expect(result.map?.decisionsSoFar).toEqual([
+			{
+				title: "Blocker",
+				url: "issues/01-blocker.md",
+				gist: "Take the simplest path.",
+			},
+		]);
+		expect(result.unblocked).toEqual([blocked.id]);
+	});
+
+	it("returns a retryable partial result when the map write fails", async () => {
+		const { module, map, blocked } = makeFixture({ failMapWrite: true });
+		const result = await module.resolveTicket({
+			ticketId: "map/01-blocker",
+			mapId: map.id,
+			resolution: "Resolved.",
+			gist: "Take the simplest path.",
+		});
+
+		expect(result).toMatchObject({
+			outcome: "partial",
+			decisionRecorded: false,
+			resolutionPosted: true,
+			unblocked: [blocked.id],
+			resolvedTicket: { status: "closed" },
+		});
+		expect(result.error).toContain("map write failed");
+	});
+
+	it("returns a terminal result for a closed ticket without a Resolution", async () => {
+		const { module, map } = makeFixture();
+		await module.closeTicket("map/01-blocker");
+		const result = await module.resolveTicket({
+			ticketId: "map/01-blocker",
+			mapId: map.id,
+			resolution: "Too late.",
+			gist: "Inspect the incomplete ticket.",
+		});
+
+		expect(result).toMatchObject({
+			outcome: "terminal",
+			resolutionPosted: false,
+			decisionRecorded: false,
+			resolvedTicket: { status: "closed" },
+		});
+		expect(result.error).toMatch(/closed without/i);
+	});
+
+	it("rejects a mismatched map identity before touching the adapter", async () => {
+		const { module, map } = makeFixture();
+		await expect(
+			module.resolveTicket({
+				ticketId: "map/01-blocker",
+				mapId: "other-map",
+				resolution: "Resolved.",
+				gist: "Take the simplest path.",
+			}),
+		).rejects.toThrow(/map identity/i);
+
+		expect((await module.getTicket("map/01-blocker")).status).toBe("open");
+	});
+});
+
 describe("createTrackerModules", () => {
 	it("exposes separate modules over one shared persistence adapter", () => {
 		const unused = () => Promise.reject(new Error("not used"));
@@ -314,7 +490,7 @@ describe("createTrackerModules", () => {
 			claimTicketIfUnclaimed: unused,
 			unclaimTicket: unused,
 			closeTicket: unused,
-			resolveTicket: unused,
+			recordResolution: unused,
 			setBlockingDependencies: unused,
 		} satisfies TrackerPersistence;
 		const modules = createTrackerModules(persistence);

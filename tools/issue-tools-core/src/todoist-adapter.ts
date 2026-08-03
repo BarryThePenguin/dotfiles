@@ -232,7 +232,7 @@ export class TodoistPersistenceAdapter {
 		return toTicket(await this.#gateway.completeTask(id));
 	}
 
-	async resolveTicket(
+	async recordResolution(
 		id: string,
 		resolution: string,
 	): Promise<WayfinderTrackerTicket> {

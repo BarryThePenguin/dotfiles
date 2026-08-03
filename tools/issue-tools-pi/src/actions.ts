@@ -15,7 +15,6 @@ import {
 	listItem,
 	markdownBlocks,
 	paragraph,
-	resolveTicket,
 	stringifyChildren,
 	strong,
 	text,
@@ -458,7 +457,7 @@ async function resolve(
 	ext: ExtensionContext,
 ): Promise<ActionResult> {
 	const tracker = await createWayfinder(ext, ctx);
-	const result = await resolveTicket(tracker, {
+	const result = await tracker.resolveTicket({
 		mapId: params.map_id,
 		ticketId: params.ticket_id,
 		resolution: renderResolution(params.resolution),

@@ -275,7 +275,7 @@ describe("TodoistPersistenceAdapter", () => {
 			gist: "A retried gist must not replace the first one.",
 		});
 		expect(updateSpy).toHaveBeenCalledTimes(1);
-		await tracker.resolveTicket(ticket.id, "Resolution: use Todoist.");
+		await adapter.recordResolution(ticket.id, "Resolution: use Todoist.");
 
 		expect(await tracker.getTicket(ticket.id)).toMatchObject({
 			status: "closed",

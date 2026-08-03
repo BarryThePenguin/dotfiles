@@ -269,7 +269,10 @@ export class LocalMarkdownPersistenceAdapter {
 		});
 	}
 
-	async resolveTicket(id: string, resolution: string): Promise<WayfinderTrackerTicket> {
+	async recordResolution(
+		id: string,
+		resolution: string,
+	): Promise<WayfinderTrackerTicket> {
 		return this.#withIndexLock(async () => {
 			const info = this.#ticketInfo(id);
 			const document = await this.#readTicketDocument(info);

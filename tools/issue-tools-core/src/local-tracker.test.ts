@@ -162,7 +162,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		expect(secondClaim.claimed).toBe(false);
 		expect(secondClaim.ticket.claimedBy).toBe("agent-1");
 
-		await tracker.resolveTicket(ticket.id, "Resolution: use Todoist.");
+		await adapter.recordResolution(ticket.id, "Resolution: use Todoist.");
 		await tracker.recordDecision(map.id, {
 			title: ticket.title,
 			url: ticket.url,

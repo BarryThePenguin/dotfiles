@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
-import { createTrackerModules } from "./modules.ts";
+import type { WayfinderPersistence } from "./modules.ts";
 import {
 	TodoistPersistenceAdapter,
 	type TodoistCreateTaskInput,
@@ -12,10 +12,9 @@ import {
 	type TodoistTask,
 	type TodoistUpdateTaskInput,
 } from "./todoist-adapter.ts";
-import type { WayfinderTracker } from "./tracker.ts";
 
 type Fixture = {
-	tracker: WayfinderTracker;
+	tracker: WayfinderPersistence;
 	addOrdinaryComment: (ticketId: string, body: string) => Promise<void>;
 	cleanup: () => Promise<void>;
 };
@@ -104,9 +103,7 @@ class InMemoryTodoistGateway implements TodoistGateway {
 
 async function localFixture(): Promise<Fixture> {
 	const root = await mkdtemp(join(tmpdir(), "resolution-contract-local-"));
-	const tracker = createTrackerModules(
-		new LocalMarkdownPersistenceAdapter(root),
-	).wayfinder;
+	const tracker = new LocalMarkdownPersistenceAdapter(root);
 	return {
 		tracker,
 		addOrdinaryComment: async (ticketId, body) => {
@@ -121,10 +118,9 @@ async function localFixture(): Promise<Fixture> {
 
 function todoistFixture(): Fixture {
 	const gateway = new InMemoryTodoistGateway();
-	const adapter = new TodoistPersistenceAdapter(gateway, {
+	const tracker = new TodoistPersistenceAdapter(gateway, {
 		projectId: "project-1",
 	});
-	const tracker = createTrackerModules(adapter).wayfinder;
 	return {
 		tracker,
 		addOrdinaryComment: (ticketId, body) => gateway.addComment(ticketId, body),
@@ -163,7 +159,7 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 	});
 
 	it("records the first Resolution and closes the ticket together", async () => {
-		const resolved = await fixture.tracker.resolveTicket(
+		const resolved = await fixture.tracker.recordResolution(
 			ticketId,
 			"Use the tracker-native seam.",
 		);
@@ -173,9 +169,9 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 	});
 
 	it("makes a repeated matching Resolution a no-op", async () => {
-		await fixture.tracker.resolveTicket(ticketId, "Keep the first answer.");
+		await fixture.tracker.recordResolution(ticketId, "Keep the first answer.");
 
-		const repeated = await fixture.tracker.resolveTicket(
+		const repeated = await fixture.tracker.recordResolution(
 			ticketId,
 			"Keep the first answer.",
 		);
@@ -185,10 +181,10 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 	});
 
 	it("does not replace a different first Resolution", async () => {
-		await fixture.tracker.resolveTicket(ticketId, "The first answer.");
+		await fixture.tracker.recordResolution(ticketId, "The first answer.");
 
 		await expect(
-			fixture.tracker.resolveTicket(ticketId, "A replacement answer."),
+			fixture.tracker.recordResolution(ticketId, "A replacement answer."),
 		).rejects.toThrow(/Resolution/i);
 
 		const ticket = await fixture.tracker.getTicket(ticketId);
@@ -199,13 +195,13 @@ describe.each(fixtures)("%s resolution contract", (_name, createFixture) => {
 		await fixture.tracker.closeTicket(ticketId);
 
 		await expect(
-			fixture.tracker.resolveTicket(ticketId, "Too late."),
+			fixture.tracker.recordResolution(ticketId, "Too late."),
 		).rejects.toThrow(/Resolution/i);
 	});
 
 	it("preserves an ordinary comment while recording the Resolution", async () => {
 		await fixture.addOrdinaryComment(ticketId, "An existing note.");
-		await fixture.tracker.resolveTicket(ticketId, "The durable answer.");
+		await fixture.tracker.recordResolution(ticketId, "The durable answer.");
 
 		const ticket = await fixture.tracker.getTicket(ticketId);
 		expect(ticket.comments).toContain("An existing note.");
