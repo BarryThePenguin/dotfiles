@@ -1,4 +1,4 @@
-import { addTask, addTaskComment, Database } from "doist-core";
+import { addTask, addTaskComment, completeTask, Database } from "doist-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TODOIST_TICKET_TYPE_LABELS, WAYFINDER_MAP_LABEL } from "./labels.ts";
 import { createTrackerModules, type TrackerModules } from "./modules.ts";
@@ -50,6 +50,34 @@ describe("TodoistAdapter", () => {
 			type: "grilling",
 			status: "open",
 		});
+	});
+
+	it("lists only incomplete maps using the SQL label filter", async () => {
+		const map = await modules.wayfinder.createMap({
+			title: "Included map",
+			destination: "This map should be listed.",
+		});
+		const completedMap = await modules.wayfinder.createMap({
+			title: "Completed map",
+			destination: "This map should not be listed.",
+		});
+		await completeTask(fixture.db, fixture.client, completedMap.id);
+		await modules.issues.createIssue({
+			title: "Not a map",
+			body: "This task has no wayfinder_map label.",
+		});
+
+		const selectTasks = vi.spyOn(fixture.db, "selectTasks");
+		const selectTasksWithNotes = vi.spyOn(fixture.db, "selectTasksWithNotes");
+
+		const maps = await modules.wayfinder.listMaps();
+
+		expect(maps.map((listedMap) => listedMap.id)).toEqual([map.id]);
+		expect(selectTasks).toHaveBeenCalledExactlyOnceWith({
+			completed: "incomplete",
+			label: WAYFINDER_MAP_LABEL,
+		});
+		expect(selectTasksWithNotes).not.toHaveBeenCalled();
 	});
 
 	it("uses the Todoist parent relationship as the ticket's map id", async () => {
@@ -187,7 +215,12 @@ describe("TodoistAdapter", () => {
 			question: "Are old comments still ordinary comments?",
 		});
 
-		await addTaskComment(fixture.db, fixture.client, ticket.id, "Historical note");
+		await addTaskComment(
+			fixture.db,
+			fixture.client,
+			ticket.id,
+			"Historical note",
+		);
 
 		expect(
 			(await modules.wayfinder.getTicketDetail(ticket.id)).ticket,
@@ -233,13 +266,14 @@ describe("TodoistAdapter", () => {
 		expect(read.updatedAt).toBeDefined();
 	});
 
-	it("reads a generic issue by its URL", async () => {
+	it("reads a generic issue by its Todoist slug URL", async () => {
 		const created = await modules.issues.createIssue({
 			title: "Untracked question",
 			body: "Body.",
 		});
 
-		const read = await modules.issues.readIssue(created.url);
+		const slugUrl = `https://app.todoist.com/app/task/untracked-question-${created.id}`;
+		const read = await modules.issues.readIssue(slugUrl);
 		expect(read.id).toBe(created.id);
 	});
 
@@ -251,6 +285,8 @@ describe("TodoistAdapter", () => {
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
+		await addTaskComment(fixture.db, fixture.client, created.id, "Existing");
+		const nestedSpy = vi.spyOn(Database.prototype, "getTaskWithNotes");
 
 		fixture.client.syncCalls.length = 0;
 		const after = await modules.issues.updateIssueLabels(created.id, {
@@ -258,6 +294,10 @@ describe("TodoistAdapter", () => {
 		});
 
 		expect(after.labels).toEqual(["needs-triage", "bug"]);
+		expect(after.comments.map((comment) => comment.content)).toEqual([
+			"Existing",
+		]);
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith(created.id);
 		// One sync carried the update; the Todoist API only accepts an absolute
 		// label set, so the set-merged result is on the wire.
 		expect(fixture.client.syncCalls).toHaveLength(1);
@@ -497,7 +537,9 @@ describe("TodoistAdapter", () => {
 			labels: ["bug"],
 		});
 
-		const issues = await modules.issues.listIssues({ labels: ["needs-triage"] });
+		const issues = await modules.issues.listIssues({
+			labels: ["needs-triage"],
+		});
 		expect(issues.map((issue) => issue.id).toSorted()).toEqual(
 			[a.id, b.id].toSorted(),
 		);
@@ -542,10 +584,10 @@ describe("TodoistAdapter", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Batch reads: notes load in one query per list operation (no N+1)
+// Nested comment reads: comment-bearing reads load notes with their tasks.
 // ---------------------------------------------------------------------------
 
-describe("TodoistAdapter batch reads", () => {
+describe("TodoistAdapter nested comment reads", () => {
 	let fixture: TodoistTestFixture;
 
 	beforeEach(() => {
@@ -555,6 +597,141 @@ describe("TodoistAdapter batch reads", () => {
 	afterEach(() => {
 		fixture.cleanup();
 		vi.restoreAllMocks();
+	});
+
+	it("maps fresh creates without rereading the created task or its notes", async () => {
+		const taskReadSpy = vi.spyOn(Database.prototype, "getTaskById");
+		const nestedReadSpy = vi.spyOn(Database.prototype, "getTaskWithNotes");
+		const listReadSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
+		vi.clearAllMocks();
+
+		const map = await fixture.adapter.createMap({
+			title: "Fresh map",
+			destination: "Created directly from the write result.",
+		});
+		const ticket = await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "Fresh ticket",
+			type: "task",
+			question: "Is the create result sufficient?",
+		});
+		const issue = await fixture.adapter.createIssueRecord({
+			title: "Fresh issue",
+			body: "Created directly from the write result.",
+		});
+
+		expect(taskReadSpy.mock.calls.map(([id]) => id)).not.toContain(ticket.id);
+		expect(taskReadSpy.mock.calls.map(([id]) => id)).not.toContain(issue.id);
+		expect(nestedReadSpy).not.toHaveBeenCalled();
+		expect(listReadSpy).not.toHaveBeenCalled();
+		expect(ticket.comments).toEqual([]);
+		expect(issue.comments).toEqual([]);
+	});
+
+	it("pins body-only adapter reads to task queries without notes", async () => {
+		const map = await fixture.adapter.createMap({
+			title: "Body-only map",
+			destination: "Only the description is needed.",
+		});
+		const taskReadSpy = vi.spyOn(Database.prototype, "getTaskById");
+		const nestedReadSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
+		const selectSpy = vi.spyOn(Database.prototype, "selectTasks");
+
+		await fixture.adapter.getMap(map.id);
+		await fixture.adapter.writeMapSection(map.id, "notes", "Updated");
+		await fixture.adapter.listMaps();
+
+		expect(taskReadSpy).toHaveBeenCalledTimes(2);
+		expect(taskReadSpy).toHaveBeenNthCalledWith(1, map.id);
+		expect(taskReadSpy).toHaveBeenNthCalledWith(2, map.id);
+		expect(selectSpy).toHaveBeenCalledExactlyOnceWith({
+			completed: "incomplete",
+			label: WAYFINDER_MAP_LABEL,
+		});
+		expect(nestedReadSpy).not.toHaveBeenCalled();
+	});
+
+	it("sets blocking with body-only reads for blockers and the target", async () => {
+		const map = await fixture.adapter.createMap({
+			title: "Blocking map",
+			destination: "Blocking reads.",
+		});
+		const blocker = await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "Blocker",
+			type: "task",
+			question: "What blocks this?",
+		});
+		const target = await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "Target",
+			type: "task",
+			question: "What is next?",
+		});
+		await addTaskComment(fixture.db, fixture.client, blocker.id, "Blocker note");
+		await addTaskComment(fixture.db, fixture.client, target.id, "Target note");
+
+		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
+		const modules = createTrackerModules(fixture.adapter);
+
+		const updated = await modules.wayfinder.setBlockingDependencies(target.id, [
+			blocker.id,
+		]);
+
+		expect(updated).toMatchObject({
+			id: target.id,
+			title: "Target",
+			blockerIds: [blocker.id],
+			comments: [],
+		});
+		expect(nestedSpy).not.toHaveBeenCalled();
+		expect(fixture.client.tasks.get(target.id)?.description).toContain(
+			`- [Blocker](${blocker.url})`,
+		);
+	});
+
+	it("loads a single ticket and its comments in one notes query", async () => {
+		const map = await fixture.adapter.createMap({
+			title: "Single read map",
+			destination: "A single record read.",
+		});
+		const ticket = await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "Single ticket",
+			type: "task",
+			question: "Q",
+		});
+		await addTaskComment(fixture.db, fixture.client, ticket.id, "Comment");
+
+		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
+
+		const read = await fixture.adapter.getTicket(ticket.id);
+
+		expect(read.comments).toEqual(["Comment"]);
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith({
+			completed: "any",
+			id: ticket.id,
+		});
+	});
+
+	it("loads a single issue and its comments in one notes query", async () => {
+		const issue = await fixture.adapter.createIssueRecord({
+			title: "Single issue",
+			body: "Body.",
+		});
+		await addTaskComment(fixture.db, fixture.client, issue.id, "Comment");
+
+		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
+
+		const read = await fixture.adapter.readIssueRecord(issue.id);
+
+		expect(read.comments.map((comment) => comment.content)).toEqual([
+			"Comment",
+		]);
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith({
+			completed: "any",
+			id: issue.id,
+		});
 	});
 
 	it("loads a map's children and their comments in one notes query", async () => {
@@ -575,39 +752,16 @@ describe("TodoistAdapter batch reads", () => {
 			question: "Q2",
 		});
 
-		const batchSpy = vi.spyOn(Database.prototype, "selectNotesByTaskIds");
-		const perTaskSpy = vi.spyOn(Database.prototype, "selectNotesByTask");
+		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
 
 		const children = await fixture.adapter.listChildTickets(map.id);
 
 		const childrenIds = children.map((ticket) => ticket.id);
 		expect(childrenIds).toHaveLength(2);
-		// The map-existence validation read is its own batched query; the
-		// children (with their comments) come back in one more.
-		expect(batchSpy).toHaveBeenCalledWith(
-			expect.arrayContaining(childrenIds),
-		);
-		expect(perTaskSpy).not.toHaveBeenCalled();
-	});
-
-	it("loads maps with their comments in one notes query", async () => {
-		await fixture.adapter.createMap({
-			title: "Map one",
-			destination: "One.",
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith({
+			completed: "any",
+			parentId: map.id,
 		});
-		await fixture.adapter.createMap({
-			title: "Map two",
-			destination: "Two.",
-		});
-
-		const batchSpy = vi.spyOn(Database.prototype, "selectNotesByTaskIds");
-		const perTaskSpy = vi.spyOn(Database.prototype, "selectNotesByTask");
-
-		const maps = await fixture.adapter.listMaps();
-
-		expect(maps).toHaveLength(2);
-		expect(batchSpy).toHaveBeenCalledTimes(1);
-		expect(perTaskSpy).not.toHaveBeenCalled();
 	});
 
 	it("loads issues with their comments in one notes query", async () => {
@@ -620,14 +774,15 @@ describe("TodoistAdapter batch reads", () => {
 			body: "B.",
 		});
 
-		const batchSpy = vi.spyOn(Database.prototype, "selectNotesByTaskIds");
-		const perTaskSpy = vi.spyOn(Database.prototype, "selectNotesByTask");
+		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
 
 		const issues = await fixture.adapter.listIssueRecords();
 
 		expect(issues).toHaveLength(2);
-		expect(batchSpy).toHaveBeenCalledTimes(1);
-		expect(perTaskSpy).not.toHaveBeenCalled();
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith({
+			completed: "any",
+			projectId: "project-1",
+		});
 	});
 
 	it("preserves posted_at comment order through the batched read", async () => {
@@ -647,5 +802,39 @@ describe("TodoistAdapter batch reads", () => {
 		const children = await fixture.adapter.listChildTickets(map.id);
 
 		expect(children[0]?.comments).toEqual(["first", "second"]);
+	});
+
+	it("reuses one nested read across ticket mutations", async () => {
+		const map = await fixture.adapter.createMap({
+			title: "Mutation map",
+			destination: "Mutation reads.",
+		});
+		const ticket = await fixture.adapter.createChildTicket({
+			mapId: map.id,
+			title: "Mutation ticket",
+			type: "task",
+			question: "Q",
+		});
+		await addTaskComment(fixture.db, fixture.client, ticket.id, "Existing");
+
+		const nestedSpy = vi.spyOn(Database.prototype, "getTaskWithNotes");
+
+		const claimed = await fixture.adapter.claimTicketIfUnclaimed(
+			ticket.id,
+			"agent-1",
+		);
+		expect(claimed.ticket.comments).toEqual(["Existing"]);
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith(ticket.id);
+
+		nestedSpy.mockClear();
+		const unclaimed = await fixture.adapter.unclaimTicket(ticket.id);
+		expect(unclaimed.comments).toEqual(["Existing"]);
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith(ticket.id);
+
+		nestedSpy.mockClear();
+		const closed = await fixture.adapter.closeTicket(ticket.id);
+		expect(closed.comments).toEqual(["Existing"]);
+		expect(closed.status).toBe("closed");
+		expect(nestedSpy).toHaveBeenCalledExactlyOnceWith(ticket.id);
 	});
 });

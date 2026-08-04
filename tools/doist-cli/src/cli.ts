@@ -259,7 +259,12 @@ const tasksCmd = defineCommand({
 				const { project, ...fields } = parseListTask(args);
 				const projectId = project ? resolveProject(db, project) : undefined;
 				const tasks =
-					project && !projectId ? [] : db.selectTasks({ ...fields, projectId });
+					project && !projectId
+						? []
+						: db.selectTasks({
+								...fields,
+								...(projectId ? { projectId } : {}),
+							});
 				if (args.sync) {
 					const syncResult = await syncAndPersist(
 						db,

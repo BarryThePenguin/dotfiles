@@ -249,38 +249,6 @@ describe("CRUD operations", () => {
 			expect(t2.map((n) => n.id)).toEqual([NOTE_IDS.beta]);
 		});
 
-		it("selectNotesByTaskIds returns notes for many tasks in one call", () => {
-			db.upsertNote(NOTE_ALPHA); // t1
-			db.upsertNote(NOTE_BETA); // t2
-			const notes = db.selectNotesByTaskIds(["t1", "t2"]);
-			expect(notes.map((n) => n.id)).toEqual([NOTE_IDS.alpha, NOTE_IDS.beta]);
-		});
-
-		it("selectNotesByTaskIds groups by item_id keeping posted_at order", () => {
-			db.upsertNote(NOTE_ALPHA); // t1, newest
-			db.upsertNote({
-				...NOTE_BETA,
-				item_id: "t1",
-				id: "n-extra",
-				posted_at: "2020-01-01T00:00:00.000Z",
-			}); // t1, older
-			const notes = db.selectNotesByTaskIds(["t1"]);
-			expect(notes.map((n) => n.id)).toEqual(["n-extra", NOTE_IDS.alpha]);
-		});
-
-		it("selectNotesByTaskIds returns empty for unknown or empty task lists", () => {
-			expect(db.selectNotesByTaskIds([])).toEqual([]);
-			db.upsertNote(NOTE_ALPHA);
-			expect(db.selectNotesByTaskIds(["nope"])).toEqual([]);
-		});
-
-		it("selectNotesByTaskIds skips soft-deleted notes", () => {
-			db.upsertNote(NOTE_ALPHA);
-			db.upsertNote({ ...NOTE_BETA, item_id: "t1", is_deleted: 1 });
-			const notes = db.selectNotesByTaskIds(["t1"]);
-			expect(notes.map((n) => n.id)).toEqual([NOTE_IDS.alpha]);
-		});
-
 		it("selectNotesByTask returns empty for unknown task", () => {
 			db.upsertNote(NOTE_ALPHA);
 			expect(db.selectNotesByTask("nope")).toEqual([]);

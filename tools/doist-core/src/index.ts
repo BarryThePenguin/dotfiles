@@ -1,5 +1,6 @@
 // Domain types
 export { Database } from "./db.ts";
+export type { AppTaskWithNotes, TaskCriteria } from "./db.ts";
 export type {
 	DbProject,
 	DbTask,

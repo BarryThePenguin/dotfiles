@@ -12,11 +12,7 @@ import {
 	todoistLabelToTicketType,
 	ticketTypeToTodoistLabel,
 } from "./labels.ts";
-import {
-	parseMapBody,
-	renderMapBody,
-	replaceMapSection,
-} from "./map-body.ts";
+import { parseMapBody, renderMapBody, replaceMapSection } from "./map-body.ts";
 import type { MapSectionKey } from "./schema.ts";
 import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
@@ -25,11 +21,7 @@ import {
 	setBlockedBySection,
 	setClaimedBy,
 } from "./ticket-body.ts";
-import type {
-	BlockerLink,
-	DecisionSummary,
-	TicketType,
-} from "./schema.ts";
+import type { BlockerLink, DecisionSummary, TicketType } from "./schema.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
 import {
 	ClosedTicketWithoutResolutionError,
@@ -54,6 +46,29 @@ type TodoistTaskRead = AppTask & {
 	description: string;
 	comments: { content: string; postedAt: string | null }[];
 };
+
+type TodoistTaskWithNotes = AppTask & {
+	notes: { content: string; postedAt: string | null }[];
+};
+
+function withComments(task: TodoistTaskWithNotes): TodoistTaskRead {
+	return {
+		...task,
+		description: task.description ?? "",
+		comments: task.notes,
+	};
+}
+
+function withExistingComments(
+	task: AppTask,
+	comments: TodoistTaskRead["comments"],
+): TodoistTaskRead {
+	return {
+		...task,
+		description: task.description ?? "",
+		comments,
+	};
+}
 
 function taskStatus(task: TodoistTaskRead): WayfinderTicketStatus {
 	return task.isCompleted ? "closed" : "open";
@@ -86,7 +101,9 @@ function toTicket(task: TodoistTaskRead): WayfinderTrackerTicket {
 		title: task.content,
 		type: ticketTypeFromLabels(task.labels),
 		question: parsed.question,
-		blockerIds: parsed.blockers.map((blocker) => blockerIdFromLink(blocker.url)),
+		blockerIds: parsed.blockers.map((blocker) =>
+			blockerIdFromLink(blocker.url),
+		),
 		...(parsed.claimedBy ? { claimedBy: parsed.claimedBy } : {}),
 		url: task.url,
 		status: taskStatus(task),
@@ -152,27 +169,28 @@ export class TodoistAdapter {
 			labels: [WAYFINDER_MAP_LABEL],
 			...(this.#projectId ? { project: this.#projectId } : {}),
 		});
-		return toMap(this.#withComments(result));
+		return toMap(this.#withoutComments(result));
 	}
 
 	listMaps(): Promise<WayfinderTrackerMap[]> {
+		const tasks = this.#selectTasks({
+			completed: "incomplete",
+			label: WAYFINDER_MAP_LABEL,
+		});
 		return Promise.resolve(
-			this.#withCommentsBatch(
-				sortById(this.#selectTasks()).filter(
-					(task) =>
-						task.labels.includes(WAYFINDER_MAP_LABEL) && !task.isCompleted,
-				),
-			).map(toMap),
+			sortById(tasks).map((task) => toMap(this.#withoutComments(task))),
 		);
 	}
 
 	async createChildTicket(
 		input: CreateWayfinderChildTicketInput,
 	): Promise<WayfinderTrackerTicket> {
-		this.#readTask(input.mapId);
+		this.#readTaskBody(input.mapId);
 		const blockerIds = input.blockerIds ?? [];
 		const blockerTasks =
-			blockerIds.length > 0 ? blockerIds.map((id) => this.#readTask(id)) : [];
+			blockerIds.length > 0
+				? blockerIds.map((id) => this.#readTaskBody(id))
+				: [];
 		const blockers: BlockerLink[] = blockerTasks.map((task) => ({
 			text: task.content,
 			url: task.url,
@@ -187,23 +205,33 @@ export class TodoistAdapter {
 			...(this.#projectId ? { project: this.#projectId } : {}),
 			parentId: input.mapId,
 		});
-		return toTicket(this.#withComments(result));
+		return toTicket(this.#withoutComments(result));
 	}
 
 	getMap(id: string): Promise<WayfinderTrackerMap> {
-		return Promise.resolve(toMap(this.#readTask(id)));
+		return Promise.resolve(toMap(this.#readTaskBody(id)));
 	}
 
 	getTicket(id: string): Promise<WayfinderTrackerTicket> {
 		return Promise.resolve(toTicket(this.#readTask(id)));
 	}
 
+	getTicketBody(id: string): Promise<WayfinderTrackerTicket> {
+		return Promise.resolve(toTicket(this.#readTaskBody(id)));
+	}
+
 	listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
-		this.#readTask(mapId);
+		const tasks = this.#db.selectTasksWithNotes({
+			completed: "any",
+			parentId: mapId,
+		});
+		return Promise.resolve(sortById(tasks).map(withComments).map(toTicket));
+	}
+
+	listChildTicketBodies(mapId: string): Promise<WayfinderTrackerTicket[]> {
+		const tasks = this.#selectTasks({ completed: "any", parentId: mapId });
 		return Promise.resolve(
-			this.#withCommentsBatch(
-				sortById(this.#selectTasks().filter((task) => task.parentId === mapId)),
-			).map(toTicket),
+			sortById(tasks).map((task) => toTicket(this.#withoutComments(task))),
 		);
 	}
 
@@ -211,16 +239,19 @@ export class TodoistAdapter {
 		id: string,
 		claimant: string,
 	): Promise<WayfinderClaimResult> {
-		const ticket = await this.getTicket(id);
+		const task = this.#readTask(id);
+		const ticket = toTicket(task);
 		if (!canClaimTicket(ticket)) {
 			return { claimed: false, ticket };
 		}
 
-		const task = this.#readTask(id);
 		const { result } = await updateTask(this.#db, this.#client, id, {
 			description: setClaimedBy(task.description, claimant),
 		});
-		return { claimed: true, ticket: toTicket(this.#withComments(result)) };
+		return {
+			claimed: true,
+			ticket: toTicket(withExistingComments(result, task.comments)),
+		};
 	}
 
 	async unclaimTicket(id: string): Promise<WayfinderTrackerTicket> {
@@ -228,12 +259,13 @@ export class TodoistAdapter {
 		const { result } = await updateTask(this.#db, this.#client, id, {
 			description: setClaimedBy(task.description, undefined),
 		});
-		return toTicket(this.#withComments(result));
+		return toTicket(withExistingComments(result, task.comments));
 	}
 
 	async closeTicket(id: string): Promise<WayfinderTrackerTicket> {
+		const task = this.#readTask(id);
 		await completeTask(this.#db, this.#client, id);
-		return toTicket(this.#readTask(id));
+		return toTicket({ ...task, isCompleted: true });
 	}
 
 	async recordResolution(
@@ -256,33 +288,43 @@ export class TodoistAdapter {
 		}
 
 		// If a prior attempt persisted the native comment before completion was
-		// observed, finish the retry without adding a duplicate comment.
+		// observed, finish the retry without adding a duplicate comment. Reuse
+		// the nested read rather than loading the task's comments again after the
+		// mutation.
 		await completeTask(
 			this.#db,
 			this.#client,
 			id,
 			matchingResolution ? undefined : resolution,
 		);
-		return toTicket(this.#readTask(id));
+		return toTicket({
+			...task,
+			isCompleted: true,
+			comments: matchingResolution
+				? task.comments
+				: [...task.comments, { content: resolution, postedAt: null }],
+		});
 	}
 	async setBlockingDependencies(
 		id: string,
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket> {
-		const blockerTasks = blockerIds.map((blockerId) => this.#readTask(blockerId));
+		const blockerTasks = blockerIds.map((blockerId) =>
+			this.#readTaskBody(blockerId),
+		);
 		const blockers: BlockerLink[] = blockerTasks.map((task) => ({
 			text: task.content,
 			url: task.url,
 		}));
-		const task = this.#readTask(id);
+		const task = this.#readTaskBody(id);
 		const { result } = await updateTask(this.#db, this.#client, id, {
 			description: setBlockedBySection(task.description, blockers),
 		});
-		return toTicket(this.#withComments(result));
+		return toTicket(this.#withoutComments(result));
 	}
 
 	#readMapBody(mapId: string): string {
-		return this.#readTask(mapId).description;
+		return this.#readTaskBody(mapId).description;
 	}
 
 	async #writeMapBody(
@@ -292,7 +334,7 @@ export class TodoistAdapter {
 		const { result } = await updateTask(this.#db, this.#client, mapId, {
 			description: body,
 		});
-		return toMap(this.#withComments(result));
+		return toMap(this.#withoutComments(result));
 	}
 
 	async writeMapDecisions(
@@ -326,30 +368,43 @@ export class TodoistAdapter {
 			labels: input.labels ?? [],
 			...(this.#projectId ? { project: this.#projectId } : {}),
 		});
-		return toIssue(this.#withComments(result));
+		return toIssue(this.#withoutComments(result));
 	}
 
 	readIssueRecord(id: string): Promise<Issue> {
 		return Promise.resolve(toIssue(this.#readTask(extractTodoistTaskId(id))));
 	}
 
-	async writeIssueLabels(id: string, labels: string[]): Promise<Issue> {
+	async writeIssueLabels(
+		id: string,
+		labels: string[],
+		currentIssue?: Issue,
+	): Promise<Issue> {
 		const taskId = extractTodoistTaskId(id);
-		const current = this.#readTask(taskId);
-		const currentLabels = new Set(current.labels);
+		const current = currentIssue ? undefined : this.#readTask(taskId);
+		const currentLabels = new Set(
+			currentIssue?.labels ?? current?.labels ?? [],
+		);
 		const nextLabels = new Set(labels);
-		const removeLabels = current.labels.filter(
+		const removeLabels = (currentIssue?.labels ?? current?.labels ?? []).filter(
 			(label) => !nextLabels.has(label),
 		);
 		const addLabels = labels.filter((label) => !currentLabels.has(label));
 		if (addLabels.length === 0 && removeLabels.length === 0) {
-			return toIssue(current);
+			if (currentIssue) return currentIssue;
+			return toIssue(current!);
 		}
 		const { result } = await updateTask(this.#db, this.#client, taskId, {
 			...(addLabels.length > 0 ? { addLabels } : {}),
 			...(removeLabels.length > 0 ? { removeLabels } : {}),
 		});
-		return toIssue(this.#withComments(result));
+		const comments = currentIssue
+			? currentIssue.comments.map((comment) => ({
+					content: comment.content,
+					postedAt: comment.postedAt ?? null,
+				}))
+			: current!.comments;
+		return toIssue(withExistingComments(result, comments));
 	}
 
 	async appendIssueComment(
@@ -357,7 +412,12 @@ export class TodoistAdapter {
 		body: string,
 	): Promise<{ comment: { content: string; postedAt?: string } }> {
 		const taskId = extractTodoistTaskId(id);
-		const { result } = await addTaskComment(this.#db, this.#client, taskId, body);
+		const { result } = await addTaskComment(
+			this.#db,
+			this.#client,
+			taskId,
+			body,
+		);
 		return {
 			comment: {
 				content: body,
@@ -376,64 +436,53 @@ export class TodoistAdapter {
 	}
 
 	listIssueRecords(): Promise<Issue[]> {
-		const tasks = this.#selectTasks();
-		const scoped = this.#projectId
-			? tasks.filter((task) => task.projectId === this.#projectId)
-			: tasks;
-		return Promise.resolve(this.#withCommentsBatch(scoped).map(toIssue));
+		const tasks = this.#db.selectTasksWithNotes({
+			completed: "any",
+			...(this.#projectId ? { projectId: this.#projectId } : {}),
+		});
+		return Promise.resolve(tasks.map(withComments).map(toIssue));
 	}
 
 	// -- doist-core reads -------------------------------------------------
 
-	#selectTasks(): AppTask[] {
-		return this.#db.selectTasks({ completed: "any" });
+	#selectTasks(criteria?: Parameters<Database["selectTasks"]>[0]): AppTask[] {
+		return this.#db.selectTasks(criteria ?? { completed: "any" });
 	}
 
-	#withComments(task: AppTask): TodoistTaskRead {
-		return this.#withCommentsBatch([task])[0]!;
-	}
-
-	/**
-	 * Enrich a batch of tasks with their comments in one notes query. Notes
-	 * come back ordered by item_id then posted_at, so one grouping pass keeps
-	 * each task's comment order.
-	 */
-	#withCommentsBatch(tasks: AppTask[]): TodoistTaskRead[] {
-		const ids = tasks.map((task) => task.id);
-		const notes =
-			ids.length > 0 ? this.#db.selectNotesByTaskIds(ids) : [];
-		const commentsByTaskId = new Map<string, TodoistTaskRead["comments"]>();
-		for (const note of notes) {
-			const comments = commentsByTaskId.get(note.itemId);
-			if (comments) {
-				comments.push({ content: note.content, postedAt: note.postedAt });
-			} else {
-				commentsByTaskId.set(note.itemId, [
-					{ content: note.content, postedAt: note.postedAt },
-				]);
-			}
-		}
-		return tasks.map((task) => ({
+	#withoutComments(task: AppTask): TodoistTaskRead {
+		return {
 			...task,
 			description: task.description ?? "",
-			comments: commentsByTaskId.get(task.id) ?? [],
-		}));
+			comments: [],
+		};
 	}
 
-	#readTask(id: string): TodoistTaskRead {
+	#readTaskBody(id: string): TodoistTaskRead {
 		const task = this.#db.getTaskById(id);
 		if (!task) {
 			throw new Error(`Todoist task not found: ${id}`);
 		}
-		return this.#withComments(task);
+		return this.#withoutComments(task);
+	}
+
+	#readTask(id: string): TodoistTaskRead {
+		const task = this.#db.getTaskWithNotes(id);
+		if (!task) {
+			throw new Error(`Todoist task not found: ${id}`);
+		}
+		return withComments(task);
 	}
 }
 
-const TODOIST_TASK_ID_FROM_URL = /\/app\/task\/([A-Za-z0-9_-]+)\b/;
+const TODOIST_TASK_PATH = /\/app\/task\/([^/?#]+)/;
+const TODOIST_TASK_ID_SUFFIX = /-([A-Za-z0-9]+)$/;
 
 function extractTodoistTaskId(idOrUrl: string): string {
-	const match = TODOIST_TASK_ID_FROM_URL.exec(idOrUrl);
-	return match?.[1] ?? idOrUrl;
+	const pathMatch = TODOIST_TASK_PATH.exec(idOrUrl);
+	if (!pathMatch?.[1]) {
+		return idOrUrl;
+	}
+	return TODOIST_TASK_ID_SUFFIX.exec(pathMatch[1])?.[1] ?? pathMatch[1];
 }
 
 // Wayfinder writes the blocked-by section as links whose URL ends in the

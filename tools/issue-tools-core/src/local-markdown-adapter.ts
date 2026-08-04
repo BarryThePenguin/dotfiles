@@ -165,6 +165,16 @@ export class LocalMarkdownPersistenceAdapter {
 		return ticketLists.flat().toSorted((a, b) => compareTicketIds(a.id, b.id));
 	}
 
+	async getTicketBody(id: string): Promise<WayfinderTrackerTicket> {
+		return this.getTicket(id);
+	}
+
+	async listChildTicketBodies(
+		mapId: string,
+	): Promise<WayfinderTrackerTicket[]> {
+		return this.listChildTickets(mapId);
+	}
+
 	async listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]> {
 		const normalizedMapId = this.#mapId(mapId);
 		await this.getMap(normalizedMapId);

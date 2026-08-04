@@ -66,13 +66,15 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			);
 
 			const projectId = project ? resolveProject(db, project) : undefined;
+			const { priority, ...filters } = rest;
 			const tasks: ListTaskItem[] =
 				project && !projectId
 					? []
 					: db
 							.selectTasks({
-								...rest,
-								projectId,
+								...filters,
+								...(priority !== undefined ? { priority } : {}),
+								...(projectId ? { projectId } : {}),
 							})
 							.map((task) =>
 								details ? task : { id: task.id, content: task.content },

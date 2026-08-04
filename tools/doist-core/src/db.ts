@@ -19,6 +19,7 @@ import {
 	type SqlBool,
 } from "kysely";
 import { createRequire } from "node:module";
+import { jsonArrayFrom } from "kysely/helpers/sqlite";
 import type { DatabaseSync, SQLInputValue, StatementSync } from "node:sqlite";
 
 const require = createRequire(import.meta.url);
@@ -125,6 +126,8 @@ export type DbFilter = Selectable<FilterTable>;
 export type DbTask = Selectable<TaskTable>;
 export type DbNote = Selectable<NoteTable>;
 
+export type AppTaskWithNotes = AppTask & { notes: AppNote[] };
+
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS meta (
 	key   TEXT PRIMARY KEY,
@@ -197,7 +200,24 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS notes_item_id_idx ON notes (item_id);
 `;
 
-// Expression builder helper for building reusable filter expressions
+export type TaskCriteria = {
+	id?: string;
+	content?: string;
+	completed?: "any" | "completed" | "incomplete";
+	projectId?: string | string[];
+	parentId?: string | null;
+	priority?: number;
+	label?: string;
+	due?: "today" | "overdue";
+	limit?: number;
+	offset?: number;
+	orderBy?: {
+		field: "created_at" | "updated_at" | "due_date" | "priority";
+		direction: "asc" | "desc";
+	};
+};
+
+// Expression builder helpers for the shared task-read criteria.
 function buildProjectIdFilter(
 	eb: ExpressionBuilder<Schema, "tasks">,
 	projectId: string | string[] | undefined,
@@ -214,11 +234,8 @@ function buildProjectIdFilter(
 
 function buildCompletedFilter(
 	eb: ExpressionBuilder<Schema, "tasks">,
-	isCompleted: boolean | undefined,
-): Expression<SqlBool> | null {
-	if (isCompleted === undefined) {
-		return null;
-	}
+	isCompleted: boolean,
+): Expression<SqlBool> {
 	return eb("is_completed", "=", isCompleted ? 1 : 0);
 }
 
@@ -252,6 +269,72 @@ function buildPriorityFilter(
 	priority: number,
 ): Expression<SqlBool> {
 	return eb("priority", "=", priority);
+}
+
+function buildTaskFilters(
+	eb: ExpressionBuilder<Schema, "tasks">,
+	criteria: TaskCriteria | undefined,
+): Expression<SqlBool>[] {
+	const filters: Expression<SqlBool>[] = [];
+	if (criteria?.id) {
+		filters.push(eb("id", "=", criteria.id));
+	}
+	const content = buildContentFilter(eb, criteria?.content);
+	if (content) {
+		filters.push(content);
+	}
+
+	if (criteria?.completed === "completed") {
+		filters.push(buildCompletedFilter(eb, true));
+	} else if (criteria?.completed !== "any") {
+		filters.push(buildCompletedFilter(eb, false));
+	}
+
+	const project = buildProjectIdFilter(eb, criteria?.projectId);
+	if (project) {
+		filters.push(project);
+	}
+
+	if (criteria?.parentId !== undefined) {
+		filters.push(
+			criteria.parentId === null
+				? eb("parent_id", "is", null)
+				: eb("parent_id", "=", criteria.parentId),
+		);
+	}
+
+	if (criteria?.priority !== undefined) {
+		filters.push(buildPriorityFilter(eb, criteria.priority));
+	}
+	if (criteria?.due) {
+		filters.push(buildDueDateFilter(eb, criteria.due));
+	}
+	if (criteria?.label) {
+		filters.push(buildLabelFilter(criteria.label));
+	}
+
+	return filters;
+}
+
+function parseNestedNotes(value: unknown): AppNote[] {
+	const rows: unknown = typeof value === "string" ? JSON.parse(value) : value;
+	if (!Array.isArray(rows)) {
+		return [];
+	}
+	return rows.map((row) => {
+		const note = row as {
+			id: string;
+			item_id: string;
+			content: string;
+			posted_at: string | null;
+		};
+		return {
+			id: note.id,
+			itemId: note.item_id,
+			content: note.content,
+			postedAt: note.posted_at,
+		};
+	});
 }
 
 export class Database {
@@ -415,88 +498,22 @@ export class Database {
 		return task ? normalizeTask(task) : null;
 	}
 
-	selectTasks(criteria?: {
-		content?: string;
-		completed?: "any" | "completed" | "incomplete";
-		projectId?: string[] | string | undefined;
-		priority?: number | undefined;
-		label?: string;
-		due?: "today" | "overdue";
-		limit?: number;
-		offset?: number;
-		orderBy?: {
-			field: "created_at" | "updated_at" | "due_date" | "priority";
-			direction: "asc" | "desc";
-		};
-	}): AppTask[] {
+	selectTasks(criteria?: TaskCriteria): AppTask[] {
 		let query = this.tasks();
-
-		// Build where clause using expression builder for type-safe filters
 		query = query.where((eb) => {
-			const filterExpressions: Expression<SqlBool>[] = [];
-
-			// Content filter
-			const contentFilter = buildContentFilter(eb, criteria?.content);
-			if (contentFilter) {
-				filterExpressions.push(contentFilter);
-			}
-
-			// Completion status filter
-			if (criteria?.completed === "completed") {
-				const completedFilter = buildCompletedFilter(eb, true);
-				if (completedFilter) {
-					filterExpressions.push(completedFilter);
-				}
-			} else if (criteria?.completed !== "any") {
-				// Default to 'incomplete': exclude completed unless explicitly 'any'
-				const completedFilter = buildCompletedFilter(eb, false);
-				if (completedFilter) {
-					filterExpressions.push(completedFilter);
-				}
-			}
-
-			// Project filter
-			if (criteria?.projectId) {
-				const projectFilter = buildProjectIdFilter(eb, criteria.projectId);
-				if (projectFilter) {
-					filterExpressions.push(projectFilter);
-				}
-			}
-
-			// Priority filter
-			if (criteria?.priority !== undefined) {
-				filterExpressions.push(buildPriorityFilter(eb, criteria.priority));
-			}
-
-			// Due date filter
-			if (criteria?.due) {
-				filterExpressions.push(buildDueDateFilter(eb, criteria.due));
-			}
-
-			// Label filter
-			if (criteria?.label) {
-				filterExpressions.push(buildLabelFilter(criteria.label));
-			}
-
-			return filterExpressions.length > 0
-				? eb.and(filterExpressions)
-				: eb.lit(true);
+			const filters = buildTaskFilters(eb, criteria);
+			return filters.length > 0 ? eb.and(filters) : eb.lit(true);
 		});
 
-		// Apply ordering
 		if (criteria?.orderBy) {
 			query = query.orderBy(criteria.orderBy.field, criteria.orderBy.direction);
 		}
-
-		// Apply pagination
 		if (criteria?.limit !== undefined) {
 			query = query.limit(
 				criteria.limit === -1 ? -1 : Math.max(1, criteria.limit),
 			);
 		}
-
 		if (criteria?.offset !== undefined) {
-			// SQLite requires a LIMIT before OFFSET; use -1 for unlimited
 			if (criteria.limit === undefined) {
 				query = query.limit(-1);
 			}
@@ -576,31 +593,50 @@ export class Database {
 		).map(normalizeLabel);
 	}
 
+	/**
+	 * Read tasks and their non-deleted notes in one SQL query. The nested
+	 * relation is deliberately owned by Database so callers cannot regress to
+	 * one task query plus one notes query per read.
+	 */
+	selectTasksWithNotes(criteria?: TaskCriteria): AppTaskWithNotes[] {
+		let query = this.#q
+			.selectFrom("tasks")
+			.selectAll("tasks")
+			.select((eb) => [
+				jsonArrayFrom(
+					eb
+						.selectFrom("notes")
+						.select(["id", "item_id", "content", "posted_at"])
+						.whereRef("notes.item_id", "=", "tasks.id")
+						.where("is_deleted", "=", 0)
+						.orderBy("posted_at", "asc"),
+				).as("notes"),
+			]);
+
+		query = query.where((eb) => {
+			const filters = buildTaskFilters(eb, criteria);
+			return filters.length > 0 ? eb.and(filters) : eb.lit(true);
+		});
+		if (criteria?.limit !== undefined) {
+			query = query.limit(criteria.limit);
+		}
+
+		return this.all(query.compile()).map((row) => ({
+			...normalizeTask(row),
+			notes: parseNestedNotes(row.notes),
+		}));
+	}
+
+	getTaskWithNotes(id: string): AppTaskWithNotes | null {
+		return this.selectTasksWithNotes({ completed: "any", id })[0] ?? null;
+	}
+
 	// Note queries
 	selectNotesByTask(itemId: string): AppNote[] {
 		return this.all(
 			this.notes()
 				.where("item_id", "=", itemId)
 				.where("is_deleted", "=", 0)
-				.orderBy("posted_at", "asc")
-				.compile(),
-		).map(normalizeNote);
-	}
-
-	/**
-	 * Notes for many tasks in one query. Ordered by item_id then posted_at so
-	 * a caller can group by itemId in one pass and keep each task's notes in
-	 * the same order `selectNotesByTask` returns.
-	 */
-	selectNotesByTaskIds(itemIds: string[]): AppNote[] {
-		if (itemIds.length === 0) {
-			return [];
-		}
-		return this.all(
-			this.notes()
-				.where("item_id", "in", itemIds)
-				.where("is_deleted", "=", 0)
-				.orderBy("item_id")
 				.orderBy("posted_at", "asc")
 				.compile(),
 		).map(normalizeNote);
