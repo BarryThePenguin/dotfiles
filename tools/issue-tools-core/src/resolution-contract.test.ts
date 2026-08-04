@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { addTaskComment } from "doist-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { LocalMarkdownAdapter } from "./local-markdown-adapter.ts";
-import type { WayfinderPersistence } from "./modules.ts";
+import type { WayfinderPersistence } from "./persistence.ts";
 import { createTodoistFixture } from "./test-helpers/todoist-fixture.ts";
 
 type Fixture = {

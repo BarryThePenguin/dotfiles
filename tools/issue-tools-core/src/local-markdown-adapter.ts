@@ -36,7 +36,7 @@ import {
 	type WayfinderMarkdownDocument,
 } from "./wayfinder-markdown.ts";
 import type { DecisionSummary } from "./schema.ts";
-import type { ResolutionState, ResolutionTarget } from "./modules.ts";
+import type { ResolutionState, ResolutionTarget } from "./persistence.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
 import {
 	ClosedTicketWithoutResolutionError,

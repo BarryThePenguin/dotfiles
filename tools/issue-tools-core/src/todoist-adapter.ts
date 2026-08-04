@@ -14,7 +14,7 @@ import {
 } from "./labels.ts";
 import { parseMapBody, renderMapBody, replaceMapSection } from "./map-body.ts";
 import type { MapSectionKey } from "./schema.ts";
-import type { ResolutionState, ResolutionTarget } from "./modules.ts";
+import type { ResolutionState, ResolutionTarget } from "./persistence.ts";
 import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
 	parseTicketBody,

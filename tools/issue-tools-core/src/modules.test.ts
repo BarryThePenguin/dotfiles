@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CreateIssueInput, Issue } from "./issue.ts";
-import {
-	IssueModule,
-	WayfinderModule,
-	type IssuePersistence,
-	type ResolutionPersistence,
-	type WayfinderPersistence,
-} from "./modules.ts";
+import { IssueModule, WayfinderModule } from "./modules.ts";
+import type {
+	IssuePersistence,
+	ResolutionPersistence,
+	WayfinderPersistence,
+} from "./persistence.ts";
 import { parseMapBody, renderMapBody } from "./map-body.ts";
 import {
 	BlockerNotOnMapError,
