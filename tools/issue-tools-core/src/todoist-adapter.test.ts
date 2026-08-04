@@ -1,11 +1,22 @@
 import { addTask, addTaskComment, completeTask, Database } from "doist-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TODOIST_TICKET_TYPE_LABELS, WAYFINDER_MAP_LABEL } from "./labels.ts";
-import { createTrackerModules, type TrackerModules } from "./modules.ts";
+import {
+	IssueModule,
+	WayfinderModule,
+	type TrackerModules,
+} from "./modules.ts";
 import {
 	createTodoistFixture,
 	type TodoistTestFixture,
 } from "./test-helpers/todoist-fixture.ts";
+
+function modulesFor(fixture: TodoistTestFixture): TrackerModules {
+	return {
+		issues: new IssueModule(fixture.adapter),
+		wayfinder: new WayfinderModule(fixture.adapter),
+	};
+}
 
 describe("TodoistAdapter", () => {
 	let fixture: TodoistTestFixture;
@@ -13,7 +24,7 @@ describe("TodoistAdapter", () => {
 
 	beforeEach(() => {
 		fixture = createTodoistFixture({ projectId: "project-1" });
-		modules = createTrackerModules(fixture.adapter);
+		modules = modulesFor(fixture);
 	});
 
 	afterEach(() => {
@@ -140,7 +151,12 @@ describe("TodoistAdapter", () => {
 			),
 		).toEqual([blocker.id]);
 
-		await fixture.adapter.closeTicket(blocker.id);
+		await modules.wayfinder.resolveTicket({
+			ticketId: blocker.id,
+			mapId: map.id,
+			resolution: "Blocking work is complete.",
+			gist: "The blocker is resolved.",
+		});
 
 		expect(
 			(await modules.wayfinder.getMapDetail(map.id)).frontier.map(
@@ -468,7 +484,7 @@ describe("TodoistAdapter", () => {
 			taskTimestamps: { created, updated },
 		});
 		try {
-			const timedModules = createTrackerModules(timedFixture.adapter);
+			const timedModules = modulesFor(timedFixture);
 			const made = await timedModules.issues.createIssue({
 				title: "Timed",
 				body: "Body.",
@@ -668,11 +684,16 @@ describe("TodoistAdapter nested comment reads", () => {
 			type: "task",
 			question: "What is next?",
 		});
-		await addTaskComment(fixture.db, fixture.client, blocker.id, "Blocker note");
+		await addTaskComment(
+			fixture.db,
+			fixture.client,
+			blocker.id,
+			"Blocker note",
+		);
 		await addTaskComment(fixture.db, fixture.client, target.id, "Target note");
 
 		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
-		const modules = createTrackerModules(fixture.adapter);
+		const modules = modulesFor(fixture);
 
 		const updated = await modules.wayfinder.setBlockingDependencies(target.id, [
 			blocker.id,

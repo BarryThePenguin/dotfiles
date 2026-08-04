@@ -3,19 +3,36 @@ import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
-import { createTrackerModules } from "./modules.ts";
 import { parseMapBody } from "./map-body.ts";
+import { createLocalTrackerModules } from "./local-tracker-factory.ts";
 
 function setupDir() {
 	return mkdtempDisposableSync(join(tmpdir(), "wayfinder-local-tracker-"));
 }
 
-describe("LocalMarkdownPersistenceAdapter", () => {
+describe("LocalMarkdownAdapter", () => {
+	it("builds independent Issue and Wayfinder modules over one local store", async () => {
+		using rootDir = setupDir();
+		const modules = createLocalTrackerModules(rootDir.path);
+
+		const issue = await modules.issues.createIssue({
+			title: "Shared local store",
+			labels: ["task"],
+		});
+		const map = await modules.wayfinder.createMap({
+			title: "Shared local map",
+			destination: "Both domain surfaces use the same local tracker.",
+		});
+
+		expect((await modules.issues.readIssue(issue.id)).labels).toEqual(["task"]);
+		expect(
+			(await modules.wayfinder.listMaps()).map((entry) => entry.id),
+		).toEqual([map.id]);
+	});
+
 	it("creates a map and ticket as Markdown files", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -65,13 +82,14 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		expect(ticketBody).toContain("Type: grilling");
 		expect(ticketBody).toContain("Status: open");
 		expect(ticketBody).not.toContain("Blocked by: None");
-		expect(ticketBody).toContain("## Question\n\nWhat is the smallest useful implementation slice?");
+		expect(ticketBody).toContain(
+			"## Question\n\nWhat is the smallest useful implementation slice?",
+		);
 	});
 
 	it("accepts a displayed map URL anywhere a map ID is expected", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -89,8 +107,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("lists only incomplete, unclaimed, unblocked child tickets as frontier", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -127,24 +144,24 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		await tracker.claimTicketIfUnclaimed(claimed.id, "agent-1");
 
 		expect(
-			(await tracker.getMapDetail(map.id)).frontier.map(
-				(ticket) => ticket.id,
-			),
+			(await tracker.getMapDetail(map.id)).frontier.map((ticket) => ticket.id),
 		).toEqual([blocker.id]);
 
-		await adapter.closeTicket(blocker.id);
+		await tracker.resolveTicket({
+			ticketId: blocker.id,
+			mapId: map.id,
+			resolution: "Blocking work is complete.",
+			gist: "The blocker is resolved.",
+		});
 
 		expect(
-			(await tracker.getMapDetail(map.id)).frontier.map(
-				(ticket) => ticket.id,
-			),
+			(await tracker.getMapDetail(map.id)).frontier.map((ticket) => ticket.id),
 		).toEqual([blocked.id]);
 	});
 
 	it("claims, resolves, records, and reads a ticket", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -199,8 +216,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("claim and unclaim move only the Claimed by header, never the Status", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -228,13 +244,14 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		body = await readFile(ticketPath, "utf8");
 		expect(body).toContain("Status: open");
 		expect(body).not.toContain("Claimed by:");
-		expect((await tracker.getTicketDetail(ticket.id)).ticket.claimedBy).toBeUndefined();
+		expect(
+			(await tracker.getTicketDetail(ticket.id)).ticket.claimedBy,
+		).toBeUndefined();
 	});
 
 	it("unclaiming a closed ticket leaves it closed", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -248,7 +265,12 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		});
 
 		await tracker.claimTicketIfUnclaimed(ticket.id, "agent-1");
-		await adapter.closeTicket(ticket.id);
+		await tracker.resolveTicket({
+			ticketId: ticket.id,
+			mapId: map.id,
+			resolution: "The ticket is complete.",
+			gist: "Closed tickets can be unclaimed.",
+		});
 		expect((await tracker.getTicketDetail(ticket.id)).ticket.status).toBe(
 			"closed",
 		);
@@ -261,8 +283,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("rejects a ticket file with an unknown Status", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -293,8 +314,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("rejects a legacy claimed Status", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Plan Todoist Wayfinder",
@@ -327,8 +347,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("creates and reads a generic issue as a Markdown file", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Add a generic issue surface",
@@ -361,8 +380,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("reads a generic issue by its URL", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Untracked question",
@@ -375,8 +393,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("treats a file with no Status line as unlabeled", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Unlabeled question",
@@ -384,18 +401,14 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		});
 
 		expect(created.labels).toEqual([]);
-		const body = await readFile(
-			join(rootDir.path, `${created.id}.md`),
-			"utf8",
-		);
+		const body = await readFile(join(rootDir.path, `${created.id}.md`), "utf8");
 		expect(body).not.toMatch(/^Status:/m);
 		expect((await modules.issues.readIssue(created.id)).labels).toEqual([]);
 	});
 
 	it("applies and removes labels on a generic issue, mapping the Status line to Issue.labels", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Triage me",
@@ -407,27 +420,24 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 			add: ["bug"],
 		});
 		expect(afterAdd.labels).toEqual(["needs-triage", "bug"]);
-		expect(
-			(await modules.issues.readIssue(created.id)).labels,
-		).toEqual(["needs-triage", "bug"]);
+		expect((await modules.issues.readIssue(created.id)).labels).toEqual([
+			"needs-triage",
+			"bug",
+		]);
 
 		const afterRemove = await modules.issues.updateIssueLabels(created.id, {
 			remove: ["needs-triage"],
 		});
 		expect(afterRemove.labels).toEqual(["bug"]);
 
-		const body = await readFile(
-			join(rootDir.path, `${created.id}.md`),
-			"utf8",
-		);
+		const body = await readFile(join(rootDir.path, `${created.id}.md`), "utf8");
 		expect(body).toContain("Status: bug");
 		expect(body).not.toContain("needs-triage");
 	});
 
 	it("preserves wayfinder: labels across a triage state transition", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Map parent",
@@ -445,8 +455,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("makes remove win when the same label is in both add and remove", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Tricky",
@@ -460,15 +469,12 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		});
 
 		expect(after.labels).toEqual([]);
-		expect(
-			(await modules.issues.readIssue(created.id)).labels,
-		).toEqual([]);
+		expect((await modules.issues.readIssue(created.id)).labels).toEqual([]);
 	});
 
 	it("clears the Status line when removing the last label", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Triage me",
@@ -480,10 +486,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 			remove: ["needs-triage"],
 		});
 
-		const body = await readFile(
-			join(rootDir.path, `${created.id}.md`),
-			"utf8",
-		);
+		const body = await readFile(join(rootDir.path, `${created.id}.md`), "utf8");
 		expect(body).not.toMatch(/^Status:/m);
 	});
 
@@ -491,8 +494,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("comments on a generic issue and reads it back", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Triage me",
@@ -509,18 +511,14 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		const read = await modules.issues.readIssue(created.id);
 		expect(read.comments.map((c) => c.content)).toEqual(["First agent note"]);
 
-		const body = await readFile(
-			join(rootDir.path, `${created.id}.md`),
-			"utf8",
-		);
+		const body = await readFile(join(rootDir.path, `${created.id}.md`), "utf8");
 		expect(body).toContain("## Comments");
 		expect(body).toContain("> First agent note");
 	});
 
 	it("appends a second comment, preserving the first under ## Comments", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Triage me",
@@ -539,8 +537,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("closes a generic issue, marking it closed with a Closed line", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Triage me",
@@ -554,17 +551,13 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 		const read = await modules.issues.readIssue(created.id);
 		expect(read.status).toBe("closed");
 		expect(read.labels).toEqual(["needs-triage"]);
-		const body = await readFile(
-			join(rootDir.path, `${created.id}.md`),
-			"utf8",
-		);
+		const body = await readFile(join(rootDir.path, `${created.id}.md`), "utf8");
 		expect(body).toMatch(/^Closed:/m);
 	});
 
 	it("closes with an optional comment that lands under ## Comments", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const created = await modules.issues.createIssue({
 			title: "Triage me",
@@ -588,8 +581,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("lists open issues by default, oldest first, with status on every row", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const first = await modules.issues.createIssue({
 			title: "First issue",
@@ -610,8 +602,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("lists closed issues when state is 'closed'", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const open = await modules.issues.createIssue({
 			title: "Open issue",
@@ -631,8 +622,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("lists all issues when state is 'any'", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const open = await modules.issues.createIssue({
 			title: "Open issue",
@@ -652,8 +642,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("filters by all-of labels", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const needsTriage = await modules.issues.createIssue({
 			title: "Triage me",
@@ -671,7 +660,9 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 			labels: ["bug"],
 		});
 
-		const issues = await modules.issues.listIssues({ labels: ["needs-triage"] });
+		const issues = await modules.issues.listIssues({
+			labels: ["needs-triage"],
+		});
 		expect(issues.map((issue) => issue.id).toSorted()).toEqual(
 			[needsTriage.id, needsTriageAndBug.id].toSorted(),
 		);
@@ -684,8 +675,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("exclusively lists unlabeled issues when unlabeled: true", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		const unlabeled = await modules.issues.createIssue({
 			title: "Unlabeled",
@@ -703,8 +693,7 @@ describe("LocalMarkdownPersistenceAdapter", () => {
 
 	it("treats unlabeled as exclusive: a labeled issue is not unlabeled even with state: any", async () => {
 		using rootDir = setupDir();
-		const adapter = new LocalMarkdownPersistenceAdapter(rootDir.path);
-		const modules = createTrackerModules(adapter);
+		const modules = createLocalTrackerModules(rootDir.path);
 
 		await modules.issues.createIssue({
 			title: "Labeled",

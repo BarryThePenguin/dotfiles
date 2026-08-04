@@ -96,9 +96,6 @@ export interface WayfinderPersistence {
 	): Promise<WayfinderTrackerTicket>;
 }
 
-/** The one selected adapter shared by both domain modules. */
-export type TrackerPersistence = IssuePersistence & WayfinderPersistence;
-
 export type TrackerModules = {
 	issues: IssueTracker;
 	wayfinder: WayfinderTracker;
@@ -165,9 +162,10 @@ export class WayfinderModule implements WayfinderTracker {
 	createChildTicket(
 		input: CreateWayfinderChildTicketInput,
 	): Promise<WayfinderTrackerTicket> {
-		return this.#validateBlockersOnMap(input.mapId, input.blockerIds ?? []).then(
-			() => this.#storage.createChildTicket(input),
-		);
+		return this.#validateBlockersOnMap(
+			input.mapId,
+			input.blockerIds ?? [],
+		).then(() => this.#storage.createChildTicket(input));
 	}
 
 	async getMapDetail(mapId: string): Promise<WayfinderMapDetail> {
@@ -220,9 +218,7 @@ export class WayfinderModule implements WayfinderTracker {
 		return this.#storage.unclaimTicket(id);
 	}
 
-	async resolveTicket(
-		input: ResolveTicketInput,
-	): Promise<ResolveTicketResult> {
+	async resolveTicket(input: ResolveTicketInput): Promise<ResolveTicketResult> {
 		const ticket = await this.#storage.getTicket(input.ticketId);
 		if (!ticket.mapId) {
 			throw new Error(`Ticket ${input.ticketId} has no map identity.`);
@@ -311,7 +307,9 @@ export class WayfinderModule implements WayfinderTracker {
 		const siblings = await (this.#storage.listChildTicketBodies?.(mapId) ??
 			this.#storage.listChildTickets(mapId));
 		const siblingIds = new Set(siblings.map((ticket) => ticket.id));
-		const missing = blockerIds.filter((blockerId) => !siblingIds.has(blockerId));
+		const missing = blockerIds.filter(
+			(blockerId) => !siblingIds.has(blockerId),
+		);
 		if (missing.length > 0) {
 			throw new BlockerNotOnMapError(mapId, missing);
 		}
@@ -352,13 +350,4 @@ export class WayfinderModule implements WayfinderTracker {
 	): Promise<WayfinderTrackerMap> {
 		return this.#storage.writeMapSection(mapId, section, content);
 	}
-}
-
-export function createTrackerModules(
-	storage: TrackerPersistence,
-): TrackerModules {
-	return {
-		issues: new IssueModule(storage),
-		wayfinder: new WayfinderModule(storage),
-	};
 }

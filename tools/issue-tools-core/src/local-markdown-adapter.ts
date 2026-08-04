@@ -53,7 +53,7 @@ type TicketFileInfo = {
 };
 
 /** Persistence adapter for the Local Markdown Issue tracker. */
-export class LocalMarkdownPersistenceAdapter {
+export class LocalMarkdownAdapter {
 	readonly #rootDir: string;
 	#indexLock = Promise.resolve();
 
@@ -61,7 +61,9 @@ export class LocalMarkdownPersistenceAdapter {
 		this.#rootDir = rootDir;
 	}
 
-	async createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap> {
+	async createMap(
+		input: CreateWayfinderMapInput,
+	): Promise<WayfinderTrackerMap> {
 		return this.#withIndexLock(async () => {
 			await this.#ensureLayout();
 			const id = await this.#allocateSlug(input.title, (slug) =>

@@ -391,7 +391,9 @@ export class TodoistAdapter {
 		);
 		const addLabels = labels.filter((label) => !currentLabels.has(label));
 		if (addLabels.length === 0 && removeLabels.length === 0) {
-			if (currentIssue) return currentIssue;
+			if (currentIssue) {
+				return currentIssue;
+			}
 			return toIssue(current!);
 		}
 		const { result } = await updateTask(this.#db, this.#client, taskId, {

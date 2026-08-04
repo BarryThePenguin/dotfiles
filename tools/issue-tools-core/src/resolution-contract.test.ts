@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { addTaskComment } from "doist-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
+import { LocalMarkdownAdapter } from "./local-markdown-adapter.ts";
 import type { WayfinderPersistence } from "./modules.ts";
 import { createTodoistFixture } from "./test-helpers/todoist-fixture.ts";
 
@@ -15,7 +15,7 @@ type Fixture = {
 
 async function localFixture(): Promise<Fixture> {
 	const root = await mkdtemp(join(tmpdir(), "resolution-contract-local-"));
-	const tracker = new LocalMarkdownPersistenceAdapter(root);
+	const tracker = new LocalMarkdownAdapter(root);
 	return {
 		tracker,
 		addOrdinaryComment: async (ticketId, body) => {

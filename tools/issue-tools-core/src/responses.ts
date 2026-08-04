@@ -19,10 +19,7 @@ import {
 	text,
 } from "./markdown.ts";
 import type { Issue } from "./issue.ts";
-import type {
-	WayfinderTrackerMap,
-	WayfinderTrackerTicket,
-} from "./tracker.ts";
+import type { WayfinderTrackerMap, WayfinderTrackerTicket } from "./tracker.ts";
 
 const WAYFINDER_PREFIX = "Wayfinder:";
 

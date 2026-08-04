@@ -34,10 +34,11 @@ export type LocalTicketFileBody = {
 export const LOCAL_TICKET_STATUS_OPEN = "open" as const;
 export const LOCAL_TICKET_STATUS_RESOLVED = "resolved" as const;
 export type LocalTicketFileStatus =
-	| typeof LOCAL_TICKET_STATUS_OPEN
-	| typeof LOCAL_TICKET_STATUS_RESOLVED;
+	typeof LOCAL_TICKET_STATUS_OPEN | typeof LOCAL_TICKET_STATUS_RESOLVED;
 
-function parseTicketFileStatus(value: string | undefined): LocalTicketFileStatus {
+function parseTicketFileStatus(
+	value: string | undefined,
+): LocalTicketFileStatus {
 	const normalized = value?.trim().toLowerCase();
 	if (normalized === LOCAL_TICKET_STATUS_OPEN) {
 		return LOCAL_TICKET_STATUS_OPEN;
@@ -189,7 +190,10 @@ export function ticketRefFromId(id: string): string {
 	return normalized.split("/").at(-1) ?? normalized;
 }
 
-export function normalizeTicketIdForMap(mapId: string, refOrId: string): string {
+export function normalizeTicketIdForMap(
+	mapId: string,
+	refOrId: string,
+): string {
 	const withoutMarkdown = refOrId.replace(/\.md$/, "");
 	if (withoutMarkdown.includes("/issues/")) {
 		const match = /([^/]+)\/issues\/([^/]+)$/.exec(withoutMarkdown);

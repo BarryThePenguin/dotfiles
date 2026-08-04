@@ -41,7 +41,10 @@ const SECTION_KEY_TO_TITLE: Record<MapSectionKey, SectionTitle> = {
 	outOfScope: "Out of scope",
 };
 
-function plainSection(document: WayfinderMarkdownDocument, title: SectionTitle) {
+function plainSection(
+	document: WayfinderMarkdownDocument,
+	title: SectionTitle,
+) {
 	return stringifyChildren(document.section(title)).trim();
 }
 
@@ -153,7 +156,9 @@ export function mapBodyRoot(input: MapBodyRootInput): Root {
 	if (input.notYetSpecified.length > 0) {
 		children.push(
 			list(
-				input.notYetSpecified.map((item) => listItem([paragraph([text(item)])])),
+				input.notYetSpecified.map((item) =>
+					listItem([paragraph([text(item)])]),
+				),
 			),
 		);
 	}

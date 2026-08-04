@@ -39,14 +39,8 @@ export type UpdateIssueLabelsInput = {
 export interface IssueTracker {
 	createIssue(input: CreateIssueInput): Promise<Issue>;
 	readIssue(id: string): Promise<Issue>;
-	updateIssueLabels(
-		id: string,
-		input: UpdateIssueLabelsInput,
-	): Promise<Issue>;
-	commentOnIssue(
-		id: string,
-		body: string,
-	): Promise<{ comment: IssueComment }>;
+	updateIssueLabels(id: string, input: UpdateIssueLabelsInput): Promise<Issue>;
+	commentOnIssue(id: string, body: string): Promise<{ comment: IssueComment }>;
 	closeIssue(
 		id: string,
 		options?: { comment?: string },

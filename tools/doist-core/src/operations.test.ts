@@ -204,12 +204,7 @@ describe("mock HTTP client", () => {
 				addLabels: ["zeta", "alpha", "mike"],
 			});
 
-			expect(result.result.labels).toEqual([
-				"urgent",
-				"zeta",
-				"alpha",
-				"mike",
-			]);
+			expect(result.result.labels).toEqual(["urgent", "zeta", "alpha", "mike"]);
 		});
 
 		it("removes labels from existing set", async () => {
@@ -676,9 +671,7 @@ describe("mock HTTP client", () => {
 				}>;
 				return {
 					sync_token: "tok-1",
-					items: [
-						createMockApiTask({ id: TASK_IDS.alpha, checked: true }),
-					],
+					items: [createMockApiTask({ id: TASK_IDS.alpha, checked: true })],
 				};
 			});
 
@@ -715,9 +708,7 @@ describe("mock HTTP client", () => {
 				return {
 					sync_token: "tok-1",
 					temp_id_mapping: { [noteTempId]: "n-closing" },
-					items: [
-						createMockApiTask({ id: TASK_IDS.alpha, checked: true }),
-					],
+					items: [createMockApiTask({ id: TASK_IDS.alpha, checked: true })],
 					notes: [
 						createMockApiNote({
 							id: "n-closing",

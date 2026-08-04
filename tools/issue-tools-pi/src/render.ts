@@ -25,8 +25,8 @@ export function renderCall(
 ): Text {
 	const isIssueAction = action === "issue_create" || action === "issue_read";
 	const label = isIssueAction ? "issue" : "wayfinder";
-	let text = theme.fg("toolTitle", theme.bold(`${label} `)) +
-		theme.fg("accent", action);
+	let text =
+		theme.fg("toolTitle", theme.bold(`${label} `)) + theme.fg("accent", action);
 	if (args.title) {
 		text += ` ${theme.fg("dim", `"${args.title}"`)}`;
 	}

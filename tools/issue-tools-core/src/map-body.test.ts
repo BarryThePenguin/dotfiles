@@ -79,23 +79,25 @@ describe("Wayfinder map body", () => {
 	});
 
 	it("keeps lower-depth subheadings inside their parent section", () => {
-		const parsed = parseMapBody([
-			"## Destination",
-			"",
-			"Ship the thing.",
-			"",
-			"## Notes",
-			"",
-			"Intro.",
-			"",
-			"### Detail",
-			"",
-			"More detail.",
-			"",
-			"## Decisions so far",
-			"",
-			"- [Choose tracker](todoist://task/1) — Todoist wins.",
-		].join("\n"));
+		const parsed = parseMapBody(
+			[
+				"## Destination",
+				"",
+				"Ship the thing.",
+				"",
+				"## Notes",
+				"",
+				"Intro.",
+				"",
+				"### Detail",
+				"",
+				"More detail.",
+				"",
+				"## Decisions so far",
+				"",
+				"- [Choose tracker](todoist://task/1) — Todoist wins.",
+			].join("\n"),
+		);
 
 		expect(parsed.notes).toBe("Intro.\n\n### Detail\n\nMore detail.");
 		expect(parsed.decisionsSoFar).toEqual([
@@ -108,27 +110,29 @@ describe("Wayfinder map body", () => {
 	});
 
 	it("parses decision and out-of-scope list items after prose", () => {
-		const parsed = parseMapBody([
-			"## Destination",
-			"",
-			"Find the way.",
-			"",
-			"## Decisions so far",
-			"",
-			"Context before the list.",
-			"",
-			"- [Choose tracker](todoist://task/1) — Todoist owns state.",
-			"",
-			"## Out of scope",
-			"",
-			"Context before exclusions.",
-			"",
-			"- [Linear backend](todoist://task/2) — Todoist is first.",
-			"",
-			"More prose.",
-			"",
-			"- GitHub backend — Not needed yet.",
-		].join("\n"));
+		const parsed = parseMapBody(
+			[
+				"## Destination",
+				"",
+				"Find the way.",
+				"",
+				"## Decisions so far",
+				"",
+				"Context before the list.",
+				"",
+				"- [Choose tracker](todoist://task/1) — Todoist owns state.",
+				"",
+				"## Out of scope",
+				"",
+				"Context before exclusions.",
+				"",
+				"- [Linear backend](todoist://task/2) — Todoist is first.",
+				"",
+				"More prose.",
+				"",
+				"- GitHub backend — Not needed yet.",
+			].join("\n"),
+		);
 
 		expect(parsed.decisionsSoFar).toEqual([
 			{

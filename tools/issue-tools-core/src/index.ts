@@ -7,7 +7,7 @@
  * package boundary. The mdast builders, the markdown document, the format
  * render/parse functions, the doist-core passthroughs, and the persistence
  * capability interfaces are internal to this package — consumers reach the
- * domain through the modules, adapters, records, and renderers below.
+ * domain through the modules, records, and renderers below.
  */
 
 // -- Issue domain --------------------------------------------------------
@@ -59,15 +59,12 @@ export type {
 
 // -- Tracker modules ------------------------------------------------------
 
-export { createTrackerModules } from "./modules.ts";
 export type { TrackerModules } from "./modules.ts";
-
-// -- Persistence adapters --------------------------------------------------
-
-export { LocalMarkdownPersistenceAdapter } from "./local-markdown-adapter.ts";
-
-export { TodoistAdapter } from "./todoist-adapter.ts";
-export type { TodoistAdapterOptions } from "./todoist-adapter.ts";
+export { createLocalTrackerModules } from "./local-tracker-factory.ts";
+export {
+	createTodoistTrackerModules,
+	selectTodoistRepoProjectId,
+} from "./todoist-tracker-factory.ts";
 
 // -- Response renderers ---------------------------------------------------
 
@@ -86,7 +83,10 @@ export {
 	extensionToolCount,
 	toolInventory,
 } from "./setup-issue-tracker.ts";
-export type { ToolInventoryEntry, TrackerSelection } from "./setup-issue-tracker.ts";
+export type {
+	ToolInventoryEntry,
+	TrackerSelection,
+} from "./setup-issue-tracker.ts";
 
 // -- Tool parameter schemas (Pi surface) ----------------------------------
 

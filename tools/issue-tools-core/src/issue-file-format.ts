@@ -38,7 +38,10 @@ import {
 	text,
 } from "./markdown.ts";
 import type { IssueStatus } from "./issue.ts";
-import { markdownDocument, type WayfinderMarkdownDocument } from "./wayfinder-markdown.ts";
+import {
+	markdownDocument,
+	type WayfinderMarkdownDocument,
+} from "./wayfinder-markdown.ts";
 
 export type IssueFileBody = {
 	title: string;
@@ -79,7 +82,10 @@ export function issueMarkdown(input: {
 		}
 	}
 	if (input.answer) {
-		children.push(heading(2, [text("Answer")]), ...markdownBlocks(input.answer));
+		children.push(
+			heading(2, [text("Answer")]),
+			...markdownBlocks(input.answer),
+		);
 	}
 	return stringifyMarkdown(u("root", children));
 }
@@ -128,9 +134,7 @@ function splitCommentSection(nodes: RootContent[]): string[] {
 	const result: string[] = [];
 	for (const node of nodes) {
 		if (node.type === "blockquote") {
-			result.push(
-				extractBlockquoteText(node).trim(),
-			);
+			result.push(extractBlockquoteText(node).trim());
 			continue;
 		}
 		if (node.type === "list") {
@@ -165,20 +169,17 @@ function bodyNodesBetweenHeaderAndSections(
 		(section) => section.depth >= 2,
 	);
 	const firstSectionIndex = firstH2Section?.start ?? children.length;
-	const headerIndex = document.index.localHeaders.length > 0
-		? children.findIndex(
-				(node, index) =>
-					node.type === "paragraph" &&
-					(titleIndex === -1 || index > titleIndex) &&
-					index < firstSectionIndex,
-			)
-		: -1;
+	const headerIndex =
+		document.index.localHeaders.length > 0
+			? children.findIndex(
+					(node, index) =>
+						node.type === "paragraph" &&
+						(titleIndex === -1 || index > titleIndex) &&
+						index < firstSectionIndex,
+				)
+			: -1;
 	const start =
-		headerIndex >= 0
-			? headerIndex + 1
-			: titleIndex >= 0
-				? titleIndex + 1
-				: 0;
+		headerIndex >= 0 ? headerIndex + 1 : titleIndex >= 0 ? titleIndex + 1 : 0;
 	return children.slice(start, firstSectionIndex);
 }
 

@@ -11,15 +11,9 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { resolve } from "node:path";
 import {
-	createContainer,
-	selectRepoProject,
-	syncAndPersist,
-	type Container,
-} from "doist-core";
-import {
-	LocalMarkdownPersistenceAdapter,
-	TodoistAdapter,
-	createTrackerModules as createDomainModules,
+	createLocalTrackerModules,
+	createTodoistTrackerModules,
+	selectTodoistRepoProjectId as pickRepoProjectId,
 	type TrackerModules,
 } from "issue-tools-core";
 
@@ -30,38 +24,14 @@ export type CreateWayfinderTrackerOptions = {
 	mode: TrackerMode;
 };
 
-export function pickRepoProjectId(container: Container): string | undefined {
-	if (!container.paths) {
-		return undefined;
-	}
-	const projects = container.listProjects();
-	const selected = selectRepoProject(projects);
-	return selected?.id;
-}
+export { pickRepoProjectId };
 
 export function localTrackerRoot(cwd: string): string {
 	return resolve(cwd, ".scratch");
 }
 
 export async function buildTrackerModules(): Promise<TrackerModules> {
-	const container = createContainer();
-	if (!container.paths) {
-		throw new Error("Could not create Todoist tracker: no-config");
-	}
-	const projectIds = container.listProjectIds();
-	if (projectIds.length === 0) {
-		throw new Error("Could not create Todoist tracker: no-projects");
-	}
-
-	await syncAndPersist(container.db, container.client, projectIds, false);
-
-	const repoProjectId = pickRepoProjectId(container);
-	const adapter = new TodoistAdapter(
-		container.db,
-		container.client,
-		repoProjectId ? { projectId: repoProjectId } : {},
-	);
-	return createDomainModules(adapter);
+	return createTodoistTrackerModules();
 }
 
 export async function createTrackerModules({
@@ -69,8 +39,7 @@ export async function createTrackerModules({
 	mode,
 }: CreateWayfinderTrackerOptions): Promise<TrackerModules> {
 	if (mode === "local") {
-		const adapter = new LocalMarkdownPersistenceAdapter(localTrackerRoot(cwd));
-		return createDomainModules(adapter);
+		return createLocalTrackerModules(localTrackerRoot(cwd));
 	}
 	return buildTrackerModules();
 }

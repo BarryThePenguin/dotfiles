@@ -1,24 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { listItemTexts, markdownBlocks, stringifyChildren } from "./markdown.ts";
+import {
+	listItemTexts,
+	markdownBlocks,
+	stringifyChildren,
+} from "./markdown.ts";
 import { markdownDocument } from "./wayfinder-markdown.ts";
 
 describe("Wayfinder Markdown document indexing", () => {
 	it("indexes title, sections, and local headers during parsing", () => {
-		const document = markdownDocument([
-			"# 01 — Choose path",
-			"",
-			"Type: research",
-			"Status: open",
-			"Claimed by: pi",
-			"",
-			"## Question",
-			"",
-			"Which path?",
-			"",
-			"## Blocked by:",
-			"",
-			"- 01-blocker",
-		].join("\n"));
+		const document = markdownDocument(
+			[
+				"# 01 — Choose path",
+				"",
+				"Type: research",
+				"Status: open",
+				"Claimed by: pi",
+				"",
+				"## Question",
+				"",
+				"Which path?",
+				"",
+				"## Blocked by:",
+				"",
+				"- 01-blocker",
+			].join("\n"),
+		);
 
 		expect(document.index.title).toBe("01 — Choose path");
 		expect(document.index.localHeaders).toEqual([
@@ -92,7 +98,9 @@ describe("Wayfinder Markdown document mutation", () => {
 
 		document.setSection("Question", markdownBlocks("new question"));
 
-		expect(stringifyChildren(document.section("Question"))).toBe("new question");
+		expect(stringifyChildren(document.section("Question"))).toBe(
+			"new question",
+		);
 		expect(listItemTexts(document.section("Blocked by"))).toEqual(["01-thing"]);
 	});
 

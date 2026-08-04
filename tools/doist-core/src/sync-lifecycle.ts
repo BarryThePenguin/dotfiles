@@ -1,4 +1,11 @@
-import type { Database, DbFilter, DbTask, DbLabel, DbNote, DbSection } from "./db.ts";
+import type {
+	Database,
+	DbFilter,
+	DbTask,
+	DbLabel,
+	DbNote,
+	DbSection,
+} from "./db.ts";
 
 /**
  * SyncLifecycle manages the sync token and enforces the critical invariant:

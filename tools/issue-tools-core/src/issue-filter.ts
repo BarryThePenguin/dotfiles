@@ -52,4 +52,3 @@ export function filterIssues(
 function createdAtKey(issue: Issue): string {
 	return issue.createdAt ?? issue.updatedAt ?? issue.id;
 }
-

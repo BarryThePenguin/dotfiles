@@ -1,9 +1,5 @@
 import type { MapSectionKey } from "./schema.ts";
-import type {
-	ParsedMapBody,
-	TicketType,
-	WayfinderTicket,
-} from "./schema.ts";
+import type { ParsedMapBody, TicketType, WayfinderTicket } from "./schema.ts";
 
 export type WayfinderTicketStatus = "open" | "closed";
 

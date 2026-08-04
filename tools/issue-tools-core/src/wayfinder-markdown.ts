@@ -79,7 +79,9 @@ function headerLines(root: Root): string[] {
 	if (index === undefined) {
 		return [];
 	}
-	return toString(root.children[index] ?? { type: "text", value: "" }).split("\n");
+	return toString(root.children[index] ?? { type: "text", value: "" }).split(
+		"\n",
+	);
 }
 
 function headerEntries(root: Root): WayfinderMarkdownHeader[] {
@@ -221,7 +223,9 @@ function replaceSectionOnRoot(
 	);
 }
 
-export function markdownDocumentFromRoot(root: Root): WayfinderMarkdownDocument {
+export function markdownDocumentFromRoot(
+	root: Root,
+): WayfinderMarkdownDocument {
 	let index = indexWayfinderMarkdown(root);
 	const refresh = () => {
 		index = indexWayfinderMarkdown(root);

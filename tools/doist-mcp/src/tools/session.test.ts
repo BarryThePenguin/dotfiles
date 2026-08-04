@@ -40,7 +40,10 @@ describe("todoist_session_summary", () => {
 		const { structuredContent } = await harness.client.callTool({
 			name: "todoist_session_summary",
 		});
-		expect(structuredContent).toHaveProperty("overdue", expect.objectContaining({ length: 6 }));
+		expect(structuredContent).toHaveProperty(
+			"overdue",
+			expect.objectContaining({ length: 6 }),
+		);
 		expect(structuredContent).toHaveProperty("requiresTriage", true);
 	});
 
@@ -58,7 +61,10 @@ describe("todoist_session_summary", () => {
 		const { structuredContent } = await harness.client.callTool({
 			name: "todoist_session_summary",
 		});
-		expect(structuredContent).toHaveProperty("suggested", expect.arrayContaining([]));
+		expect(structuredContent).toHaveProperty(
+			"suggested",
+			expect.arrayContaining([]),
+		);
 	});
 
 	it("can sync first when requested", async () => {

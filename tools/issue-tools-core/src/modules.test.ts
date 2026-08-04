@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
-	createTrackerModules,
 	IssueModule,
 	WayfinderModule,
 	type IssuePersistence,
-	type TrackerPersistence,
 	type WayfinderPersistence,
 } from "./modules.ts";
 import { parseMapBody, renderMapBody } from "./map-body.ts";
@@ -358,13 +356,9 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 			}
 			return ticket;
 		};
-		const getTicket = vi.fn((id: string) =>
-			Promise.resolve(ticketOrThrow(id)),
-		);
+		const getTicket = vi.fn((id: string) => Promise.resolve(ticketOrThrow(id)));
 		const listChildTickets = vi.fn(() => Promise.resolve(allTickets));
-		const setBlockingDependencies = vi.fn(() =>
-			Promise.resolve(blockedTicket),
-		);
+		const setBlockingDependencies = vi.fn(() => Promise.resolve(blockedTicket));
 		const persistence: WayfinderPersistence = {
 			createMap: () => Promise.resolve(map),
 			listMaps: () => Promise.resolve([map]),
@@ -446,17 +440,14 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 
 	it("accepts same-map blockers and passes them through", async () => {
 		const { module, setBlockingDependencies } = makeFixture();
-		await module.setBlockingDependencies("map/01-frontier", [
-			"map/02-blocked",
-		]);
+		await module.setBlockingDependencies("map/01-frontier", ["map/02-blocked"]);
 		expect(setBlockingDependencies).toHaveBeenCalledWith("map/01-frontier", [
 			"map/02-blocked",
 		]);
 	});
 
 	it("clears blocking without a map validation read", async () => {
-		const { module, listChildTickets, setBlockingDependencies } =
-			makeFixture();
+		const { module, listChildTickets, setBlockingDependencies } = makeFixture();
 		await module.setBlockingDependencies("map/01-frontier", []);
 		expect(listChildTickets).not.toHaveBeenCalled();
 		expect(setBlockingDependencies).toHaveBeenCalledWith("map/01-frontier", []);
@@ -700,38 +691,5 @@ describe("WayfinderModule resolveTicket workflow", () => {
 				gist: "Take the simplest path.",
 			},
 		]);
-	});
-});
-
-describe("createTrackerModules", () => {
-	it("exposes separate modules over one shared persistence adapter", () => {
-		const unused = () => Promise.reject(new Error("not used"));
-		const persistence = {
-			createIssueRecord: unused,
-			readIssueRecord: unused,
-			writeIssueLabels: unused,
-			appendIssueComment: unused,
-			closeIssueRecord: unused,
-			listIssueRecords: unused,
-			createMap: unused,
-			listMaps: unused,
-			createChildTicket: unused,
-			getMap: unused,
-			getTicket: unused,
-			listChildTickets: unused,
-			writeMapDecisions: unused,
-			writeMapSection: unused,
-			claimTicketIfUnclaimed: unused,
-			unclaimTicket: unused,
-			closeTicket: unused,
-			recordResolution: unused,
-			setBlockingDependencies: unused,
-		} satisfies TrackerPersistence;
-		const modules = createTrackerModules(persistence);
-
-		expect(modules.issues).toHaveProperty("createIssue");
-		expect(modules.issues).not.toHaveProperty("createMap");
-		expect(modules.wayfinder).toHaveProperty("createMap");
-		expect(modules.wayfinder).not.toHaveProperty("createIssue");
 	});
 });

@@ -111,9 +111,7 @@ export function setClaimedBy(
 }
 
 function questionChildren(document: WayfinderMarkdownDocument): RootContent[] {
-	return document
-		.section("Question")
-		.filter((node) => node.type !== "html");
+	return document.section("Question").filter((node) => node.type !== "html");
 }
 
 export function renderTicketBody(input: {

@@ -185,9 +185,7 @@ export function createTodoistFixture(
 ): TodoistTestFixture {
 	const db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
 	const client = new FakeTodoistClient(
-		options.taskTimestamps
-			? { taskTimestamps: options.taskTimestamps }
-			: {},
+		options.taskTimestamps ? { taskTimestamps: options.taskTimestamps } : {},
 	);
 	const adapter = new TodoistAdapter(
 		db,
