@@ -6,6 +6,7 @@
 	"files": [],
 	"references": [
 		{ "path": "./tools/issue-tools-pi/tsconfig.json" },
+		{ "path": "./tools/subagent-pi/tsconfig.json" },
 		{ "path": "./tools/doist-cli/tsconfig.json" },
 		{ "path": "./tools/doist-core/tsconfig.json" },
 		{ "path": "./tools/doist-mcp/tsconfig.json" },
