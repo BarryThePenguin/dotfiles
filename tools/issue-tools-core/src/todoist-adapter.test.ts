@@ -14,7 +14,10 @@ import {
 function modulesFor(fixture: TodoistTestFixture): TrackerModules {
 	return {
 		issues: new IssueModule(fixture.adapter),
-		wayfinder: new WayfinderModule(fixture.adapter),
+		wayfinder: new WayfinderModule({
+			persistence: fixture.adapter,
+			resolutionPersistence: fixture.adapter,
+		}),
 	};
 }
 

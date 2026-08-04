@@ -36,6 +36,7 @@ import {
 	type WayfinderMarkdownDocument,
 } from "./wayfinder-markdown.ts";
 import type { DecisionSummary } from "./schema.ts";
+import type { ResolutionState, ResolutionTarget } from "./modules.ts";
 import { canClaimTicket } from "./tracker-operations.ts";
 import {
 	ClosedTicketWithoutResolutionError,
@@ -203,6 +204,19 @@ export class LocalMarkdownAdapter {
 			}
 			throw error;
 		}
+	}
+
+	async readResolutionTarget(ticketId: string): Promise<ResolutionTarget> {
+		const ticket = await this.getTicket(ticketId);
+		return { ticket, map: await this.getMap(ticket.mapId) };
+	}
+
+	async readResolutionState(mapId: string): Promise<ResolutionState> {
+		const [map, siblings] = await Promise.all([
+			this.getMap(mapId),
+			this.listChildTickets(mapId),
+		]);
+		return { map, siblings };
 	}
 
 	async claimTicketIfUnclaimed(
@@ -374,7 +388,11 @@ export class LocalMarkdownAdapter {
 		};
 	}
 
-	async writeIssueLabels(id: string, labels: string[]): Promise<Issue> {
+	async writeIssueLabels(
+		id: string,
+		labels: string[],
+		_current: Issue,
+	): Promise<Issue> {
 		return this.#withIndexLock(async () => {
 			const slug = this.#issueSlugFromIdOrUrl(id);
 			const path = this.#issuePath(slug);
@@ -424,7 +442,7 @@ export class LocalMarkdownAdapter {
 
 	async closeIssueRecord(
 		id: string,
-		options?: { comment?: string },
+		options: { comment?: string } | undefined,
 	): Promise<{ status: "open" | "closed" }> {
 		return this.#withIndexLock(async () => {
 			const slug = this.#issueSlugFromIdOrUrl(id);

@@ -42,7 +42,7 @@ export interface IssuePersistence {
 	writeIssueLabels(
 		id: string,
 		labels: string[],
-		current?: Issue,
+		current: Issue,
 	): Promise<Issue>;
 	appendIssueComment(
 		id: string,
@@ -50,7 +50,7 @@ export interface IssuePersistence {
 	): Promise<{ comment: IssueComment }>;
 	closeIssueRecord(
 		id: string,
-		options?: { comment?: string },
+		options: { comment?: string } | undefined,
 	): Promise<{ status: "open" | "closed" }>;
 	listIssueRecords(): Promise<Issue[]>;
 }
@@ -96,6 +96,30 @@ export interface WayfinderPersistence {
 	): Promise<WayfinderTrackerTicket>;
 }
 
+export type ResolutionTarget = {
+	ticket: WayfinderTrackerTicket;
+	map: WayfinderTrackerMap;
+};
+
+export type ResolutionState = {
+	map: WayfinderTrackerMap;
+	siblings: WayfinderTrackerTicket[];
+};
+
+export interface ResolutionPersistence {
+	readResolutionTarget(ticketId: string): Promise<ResolutionTarget>;
+	/** Atomically record the Resolution and close the Decision ticket. */
+	recordResolution(
+		id: string,
+		resolution: string,
+	): Promise<WayfinderTrackerTicket>;
+	readResolutionState(mapId: string): Promise<ResolutionState>;
+	writeMapDecisions(
+		mapId: string,
+		decisions: DecisionSummary[],
+	): Promise<WayfinderTrackerMap>;
+}
+
 export type TrackerModules = {
 	issues: IssueTracker;
 	wayfinder: WayfinderTracker;
@@ -103,11 +127,14 @@ export type TrackerModules = {
 
 /** Assemble both domain modules from one private backend implementation. */
 export function createTrackerModulesFromBackend(
-	backend: IssuePersistence & WayfinderPersistence,
+	backend: IssuePersistence & WayfinderPersistence & ResolutionPersistence,
 ): TrackerModules {
 	return {
 		issues: new IssueModule(backend),
-		wayfinder: new WayfinderModule(backend),
+		wayfinder: new WayfinderModule({
+			persistence: backend,
+			resolutionPersistence: backend,
+		}),
 	};
 }
 
@@ -156,9 +183,17 @@ export class IssueModule implements IssueTracker {
 
 export class WayfinderModule implements WayfinderTracker {
 	readonly #storage: WayfinderPersistence;
+	readonly #resolutionPersistence: ResolutionPersistence;
 
-	constructor(storage: WayfinderPersistence) {
-		this.#storage = storage;
+	constructor({
+		persistence,
+		resolutionPersistence,
+	}: {
+		persistence: WayfinderPersistence;
+		resolutionPersistence: ResolutionPersistence;
+	}) {
+		this.#storage = persistence;
+		this.#resolutionPersistence = resolutionPersistence;
 	}
 
 	createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap> {
@@ -229,7 +264,9 @@ export class WayfinderModule implements WayfinderTracker {
 	}
 
 	async resolveTicket(input: ResolveTicketInput): Promise<ResolveTicketResult> {
-		const ticket = await this.#storage.getTicket(input.ticketId);
+		const initialTarget =
+			await this.#resolutionPersistence.readResolutionTarget(input.ticketId);
+		const { ticket } = initialTarget;
 		if (!ticket.mapId) {
 			throw new Error(`Ticket ${input.ticketId} has no map identity.`);
 		}
@@ -239,12 +276,14 @@ export class WayfinderModule implements WayfinderTracker {
 			);
 		}
 
-		// Validate the map before the adapter is allowed to mutate anything.
-		await this.#storage.getMap(input.mapId);
+		// The context read validates the map before the adapter is allowed to mutate anything.
+		if (initialTarget.map.id !== input.mapId) {
+			throw new Error(`Map ${input.mapId} could not be loaded.`);
+		}
 
 		let resolvedTicket: WayfinderTrackerTicket;
 		try {
-			resolvedTicket = await this.#storage.recordResolution(
+			resolvedTicket = await this.#resolutionPersistence.recordResolution(
 				input.ticketId,
 				input.resolution,
 			);
@@ -263,7 +302,12 @@ export class WayfinderModule implements WayfinderTracker {
 			};
 		}
 
-		const siblings = await this.#storage.listChildTickets(input.mapId);
+		// Re-read after the ticket mutation so frontier classification observes
+		// the newly closed Decision ticket.
+		const resolvedState = await this.#resolutionPersistence.readResolutionState(
+			input.mapId,
+		);
+		const siblings = resolvedState.siblings;
 		const partition = partitionOpenTickets(siblings);
 		const unblockedIds = new Set(
 			[...partition.frontier, ...partition.claimed]
@@ -275,7 +319,7 @@ export class WayfinderModule implements WayfinderTracker {
 			.filter((ticket) => unblockedIds.has(ticket.id))
 			.map((ticket) => ticket.id);
 		try {
-			const map = await this.#recordDecision(input.mapId, {
+			const map = await this.#recordDecision(resolvedState.map, {
 				title: ticket.title,
 				url: ticket.url,
 				gist: input.gist,
@@ -338,14 +382,13 @@ export class WayfinderModule implements WayfinderTracker {
 	 * id/URL, later entries are ignored. Internal to the resolve workflow.
 	 */
 	async #recordDecision(
-		mapId: string,
+		map: WayfinderTrackerMap,
 		decision: DecisionSummary,
 	): Promise<WayfinderTrackerMap> {
-		const map = await this.#storage.getMap(mapId);
 		if (map.decisionsSoFar.some((existing) => existing.url === decision.url)) {
 			return map;
 		}
-		return this.#storage.writeMapDecisions(mapId, [
+		return this.#resolutionPersistence.writeMapDecisions(map.id, [
 			...map.decisionsSoFar,
 			decision,
 		]);

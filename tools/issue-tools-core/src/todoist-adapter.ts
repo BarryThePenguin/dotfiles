@@ -14,6 +14,7 @@ import {
 } from "./labels.ts";
 import { parseMapBody, renderMapBody, replaceMapSection } from "./map-body.ts";
 import type { MapSectionKey } from "./schema.ts";
+import type { ResolutionState, ResolutionTarget } from "./modules.ts";
 import type { CreateIssueInput, Issue } from "./issue.ts";
 import {
 	parseTicketBody,
@@ -235,6 +236,19 @@ export class TodoistAdapter {
 		);
 	}
 
+	async readResolutionTarget(ticketId: string): Promise<ResolutionTarget> {
+		const ticket = await this.getTicket(ticketId);
+		return { ticket, map: await this.getMap(ticket.mapId) };
+	}
+
+	async readResolutionState(mapId: string): Promise<ResolutionState> {
+		const [map, siblings] = await Promise.all([
+			this.getMap(mapId),
+			this.listChildTickets(mapId),
+		]);
+		return { map, siblings };
+	}
+
 	async claimTicketIfUnclaimed(
 		id: string,
 		claimant: string,
@@ -378,34 +392,26 @@ export class TodoistAdapter {
 	async writeIssueLabels(
 		id: string,
 		labels: string[],
-		currentIssue?: Issue,
+		currentIssue: Issue,
 	): Promise<Issue> {
 		const taskId = extractTodoistTaskId(id);
-		const current = currentIssue ? undefined : this.#readTask(taskId);
-		const currentLabels = new Set(
-			currentIssue?.labels ?? current?.labels ?? [],
-		);
+		const currentLabels = new Set(currentIssue.labels);
 		const nextLabels = new Set(labels);
-		const removeLabels = (currentIssue?.labels ?? current?.labels ?? []).filter(
+		const removeLabels = currentIssue.labels.filter(
 			(label) => !nextLabels.has(label),
 		);
 		const addLabels = labels.filter((label) => !currentLabels.has(label));
 		if (addLabels.length === 0 && removeLabels.length === 0) {
-			if (currentIssue) {
-				return currentIssue;
-			}
-			return toIssue(current!);
+			return currentIssue;
 		}
 		const { result } = await updateTask(this.#db, this.#client, taskId, {
 			...(addLabels.length > 0 ? { addLabels } : {}),
 			...(removeLabels.length > 0 ? { removeLabels } : {}),
 		});
-		const comments = currentIssue
-			? currentIssue.comments.map((comment) => ({
-					content: comment.content,
-					postedAt: comment.postedAt ?? null,
-				}))
-			: current!.comments;
+		const comments = currentIssue.comments.map((comment) => ({
+			content: comment.content,
+			postedAt: comment.postedAt ?? null,
+		}));
 		return toIssue(withExistingComments(result, comments));
 	}
 
@@ -430,7 +436,7 @@ export class TodoistAdapter {
 
 	async closeIssueRecord(
 		id: string,
-		options?: { comment?: string },
+		options: { comment?: string } | undefined,
 	): Promise<{ status: "open" | "closed" }> {
 		const taskId = extractTodoistTaskId(id);
 		await completeTask(this.#db, this.#client, taskId, options?.comment);

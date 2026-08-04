@@ -4,6 +4,7 @@ import {
 	IssueModule,
 	WayfinderModule,
 	type IssuePersistence,
+	type ResolutionPersistence,
 	type WayfinderPersistence,
 } from "./modules.ts";
 import { parseMapBody, renderMapBody } from "./map-body.ts";
@@ -140,7 +141,7 @@ describe("IssueModule", () => {
 });
 
 describe("WayfinderModule", () => {
-	it("can be constructed from a Wayfinder persistence capability", async () => {
+	it("can be constructed from separate Wayfinder capabilities", async () => {
 		const map: WayfinderTrackerMap = {
 			id: "map",
 			title: "A map",
@@ -162,7 +163,7 @@ describe("WayfinderModule", () => {
 			status: "open",
 			comments: [],
 		};
-		const persistence: WayfinderPersistence = {
+		const persistence: WayfinderPersistence & ResolutionPersistence = {
 			createMap: () => Promise.resolve(map),
 			listMaps: () => Promise.resolve([map]),
 			createChildTicket: () => Promise.resolve(ticket),
@@ -176,10 +177,15 @@ describe("WayfinderModule", () => {
 			claimTicketIfUnclaimed: () => Promise.resolve({ claimed: true, ticket }),
 			unclaimTicket: () => Promise.resolve(ticket),
 			closeTicket: () => Promise.resolve({ ...ticket, status: "closed" }),
+			readResolutionTarget: () => Promise.resolve({ ticket, map }),
+			readResolutionState: () => Promise.resolve({ map, siblings: [ticket] }),
 			recordResolution: () => Promise.resolve({ ...ticket, status: "closed" }),
 			setBlockingDependencies: () => Promise.resolve(ticket),
 		};
-		const module = new WayfinderModule(persistence);
+		const module = new WayfinderModule({
+			persistence,
+			resolutionPersistence: persistence,
+		});
 
 		expect(
 			await module.createMap({ title: map.title, destination: "" }),
@@ -242,7 +248,7 @@ describe("WayfinderModule", () => {
 			);
 			return Promise.resolve(ticketOrThrow(id));
 		});
-		const persistence: WayfinderPersistence = {
+		const persistence: WayfinderPersistence & ResolutionPersistence = {
 			createMap: () => Promise.resolve(map()),
 			listMaps: () => Promise.resolve([map()]),
 			createChildTicket: () => Promise.resolve(blocker),
@@ -267,10 +273,17 @@ describe("WayfinderModule", () => {
 			claimTicketIfUnclaimed: claim,
 			unclaimTicket: () => Promise.resolve(blocker),
 			closeTicket: () => Promise.resolve(blocker),
+			readResolutionTarget: (id) =>
+				Promise.resolve({ ticket: ticketOrThrow(id), map: map() }),
+			readResolutionState: () =>
+				Promise.resolve({ map: map(), siblings: currentTickets }),
 			recordResolution: () => Promise.resolve({ ...blocker, status: "closed" }),
 			setBlockingDependencies: setBlocking,
 		};
-		const module = new WayfinderModule(persistence);
+		const module = new WayfinderModule({
+			persistence,
+			resolutionPersistence: persistence,
+		});
 
 		expect((await module.getMapDetail(mapShape.id)).frontier).toEqual([
 			blocker,
@@ -361,11 +374,13 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 			return ticket;
 		};
 		const getTicket = vi.fn((id: string) => Promise.resolve(ticketOrThrow(id)));
-		const getTicketMetadata = vi.fn((id: string) => Promise.resolve(ticketOrThrow(id)));
+		const getTicketMetadata = vi.fn((id: string) =>
+			Promise.resolve(ticketOrThrow(id)),
+		);
 		const listChildTickets = vi.fn(() => Promise.resolve(allTickets));
 		const listChildTicketMetadata = vi.fn(() => Promise.resolve(allTickets));
 		const setBlockingDependencies = vi.fn(() => Promise.resolve(blockedTicket));
-		const persistence: WayfinderPersistence = {
+		const persistence: WayfinderPersistence & ResolutionPersistence = {
 			createMap: () => Promise.resolve(map),
 			listMaps: () => Promise.resolve([map]),
 			createChildTicket: () => Promise.resolve(frontierTicket),
@@ -380,11 +395,17 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 				Promise.resolve({ claimed: true, ticket: claimedTicket }),
 			unclaimTicket: () => Promise.resolve(claimedTicket),
 			closeTicket: () => Promise.resolve(blockerA),
+			readResolutionTarget: (id) =>
+				Promise.resolve({ ticket: ticketOrThrow(id), map }),
+			readResolutionState: () => Promise.resolve({ map, siblings: allTickets }),
 			recordResolution: () => Promise.resolve(blockerA),
 			setBlockingDependencies,
 		};
 		return {
-			module: new WayfinderModule(persistence),
+			module: new WayfinderModule({
+				persistence,
+				resolutionPersistence: persistence,
+			}),
 			getTicket,
 			getTicketMetadata,
 			listChildTickets,
@@ -540,7 +561,7 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			return ticket;
 		};
 		const resolved = new Map<string, string>();
-		const persistence: WayfinderPersistence = {
+		const persistence: WayfinderPersistence & ResolutionPersistence = {
 			createMap: () => Promise.resolve(map()),
 			listMaps: () => Promise.resolve([map()]),
 			createChildTicket: () => Promise.resolve(blocker),
@@ -592,9 +613,17 @@ describe("WayfinderModule resolveTicket workflow", () => {
 				return Promise.resolve(ticketOrThrow(id));
 			},
 			setBlockingDependencies: () => Promise.resolve(blocker),
+			readResolutionTarget: (id) =>
+				Promise.resolve({ ticket: ticketOrThrow(id), map: map() }),
+			readResolutionState: () =>
+				Promise.resolve({ map: map(), siblings: currentTickets }),
 		};
 		return {
-			module: new WayfinderModule(persistence),
+			module: new WayfinderModule({
+				persistence,
+				resolutionPersistence: persistence,
+			}),
+			persistence,
 			map: map(),
 			blocked,
 			// The seam still owns the close primitive; tests reach it directly
@@ -606,6 +635,30 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			},
 		};
 	}
+
+	it("uses the focused resolution persistence seam", async () => {
+		const { persistence, map } = makeFixture();
+		const writeMapDecisions = vi.fn(persistence.writeMapDecisions);
+		const resolutionPersistence: ResolutionPersistence = {
+			readResolutionTarget: persistence.readResolutionTarget,
+			readResolutionState: persistence.readResolutionState,
+			recordResolution: persistence.recordResolution,
+			writeMapDecisions,
+		};
+		const module = new WayfinderModule({
+			persistence,
+			resolutionPersistence,
+		});
+
+		await module.resolveTicket({
+			ticketId: "map/01-blocker",
+			mapId: map.id,
+			resolution: "Resolved.",
+			gist: "Take the simplest path.",
+		});
+
+		expect(writeMapDecisions).toHaveBeenCalledOnce();
+	});
 
 	it("resolves, records the decision, and reports unblocked tickets", async () => {
 		const { module, map, blocked } = makeFixture();

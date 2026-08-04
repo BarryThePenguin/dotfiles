@@ -95,13 +95,11 @@ export function renderMapSummary(
 
 export function renderTicketDetails(
 	ticket: WayfinderTrackerTicket,
-	blockerTitles?: string[],
+	blockerTitles: string[],
 ): string {
 	const question = markdownBlocks(ticket.question);
 	const blockedBy =
-		blockerTitles && blockerTitles.length > 0
-			? blockerTitles.join(", ")
-			: "nothing";
+		blockerTitles.length > 0 ? blockerTitles.join(", ") : "nothing";
 	const nodes: RootContent[] = [
 		heading(2, [text(ticket.title)]),
 		paragraph([

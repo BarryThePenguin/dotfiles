@@ -66,7 +66,7 @@ export type TrackerSession = {
 	get(ext: ExtensionContext): Promise<TrackerModules>;
 	getActiveMap(): string | null;
 	getMode(): TrackerMode | null;
-	resolveMapId(explicitMapId?: string): string | null;
+	resolveMapId(explicitMapId: string | undefined): string | null;
 	setActiveMap(mapId: string, ext: ExtensionContext): void;
 	restore(state: { activeMap: string | null }): void;
 	refresh(ext: ExtensionContext): void;
