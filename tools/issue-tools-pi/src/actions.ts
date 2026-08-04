@@ -27,11 +27,10 @@ import {
 	type MapSectionKey,
 	type ResolveParams,
 	type SetBlockingParams,
-	type TrackerModules,
 	type UpdateMapParams,
 	type WayfinderTrackerTicket,
 } from "issue-tools-core";
-import { localTrackerRoot, type TrackerMode } from "./tracker.ts";
+import { localTrackerRoot, type TrackerSession } from "./tracker.ts";
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
@@ -61,11 +60,7 @@ export interface ActionMap {
 }
 
 export interface ToolContext {
-	activeMap: string | null;
-	trackerMode: TrackerMode | null;
-	getTrackerModules: (ext: ExtensionContext) => Promise<TrackerModules>;
-	persistState: () => void;
-	updateStatus: (ext: ExtensionContext) => void;
+	trackerSession: TrackerSession;
 }
 
 type Handler<K extends keyof ActionMap> = (
@@ -120,7 +115,7 @@ function ok(text: string, details: unknown = {}): ActionResult {
 }
 
 async function createModules(ext: ExtensionContext, ctx: ToolContext) {
-	return ctx.getTrackerModules(ext);
+	return ctx.trackerSession.get(ext);
 }
 
 async function createWayfinder(ext: ExtensionContext, ctx: ToolContext) {
@@ -134,7 +129,7 @@ async function createIssues(ext: ExtensionContext, ctx: ToolContext) {
 }
 
 function trackerDetails(ext: ExtensionContext, ctx: ToolContext) {
-	const mode = ctx.trackerMode ?? "local";
+	const mode = ctx.trackerSession.getMode() ?? "local";
 	return {
 		tracker: mode,
 		...(mode === "local" ? { root: localTrackerRoot(ext.cwd) } : {}),
@@ -145,7 +140,7 @@ function requireMapId(
 	params: { map_id?: string },
 	ctx: ToolContext,
 ): string | null {
-	return params.map_id ?? ctx.activeMap;
+	return ctx.trackerSession.resolveMapId(params.map_id);
 }
 
 function formatTicket(ticket: WayfinderTrackerTicket) {
@@ -178,10 +173,12 @@ async function listMaps(
 	if (maps.length === 0) {
 		return ok("No open wayfinder maps.", mapDetails(ext, ctx, { maps: [] }));
 	}
-	if (maps.length === 1 && maps[0] && ctx.activeMap !== maps[0].id) {
-		ctx.activeMap = maps[0].id;
-		ctx.persistState();
-		ctx.updateStatus(ext);
+	if (
+		maps.length === 1 &&
+		maps[0] &&
+		ctx.trackerSession.getActiveMap() !== maps[0].id
+	) {
+		ctx.trackerSession.setActiveMap(maps[0].id, ext);
 	}
 	return ok(
 		`${maps.length} open map(s):\n\n${maps.map((map) => `${map.id} — ${stripPrefix(map.title)}\n  ID: ${map.id}\n  URL: ${map.url}`).join("\n\n")}`,
@@ -206,9 +203,7 @@ async function chart(
 		destination: params.destination,
 		...(params.notes ? { notes: params.notes } : {}),
 	});
-	ctx.activeMap = map.id;
-	ctx.persistState();
-	ctx.updateStatus(ext);
+	ctx.trackerSession.setActiveMap(map.id, ext);
 	return ok(
 		`Map created: ${map.title}\nID: ${map.id}\nURL: ${map.url}\n\nDestination:\n${params.destination}`,
 		mapDetails(ext, ctx, { id: map.id, url: map.url, title: map.title }),
@@ -231,9 +226,7 @@ async function getMap(
 
 	const summary = renderMapSummary(detail.map, open, closed);
 
-	ctx.activeMap = mapId;
-	ctx.persistState();
-	ctx.updateStatus(ext);
+	ctx.trackerSession.setActiveMap(mapId, ext);
 	return ok(
 		summary,
 		mapDetails(ext, ctx, {

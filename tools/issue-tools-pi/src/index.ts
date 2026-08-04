@@ -40,10 +40,7 @@ import {
 const STATUS_KEY = "issue-tools";
 
 export default function wayfinderExtension(pi: ExtensionAPI) {
-	let activeMap: string | null = null;
-	let trackerMode: TrackerMode | null = null;
-
-	const persistState = () => {
+	const persistState = (activeMap: string | null) => {
 		pi.appendEntry("issue-tools-state", { activeMap });
 	};
 
@@ -52,33 +49,28 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	): Promise<TrackerMode> => {
 		const selection = detectTrackerSelection(ctx.cwd);
 		if (selection === "local" || selection === "todoist") {
-			trackerMode = selection;
-			return trackerMode;
+			return selection;
 		}
 
 		// both markers or neither: ask the user
 		if (!ctx.hasUI) {
-			trackerMode = "local";
-			return trackerMode;
+			return "local";
 		}
 
 		const choice = await ctx.ui.select("Wayfinder tracker", [
 			"Local Markdown (.scratch)",
 			"Todoist (.doistrc)",
 		]);
-		trackerMode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
-		ctx.ui.notify(`Wayfinder tracker: ${trackerMode}`, "info");
-		return trackerMode;
+		const mode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
+		ctx.ui.notify(`Wayfinder tracker: ${mode}`, "info");
+		return mode;
 	};
 
-	const getTrackerModules = async (ctx: ExtensionContext) => {
-		const modules = await trackerSession.get(ctx);
-		updateStatus(ctx);
-		return modules;
-	};
-
-	const updateStatus = (ctx: ExtensionContext) => {
-		const mode = trackerMode ?? detectTrackerSelection(ctx.cwd);
+	const updateStatus = (
+		ctx: ExtensionContext,
+		state: { mode: TrackerMode | null; activeMap: string | null },
+	) => {
+		const mode = state.mode ?? detectTrackerSelection(ctx.cwd);
 		if (mode === "both" || mode === "neither") {
 			ctx.ui.setStatus(
 				STATUS_KEY,
@@ -86,7 +78,9 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 			);
 			return;
 		}
-		const label = activeMap ? `🗺 ${mode}:${activeMap}` : `🗺 ${mode}`;
+		const label = state.activeMap
+			? `🗺 ${mode}:${state.activeMap}`
+			: `🗺 ${mode}`;
 		ctx.ui.setStatus(
 			STATUS_KEY,
 			ctx.ui.theme.fg(
@@ -96,20 +90,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		);
 	};
 
-	const getState = (): ToolContext => ({
-		get activeMap() {
-			return activeMap;
-		},
-		set activeMap(value) {
-			activeMap = value;
-		},
-		get trackerMode() {
-			return trackerMode;
-		},
-		getTrackerModules,
-		persistState,
-		updateStatus,
-	});
+	const getState = (): ToolContext => ({ trackerSession });
 
 	// -- Session lifecycle ---------------------------------------------------
 
@@ -117,25 +98,27 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		cwd: ".",
 		selectMode: selectTrackerMode,
 		buildModules: createTrackerModules,
+		persistState,
+		updateStatus,
 	});
 
 	pi.on("session_start", (_event, ctx) => {
-		activeMap = null;
-		trackerMode = null;
 		trackerSession = createTrackerSession({
 			cwd: ctx.cwd,
 			selectMode: selectTrackerMode,
 			buildModules: createTrackerModules,
+			persistState,
+			updateStatus,
 		});
 		for (const entry of ctx.sessionManager.getBranch()) {
 			if (entry.type === "custom" && entry.customType === "issue-tools-state") {
 				// `maps` was dropped from the persisted shape; older sessions may
 				// still carry it. We just ignore it.
 				const data = entry.data as { activeMap?: string | null } | undefined;
-				activeMap = data?.activeMap ?? null;
+				trackerSession.restore({ activeMap: data?.activeMap ?? null });
 			}
 		}
-		updateStatus(ctx);
+		trackerSession.refresh(ctx);
 	});
 
 	// -- Tools ---------------------------------------------------------------

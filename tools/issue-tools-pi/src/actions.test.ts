@@ -17,26 +17,16 @@ function tempDir() {
 }
 
 function makeContext(cwd: string) {
-	let activeMap: string | null = null;
+	const persistState = vi.fn();
+	const updateStatus = vi.fn();
 	const trackerSession = createTrackerSession({
 		cwd,
 		selectMode: () => Promise.resolve("local"),
 		buildModules: createTrackerModules,
-	});
-	const persistState = vi.fn();
-	const updateStatus = vi.fn();
-	const toolContext: ToolContext = {
-		get activeMap() {
-			return activeMap;
-		},
-		set activeMap(value) {
-			activeMap = value;
-		},
-		trackerMode: "local",
-		getTrackerModules: () => trackerSession.get({ cwd } as ExtensionContext),
 		persistState,
 		updateStatus,
-	};
+	});
+	const toolContext: ToolContext = { trackerSession };
 	return {
 		toolContext,
 		persistState,
@@ -64,9 +54,12 @@ describe("Wayfinder actions", () => {
 			extensionContext,
 		);
 		expect(listResult.content[0]?.text).toContain("1 open map(s)");
-		expect(toolContext.activeMap).toBe(map.id);
-		expect(persistState).toHaveBeenCalledOnce();
-		expect(updateStatus).toHaveBeenCalledWith(extensionContext);
+		expect(toolContext.trackerSession.getActiveMap()).toBe(map.id);
+		expect(persistState).toHaveBeenCalledWith(map.id);
+		expect(updateStatus).toHaveBeenCalledWith(
+			extensionContext,
+		{ mode: "local", activeMap: map.id },
+		);
 
 		const getResult = await handleAction(
 			"get_map",
@@ -97,7 +90,7 @@ describe("Resolution actions", () => {
 			question: "Which path wins?",
 		});
 		const { extensionContext, toolContext } = makeContext(dir.path);
-		toolContext.activeMap = "wrong-map";
+		toolContext.trackerSession.setActiveMap("wrong-map", extensionContext);
 
 		const complete = await handleAction(
 			"resolve",

@@ -53,19 +53,30 @@ export type TrackerSessionOptions = {
 	buildModules: (
 		options: CreateWayfinderTrackerOptions,
 	) => Promise<TrackerModules>;
+	/** Persists the session's active map. */
+	persistState: (activeMap: string | null) => void;
+	/** Refreshes the Pi status from the session's state. */
+	updateStatus: (
+		ext: ExtensionContext,
+		state: { mode: TrackerMode | null; activeMap: string | null },
+	) => void;
 };
 
 export type TrackerSession = {
 	get(ext: ExtensionContext): Promise<TrackerModules>;
+	getActiveMap(): string | null;
+	getMode(): TrackerMode | null;
+	resolveMapId(explicitMapId?: string): string | null;
+	setActiveMap(mapId: string, ext: ExtensionContext): void;
+	restore(state: { activeMap: string | null }): void;
+	refresh(ext: ExtensionContext): void;
 	reset(): void;
 };
 
 /**
- * Lazily constructs one Tracker for the lifetime of a Tracker session.
- *
- * The session owns selection, initialization, synchronization, and module
- * retention behind a single small interface. The in-flight build is cached as
- * well as its result so concurrent tool calls cannot start duplicate
+ * Owns tracker selection, session state, initialization, synchronization, and
+ * module retention behind one small interface. The in-flight build is cached
+ * as well as its result so concurrent tool calls cannot start duplicate
  * selections or constructions. A failed selection or build is evicted so a
  * later call retries the whole sequence from scratch.
  */
@@ -73,27 +84,53 @@ export function createTrackerSession({
 	cwd,
 	selectMode,
 	buildModules,
+	persistState,
+	updateStatus,
 }: TrackerSessionOptions): TrackerSession {
 	let modules: Promise<TrackerModules> | null = null;
+	let mode: TrackerMode | null = null;
+	let activeMap: string | null = null;
+
+	const state = () => ({ mode, activeMap });
 
 	return {
-		get(ext) {
-			if (modules) {
-				return modules;
+		async get(ext) {
+			if (!modules) {
+				const pending = (async () => {
+					mode = await selectMode(ext);
+					return buildModules({ cwd, mode });
+				})();
+				const cached = pending.catch((error: unknown) => {
+					if (modules === cached) {
+						modules = null;
+					}
+					throw error;
+				});
+				modules = cached;
 			}
-
-			const pending = (async () => {
-				const mode = await selectMode(ext);
-				return buildModules({ cwd, mode });
-			})();
-			const cached = pending.catch((error: unknown) => {
-				if (modules === cached) {
-					modules = null;
-				}
-				throw error;
-			});
-			modules = cached;
-			return cached;
+			const result = await modules;
+			updateStatus(ext, state());
+			return result;
+		},
+		getActiveMap() {
+			return activeMap;
+		},
+		getMode() {
+			return mode;
+		},
+		resolveMapId(explicitMapId) {
+			return explicitMapId ?? activeMap;
+		},
+		setActiveMap(mapId, ext) {
+			activeMap = mapId;
+			persistState(activeMap);
+			updateStatus(ext, state());
+		},
+		restore(restored) {
+			activeMap = restored.activeMap;
+		},
+		refresh(ext) {
+			updateStatus(ext, state());
 		},
 		reset() {
 			modules = null;

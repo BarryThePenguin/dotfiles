@@ -95,7 +95,13 @@ describe("createTrackerSession", () => {
 		const built = modules();
 		const selectMode = vi.fn(() => Promise.resolve("local" as const));
 		const buildModules = vi.fn(() => Promise.resolve(built));
-		const session = createTrackerSession({ cwd, selectMode, buildModules });
+		const session = createTrackerSession({
+			cwd,
+			selectMode,
+			buildModules,
+			persistState: vi.fn(),
+			updateStatus: vi.fn(),
+		});
 
 		const [first, concurrent, subsequent] = await Promise.all([
 			session.get({} as ExtensionContext),
@@ -124,7 +130,13 @@ describe("createTrackerSession", () => {
 			.fn()
 			.mockResolvedValueOnce(firstModules)
 			.mockResolvedValueOnce(secondModules);
-		const session = createTrackerSession({ cwd, selectMode, buildModules });
+		const session = createTrackerSession({
+			cwd,
+			selectMode,
+			buildModules,
+			persistState: vi.fn(),
+			updateStatus: vi.fn(),
+		});
 
 		const first = await session.get({} as ExtensionContext);
 		session.reset();
@@ -144,7 +156,13 @@ describe("createTrackerSession", () => {
 			.fn()
 			.mockRejectedValueOnce(error)
 			.mockResolvedValueOnce(built);
-		const session = createTrackerSession({ cwd, selectMode, buildModules });
+		const session = createTrackerSession({
+			cwd,
+			selectMode,
+			buildModules,
+			persistState: vi.fn(),
+			updateStatus: vi.fn(),
+		});
 
 		await expect(session.get({} as ExtensionContext)).rejects.toThrow(error);
 		await expect(session.get({} as ExtensionContext)).resolves.toBe(built);
