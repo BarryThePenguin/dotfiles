@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CreateIssueInput, Issue } from "./issue.ts";
 import { IssueModule, WayfinderModule } from "./modules.ts";
+import { createResolutionWorkflow } from "./resolution-workflow.ts";
 import type {
 	IssuePersistence,
 	ResolutionPersistence,
@@ -515,7 +516,7 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 	});
 });
 
-describe("WayfinderModule resolveTicket workflow", () => {
+describe("Resolution workflow", () => {
 	const mapShape = {
 		id: "map",
 		title: "A map",
@@ -617,11 +618,9 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			readResolutionState: () =>
 				Promise.resolve({ map: map(), siblings: currentTickets }),
 		};
+		const workflow = createResolutionWorkflow(persistence);
 		return {
-			module: new WayfinderModule({
-				persistence,
-				resolutionPersistence: persistence,
-			}),
+			workflow,
 			persistence,
 			map: map(),
 			blocked,
@@ -638,18 +637,14 @@ describe("WayfinderModule resolveTicket workflow", () => {
 	it("uses the focused resolution persistence seam", async () => {
 		const { persistence, map } = makeFixture();
 		const writeMapDecisions = vi.fn(persistence.writeMapDecisions);
-		const resolutionPersistence: ResolutionPersistence = {
+		const workflow = createResolutionWorkflow({
 			readResolutionTarget: persistence.readResolutionTarget,
 			readResolutionState: persistence.readResolutionState,
 			recordResolution: persistence.recordResolution,
 			writeMapDecisions,
-		};
-		const module = new WayfinderModule({
-			persistence,
-			resolutionPersistence,
 		});
 
-		await module.resolveTicket({
+		await workflow.resolve({
 			ticketId: "map/01-blocker",
 			mapId: map.id,
 			resolution: "Resolved.",
@@ -660,8 +655,8 @@ describe("WayfinderModule resolveTicket workflow", () => {
 	});
 
 	it("resolves, records the decision, and reports unblocked tickets", async () => {
-		const { module, map, blocked } = makeFixture();
-		const result = await module.resolveTicket({
+		const { workflow, map, blocked } = makeFixture();
+		const result = await workflow.resolve({
 			ticketId: "map/01-blocker",
 			mapId: map.id,
 			resolution: "Resolved.",
@@ -687,8 +682,8 @@ describe("WayfinderModule resolveTicket workflow", () => {
 	});
 
 	it("returns a retryable partial result when the map write fails", async () => {
-		const { module, map, blocked } = makeFixture({ failMapWrite: true });
-		const result = await module.resolveTicket({
+		const { workflow, map, blocked } = makeFixture({ failMapWrite: true });
+		const result = await workflow.resolve({
 			ticketId: "map/01-blocker",
 			mapId: map.id,
 			resolution: "Resolved.",
@@ -706,9 +701,9 @@ describe("WayfinderModule resolveTicket workflow", () => {
 	});
 
 	it("returns a terminal result for a closed ticket without a Resolution", async () => {
-		const { module, map, closeTicket } = makeFixture();
+		const { workflow, map, closeTicket } = makeFixture();
 		closeTicket("map/01-blocker");
-		const result = await module.resolveTicket({
+		const result = await workflow.resolve({
 			ticketId: "map/01-blocker",
 			mapId: map.id,
 			resolution: "Too late.",
@@ -725,9 +720,9 @@ describe("WayfinderModule resolveTicket workflow", () => {
 	});
 
 	it("rejects a mismatched map identity before touching the adapter", async () => {
-		const { module } = makeFixture();
+		const { workflow, persistence } = makeFixture();
 		await expect(
-			module.resolveTicket({
+			workflow.resolve({
 				ticketId: "map/01-blocker",
 				mapId: "other-map",
 				resolution: "Resolved.",
@@ -735,13 +730,11 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			}),
 		).rejects.toThrow(/map identity/i);
 
-		expect((await module.getTicketDetail("map/01-blocker")).ticket.status).toBe(
-			"open",
-		);
+		expect((await persistence.getTicket("map/01-blocker")).status).toBe("open");
 	});
 
 	it("records the decision once across a retry (first-wins)", async () => {
-		const { module, map } = makeFixture();
+		const { workflow, map } = makeFixture();
 		const input = {
 			ticketId: "map/01-blocker",
 			mapId: map.id,
@@ -749,8 +742,8 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			gist: "Take the simplest path.",
 		};
 
-		const first = await module.resolveTicket(input);
-		const retry = await module.resolveTicket(input);
+		const first = await workflow.resolve(input);
+		const retry = await workflow.resolve(input);
 
 		expect(first.outcome).toBe("complete");
 		expect(retry.outcome).toBe("complete");

@@ -19,14 +19,14 @@ import type {
 } from "./tracker.ts";
 import {
 	BlockerNotOnMapError,
-	ClosedTicketWithoutResolutionError,
 	type ResolveTicketInput,
 	type ResolveTicketResult,
 } from "./tracker.ts";
 import { mergeLabels } from "doist-core";
 import { filterIssues } from "./issue-filter.ts";
-import type { MapSectionKey, DecisionSummary } from "./schema.ts";
+import type { MapSectionKey } from "./schema.ts";
 import { partitionOpenTickets } from "./tracker-operations.ts";
+import { createResolutionWorkflow } from "./resolution-workflow.ts";
 import type {
 	IssuePersistence,
 	ResolutionPersistence,
@@ -96,7 +96,7 @@ export class IssueModule implements IssueTracker {
 
 export class WayfinderModule implements WayfinderTracker {
 	readonly #storage: WayfinderPersistence;
-	readonly #resolutionPersistence: ResolutionPersistence;
+	readonly #resolutionWorkflow: ReturnType<typeof createResolutionWorkflow>;
 
 	constructor({
 		persistence,
@@ -106,7 +106,7 @@ export class WayfinderModule implements WayfinderTracker {
 		resolutionPersistence: ResolutionPersistence;
 	}) {
 		this.#storage = persistence;
-		this.#resolutionPersistence = resolutionPersistence;
+		this.#resolutionWorkflow = createResolutionWorkflow(resolutionPersistence);
 	}
 
 	createMap(input: CreateWayfinderMapInput): Promise<WayfinderTrackerMap> {
@@ -176,87 +176,8 @@ export class WayfinderModule implements WayfinderTracker {
 		return this.#storage.unclaimTicket(id);
 	}
 
-	async resolveTicket(input: ResolveTicketInput): Promise<ResolveTicketResult> {
-		const initialTarget =
-			await this.#resolutionPersistence.readResolutionTarget(input.ticketId);
-		const { ticket } = initialTarget;
-		if (!ticket.mapId) {
-			throw new Error(`Ticket ${input.ticketId} has no map identity.`);
-		}
-		if (ticket.mapId !== input.mapId) {
-			throw new Error(
-				`Ticket ${input.ticketId} has map identity ${ticket.mapId}, not ${input.mapId}.`,
-			);
-		}
-
-		// The context read validates the map before the adapter is allowed to mutate anything.
-		if (initialTarget.map.id !== input.mapId) {
-			throw new Error(`Map ${input.mapId} could not be loaded.`);
-		}
-
-		let resolvedTicket: WayfinderTrackerTicket;
-		try {
-			resolvedTicket = await this.#resolutionPersistence.recordResolution(
-				input.ticketId,
-				input.resolution,
-			);
-		} catch (error) {
-			if (!(error instanceof ClosedTicketWithoutResolutionError)) {
-				throw error;
-			}
-			return {
-				outcome: "terminal",
-				resolvedTicket: ticket,
-				mapId: input.mapId,
-				unblocked: [],
-				error: error.message,
-				resolutionPosted: false,
-				decisionRecorded: false,
-			};
-		}
-
-		// Re-read after the ticket mutation so frontier classification observes
-		// the newly closed Decision ticket.
-		const resolvedState = await this.#resolutionPersistence.readResolutionState(
-			input.mapId,
-		);
-		const siblings = resolvedState.siblings;
-		const partition = partitionOpenTickets(siblings);
-		const unblockedIds = new Set(
-			[...partition.frontier, ...partition.claimed]
-				.filter((ticket) => ticket.blockerIds.includes(input.ticketId))
-				.map((ticket) => ticket.id),
-		);
-		// Preserve sibling order in the report.
-		const unblocked = siblings
-			.filter((ticket) => unblockedIds.has(ticket.id))
-			.map((ticket) => ticket.id);
-		try {
-			const map = await this.#recordDecision(resolvedState.map, {
-				title: ticket.title,
-				url: ticket.url,
-				gist: input.gist,
-			});
-			return {
-				outcome: "complete",
-				resolvedTicket,
-				map,
-				mapId: input.mapId,
-				unblocked,
-				resolutionPosted: true,
-				decisionRecorded: true,
-			};
-		} catch (error) {
-			return {
-				outcome: "partial",
-				resolvedTicket,
-				mapId: input.mapId,
-				unblocked,
-				error: error instanceof Error ? error.message : String(error),
-				resolutionPosted: true,
-				decisionRecorded: false,
-			};
-		}
+	resolveTicket(input: ResolveTicketInput): Promise<ResolveTicketResult> {
+		return this.#resolutionWorkflow.resolve(input);
 	}
 
 	/**
@@ -288,23 +209,6 @@ export class WayfinderModule implements WayfinderTracker {
 		const ticket = await this.#storage.getTicketMetadata(id);
 		await this.#validateBlockersOnMap(ticket.mapId, blockerIds);
 		return this.#storage.setBlockingDependencies(id, blockerIds);
-	}
-
-	/**
-	 * Record a decision on the Wayfinder map: first entry wins by ticket
-	 * id/URL, later entries are ignored. Internal to the resolve workflow.
-	 */
-	async #recordDecision(
-		map: WayfinderTrackerMap,
-		decision: DecisionSummary,
-	): Promise<WayfinderTrackerMap> {
-		if (map.decisionsSoFar.some((existing) => existing.url === decision.url)) {
-			return map;
-		}
-		return this.#resolutionPersistence.writeMapDecisions(map.id, [
-			...map.decisionsSoFar,
-			decision,
-		]);
 	}
 
 	async updateMapSection(
