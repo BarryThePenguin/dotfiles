@@ -10,6 +10,7 @@ import type {
 	CreateWayfinderChildTicketInput,
 	CreateWayfinderMapInput,
 	WayfinderBlockerDetail,
+	WayfinderClaimResult,
 	WayfinderMapDetail,
 	WayfinderTicketDetail,
 	WayfinderTracker,
