@@ -3,8 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-	IssueModule,
-	WayfinderModule,
+	createTrackerModulesFromBackend,
 	type TrackerModules,
 } from "./modules.ts";
 import { createLocalTrackerModules } from "./local-tracker-factory.ts";
@@ -24,10 +23,7 @@ async function withFixture(
 	if (fixture === "Todoist") {
 		const todoist = createTodoistFixture({ projectId: "project-1" });
 		try {
-			await callback({
-				issues: new IssueModule(todoist.adapter),
-				wayfinder: new WayfinderModule(todoist.adapter),
-			});
+			await callback(createTrackerModulesFromBackend(todoist.adapter));
 		} finally {
 			todoist.cleanup();
 		}

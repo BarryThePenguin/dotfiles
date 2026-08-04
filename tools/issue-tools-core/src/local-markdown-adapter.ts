@@ -167,11 +167,11 @@ export class LocalMarkdownAdapter {
 		return ticketLists.flat().toSorted((a, b) => compareTicketIds(a.id, b.id));
 	}
 
-	async getTicketBody(id: string): Promise<WayfinderTrackerTicket> {
+	async getTicketMetadata(id: string): Promise<WayfinderTrackerTicket> {
 		return this.getTicket(id);
 	}
 
-	async listChildTicketBodies(
+	async listChildTicketMetadata(
 		mapId: string,
 	): Promise<WayfinderTrackerTicket[]> {
 		return this.listChildTickets(mapId);

@@ -168,7 +168,9 @@ describe("WayfinderModule", () => {
 			createChildTicket: () => Promise.resolve(ticket),
 			getMap: () => Promise.resolve(map),
 			getTicket: () => Promise.resolve(ticket),
+			getTicketMetadata: () => Promise.resolve(ticket),
 			listChildTickets: () => Promise.resolve([ticket]),
+			listChildTicketMetadata: () => Promise.resolve([ticket]),
 			writeMapDecisions: () => Promise.resolve(map),
 			writeMapSection: () => Promise.resolve(map),
 			claimTicketIfUnclaimed: () => Promise.resolve({ claimed: true, ticket }),
@@ -246,7 +248,9 @@ describe("WayfinderModule", () => {
 			createChildTicket: () => Promise.resolve(blocker),
 			getMap: () => Promise.resolve(map()),
 			getTicket: (id) => Promise.resolve(ticketOrThrow(id)),
+			getTicketMetadata: (id) => Promise.resolve(ticketOrThrow(id)),
 			listChildTickets: () => Promise.resolve(currentTickets),
+			listChildTicketMetadata: () => Promise.resolve(currentTickets),
 			writeMapDecisions: (_id, decisions) => {
 				const current = parseMapBody(mapBody);
 				mapBody = renderMapBody({ ...current, decisionsSoFar: decisions });
@@ -357,7 +361,9 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 			return ticket;
 		};
 		const getTicket = vi.fn((id: string) => Promise.resolve(ticketOrThrow(id)));
+		const getTicketMetadata = vi.fn((id: string) => Promise.resolve(ticketOrThrow(id)));
 		const listChildTickets = vi.fn(() => Promise.resolve(allTickets));
+		const listChildTicketMetadata = vi.fn(() => Promise.resolve(allTickets));
 		const setBlockingDependencies = vi.fn(() => Promise.resolve(blockedTicket));
 		const persistence: WayfinderPersistence = {
 			createMap: () => Promise.resolve(map),
@@ -365,7 +371,9 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 			createChildTicket: () => Promise.resolve(frontierTicket),
 			getMap: () => Promise.resolve(map),
 			getTicket,
+			getTicketMetadata,
 			listChildTickets,
+			listChildTicketMetadata,
 			writeMapDecisions: () => Promise.resolve(map),
 			writeMapSection: () => Promise.resolve(map),
 			claimTicketIfUnclaimed: () =>
@@ -378,7 +386,9 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 		return {
 			module: new WayfinderModule(persistence),
 			getTicket,
+			getTicketMetadata,
 			listChildTickets,
+			listChildTicketMetadata,
 			setBlockingDependencies,
 		};
 	}
@@ -439,8 +449,17 @@ describe("WayfinderModule getMapDetail and getTicketDetail", () => {
 	});
 
 	it("accepts same-map blockers and passes them through", async () => {
-		const { module, setBlockingDependencies } = makeFixture();
+		const {
+			module,
+			getTicket,
+			getTicketMetadata,
+			listChildTicketMetadata,
+			setBlockingDependencies,
+		} = makeFixture();
 		await module.setBlockingDependencies("map/01-frontier", ["map/02-blocked"]);
+		expect(getTicket).not.toHaveBeenCalled();
+		expect(getTicketMetadata).toHaveBeenCalledWith("map/01-frontier");
+		expect(listChildTicketMetadata).toHaveBeenCalledWith("map");
 		expect(setBlockingDependencies).toHaveBeenCalledWith("map/01-frontier", [
 			"map/02-blocked",
 		]);
@@ -527,7 +546,9 @@ describe("WayfinderModule resolveTicket workflow", () => {
 			createChildTicket: () => Promise.resolve(blocker),
 			getMap: () => Promise.resolve(map()),
 			getTicket: (id) => Promise.resolve(ticketOrThrow(id)),
+			getTicketMetadata: (id) => Promise.resolve(ticketOrThrow(id)),
 			listChildTickets: () => Promise.resolve(currentTickets),
+			listChildTicketMetadata: () => Promise.resolve(currentTickets),
 			writeMapDecisions: options?.failMapWrite
 				? () => Promise.reject(new Error("map write failed"))
 				: (_id, decisions) => {

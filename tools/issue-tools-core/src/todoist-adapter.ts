@@ -216,7 +216,7 @@ export class TodoistAdapter {
 		return Promise.resolve(toTicket(this.#readTask(id)));
 	}
 
-	getTicketBody(id: string): Promise<WayfinderTrackerTicket> {
+	getTicketMetadata(id: string): Promise<WayfinderTrackerTicket> {
 		return Promise.resolve(toTicket(this.#readTaskBody(id)));
 	}
 
@@ -228,7 +228,7 @@ export class TodoistAdapter {
 		return Promise.resolve(sortById(tasks).map(withComments).map(toTicket));
 	}
 
-	listChildTicketBodies(mapId: string): Promise<WayfinderTrackerTicket[]> {
+	listChildTicketMetadata(mapId: string): Promise<WayfinderTrackerTicket[]> {
 		const tasks = this.#selectTasks({ completed: "any", parentId: mapId });
 		return Promise.resolve(
 			sortById(tasks).map((task) => toTicket(this.#withoutComments(task))),

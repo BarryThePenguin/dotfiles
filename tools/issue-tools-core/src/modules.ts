@@ -65,10 +65,10 @@ export interface WayfinderPersistence {
 	getMap(id: string): Promise<WayfinderTrackerMap>;
 	getTicket(id: string): Promise<WayfinderTrackerTicket>;
 	/** Read ticket metadata without loading tracker comments. */
-	getTicketBody?(id: string): Promise<WayfinderTrackerTicket>;
+	getTicketMetadata(id: string): Promise<WayfinderTrackerTicket>;
 	listChildTickets(mapId: string): Promise<WayfinderTrackerTicket[]>;
 	/** List child ticket metadata without loading tracker comments. */
-	listChildTicketBodies?(mapId: string): Promise<WayfinderTrackerTicket[]>;
+	listChildTicketMetadata(mapId: string): Promise<WayfinderTrackerTicket[]>;
 	/** Persist already-decoded map sections in the tracker's representation. */
 	writeMapDecisions(
 		mapId: string,
@@ -100,6 +100,16 @@ export type TrackerModules = {
 	issues: IssueTracker;
 	wayfinder: WayfinderTracker;
 };
+
+/** Assemble both domain modules from one private backend implementation. */
+export function createTrackerModulesFromBackend(
+	backend: IssuePersistence & WayfinderPersistence,
+): TrackerModules {
+	return {
+		issues: new IssueModule(backend),
+		wayfinder: new WayfinderModule(backend),
+	};
+}
 
 export class IssueModule implements IssueTracker {
 	readonly #storage: IssuePersistence;
@@ -304,8 +314,7 @@ export class WayfinderModule implements WayfinderTracker {
 		if (blockerIds.length === 0) {
 			return;
 		}
-		const siblings = await (this.#storage.listChildTicketBodies?.(mapId) ??
-			this.#storage.listChildTickets(mapId));
+		const siblings = await this.#storage.listChildTicketMetadata(mapId);
 		const siblingIds = new Set(siblings.map((ticket) => ticket.id));
 		const missing = blockerIds.filter(
 			(blockerId) => !siblingIds.has(blockerId),
@@ -319,8 +328,7 @@ export class WayfinderModule implements WayfinderTracker {
 		id: string,
 		blockerIds: string[],
 	): Promise<WayfinderTrackerTicket> {
-		const ticket = await (this.#storage.getTicketBody?.(id) ??
-			this.#storage.getTicket(id));
+		const ticket = await this.#storage.getTicketMetadata(id);
 		await this.#validateBlockersOnMap(ticket.mapId, blockerIds);
 		return this.#storage.setBlockingDependencies(id, blockerIds);
 	}
