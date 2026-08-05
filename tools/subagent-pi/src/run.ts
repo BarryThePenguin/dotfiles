@@ -49,6 +49,119 @@ export interface SingleResult {
 	errorMessage?: string;
 }
 
+/** Everything needed to launch one child process. */
+export interface SpawnContext {
+	agent: AgentConfig;
+	task: string;
+	cwd: string;
+	effective: EffectiveSpawnConfig;
+}
+
+export interface SpawnContextOptions {
+	agent: AgentConfig;
+	task: string;
+	cwd: string;
+	overrides: Map<string, PersonaOverride>;
+	parentProvider?: string | undefined;
+}
+
+export interface SpawnContextRequest {
+	defaultCwd: string;
+	agents: AgentConfig[];
+	agentName: string;
+	task: string;
+	cwd?: string | undefined;
+	overrides: Map<string, PersonaOverride>;
+	parentProvider?: string | undefined;
+}
+
+export type SpawnContextResolution =
+	{ context: SpawnContext } | { result: SingleResult };
+
+function emptyUsage(): UsageStats {
+	return {
+		input: 0,
+		output: 0,
+		cacheRead: 0,
+		cacheWrite: 0,
+		cost: 0,
+		contextTokens: 0,
+		turns: 0,
+	};
+}
+
+export function createSpawnContext(options: SpawnContextOptions): SpawnContext {
+	return {
+		agent: options.agent,
+		task: options.task,
+		cwd: options.cwd,
+		effective: effectiveSpawnConfig(
+			options.agent,
+			options.overrides,
+			options.parentProvider,
+		),
+	};
+}
+
+function createInitialResult(context: SpawnContext): SingleResult {
+	return {
+		agent: context.agent.name,
+		agentSource: context.agent.source,
+		task: context.task,
+		exitCode: 0,
+		messages: [],
+		stderr: "",
+		usage: emptyUsage(),
+		...(context.effective.model ? { model: context.effective.model } : {}),
+	};
+}
+
+function createUnknownAgentResult(
+	agentName: string,
+	task: string,
+	agents: AgentConfig[],
+): SingleResult {
+	const available = agents.map((a) => `"${a.name}"`).join(", ") || "none";
+	return {
+		agent: agentName,
+		agentSource: "unknown",
+		task,
+		exitCode: 1,
+		messages: [],
+		stderr: `Unknown agent: "${agentName}". Available agents: ${available}.`,
+		usage: emptyUsage(),
+	};
+}
+
+/** Resolve a requested agent and package its launch settings into one context. */
+export function resolveSpawnContext(
+	request: SpawnContextRequest,
+): SpawnContextResolution {
+	const resolvedName = resolveAgentName(request.agentName);
+	const agent = request.agents.find(
+		(candidate) => candidate.name === resolvedName,
+	);
+	if (!agent) {
+		return {
+			result: createUnknownAgentResult(
+				request.agentName,
+				request.task,
+				request.agents,
+			),
+		};
+	}
+
+	return {
+		context: createSpawnContext({
+			agent,
+			task: request.task,
+			cwd: request.cwd ?? request.defaultCwd,
+			overrides: request.overrides,
+			parentProvider: request.parentProvider,
+		}),
+	};
+}
+
 export function getFinalOutput(messages: Message[]): string {
 	for (let i = messages.length - 1; i >= 0; i--) {
 		const msg = messages[i];
@@ -114,26 +227,19 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 }
 
 export interface RunSingleAgentOptions {
-	defaultCwd: string;
-	agents: AgentConfig[];
-	agentName: string;
-	task: string;
-	cwd?: string | undefined;
+	context: SpawnContext;
 	signal?: AbortSignal | undefined;
 	onUpdate?:
 		| ((partial: AgentToolResult<{ results: SingleResult[] }>) => void)
 		| undefined;
-	overrides: Map<string, PersonaOverride>;
-	parentProvider?: string | undefined;
 }
 
-/** Build child CLI args: mode/scope flags + provider/model/tools/thinking passthrough + system prompt. */
+/** Build child CLI args from the complete spawn context. */
 function buildChildArgs(
-	agent: AgentConfig,
-	effective: EffectiveSpawnConfig,
-	systemPrompt: string,
-	task: string,
+	context: SpawnContext,
+	includeTask: boolean,
 ): { args: string[]; tmpDir: string | null; tmpFilePath: string | null } {
+	const { agent, effective } = context;
 	const args: string[] = ["--mode", "json", "-p", "--no-session"];
 	if (effective.provider) {
 		args.push("--provider", effective.provider);
@@ -150,85 +256,70 @@ function buildChildArgs(
 
 	let tmpDir: string | null = null;
 	let tmpFilePath: string | null = null;
-	if (systemPrompt.trim()) {
+	if (agent.systemPrompt.trim()) {
 		tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagent-"));
 		const safeName = agent.name.replace(/[^\w.-]+/g, "_");
 		tmpFilePath = path.join(tmpDir, `prompt-${safeName}.md`);
-		fs.writeFileSync(tmpFilePath, systemPrompt, {
+		fs.writeFileSync(tmpFilePath, agent.systemPrompt, {
 			encoding: "utf-8",
 			mode: 0o600,
 		});
 		args.push("--append-system-prompt", tmpFilePath);
 	}
 
-	args.push(`Task: ${task}`);
+	if (includeTask) {
+		args.push(`Task: ${context.task}`);
+	}
 	return { args, tmpDir, tmpFilePath };
 }
 
-export async function runSingleAgent(
-	options: RunSingleAgentOptions,
-): Promise<SingleResult> {
-	const {
-		defaultCwd,
-		agents,
-		agentName,
-		task,
-		cwd,
-		signal,
-		onUpdate,
-		overrides,
-		parentProvider,
-	} = options;
-	const resolvedName = resolveAgentName(agentName);
-	const agent = agents.find((a) => a.name === resolvedName);
+export interface AgentEvent {
+	type?: string;
+	message?: unknown;
+	[key: string]: unknown;
+}
 
-	if (!agent) {
-		const available = agents.map((a) => `"${a.name}"`).join(", ") || "none";
-		return {
-			agent: agentName,
-			agentSource: "unknown",
-			task,
-			exitCode: 1,
-			messages: [],
-			stderr: `Unknown agent: "${agentName}". Available agents: ${available}.`,
-			usage: {
-				input: 0,
-				output: 0,
-				cacheRead: 0,
-				cacheWrite: 0,
-				cost: 0,
-				contextTokens: 0,
-				turns: 0,
-			},
-		};
+export interface AgentEventProcessor {
+	result: SingleResult;
+	processEvent(event: unknown): void;
+	processLine(line: string): void;
+	processChunk(chunk: string): void;
+	flush(): void;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function cleanupPromptFiles(
+	tmpFilePath: string | null,
+	tmpDir: string | null,
+): void {
+	if (tmpFilePath) {
+		try {
+			fs.unlinkSync(tmpFilePath);
+		} catch {
+			/* ignore */
+		}
 	}
+	if (tmpDir) {
+		try {
+			fs.rmdirSync(tmpDir);
+		} catch {
+			/* ignore */
+		}
+	}
+}
 
-	const effective = effectiveSpawnConfig(agent, overrides, parentProvider);
-	const { args, tmpDir, tmpFilePath } = buildChildArgs(
-		agent,
-		effective,
-		agent.systemPrompt,
-		task,
-	);
-
-	const currentResult: SingleResult = {
-		agent: resolvedName,
-		agentSource: agent.source,
-		task,
-		exitCode: 0,
-		messages: [],
-		stderr: "",
-		usage: {
-			input: 0,
-			output: 0,
-			cacheRead: 0,
-			cacheWrite: 0,
-			cost: 0,
-			contextTokens: 0,
-			turns: 0,
-		},
-		...(effective.model ? { model: effective.model } : {}),
-	};
+/** Parse and apply child JSON events consistently across every execution mode. */
+export function createAgentEventProcessor(
+	result: SingleResult,
+	onUpdate?:
+		| ((partial: AgentToolResult<{ results: SingleResult[] }>) => void)
+		| undefined,
+	onEvent?: ((event: AgentEvent) => void) | undefined,
+): AgentEventProcessor {
+	let buffer = "";
 
 	const emitUpdate = () => {
 		if (onUpdate) {
@@ -236,13 +327,94 @@ export async function runSingleAgent(
 				content: [
 					{
 						type: "text",
-						text: getFinalOutput(currentResult.messages) || "(running...)",
+						text: getFinalOutput(result.messages) || "(running...)",
 					},
 				],
-				details: { results: [currentResult] },
+				details: { results: [result] },
 			});
 		}
 	};
+
+	const processEvent = (value: unknown) => {
+		if (!isRecord(value)) {
+			return;
+		}
+		const event = value as AgentEvent;
+		const message = event.message as Message | undefined;
+
+		if (event.type === "message_end" && message) {
+			result.messages.push(message);
+			if (message.role === "assistant") {
+				result.usage.turns++;
+				const usage = message.usage;
+				if (usage) {
+					result.usage.input += usage.input || 0;
+					result.usage.output += usage.output || 0;
+					result.usage.cacheRead += usage.cacheRead || 0;
+					result.usage.cacheWrite += usage.cacheWrite || 0;
+					result.usage.cost += usage.cost?.total || 0;
+					result.usage.contextTokens = usage.totalTokens || 0;
+				}
+				if (!result.model && message.model) {
+					result.model = message.model;
+				}
+				if (message.stopReason) {
+					result.stopReason = message.stopReason;
+				}
+				if (message.errorMessage) {
+					result.errorMessage = message.errorMessage;
+				}
+			}
+			emitUpdate();
+		}
+
+		if (event.type === "tool_result_end" && message) {
+			result.messages.push(message);
+			emitUpdate();
+		}
+
+		onEvent?.(event);
+	};
+
+	const processLine = (line: string) => {
+		if (!line.trim()) {
+			return;
+		}
+		try {
+			processEvent(JSON.parse(line));
+		} catch {
+			// Child stderr and non-JSON output are intentionally ignored here.
+		}
+	};
+
+	return {
+		result,
+		processEvent,
+		processLine,
+		processChunk(chunk) {
+			buffer += chunk;
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || "";
+			for (const line of lines) {
+				processLine(line);
+			}
+		},
+		flush() {
+			if (buffer.trim()) {
+				processLine(buffer);
+			}
+			buffer = "";
+		},
+	};
+}
+
+export async function runSingleAgent(
+	options: RunSingleAgentOptions,
+): Promise<SingleResult> {
+	const { context, signal, onUpdate } = options;
+	const { args, tmpDir, tmpFilePath } = buildChildArgs(context, true);
+	const result = createInitialResult(context);
+	const events = createAgentEventProcessor(result, onUpdate);
 
 	try {
 		let wasAborted = false;
@@ -250,74 +422,18 @@ export async function runSingleAgent(
 		const exitCode = await new Promise<number>((resolve) => {
 			const invocation = getPiInvocation(args);
 			const proc = spawn(invocation.command, invocation.args, {
-				cwd: cwd ?? defaultCwd,
+				cwd: context.cwd,
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
 			});
-			let buffer = "";
 
-			const processLine = (line: string) => {
-				if (!line.trim()) {
-					return;
-				}
-				let event: any;
-				try {
-					event = JSON.parse(line);
-				} catch {
-					return;
-				}
-
-				if (event.type === "message_end" && event.message) {
-					const msg = event.message as Message;
-					currentResult.messages.push(msg);
-
-					if (msg.role === "assistant") {
-						currentResult.usage.turns++;
-						const usage = msg.usage;
-						if (usage) {
-							currentResult.usage.input += usage.input || 0;
-							currentResult.usage.output += usage.output || 0;
-							currentResult.usage.cacheRead += usage.cacheRead || 0;
-							currentResult.usage.cacheWrite += usage.cacheWrite || 0;
-							currentResult.usage.cost += usage.cost?.total || 0;
-							currentResult.usage.contextTokens = usage.totalTokens || 0;
-						}
-						if (!currentResult.model && msg.model) {
-							currentResult.model = msg.model;
-						}
-						if (msg.stopReason) {
-							currentResult.stopReason = msg.stopReason;
-						}
-						if (msg.errorMessage) {
-							currentResult.errorMessage = msg.errorMessage;
-						}
-					}
-					emitUpdate();
-				}
-
-				if (event.type === "tool_result_end" && event.message) {
-					currentResult.messages.push(event.message as Message);
-					emitUpdate();
-				}
-			};
-
-			proc.stdout.on("data", (data) => {
-				buffer += data.toString();
-				const lines = buffer.split("\n");
-				buffer = lines.pop() || "";
-				for (const line of lines) {
-					processLine(line);
-				}
-			});
-
+			proc.stdout.on("data", (data) => events.processChunk(data.toString()));
 			proc.stderr.on("data", (data) => {
-				currentResult.stderr += data.toString();
+				result.stderr += data.toString();
 			});
 
 			proc.on("close", (code) => {
-				if (buffer.trim()) {
-					processLine(buffer);
-				}
+				events.flush();
 				resolve(code ?? 0);
 			});
 
@@ -343,26 +459,13 @@ export async function runSingleAgent(
 			}
 		});
 
-		currentResult.exitCode = exitCode;
+		result.exitCode = exitCode;
 		if (wasAborted) {
 			throw new Error("Subagent was aborted");
 		}
-		return currentResult;
+		return result;
 	} finally {
-		if (tmpFilePath) {
-			try {
-				fs.unlinkSync(tmpFilePath);
-			} catch {
-				/* ignore */
-			}
-		}
-		if (tmpDir) {
-			try {
-				fs.rmdirSync(tmpDir);
-			} catch {
-				/* ignore */
-			}
-		}
+		cleanupPromptFiles(tmpFilePath, tmpDir);
 	}
 }
 
@@ -391,11 +494,7 @@ export async function mapWithConcurrencyLimit<TIn, TOut>(
 }
 
 export interface BackgroundAgentOptions {
-	agent: AgentConfig;
-	task: string;
-	cwd: string;
-	overrides: Map<string, PersonaOverride>;
-	parentProvider?: string | undefined;
+	context: SpawnContext;
 	onSettled: (info: {
 		finalOutput: string;
 		sessionDir: string;
@@ -423,17 +522,11 @@ export interface BackgroundAgentHandle {
 export function spawnBackgroundAgent(
 	options: BackgroundAgentOptions,
 ): BackgroundAgentHandle {
-	const { agent, task, cwd, overrides, parentProvider, onSettled, onError } =
-		options;
+	const { context, onSettled, onError } = options;
+	const { agent, task, cwd } = context;
 
 	const sessionDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagent-bg-"));
-	const effective = effectiveSpawnConfig(agent, overrides, parentProvider);
-	const { args, tmpDir, tmpFilePath } = buildChildArgs(
-		agent,
-		effective,
-		agent.systemPrompt,
-		"",
-	);
+	const { args, tmpDir, tmpFilePath } = buildChildArgs(context, false);
 
 	// RPC child: rpc mode + session-dir (resumability); drop the json/-p flags from buildChildArgs
 	const rpcArgs = args
@@ -459,79 +552,33 @@ export function spawnBackgroundAgent(
 	});
 	proc.unref();
 
-	let buffer = "";
 	let settled = false;
-	let lastAssistantText = "";
-
-	const processLine = (line: string) => {
-		if (!line.trim()) {
-			return;
-		}
-		let event: any;
-		try {
-			event = JSON.parse(line);
-		} catch {
-			return;
-		}
-
-		if (event.type === "message_end" && event.message?.role === "assistant") {
-			for (const part of event.message.content ?? []) {
-				if (part.type === "text") {
-					lastAssistantText = part.text;
-				}
-			}
-		}
-
+	const result = createInitialResult(context);
+	const events = createAgentEventProcessor(result, undefined, (event) => {
 		if (event.type === "agent_settled" && !settled) {
 			settled = true;
-			if (tmpFilePath) {
-				try {
-					fs.unlinkSync(tmpFilePath);
-				} catch {
-					/* ignore */
-				}
-			}
-			if (tmpDir) {
-				try {
-					fs.rmdirSync(tmpDir);
-				} catch {
-					/* ignore */
-				}
-			}
+			cleanupPromptFiles(tmpFilePath, tmpDir);
 			onSettled({
-				finalOutput: lastAssistantText,
+				finalOutput: getFinalOutput(result.messages),
 				sessionDir,
 				agent: agent.name,
 				task,
 			});
 		}
-	};
-
-	proc.stdout.on("data", (data) => {
-		buffer += data.toString();
-		const lines = buffer.split("\n");
-		buffer = lines.pop() || "";
-		for (const line of lines) {
-			processLine(line);
-		}
 	});
 
-	proc.stderr.on("data", (data) => {
-		processLine(data.toString());
-	});
+	proc.stdout.on("data", (data) => events.processChunk(data.toString()));
+
+	proc.stderr.on("data", (data) => events.processLine(data.toString()));
 
 	proc.on("error", (err) => {
 		onError(err.message);
 	});
 
 	proc.on("exit", (code) => {
+		events.flush();
 		if (!settled) {
-			if (buffer.trim()) {
-				processLine(buffer);
-			}
-			if (!settled) {
-				onError(`Background subagent exited with code ${code} before settling`);
-			}
+			onError(`Background subagent exited with code ${code} before settling`);
 		}
 	});
 

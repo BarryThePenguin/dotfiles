@@ -30,13 +30,16 @@ import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
 import { getRequestedModes, type SubagentMode } from "./modes.ts";
 import { loadPersonaOverrides } from "./personas.ts";
 import {
+	createSpawnContext,
 	getFinalOutput,
 	getResultOutput,
 	isFailedResult,
 	mapWithConcurrencyLimit,
+	resolveSpawnContext,
 	runSingleAgent,
 	spawnBackgroundAgent,
 	truncateOutput,
+	type RunSingleAgentOptions,
 	type SingleResult,
 } from "./run.ts";
 
@@ -340,7 +343,30 @@ export default function (pi: ExtensionAPI) {
 				}
 			}
 
-			const common = { overrides, parentProvider };
+			const runRequestedAgent = (
+				agentName: string,
+				task: string,
+				cwd: string | undefined,
+				onUpdate: RunSingleAgentOptions["onUpdate"],
+			): Promise<SingleResult> => {
+				const resolution = resolveSpawnContext({
+					defaultCwd: ctx.cwd,
+					agents,
+					agentName,
+					task,
+					cwd,
+					overrides,
+					parentProvider,
+				});
+				if ("result" in resolution) {
+					return Promise.resolve(resolution.result);
+				}
+				return runSingleAgent({
+					context: resolution.context,
+					signal,
+					onUpdate,
+				});
+			};
 
 			if (params.tasks && params.tasks.length > 0) {
 				if (params.tasks.length > 8)
@@ -397,21 +423,17 @@ export default function (pi: ExtensionAPI) {
 					params.tasks,
 					4,
 					async (t, index) => {
-						const result = await runSingleAgent({
-							defaultCwd: ctx.cwd,
-							agents,
-							agentName: t.agent,
-							task: t.task,
-							cwd: t.cwd,
-							signal,
-							onUpdate: (partial) => {
+						const result = await runRequestedAgent(
+							t.agent,
+							t.task,
+							t.cwd,
+							(partial) => {
 								if (partial.details?.results[0]) {
 									allResults[index] = partial.details.results[0];
 									emitParallelUpdate();
 								}
 							},
-							...common,
-						});
+						);
 						allResults[index] = result;
 						emitParallelUpdate();
 						return result;
@@ -438,16 +460,12 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (params.agent && params.task) {
-				const result = await runSingleAgent({
-					defaultCwd: ctx.cwd,
-					agents,
-					agentName: params.agent,
-					task: params.task,
-					cwd: params.cwd,
-					signal,
+				const result = await runRequestedAgent(
+					params.agent,
+					params.task,
+					params.cwd,
 					onUpdate,
-					...common,
-				});
+				);
 				if (isFailedResult(result)) {
 					const errorMsg = getResultOutput(result);
 					return {
@@ -808,11 +826,13 @@ export default function (pi: ExtensionAPI) {
 			const piApi = pi;
 
 			const handle = spawnBackgroundAgent({
-				agent,
-				task: brief,
-				cwd: ctx.cwd,
-				overrides,
-				parentProvider,
+				context: createSpawnContext({
+					agent,
+					task: brief,
+					cwd: ctx.cwd,
+					overrides,
+					parentProvider,
+				}),
 				onSettled: ({ finalOutput, sessionDir }) => {
 					const summary = finalOutput.trim() || "(no text output)";
 					const message =
