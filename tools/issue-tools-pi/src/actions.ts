@@ -106,10 +106,12 @@ export function handleAction<K extends keyof ActionMap>(
 // Helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_CLAIMANT = "pi-wayfinder";
-
 function formatTicket(ticket: WayfinderTrackerTicket) {
-	return `${ticket.id} — ${ticket.title} (wayfinder:${ticket.type})`;
+	return `${ticket.title} (${ticket.id}) (wayfinder:${ticket.type})`;
+}
+
+function formatTicketReference(ticket: { id: string; title: string }) {
+	return `${ticket.title} (${ticket.id})`;
 }
 
 function sectionKey(section: UpdateMapParams["section"]): MapSectionKey {
@@ -133,7 +135,7 @@ async function listMaps(
 		runtime.setActiveMap(maps[0].id);
 	}
 	return runtime.success(
-		`${maps.length} open map(s):\n\n${maps.map((map) => `${map.id} — ${stripPrefix(map.title)}\n  ID: ${map.id}\n  URL: ${map.url}`).join("\n\n")}`,
+		`${maps.length} open map(s):\n\n${maps.map((map) => `${stripPrefix(map.title)} (${map.id})\n  URL: ${map.url}`).join("\n\n")}`,
 		{
 			maps: maps.map((map) => ({
 				id: map.id,
@@ -156,7 +158,7 @@ async function chart(
 	});
 	runtime.setActiveMap(map.id);
 	return runtime.success(
-		`Map created: ${map.title}\nID: ${map.id}\nURL: ${map.url}\n\nDestination:\n${params.destination}`,
+		`Map created: ${map.title} (${map.id})\nURL: ${map.url}\n\nDestination:\n${params.destination}`,
 		{ id: map.id, url: map.url, title: map.title },
 	);
 }
@@ -209,7 +211,7 @@ async function createTicket(
 		question: params.question,
 	});
 	return runtime.success(
-		`Ticket created: ${ticket.title}\nID: ${ticket.id}\nType: ${params.type}\nURL: ${ticket.url}`,
+		`Ticket created: ${ticket.title} (${ticket.id})\nType: ${params.type}\nURL: ${ticket.url}`,
 		{
 			id: ticket.id,
 			title: ticket.title,
@@ -251,7 +253,7 @@ async function resolve(
 
 	const lines = [
 		`Outcome: ${result.outcome}`,
-		`Ticket: ${params.ticket_id}`,
+		`Ticket: ${formatTicketReference(result.resolvedTicket)}`,
 		result.outcome === "complete"
 			? "Resolution recorded, ticket closed, and map decision recorded."
 			: result.outcome === "partial"
@@ -260,7 +262,7 @@ async function resolve(
 		result.error ? `Error: ${result.error}` : "",
 		`Gist: ${params.gist}`,
 		result.unblocked.length > 0
-			? `Unblocked tickets: ${result.unblocked.join(", ")}`
+			? `Unblocked tickets: ${result.unblocked.map(formatTicketReference).join(", ")}`
 			: "No tickets unblocked.",
 	];
 
@@ -285,15 +287,18 @@ async function updateMap(
 	if (!mapId) {
 		return runtime.error("no map_id and no active map.");
 	}
-	await tracker.updateMapSection(
+	const map = await tracker.updateMapSection(
 		mapId,
 		sectionKey(params.section),
 		params.content,
 	);
-	return runtime.success(`Map section "${params.section}" updated.`, {
-		mapId,
-		section: params.section,
-	});
+	return runtime.success(
+		`Map ${stripPrefix(map.title)} (${map.id}) section "${params.section}" updated.`,
+		{
+			mapId,
+			section: params.section,
+		},
+	);
 }
 
 async function setBlocking(
@@ -301,14 +306,18 @@ async function setBlocking(
 	runtime: ActionRuntime,
 ): Promise<ActionResult> {
 	const tracker = runtime.wayfinder();
-	await tracker.setBlockingDependencies(params.ticket_id, params.blocked_by);
+	const ticket = await tracker.setBlockingDependencies(
+		params.ticket_id,
+		params.blocked_by,
+	);
+	const detail = await tracker.getTicketDetail(ticket.id);
 	const status =
-		params.blocked_by.length > 0
-			? `Blocked by: ${params.blocked_by.join(", ")}`
+		detail.blockers.length > 0
+			? `Blocked by: ${detail.blockers.map(formatTicketReference).join(", ")}`
 			: "Blocking cleared";
-	return runtime.success(`Ticket ${params.ticket_id}: ${status}`, {
-		ticketId: params.ticket_id,
-		blockedBy: params.blocked_by,
+	return runtime.success(`Ticket ${formatTicketReference(ticket)}: ${status}`, {
+		ticketId: ticket.id,
+		blockedBy: detail.blockers.map((blocker) => blocker.id),
 	});
 }
 
@@ -365,14 +374,21 @@ async function claim(
 ): Promise<ActionResult> {
 	const tracker = runtime.wayfinder();
 	const shouldClaim = params.claim !== false;
+	let claimed = false;
+	let ticket: WayfinderTrackerTicket;
 	if (shouldClaim) {
-		await tracker.claimTicketIfUnclaimed(params.ticket_id, DEFAULT_CLAIMANT);
+		const result = await tracker.claimTicketIfUnclaimed(
+			params.ticket_id,
+			runtime.claimant(),
+		);
+		claimed = result.claimed;
+		ticket = result.ticket;
 	} else {
-		await tracker.unclaimTicket(params.ticket_id);
+		ticket = await tracker.unclaimTicket(params.ticket_id);
 	}
 	return runtime.success(
-		`${shouldClaim ? "Claimed" : "Unclaimed"} ticket ${params.ticket_id}`,
-		{ ticketId: params.ticket_id, claimed: shouldClaim },
+		`${claimed ? "Claimed" : shouldClaim ? "Could not claim" : "Unclaimed"} ticket ${formatTicketReference(ticket)}`,
+		{ ticketId: ticket.id, claimed },
 	);
 }
 

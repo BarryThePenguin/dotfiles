@@ -10,6 +10,7 @@
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { resolve } from "node:path";
+import { resolveClaimant } from "./claimant.ts";
 import {
 	createLocalTrackerModules,
 	createTodoistTrackerModules,
@@ -64,6 +65,7 @@ export type TrackerSessionOptions = {
 
 export type TrackerSession = {
 	get(ext: ExtensionContext): Promise<TrackerModules>;
+	getClaimant(): Promise<string>;
 	getActiveMap(): string | null;
 	getMode(): TrackerMode | null;
 	resolveMapId(explicitMapId: string | undefined): string | null;
@@ -88,6 +90,7 @@ export function createTrackerSession({
 	updateStatus,
 }: TrackerSessionOptions): TrackerSession {
 	let modules: Promise<TrackerModules> | null = null;
+	let claimant: Promise<string> | null = null;
 	let mode: TrackerMode | null = null;
 	let activeMap: string | null = null;
 
@@ -111,6 +114,18 @@ export function createTrackerSession({
 			const result = await modules;
 			updateStatus(ext, state());
 			return result;
+		},
+		getClaimant() {
+			if (!claimant) {
+				const pending = resolveClaimant(cwd).catch((error: unknown) => {
+					if (claimant === pending) {
+						claimant = null;
+					}
+					throw error;
+				});
+				claimant = pending;
+			}
+			return claimant;
 		},
 		getActiveMap() {
 			return activeMap;

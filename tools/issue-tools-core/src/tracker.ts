@@ -25,17 +25,20 @@ export class BlockerNotOnMapError extends Error {
 	}
 }
 
-export type WayfinderTrackerMap = ParsedMapBody & {
+/** The identity and name shared by tracker-backed Wayfinder records. */
+export type WayfinderTrackerReference = {
 	id: string;
 	title: string;
 	url: string;
 };
 
-export type WayfinderTrackerTicket = WayfinderTicket & {
-	url: string;
-	status: WayfinderTicketStatus;
-	comments: string[];
-};
+export type WayfinderTrackerMap = WayfinderTrackerReference & ParsedMapBody;
+
+export type WayfinderTrackerTicket = WayfinderTrackerReference &
+	WayfinderTicket & {
+		status: WayfinderTicketStatus;
+		comments: string[];
+	};
 
 export type CreateWayfinderMapInput = {
 	title: string;
@@ -82,7 +85,7 @@ export type ResolveTicketResult = {
 	resolvedTicket: WayfinderTrackerTicket;
 	map?: WayfinderTrackerMap;
 	mapId: string;
-	unblocked: string[];
+	unblocked: WayfinderTrackerReference[];
 	error?: string;
 	resolutionPosted: boolean;
 	decisionRecorded: boolean;

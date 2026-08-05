@@ -36,6 +36,7 @@ export type {
 	WayfinderClaimResult,
 	WayfinderMapDetail,
 	WayfinderTicketDetail,
+	WayfinderTrackerReference,
 	WayfinderTracker,
 	WayfinderTrackerMap,
 	WayfinderTrackerTicket,

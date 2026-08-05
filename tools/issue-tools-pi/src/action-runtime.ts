@@ -13,6 +13,7 @@ export type ActionRuntime = {
 	requireMapId(params: { map_id?: string }): string | null;
 	getActiveMap(): string | null;
 	setActiveMap(mapId: string): void;
+	claimant(): string;
 	success(text: string, details?: Record<string, unknown>): ActionResult;
 	error(message: string): ActionResult;
 };
@@ -25,7 +26,10 @@ export async function createActionRuntime(
 	ext: ExtensionContext,
 	ctx: RuntimeContext,
 ): Promise<ActionRuntime> {
-	const modules = await ctx.trackerSession.get(ext);
+	const [modules, claimant] = await Promise.all([
+		ctx.trackerSession.get(ext),
+		ctx.trackerSession.getClaimant(),
+	]);
 	const mode = ctx.trackerSession.getMode() ?? "local";
 	const trackerDetails = {
 		tracker: mode,
@@ -60,6 +64,9 @@ export async function createActionRuntime(
 		},
 		setActiveMap(mapId) {
 			ctx.trackerSession.setActiveMap(mapId, ext);
+		},
+		claimant() {
+			return claimant;
 		},
 		success,
 		error(message) {

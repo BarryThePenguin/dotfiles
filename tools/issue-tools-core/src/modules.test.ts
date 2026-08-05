@@ -678,7 +678,13 @@ describe("Resolution workflow", () => {
 				gist: "Take the simplest path.",
 			},
 		]);
-		expect(result.unblocked).toEqual([blocked.id]);
+		expect(result.unblocked).toEqual([
+			{
+				id: blocked.id,
+				title: blocked.title,
+				url: blocked.url,
+			},
+		]);
 	});
 
 	it("returns a retryable partial result when the map write fails", async () => {
@@ -694,7 +700,13 @@ describe("Resolution workflow", () => {
 			outcome: "partial",
 			decisionRecorded: false,
 			resolutionPosted: true,
-			unblocked: [blocked.id],
+			unblocked: [
+				{
+					id: blocked.id,
+					title: blocked.title,
+					url: blocked.url,
+				},
+			],
 			resolvedTicket: { status: "closed" },
 		});
 		expect(result.error).toContain("map write failed");

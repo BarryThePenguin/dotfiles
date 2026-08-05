@@ -60,7 +60,7 @@ Supported modes per entry: `symlink`, `symlink-each`, `copy`, `template`.
 
 ### Issue tracker
 
-Issues and PRDs live in Todoist (project: Dotfiles, id `6h9Wxp68J6HrG99m`). See `docs/agents/issue-tracker.md`.
+Issues and specs live in Todoist (project: Dotfiles, id `6h9Wxp68J6HrG99m`). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

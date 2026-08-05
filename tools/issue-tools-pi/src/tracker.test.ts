@@ -119,6 +119,25 @@ describe("createTrackerSession", () => {
 		expect(subsequent).toBe(built);
 	});
 
+	it("caches the dev identity for the lifetime of the session", async () => {
+		const session = createTrackerSession({
+			cwd,
+			selectMode: () => Promise.resolve("local" as const),
+			buildModules: () => Promise.resolve(modules()),
+			persistState: vi.fn(),
+			updateStatus: vi.fn(),
+		});
+
+		vi.stubEnv("PI_ISSUE_TOOLS_CLAIMANT", "First dev");
+		try {
+			expect(await session.getClaimant()).toBe("First dev");
+			vi.stubEnv("PI_ISSUE_TOOLS_CLAIMANT", "Second dev");
+			expect(await session.getClaimant()).toBe("First dev");
+		} finally {
+			vi.unstubAllEnvs();
+		}
+	});
+
 	it("starts fresh selection and construction after reset", async () => {
 		const firstModules = modules();
 		const secondModules = modules();

@@ -75,10 +75,11 @@ async function resolve(
 			.filter((candidate) => candidate.blockerIds.includes(input.ticketId))
 			.map((candidate) => candidate.id),
 	);
-	// Preserve sibling order in the report.
+	// Preserve sibling order in the report, while returning names as well as
+	// identifiers so human-facing adapters do not have to perform another read.
 	const unblocked = resolvedState.siblings
 		.filter((candidate) => unblockedIds.has(candidate.id))
-		.map((candidate) => candidate.id);
+		.map(({ id, title, url }) => ({ id, title, url }));
 	try {
 		const map = await recordDecision(persistence, resolvedState.map, {
 			title: ticket.title,

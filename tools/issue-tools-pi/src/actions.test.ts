@@ -54,12 +54,13 @@ describe("Wayfinder actions", () => {
 			extensionContext,
 		);
 		expect(listResult.content[0]?.text).toContain("1 open map(s)");
+		expect(listResult.content[0]?.text).toContain(`${map.title} (${map.id})`);
 		expect(toolContext.trackerSession.getActiveMap()).toBe(map.id);
 		expect(persistState).toHaveBeenCalledWith(map.id);
-		expect(updateStatus).toHaveBeenCalledWith(
-			extensionContext,
-		{ mode: "local", activeMap: map.id },
-		);
+		expect(updateStatus).toHaveBeenCalledWith(extensionContext, {
+			mode: "local",
+			activeMap: map.id,
+		});
 
 		const getResult = await handleAction(
 			"get_map",
@@ -70,6 +71,52 @@ describe("Wayfinder actions", () => {
 		expect(getResult.content[0]?.text).toContain("## GENIE 2780");
 		expect(getResult.content[0]?.text).not.toContain(
 			"Error: no map_id provided and no active map.",
+		);
+	});
+});
+
+describe("Wayfinder presentation and claims", () => {
+	it("puts ticket names first and claims for the dev driving the map", async () => {
+		using dir = tempDir();
+		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const tracker = modules.wayfinder;
+		const map = await tracker.createMap({
+			title: "Presentation map",
+			destination: "Ticket names are clear.",
+		});
+		const ticket = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Choose the naming rule",
+			type: "task",
+			question: "Which name should appear first?",
+		});
+		const { extensionContext, toolContext } = makeContext(dir.path);
+		vi.stubEnv("PI_ISSUE_TOOLS_CLAIMANT", "Jonathan Haines");
+
+		const frontier = await handleAction(
+			"list_frontier",
+			{ map_id: map.id },
+			toolContext,
+			extensionContext,
+		);
+		const frontierText = frontier.content[0]?.text ?? "";
+		expect(frontierText).toContain(`Choose the naming rule (${ticket.id})`);
+		expect(frontierText.indexOf(ticket.title)).toBeLessThan(
+			frontierText.indexOf(ticket.id),
+		);
+
+		try {
+			await handleAction(
+				"claim",
+				{ ticket_id: ticket.id },
+				toolContext,
+				extensionContext,
+			);
+		} finally {
+			vi.unstubAllEnvs();
+		}
+		expect((await tracker.getTicketDetail(ticket.id)).ticket.claimedBy).toBe(
+			"Jonathan Haines",
 		);
 	});
 });
@@ -89,6 +136,13 @@ describe("Resolution actions", () => {
 			type: "task",
 			question: "Which path wins?",
 		});
+		const dependent = await tracker.createChildTicket({
+			mapId: map.id,
+			title: "Apply the chosen path",
+			type: "task",
+			question: "How should the choice be applied?",
+		});
+		await tracker.setBlockingDependencies(dependent.id, [ticket.id]);
 		const { extensionContext, toolContext } = makeContext(dir.path);
 		toolContext.trackerSession.setActiveMap("wrong-map", extensionContext);
 
@@ -105,6 +159,9 @@ describe("Resolution actions", () => {
 		);
 		expect(complete.content[0]?.text).toContain("Outcome: complete");
 		expect(complete.content[0]?.text).toContain("map decision recorded");
+		expect(complete.content[0]?.text).toContain(
+			`Unblocked tickets: ${dependent.title} (${dependent.id})`,
+		);
 
 		const ticketDetails = await handleAction(
 			"get_ticket",
