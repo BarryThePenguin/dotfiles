@@ -49,6 +49,19 @@ Run 2 explore subagents in parallel: one over src/, one over tests/
 /subagent-bg agent:general Research pi's JSON mode against docs/json.md and write findings to docs/research/pi-json.md
 ```
 
+## Supported execution modes
+
+The `subagent` tool intentionally exposes only the modes required by the
+originating contract:
+
+| Mode | Parameters | Description |
+|------|------------|-------------|
+| Single | `{ agent, task }` | Delegate one bounded task to one isolated subagent. |
+| Parallel | `{ tasks: [...] }` | Delegate independent tasks concurrently (maximum 8 tasks, 4 concurrent). |
+
+Sequential chains are not part of this extension's contract. Skills and the
+parent session own any orchestration that needs to happen between delegations.
+
 ## Persona overrides
 
 ```jsonc

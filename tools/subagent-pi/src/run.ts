@@ -47,7 +47,6 @@ export interface SingleResult {
 	model?: string;
 	stopReason?: string;
 	errorMessage?: string;
-	step?: number;
 }
 
 export function getFinalOutput(messages: Message[]): string {
@@ -120,7 +119,6 @@ export interface RunSingleAgentOptions {
 	agentName: string;
 	task: string;
 	cwd?: string | undefined;
-	step?: number | undefined;
 	signal?: AbortSignal | undefined;
 	onUpdate?:
 		| ((partial: AgentToolResult<{ results: SingleResult[] }>) => void)
@@ -176,7 +174,6 @@ export async function runSingleAgent(
 		agentName,
 		task,
 		cwd,
-		step,
 		signal,
 		onUpdate,
 		overrides,
@@ -203,7 +200,6 @@ export async function runSingleAgent(
 				contextTokens: 0,
 				turns: 0,
 			},
-			...(step !== undefined ? { step } : {}),
 		};
 	}
 
@@ -232,7 +228,6 @@ export async function runSingleAgent(
 			turns: 0,
 		},
 		...(effective.model ? { model: effective.model } : {}),
-		...(step !== undefined ? { step } : {}),
 	};
 
 	const emitUpdate = () => {

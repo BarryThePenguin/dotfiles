@@ -17,7 +17,6 @@
 
 import * as os from "node:os";
 import * as path from "node:path";
-import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { Message } from "@earendil-works/pi-ai";
 import { StringEnum } from "@earendil-works/pi-ai";
 import {
@@ -28,6 +27,7 @@ import {
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
+import { getRequestedModes, type SubagentMode } from "./modes.ts";
 import { loadPersonaOverrides } from "./personas.ts";
 import {
 	getFinalOutput,
@@ -160,7 +160,7 @@ function formatToolCall(
 }
 
 interface SubagentDetails {
-	mode: "single" | "parallel" | "chain";
+	mode: SubagentMode;
 	agentScope: AgentScope;
 	projectAgentsDir: string | null;
 	results: SingleResult[];
@@ -203,19 +203,6 @@ const TaskItem = Type.Object({
 	),
 });
 
-const ChainItem = Type.Object({
-	agent: Type.String({
-		description:
-			"Name of the agent to invoke (general, explore; aliases general-purpose, Explore)",
-	}),
-	task: Type.String({
-		description: "Task with optional {previous} placeholder for prior output",
-	}),
-	cwd: Type.Optional(
-		Type.String({ description: "Working directory for the agent process" }),
-	),
-});
-
 const AgentScopeSchema = StringEnum(["user", "project", "both"] as const, {
 	description:
 		'Which agent directories to use. Default: "user". Use "both" to include project-local agents.',
@@ -234,11 +221,6 @@ const SubagentParams = Type.Object({
 	tasks: Type.Optional(
 		Type.Array(TaskItem, {
 			description: "Array of {agent, task} for parallel execution",
-		}),
-	),
-	chain: Type.Optional(
-		Type.Array(ChainItem, {
-			description: "Array of {agent, task} for sequential execution",
 		}),
 	),
 	agentScope: Type.Optional(AgentScopeSchema),
@@ -272,7 +254,7 @@ export default function (pi: ExtensionAPI) {
 		label: "Subagent",
 		description: [
 			"Delegate tasks to specialized subagents with isolated context windows (each runs in a separate pi process).",
-			"Modes: single (agent + task), parallel (tasks array, max 8, 4 concurrent), chain (sequential with {previous} placeholder).",
+			"Supported modes: single (agent + task) and parallel (tasks array, max 8, 4 concurrent).",
 			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,
 			`To enable project-local agents in .pi/agents, set agentScope: "both" (or "project").`,
 			`Per-project persona overrides come from .pi/personas.json ({ provider?, model?, thinkingLevel? } keyed by agent name).`,
@@ -286,7 +268,7 @@ export default function (pi: ExtensionAPI) {
 		promptGuidelines: [
 			'Use subagent with agent: "general" (alias general-purpose) when you need bounded work done in an isolated pi process — parallel review axes, background research briefs, or design-it-twice alternatives.',
 			'Use subagent with agent: "explore" (alias Explore) for read-only organic codebase exploration; it cannot modify files.',
-			"Fan out with subagent parallel mode ({ tasks: [...] }, max 8 tasks, 4 concurrent) when independent chunks can run concurrently; chain dependent steps with { chain: [...] } and the {previous} placeholder.",
+			"Use parallel mode ({ tasks: [...] }, max 8 tasks, 4 concurrent) when independent chunks can run concurrently.",
 		],
 
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
@@ -297,13 +279,12 @@ export default function (pi: ExtensionAPI) {
 			const overrides = loadPersonaOverrides(ctx.cwd);
 			const parentProvider = ctx.model?.provider;
 
-			const hasChain = (params.chain?.length ?? 0) > 0;
-			const hasTasks = (params.tasks?.length ?? 0) > 0;
-			const hasSingle = Boolean(params.agent && params.task);
-			const modeCount = Number(hasChain) + Number(hasTasks) + Number(hasSingle);
+			const requestedModes = getRequestedModes(params);
+			const hasTasks = requestedModes.includes("parallel");
+			const modeCount = requestedModes.length;
 
 			const makeDetails =
-				(mode: "single" | "parallel" | "chain") =>
+				(mode: SubagentMode) =>
 				(results: SingleResult[]): SubagentDetails => ({
 					mode,
 					agentScope,
@@ -331,8 +312,6 @@ export default function (pi: ExtensionAPI) {
 				ctx.hasUI
 			) {
 				const requestedAgentNames = new Set<string>();
-				if (params.chain)
-					for (const step of params.chain) requestedAgentNames.add(step.agent);
 				if (params.tasks)
 					for (const t of params.tasks) requestedAgentNames.add(t.agent);
 				if (params.agent) requestedAgentNames.add(params.agent);
@@ -356,81 +335,12 @@ export default function (pi: ExtensionAPI) {
 									text: "Canceled: project-local agents not approved.",
 								},
 							],
-							details: makeDetails(
-								hasChain ? "chain" : hasTasks ? "parallel" : "single",
-							)([]),
+							details: makeDetails(hasTasks ? "parallel" : "single")([]),
 						};
 				}
 			}
 
 			const common = { overrides, parentProvider };
-
-			if (params.chain && params.chain.length > 0) {
-				const results: SingleResult[] = [];
-				let previousOutput = "";
-
-				for (let i = 0; i < params.chain.length; i++) {
-					const step = params.chain[i];
-					if (!step) break;
-					const taskWithContext = step.task.replace(
-						/\{previous\}/g,
-						previousOutput,
-					);
-
-					const chainUpdate:
-						| ((partial: AgentToolResult<{ results: SingleResult[] }>) => void)
-						| undefined = onUpdate
-						? (partial) => {
-								const currentResult = partial.details?.results[0];
-								if (currentResult) {
-									const allResults = [...results, currentResult];
-									onUpdate({
-										content: partial.content,
-										details: makeDetails("chain")(allResults),
-									});
-								}
-							}
-						: undefined;
-
-					const result = await runSingleAgent({
-						defaultCwd: ctx.cwd,
-						agents,
-						agentName: step.agent,
-						task: taskWithContext,
-						cwd: step.cwd,
-						step: i + 1,
-						signal,
-						onUpdate: chainUpdate,
-						...common,
-					});
-					results.push(result);
-
-					if (isFailedResult(result)) {
-						const errorMsg = getResultOutput(result);
-						return {
-							content: [
-								{
-									type: "text",
-									text: `Chain stopped at step ${i + 1} (${step.agent}): ${errorMsg}`,
-								},
-							],
-							details: makeDetails("chain")(results),
-							isError: true,
-						};
-					}
-					previousOutput = getFinalOutput(result.messages);
-				}
-				return {
-					content: [
-						{
-							type: "text",
-							text:
-								getFinalOutput(results.at(-1)?.messages ?? []) || "(no output)",
-						},
-					],
-					details: makeDetails("chain")(results),
-				};
-			}
 
 			if (params.tasks && params.tasks.length > 0) {
 				if (params.tasks.length > 8)
@@ -577,28 +487,6 @@ export default function (pi: ExtensionAPI) {
 
 		renderCall(args, theme, _context) {
 			const scope: AgentScope = args.agentScope ?? "user";
-			if (args.chain && args.chain.length > 0) {
-				let text =
-					theme.fg("toolTitle", theme.bold("subagent ")) +
-					theme.fg("accent", `chain (${args.chain.length} steps)`) +
-					theme.fg("muted", ` [${scope}]`);
-				for (let i = 0; i < Math.min(args.chain.length, 3); i++) {
-					const step = args.chain[i];
-					if (!step) continue;
-					const cleanTask = step.task.replace(/\{previous\}/g, "").trim();
-					const preview =
-						cleanTask.length > 40 ? `${cleanTask.slice(0, 40)}...` : cleanTask;
-					text +=
-						"\n  " +
-						theme.fg("muted", `${i + 1}.`) +
-						" " +
-						theme.fg("accent", step.agent) +
-						theme.fg("dim", ` ${preview}`);
-				}
-				if (args.chain.length > 3)
-					text += `\n  ${theme.fg("muted", `... +${args.chain.length - 3} more`)}`;
-				return new Text(text, 0, 0);
-			}
 			if (args.tasks && args.tasks.length > 0) {
 				let text =
 					theme.fg("toolTitle", theme.bold("subagent ")) +
@@ -757,116 +645,6 @@ export default function (pi: ExtensionAPI) {
 				}
 				return total;
 			};
-
-			if (details.mode === "chain") {
-				const successCount = details.results.filter(
-					(r) => r.exitCode === 0,
-				).length;
-				const icon =
-					successCount === details.results.length
-						? theme.fg("success", "✓")
-						: theme.fg("error", "✗");
-
-				if (expanded) {
-					const container = new Container();
-					container.addChild(
-						new Text(
-							icon +
-								" " +
-								theme.fg("toolTitle", theme.bold("chain ")) +
-								theme.fg(
-									"accent",
-									`${successCount}/${details.results.length} steps`,
-								),
-							0,
-							0,
-						),
-					);
-
-					for (const r of details.results) {
-						const rIcon =
-							r.exitCode === 0
-								? theme.fg("success", "✓")
-								: theme.fg("error", "✗");
-						const displayItems = getDisplayItems(r.messages);
-						const finalOutput = getFinalOutput(r.messages);
-
-						container.addChild(new Spacer(1));
-						container.addChild(
-							new Text(
-								`${theme.fg("muted", `─── Step ${r.step}: `) + theme.fg("accent", r.agent)} ${rIcon}`,
-								0,
-								0,
-							),
-						);
-						container.addChild(
-							new Text(
-								theme.fg("muted", "Task: ") + theme.fg("dim", r.task),
-								0,
-								0,
-							),
-						);
-
-						for (const item of displayItems) {
-							if (item.type === "toolCall") {
-								container.addChild(
-									new Text(
-										theme.fg("muted", "→ ") +
-											formatToolCall(
-												item.name,
-												item.args,
-												theme.fg.bind(theme),
-											),
-										0,
-										0,
-									),
-								);
-							}
-						}
-
-						if (finalOutput) {
-							container.addChild(new Spacer(1));
-							container.addChild(
-								new Markdown(finalOutput.trim(), 0, 0, mdTheme),
-							);
-						}
-
-						const stepUsage = formatUsageStats(r.usage, r.model);
-						if (stepUsage)
-							container.addChild(new Text(theme.fg("dim", stepUsage), 0, 0));
-					}
-
-					const usageStr = formatUsageStats(aggregateUsage(details.results));
-					if (usageStr) {
-						container.addChild(new Spacer(1));
-						container.addChild(
-							new Text(theme.fg("dim", `Total: ${usageStr}`), 0, 0),
-						);
-					}
-					return container;
-				}
-
-				let text =
-					icon +
-					" " +
-					theme.fg("toolTitle", theme.bold("chain ")) +
-					theme.fg("accent", `${successCount}/${details.results.length} steps`);
-				for (const r of details.results) {
-					const rIcon =
-						r.exitCode === 0
-							? theme.fg("success", "✓")
-							: theme.fg("error", "✗");
-					const displayItems = getDisplayItems(r.messages);
-					text += `\n\n${theme.fg("muted", `─── Step ${r.step}: `)}${theme.fg("accent", r.agent)} ${rIcon}`;
-					if (displayItems.length === 0)
-						text += `\n${theme.fg("muted", "(no output)")}`;
-					else text += `\n${renderDisplayItems(displayItems, 5)}`;
-				}
-				const usageStr = formatUsageStats(aggregateUsage(details.results));
-				if (usageStr) text += `\n\n${theme.fg("dim", `Total: ${usageStr}`)}`;
-				text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;
-				return new Text(text, 0, 0);
-			}
 
 			if (details.mode === "parallel") {
 				const running = details.results.filter((r) => r.exitCode === -1).length;
