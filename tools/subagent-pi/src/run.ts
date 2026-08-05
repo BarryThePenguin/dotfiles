@@ -38,7 +38,7 @@ export interface UsageStats {
 
 export interface SingleResult {
 	agent: string;
-	agentSource: "user" | "project" | "unknown";
+	agentSource: "user" | "unknown";
 	task: string;
 	exitCode: number;
 	messages: Message[];

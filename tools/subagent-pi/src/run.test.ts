@@ -149,6 +149,24 @@ describe("spawn context", () => {
 			task: "Review this",
 			overrides: new Map(),
 		});
+		const aliasedGeneral = resolveSpawnContext({
+			defaultCwd: "/repo",
+			agents: [agent],
+			agentName: "general-purpose",
+			task: "Review this",
+			overrides: new Map(),
+		});
+		const explore = {
+			...agent,
+			name: "explore",
+		};
+		const aliasedExplore = resolveSpawnContext({
+			defaultCwd: "/repo",
+			agents: [explore],
+			agentName: "Explore",
+			task: "Explore this",
+			overrides: new Map(),
+		});
 		const unknown = resolveSpawnContext({
 			defaultCwd: "/repo",
 			agents: [agent],
@@ -158,6 +176,12 @@ describe("spawn context", () => {
 		});
 
 		expect("context" in known && known.context.agent).toBe(agent);
+		expect("context" in aliasedGeneral && aliasedGeneral.context.agent).toBe(
+			agent,
+		);
+		expect("context" in aliasedExplore && aliasedExplore.context.agent).toBe(
+			explore,
+		);
 		expect("result" in unknown && unknown.result).toMatchObject({
 			agent: "missing",
 			agentSource: "unknown",

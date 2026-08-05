@@ -6,6 +6,12 @@ A dotfiles-managed subagent capability for pi — a fork of pi's example subagen
 A **subagent** = a separate `pi` process with an isolated context window. The `subagent`
 tool delegates bounded work to one; agents are markdown personas in `agents/`.
 
+The extension has a user-level-only agent contract: it discovers agents only from
+`~/.pi/agent/agents` (the managed `tools/subagent-pi/agents` roster). Project-local
+`.pi/agents` files are never discovered or executed, and the delegation tool does not
+expose project-agent scope or confirmation options. The approved roster is `general`
+and `explore`; `general-purpose` and `Explore` are compatibility aliases.
+
 ## What's here
 
 ```
@@ -21,8 +27,8 @@ prompts/         Intentionally README-only workflow prompt surface; see README
 
 | Agent    | Model             | Tools                          | Serves |
 |----------|-------------------|--------------------------------|--------|
-| `general`| deepseek-v4-pro   | read, grep, find, ls, bash, webfetch | review, research, design briefs (the minion) |
-| `explore`| deepseek-v4-pro   | read, grep, find, ls (read-only)     | organic codebase exploration |
+| `general`| deepseek-v4-flash   | read, grep, find, ls, bash, webfetch | review, research, design briefs (the minion) |
+| `explore`| deepseek-v4-flash   | read, grep, find, ls (read-only)     | organic codebase exploration |
 
 **Alias surface** (a naming contract with the skills — zero skill edits): `general-purpose` → `general`
 (code-review), `Explore` → `explore` (improve-codebase-architecture, case-insensitive).
@@ -33,9 +39,10 @@ prompts/         Intentionally README-only workflow prompt surface; see README
    agent, so the parent model can pick organically instead of guessing.
 2. **Alias surface** — agent names pass through `resolveAgentName`.
 3. **Persona override layer** — project-local `.pi/personas.json` (`{ provider?, model?,
-   thinkingLevel? }` keyed by canonical agent name) merges over `agents.md` frontmatter,
-   discovered nearest-up from cwd. The child spawn passes `--provider` and `--thinking`
-   when set; provider defaults to the parent session's provider.
+   thinkingLevel? }` keyed by canonical agent name) merges over user-level `agents.md`
+   frontmatter, discovered nearest-up from cwd. This changes spawn settings only and does
+   not add project agents. The child spawn passes `--provider` and `--thinking` when set;
+   provider defaults to the parent session's provider.
 4. **Background command** — `/subagent-bg [agent:<name>] <brief>` spawns a detached
    `pi --mode rpc` child (`--session-dir` for resumability); when it settles the final
    output is injected into the session via `sendUserMessage`, so the parent keeps working

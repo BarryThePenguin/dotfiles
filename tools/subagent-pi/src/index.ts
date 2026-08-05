@@ -18,7 +18,6 @@
 import * as os from "node:os";
 import * as path from "node:path";
 import type { Message } from "@earendil-works/pi-ai";
-import { StringEnum } from "@earendil-works/pi-ai";
 import {
 	type ExtensionAPI,
 	getAgentDir,
@@ -26,11 +25,10 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
-import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
+import { discoverAgents } from "./agents.ts";
 import { getRequestedModes, type SubagentMode } from "./modes.ts";
 import { loadPersonaOverrides } from "./personas.ts";
 import {
-	createSpawnContext,
 	getFinalOutput,
 	getResultOutput,
 	isFailedResult,
@@ -164,8 +162,6 @@ function formatToolCall(
 
 interface SubagentDetails {
 	mode: SubagentMode;
-	agentScope: AgentScope;
-	projectAgentsDir: string | null;
 	results: SingleResult[];
 }
 
@@ -206,12 +202,6 @@ const TaskItem = Type.Object({
 	),
 });
 
-const AgentScopeSchema = StringEnum(["user", "project", "both"] as const, {
-	description:
-		'Which agent directories to use. Default: "user". Use "both" to include project-local agents.',
-	default: "user",
-});
-
 const SubagentParams = Type.Object({
 	agent: Type.Optional(
 		Type.String({
@@ -224,13 +214,6 @@ const SubagentParams = Type.Object({
 	tasks: Type.Optional(
 		Type.Array(TaskItem, {
 			description: "Array of {agent, task} for parallel execution",
-		}),
-	),
-	agentScope: Type.Optional(AgentScopeSchema),
-	confirmProjectAgents: Type.Optional(
-		Type.Boolean({
-			description: "Prompt before running project-local agents. Default: true.",
-			default: true,
 		}),
 	),
 	cwd: Type.Optional(
@@ -247,7 +230,7 @@ const SubagentParams = Type.Object({
 export default function (pi: ExtensionAPI) {
 	// Roster surfaced at registration time (research gap 2): the parent model sees
 	// every agent by name + description in Available tools / Guidelines.
-	const rosterAgents = discoverAgents(process.cwd(), "user").agents;
+	const rosterAgents = discoverAgents().agents;
 	const rosterLine =
 		rosterAgents.map((a) => `${a.name} — ${a.description}`).join(" | ") ||
 		"none";
@@ -256,10 +239,9 @@ export default function (pi: ExtensionAPI) {
 		name: "subagent",
 		label: "Subagent",
 		description: [
-			"Delegate tasks to specialized subagents with isolated context windows (each runs in a separate pi process).",
+			"Delegate tasks to specialized user-level subagents with isolated context windows (each runs in a separate pi process).",
 			"Supported modes: single (agent + task) and parallel (tasks array, max 8, 4 concurrent).",
-			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,
-			`To enable project-local agents in .pi/agents, set agentScope: "both" (or "project").`,
+			`Agents are discovered only from ${path.join(getAgentDir(), "agents")}.`,
 			`Per-project persona overrides come from .pi/personas.json ({ provider?, model?, thinkingLevel? } keyed by agent name).`,
 			`Agents: ${rosterLine}`,
 		].join(" "),
@@ -275,23 +257,18 @@ export default function (pi: ExtensionAPI) {
 		],
 
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
-			const agentScope: AgentScope = params.agentScope ?? "user";
-			const discovery = discoverAgents(ctx.cwd, agentScope);
+			const discovery = discoverAgents();
 			const agents = discovery.agents;
-			const confirmProjectAgents = params.confirmProjectAgents ?? true;
 			const overrides = loadPersonaOverrides(ctx.cwd);
 			const parentProvider = ctx.model?.provider;
 
 			const requestedModes = getRequestedModes(params);
-			const hasTasks = requestedModes.includes("parallel");
 			const modeCount = requestedModes.length;
 
 			const makeDetails =
 				(mode: SubagentMode) =>
 				(results: SingleResult[]): SubagentDetails => ({
 					mode,
-					agentScope,
-					projectAgentsDir: discovery.projectAgentsDir,
 					results,
 				});
 
@@ -307,40 +284,6 @@ export default function (pi: ExtensionAPI) {
 					],
 					details: makeDetails("single")([]),
 				};
-			}
-
-			if (
-				(agentScope === "project" || agentScope === "both") &&
-				confirmProjectAgents &&
-				ctx.hasUI
-			) {
-				const requestedAgentNames = new Set<string>();
-				if (params.tasks)
-					for (const t of params.tasks) requestedAgentNames.add(t.agent);
-				if (params.agent) requestedAgentNames.add(params.agent);
-
-				const projectAgentsRequested = Array.from(requestedAgentNames)
-					.map((name) => agents.find((a) => a.name === name))
-					.filter((a): a is AgentConfig => a?.source === "project");
-
-				if (projectAgentsRequested.length > 0) {
-					const names = projectAgentsRequested.map((a) => a.name).join(", ");
-					const dir = discovery.projectAgentsDir ?? "(unknown)";
-					const ok = await ctx.ui.confirm(
-						"Run project-local agents?",
-						`Agents: ${names}\nSource: ${dir}\n\nProject agents are repo-controlled. Only continue for trusted repositories.`,
-					);
-					if (!ok)
-						return {
-							content: [
-								{
-									type: "text",
-									text: "Canceled: project-local agents not approved.",
-								},
-							],
-							details: makeDetails(hasTasks ? "parallel" : "single")([]),
-						};
-				}
 			}
 
 			const runRequestedAgent = (
@@ -504,12 +447,10 @@ export default function (pi: ExtensionAPI) {
 		},
 
 		renderCall(args, theme, _context) {
-			const scope: AgentScope = args.agentScope ?? "user";
 			if (args.tasks && args.tasks.length > 0) {
 				let text =
 					theme.fg("toolTitle", theme.bold("subagent ")) +
-					theme.fg("accent", `parallel (${args.tasks.length} tasks)`) +
-					theme.fg("muted", ` [${scope}]`);
+					theme.fg("accent", `parallel (${args.tasks.length} tasks)`);
 				for (const t of args.tasks.slice(0, 3)) {
 					const preview =
 						t.task.length > 40 ? `${t.task.slice(0, 40)}...` : t.task;
@@ -527,8 +468,7 @@ export default function (pi: ExtensionAPI) {
 				: "...";
 			let text =
 				theme.fg("toolTitle", theme.bold("subagent ")) +
-				theme.fg("accent", agentName) +
-				theme.fg("muted", ` [${scope}]`);
+				theme.fg("accent", agentName);
 			text += `\n  ${theme.fg("dim", preview)}`;
 			return new Text(text, 0, 0);
 		},
@@ -809,30 +749,29 @@ export default function (pi: ExtensionAPI) {
 				brief = (matchedBrief ?? "").trim() || task;
 			}
 
-			const agents = discoverAgents(ctx.cwd, "user").agents;
-			const resolvedName = agentName.trim().toLowerCase();
-			const agent = agents.find((a) => a.name === resolvedName);
-			if (!agent) {
-				const available = agents.map((a) => `"${a.name}"`).join(", ") || "none";
-				ctx.ui.notify(
-					`Unknown agent "${agentName}". Available: ${available}`,
-					"error",
-				);
+			const agents = discoverAgents().agents;
+			const overrides = loadPersonaOverrides(ctx.cwd);
+			const parentProvider = ctx.model?.provider;
+			const resolution = resolveSpawnContext({
+				defaultCwd: ctx.cwd,
+				agents,
+				agentName,
+				task: brief,
+				cwd: ctx.cwd,
+				overrides,
+				parentProvider,
+			});
+			if ("result" in resolution) {
+				ctx.ui.notify(resolution.result.stderr, "error");
 				return;
 			}
 
-			const overrides = loadPersonaOverrides(ctx.cwd);
-			const parentProvider = ctx.model?.provider;
+			const { context } = resolution;
+			const { agent } = context;
 			const piApi = pi;
 
 			const handle = spawnBackgroundAgent({
-				context: createSpawnContext({
-					agent,
-					task: brief,
-					cwd: ctx.cwd,
-					overrides,
-					parentProvider,
-				}),
+				context,
 				onSettled: ({ finalOutput, sessionDir }) => {
 					const summary = finalOutput.trim() || "(no text output)";
 					const message =
