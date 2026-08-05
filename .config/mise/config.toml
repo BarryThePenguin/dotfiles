@@ -59,9 +59,6 @@ login_shell = "/bin/zsh"
 "mas:425424353" = "latest" # The Unarchiver
 "mas:497799835" = "latest" # Xcode
 
-[bootstrap.brew.taps]
-"showpad/gitlab" = "git@gitlab.com:showpad-code/devops/homebrew.git"
-
 [dotfiles]
 "~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
