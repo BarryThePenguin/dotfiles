@@ -14,7 +14,7 @@ src/agents.ts    Agent discovery (forked: adds `thinking` frontmatter + alias su
 src/personas.ts  .pi/personas.json override layer (tree-walk, canonical-keyed)
 src/run.ts       Child spawning: sync json-mode children + detached RPC background child
 agents/          The agent roster (user-level): general, explore
-prompts/         Workflow prompt templates (auto-discovered as /name); see README
+prompts/         Intentionally README-only workflow prompt surface; see README
 ```
 
 ## Roster

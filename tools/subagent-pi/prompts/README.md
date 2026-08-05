@@ -1,15 +1,13 @@
 # Workflow prompts
 
-Workflow prompt templates live here: each `*.md` is auto-discovered by pi as a `/name` slash command (a thin natural-language shim chaining agents via the `subagent` tool).
+No workflow prompt templates are shipped here by design. The directory is intentionally README-only, and the decision to keep it empty is resolved and final.
 
-**This directory is intentionally empty of templates right now.** The concrete set (`/review-2axis`, `/research`, `/design-twice`, …) is decided by the *Workflow prompt set* ticket on the wayfinder "Subagents in pi" map — an open decision, not yet resolved. Add templates here once that decision lands; no extension change or re-wiring is needed, pi discovers them automatically.
+Workflow orchestration belongs to the skills that already describe it:
 
-Template anatomy (pi prompt template):
+- `code-review` defines its two-axis review.
+- `codebase-design` defines its parallel design alternatives and comparison.
+- `research` and `wayfinder` can direct background delegation through the `subagent` capability.
 
-```markdown
----
-description: One line, shown in slash-command completions
----
+Adding slash-command wrappers would duplicate those instructions, create another discoverability surface, and fail to guarantee the required orchestration. The extension therefore provides the `subagent` tool, agent roster and aliases, persona overrides, and background command—not workflow templates.
 
-<natural-language instructions chaining agents by name via the subagent tool>
-```
+The existing mise dotfiles entry deliberately maps `~/.pi/agent/prompts` to this directory. The wiring remains in place while the directory stays empty of templates.
