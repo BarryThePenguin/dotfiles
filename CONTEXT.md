@@ -8,6 +8,10 @@ A personal dotfiles monorepo managed with mise, and the home of this machine's e
 The tool that hosts a repo's issues — for this repo, Todoist or local markdown, selected per repo by the tooling (a repo's `.doistrc` selects Todoist; a `.scratch/` directory selects local). The skills are **issue-tracker agnostic**: they call the shared `wayfinder_*` and `issue_*` tool surfaces and never need to know which tracker is active.
 _Avoid_: backlog manager, backlog backend, issue host
 
+**Parallel run**:
+A single subagent request that schedules multiple agent tasks with bounded concurrency and produces ordered per-task outcomes. Each task may be queued, running, completed, failed, or cancelled; the run reports progress without changing the meaning of a settled agent result.
+_Avoid_: batch job, worker pool
+
 **Tracker session**:
 The lifetime of one interaction context with a selected **Issue tracker**. It shares one tracker selection and one local view of Issues; a new session starts with a new selection and view.
 

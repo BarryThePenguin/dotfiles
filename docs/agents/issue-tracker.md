@@ -48,8 +48,8 @@ Wayfinder resources use the dedicated tools:
   unblocked when every ticket blocking it is closed.
 - **Frontier**: `wayfinder_list_frontier` lists open, unblocked, unclaimed
   Decision tickets.
-- **Claim**: `wayfinder_claim` records the current session's claim before work
-  begins. Claiming is the session's first write.
+- **Claim**: `wayfinder_claim` assigns the Decision ticket to the dev driving
+  the map before work begins. Claiming is the session's first write.
 - **Resolve**: `wayfinder_resolve` records the answer as a Resolution comment,
   closes the Decision ticket, appends its title, link, and gist to the map's
   Decisions-so-far, and reports newly unblocked tickets.

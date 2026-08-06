@@ -32,7 +32,6 @@ import {
 	getFinalOutput,
 	getResultOutput,
 	isFailedResult,
-	mapWithConcurrencyLimit,
 	resolveSpawnContext,
 	runSingleAgent,
 	spawnBackgroundAgent,
@@ -40,6 +39,14 @@ import {
 	type RunSingleAgentOptions,
 	type SingleResult,
 } from "./run.ts";
+import {
+	MAX_PARALLEL_TASKS,
+	PARALLEL_CONCURRENCY,
+	ParallelRunLimitError,
+	runParallelRun,
+	type ParallelRunSnapshot,
+	type ParallelRunTask,
+} from "./parallel-run.ts";
 
 const COLLAPSED_ITEM_COUNT = 10;
 
@@ -162,7 +169,17 @@ function formatToolCall(
 
 interface SubagentDetails {
 	mode: SubagentMode;
-	results: SingleResult[];
+	results?: SingleResult[];
+	snapshot?: ParallelRunSnapshot;
+}
+
+function formatParallelProgress(snapshot: ParallelRunSnapshot): string {
+	const { completed, failed, cancelled, queued, running } = snapshot.counts;
+	const done = completed + failed + cancelled;
+	const parts = [`${done}/${snapshot.entries.length} done`];
+	if (running > 0) parts.push(`${running} running`);
+	if (queued > 0) parts.push(`${queued} queued`);
+	return `Parallel: ${parts.join(", ")}...`;
 }
 
 type DisplayItem =
@@ -271,6 +288,12 @@ export default function (pi: ExtensionAPI) {
 					mode,
 					results,
 				});
+			const makeParallelDetails = (
+				snapshot: ParallelRunSnapshot,
+			): SubagentDetails => ({
+				mode: "parallel",
+				snapshot,
+			});
 
 			if (modeCount !== 1) {
 				const available =
@@ -312,93 +335,73 @@ export default function (pi: ExtensionAPI) {
 			};
 
 			if (params.tasks && params.tasks.length > 0) {
-				if (params.tasks.length > 8)
-					return {
-						content: [
-							{
-								type: "text",
-								text: `Too many parallel tasks (${params.tasks.length}). Max is 8.`,
-							},
-						],
-						details: makeDetails("parallel")([]),
-					};
-
-				const allResults: SingleResult[] = new Array(params.tasks.length);
-				for (let i = 0; i < params.tasks.length; i++) {
-					const t = params.tasks[i];
-					if (!t) break;
-					allResults[i] = {
-						agent: t.agent,
-						agentSource: "unknown",
-						task: t.task,
-						exitCode: -1, // -1 = still running
-						messages: [],
-						stderr: "",
-						usage: {
-							input: 0,
-							output: 0,
-							cacheRead: 0,
-							cacheWrite: 0,
-							cost: 0,
-							contextTokens: 0,
-							turns: 0,
+				const tasks: ParallelRunTask[] = params.tasks.map((task) => ({
+					agent: task.agent,
+					task: task.task,
+					...(task.cwd ? { cwd: task.cwd } : {}),
+				}));
+				let snapshot: ParallelRunSnapshot;
+				try {
+					snapshot = await runParallelRun({
+						tasks,
+						maxTasks: MAX_PARALLEL_TASKS,
+						concurrency: PARALLEL_CONCURRENCY,
+						...(signal ? { signal } : {}),
+						runTask: (task, onTaskUpdate) =>
+							runRequestedAgent(task.agent, task.task, task.cwd, (partial) => {
+								const result = partial.details?.results[0];
+								if (result) onTaskUpdate(result);
+							}),
+						onUpdate: (nextSnapshot) => {
+							if (onUpdate) {
+								onUpdate({
+									content: [
+										{
+											type: "text",
+											text: formatParallelProgress(nextSnapshot),
+										},
+									],
+									details: makeParallelDetails(nextSnapshot),
+								});
+							}
 						},
+					});
+				} catch (error) {
+					if (!(error instanceof ParallelRunLimitError)) {
+						throw error;
+					}
+					return {
+						content: [{ type: "text", text: error.message }],
+						details: makeDetails("parallel")([]),
 					};
 				}
 
-				const emitParallelUpdate = () => {
-					if (onUpdate) {
-						const running = allResults.filter((r) => r.exitCode === -1).length;
-						const done = allResults.filter((r) => r.exitCode !== -1).length;
-						onUpdate({
-							content: [
-								{
-									type: "text",
-									text: `Parallel: ${done}/${allResults.length} done, ${running} running...`,
-								},
-							],
-							details: makeDetails("parallel")([...allResults]),
-						});
-					}
-				};
-
-				const results = await mapWithConcurrencyLimit(
-					params.tasks,
-					4,
-					async (t, index) => {
-						const result = await runRequestedAgent(
-							t.agent,
-							t.task,
-							t.cwd,
-							(partial) => {
-								if (partial.details?.results[0]) {
-									allResults[index] = partial.details.results[0];
-									emitParallelUpdate();
-								}
-							},
-						);
-						allResults[index] = result;
-						emitParallelUpdate();
-						return result;
-					},
-				);
-
-				const successCount = results.filter((r) => !isFailedResult(r)).length;
-				const summaries = results.map((r) => {
-					const output = truncateOutput(getResultOutput(r));
-					const status = isFailedResult(r)
-						? `failed${r.stopReason && r.stopReason !== "end" ? ` (${r.stopReason})` : ""}`
-						: "completed";
-					return `### [${r.agent}] ${status}\n\n${output}`;
+				const summaries = snapshot.entries.map((entry) => {
+					const result = entry.result;
+					const output = result
+						? truncateOutput(getResultOutput(result))
+						: entry.status === "cancelled"
+							? "(cancelled)"
+							: "(no output)";
+					const reason =
+						result?.stopReason && result.stopReason !== "end"
+							? ` (${result.stopReason})`
+							: "";
+					return `### [${entry.task.agent}] ${entry.status}${reason}\n\n${output}`;
 				});
+				const { completed, failed, cancelled } = snapshot.counts;
+				const outcomeNote =
+					failed || cancelled
+						? ` (${failed} failed, ${cancelled} cancelled)`
+						: "";
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Parallel: ${successCount}/${results.length} succeeded\n\n${summaries.join("\n\n---\n\n")}`,
+							text: `Parallel: ${completed}/${snapshot.entries.length} succeeded${outcomeNote}\n\n${summaries.join("\n\n---\n\n")}`,
 						},
 					],
-					details: makeDetails("parallel")(results),
+					details: makeParallelDetails(snapshot),
 				};
 			}
 
@@ -475,7 +478,7 @@ export default function (pi: ExtensionAPI) {
 
 		renderResult(result, { expanded }, theme, _context) {
 			const details = result.details as SubagentDetails | undefined;
-			if (!details || details.results.length === 0) {
+			if (!details) {
 				const text = result.content[0];
 				return new Text(
 					text?.type === "text" ? text.text : "(no output)",
@@ -506,7 +509,7 @@ export default function (pi: ExtensionAPI) {
 				return text.trimEnd();
 			};
 
-			if (details.mode === "single" && details.results.length === 1) {
+			if (details.mode === "single" && details.results?.length === 1) {
 				const r = details.results[0]!;
 				const isError = isFailedResult(r);
 				const icon = isError
@@ -604,25 +607,39 @@ export default function (pi: ExtensionAPI) {
 				return total;
 			};
 
-			if (details.mode === "parallel") {
-				const running = details.results.filter((r) => r.exitCode === -1).length;
-				const successCount = details.results.filter(
-					(r) => r.exitCode !== -1 && !isFailedResult(r),
-				).length;
-				const failCount = details.results.filter(
-					(r) => r.exitCode !== -1 && isFailedResult(r),
-				).length;
-				const isRunning = running > 0;
-				const icon = isRunning
-					? theme.fg("warning", "⏳")
-					: failCount > 0
-						? theme.fg("warning", "◐")
-						: theme.fg("success", "✓");
-				const status = isRunning
-					? `${successCount + failCount}/${details.results.length} done, ${running} running`
-					: `${successCount}/${details.results.length} tasks`;
+			if (details.mode === "parallel" && details.snapshot) {
+				const { entries, counts } = details.snapshot;
+				const { queued, running, completed, failed, cancelled } = counts;
+				const unfinished = queued + running;
+				const settledResults = entries.flatMap((entry) =>
+					entry.result ? [entry.result] : [],
+				);
+				const icon =
+					unfinished > 0
+						? theme.fg("warning", "⏳")
+						: failed > 0 || cancelled > 0
+							? theme.fg("warning", "◐")
+							: theme.fg("success", "✓");
+				const status =
+					unfinished > 0
+						? `${completed + failed + cancelled}/${entries.length} done, ${running} running${queued > 0 ? `, ${queued} queued` : ""}`
+						: `${completed}/${entries.length} completed`;
+				const statusIcon = (entry: (typeof entries)[number]) => {
+					switch (entry.status) {
+						case "queued":
+							return theme.fg("muted", "…");
+						case "running":
+							return theme.fg("warning", "⏳");
+						case "failed":
+							return theme.fg("error", "✗");
+						case "cancelled":
+							return theme.fg("warning", "⊘");
+						case "completed":
+							return theme.fg("success", "✓");
+					}
+				};
 
-				if (expanded && !isRunning) {
+				if (expanded && unfinished === 0) {
 					const container = new Container();
 					container.addChild(
 						new Text(
@@ -632,24 +649,23 @@ export default function (pi: ExtensionAPI) {
 						),
 					);
 
-					for (const r of details.results) {
-						const rIcon = isFailedResult(r)
-							? theme.fg("error", "✗")
-							: theme.fg("success", "✓");
-						const displayItems = getDisplayItems(r.messages);
-						const finalOutput = getFinalOutput(r.messages);
+					for (const entry of entries) {
+						const result = entry.result;
+						const rIcon = statusIcon(entry);
+						const displayItems = result ? getDisplayItems(result.messages) : [];
+						const finalOutput = result ? getFinalOutput(result.messages) : "";
 
 						container.addChild(new Spacer(1));
 						container.addChild(
 							new Text(
-								`${theme.fg("muted", "─── ") + theme.fg("accent", r.agent)} ${rIcon}`,
+								`${theme.fg("muted", "─── ") + theme.fg("accent", entry.task.agent)} ${rIcon} ${theme.fg("muted", `[${entry.status}]`)}`,
 								0,
 								0,
 							),
 						);
 						container.addChild(
 							new Text(
-								theme.fg("muted", "Task: ") + theme.fg("dim", r.task),
+								theme.fg("muted", "Task: ") + theme.fg("dim", entry.task.task),
 								0,
 								0,
 							),
@@ -679,12 +695,18 @@ export default function (pi: ExtensionAPI) {
 							);
 						}
 
-						const taskUsage = formatUsageStats(r.usage, r.model);
-						if (taskUsage)
-							container.addChild(new Text(theme.fg("dim", taskUsage), 0, 0));
+						if (result) {
+							const taskUsage = formatUsageStats(result.usage, result.model);
+							if (taskUsage)
+								container.addChild(new Text(theme.fg("dim", taskUsage), 0, 0));
+						} else if (entry.status === "cancelled") {
+							container.addChild(
+								new Text(theme.fg("muted", "(cancelled)"), 0, 0),
+							);
+						}
 					}
 
-					const usageStr = formatUsageStats(aggregateUsage(details.results));
+					const usageStr = formatUsageStats(aggregateUsage(settledResults));
 					if (usageStr) {
 						container.addChild(new Spacer(1));
 						container.addChild(
@@ -695,21 +717,24 @@ export default function (pi: ExtensionAPI) {
 				}
 
 				let text = `${icon} ${theme.fg("toolTitle", theme.bold("parallel "))}${theme.fg("accent", status)}`;
-				for (const r of details.results) {
-					const rIcon =
-						r.exitCode === -1
-							? theme.fg("warning", "⏳")
-							: isFailedResult(r)
-								? theme.fg("error", "✗")
-								: theme.fg("success", "✓");
-					const displayItems = getDisplayItems(r.messages);
-					text += `\n\n${theme.fg("muted", "─── ")}${theme.fg("accent", r.agent)} ${rIcon}`;
-					if (displayItems.length === 0)
-						text += `\n${theme.fg("muted", r.exitCode === -1 ? "(running...)" : "(no output)")}`;
-					else text += `\n${renderDisplayItems(displayItems, 5)}`;
+				for (const entry of entries) {
+					const result = entry.result;
+					const displayItems = result ? getDisplayItems(result.messages) : [];
+					text += `\n\n${theme.fg("muted", "─── ")}${theme.fg("accent", entry.task.agent)} ${statusIcon(entry)}`;
+					if (displayItems.length === 0) {
+						const emptyText =
+							entry.status === "queued"
+								? "(queued...)"
+								: entry.status === "running"
+									? "(running...)"
+									: entry.status === "cancelled"
+										? "(cancelled)"
+										: "(no output)";
+						text += `\n${theme.fg("muted", emptyText)}`;
+					} else text += `\n${renderDisplayItems(displayItems, 5)}`;
 				}
-				if (!isRunning) {
-					const usageStr = formatUsageStats(aggregateUsage(details.results));
+				if (unfinished === 0) {
+					const usageStr = formatUsageStats(aggregateUsage(settledResults));
 					if (usageStr) text += `\n\n${theme.fg("dim", `Total: ${usageStr}`)}`;
 				}
 				if (!expanded) text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;
