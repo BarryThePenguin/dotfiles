@@ -2,7 +2,16 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const CLAIMANT_ENV = "PI_ISSUE_TOOLS_CLAIMANT";
+
+/**
+ * Environment override keys for the dev driving a Wayfinder map. Both
+ * frontends (Pi, opencode) honor the same pair so a shared checkout picks one
+ * identity regardless of which extension loads it.
+ */
+const CLAIMANT_ENVS = [
+	"OPENCODE_ISSUE_TOOLS_CLAIMANT",
+	"PI_ISSUE_TOOLS_CLAIMANT",
+];
 
 /**
  * Resolve the dev driving the map. The environment override is useful when a
@@ -10,9 +19,11 @@ const CLAIMANT_ENV = "PI_ISSUE_TOOLS_CLAIMANT";
  * the normal local source, with the OS login as a last fallback.
  */
 export async function resolveClaimant(cwd: string): Promise<string> {
-	const configured = process.env[CLAIMANT_ENV]?.trim();
-	if (configured) {
-		return configured;
+	for (const key of CLAIMANT_ENVS) {
+		const configured = process.env[key]?.trim();
+		if (configured) {
+			return configured;
+		}
 	}
 
 	try {

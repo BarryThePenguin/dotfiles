@@ -1,11 +1,12 @@
 /**
- * Wayfinder tool action handlers.
+ * Wayfinder and Issue tool action handlers for the opencode plugin.
  *
- * This file is the Pi adapter: it translates Pi tool params/session state into
- * domain-level WayfinderTracker calls and formats human-readable responses.
+ * This file is the opencode adapter: it translates tool params and session
+ * state into domain-level WayfinderTracker/IssueTracker calls and formats
+ * human-readable responses. The handler bodies mirror the Pi extension's
+ * actions.ts; only the runtime plumbing differs.
  */
 
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	renderIssueDetails,
 	renderMapSummary,
@@ -27,7 +28,6 @@ import {
 	type MapSectionKey,
 	type ResolveParams,
 	type SetBlockingParams,
-	type TrackerSession,
 	type UpdateMapParams,
 	type WayfinderTrackerTicket,
 } from "issue-tools-core";
@@ -36,6 +36,8 @@ import {
 	type ActionResult,
 	type ActionRuntime,
 } from "./action-runtime.ts";
+import type { OpenCodeSession } from "./tracker.ts";
+
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
@@ -60,7 +62,7 @@ export interface ActionMap {
 }
 
 export interface ToolContext {
-	trackerSession: TrackerSession;
+	session: OpenCodeSession;
 }
 
 type Handler<K extends keyof ActionMap> = (
@@ -95,9 +97,9 @@ export function handleAction<K extends keyof ActionMap>(
 	action: K,
 	params: ActionMap[K],
 	ctx: ToolContext,
-	ext: ExtensionContext,
+	host: { worktree: string },
 ): Promise<ActionResult> {
-	return createActionRuntime(ext, ctx).then((runtime) =>
+	return createActionRuntime(host, ctx).then((runtime) =>
 		handlers[action](params, runtime),
 	);
 }
@@ -432,6 +434,10 @@ async function readIssue(
 	});
 }
 
+function formatLabelList(labels: string[]): string {
+	return labels.length > 0 ? labels.join(", ") : "(none)";
+}
+
 async function labelIssue(
 	params: IssueLabelParams,
 	runtime: ActionRuntime,
@@ -449,10 +455,6 @@ async function labelIssue(
 			labels: issue.labels,
 		},
 	);
-}
-
-function formatLabelList(labels: string[]): string {
-	return labels.length > 0 ? labels.join(", ") : "(none)";
 }
 
 async function commentIssue(

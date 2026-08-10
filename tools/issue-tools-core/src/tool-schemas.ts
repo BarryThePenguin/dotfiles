@@ -115,7 +115,7 @@ export type ClaimParams = Static<typeof ClaimParams>;
 // -- Generic issue tool surface -------------------------------------------
 
 export const IssueIdOrUrl = Type.String({
-	description: "Issue id or URL on the selected tracker",
+	description: "Repository Issue/spec ID or URL.",
 });
 export type IssueIdOrUrl = Static<typeof IssueIdOrUrl>;
 

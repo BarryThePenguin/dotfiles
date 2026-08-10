@@ -1,7 +1,7 @@
 ---
 name: general
 description: General-purpose minion for bounded delegated work — review, research, and design briefs run in an isolated context
-tools: read, grep, find, ls, bash, webfetch
+tools: read, grep, find, ls, bash, webfetch, wayfinder_get_map, wayfinder_list_maps, wayfinder_create_ticket, wayfinder_get_ticket, wayfinder_resolve, wayfinder_update_map, wayfinder_set_blocking, wayfinder_list_frontier, wayfinder_claim, issue_create, issue_read, issue_label, issue_comment, issue_close, issue_list
 model: deepseek-v4-flash
 ---
 

@@ -3,6 +3,7 @@ import {
 	selectRepoProject,
 	syncAndPersist,
 	type Container,
+	type DriverFactory,
 } from "doist-core";
 import { createTrackerModulesFromBackend } from "./modules.ts";
 import type { TrackerModules } from "./modules.ts";
@@ -19,8 +20,10 @@ function repoProjectId(container: Container): string | undefined {
 	return selectRepoProject(container.listProjects())?.id;
 }
 
-async function createTodoistTrackerContext(): Promise<TodoistTrackerContext> {
-	const container = createContainer();
+async function createTodoistTrackerContext(
+	driverFactory: DriverFactory,
+): Promise<TodoistTrackerContext> {
+	const container = createContainer(driverFactory);
 	if (!container.paths) {
 		throw new Error("Could not create Todoist tracker: no-config");
 	}
@@ -40,9 +43,18 @@ async function createTodoistTrackerContext(): Promise<TodoistTrackerContext> {
 	};
 }
 
-/** Build the complete module set backed by one synchronized Todoist context. */
-export async function createTodoistTrackerModules(): Promise<TrackerModules> {
-	const context = await createTodoistTrackerContext();
+/**
+ * Build the complete module set backed by one synchronized Todoist context.
+ *
+ * @param driverFactory Opens the SQLite database against the host runtime's
+ *   native module — the host supplies it (`new Database(path)` from
+ *   `bun:sqlite` under bun, `new DatabaseSync(path)` from `node:sqlite` under
+ *   node)
+ */
+export async function createTodoistTrackerModules(
+	driverFactory: DriverFactory,
+): Promise<TrackerModules> {
+	const context = await createTodoistTrackerContext(driverFactory);
 	return createTrackerModulesFromBackend(context.persistence);
 }
 

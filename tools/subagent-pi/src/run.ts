@@ -314,10 +314,8 @@ function cleanupPromptFiles(
 /** Parse and apply child JSON events consistently across every execution mode. */
 export function createAgentEventProcessor(
 	result: SingleResult,
-	onUpdate?:
-		| ((partial: AgentToolResult<{ results: SingleResult[] }>) => void)
-		| undefined,
-	onEvent?: ((event: AgentEvent) => void) | undefined,
+	onUpdate?: (partial: AgentToolResult<{ results: SingleResult[] }>) => void,
+	onEvent?: (event: AgentEvent) => void,
 ): AgentEventProcessor {
 	let buffer = "";
 
@@ -352,7 +350,7 @@ export function createAgentEventProcessor(
 					result.usage.output += usage.output || 0;
 					result.usage.cacheRead += usage.cacheRead || 0;
 					result.usage.cacheWrite += usage.cacheWrite || 0;
-					result.usage.cost += usage.cost?.total || 0;
+					result.usage.cost += usage.cost.total || 0;
 					result.usage.contextTokens = usage.totalTokens || 0;
 				}
 				if (!result.model && message.model) {
@@ -427,9 +425,11 @@ export async function runSingleAgent(
 				stdio: ["ignore", "pipe", "pipe"],
 			});
 
-			proc.stdout.on("data", (data) => events.processChunk(data.toString()));
+			proc.stdout.on("data", (data) => {
+				events.processChunk(String(data));
+			});
 			proc.stderr.on("data", (data) => {
-				result.stderr += data.toString();
+				result.stderr += String(data);
 			});
 
 			proc.on("close", (code) => {
@@ -543,9 +543,13 @@ export function spawnBackgroundAgent(
 		}
 	});
 
-	proc.stdout.on("data", (data) => events.processChunk(data.toString()));
+	proc.stdout.on("data", (data) => {
+		events.processChunk(String(data));
+	});
 
-	proc.stderr.on("data", (data) => events.processLine(data.toString()));
+	proc.stderr.on("data", (data) => {
+		events.processLine(String(data));
+	});
 
 	proc.on("error", (err) => {
 		onError(err.message);

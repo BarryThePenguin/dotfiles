@@ -89,7 +89,9 @@ describe("agent event processing", () => {
 		const current = result();
 		const events: string[] = [];
 		const processor = createAgentEventProcessor(current, undefined, (event) => {
-			if (event.type) events.push(event.type);
+			if (event.type) {
+				events.push(event.type);
+			}
 		});
 
 		processor.processLine(

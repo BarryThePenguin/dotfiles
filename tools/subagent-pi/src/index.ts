@@ -55,9 +55,9 @@ const COLLAPSED_ITEM_COUNT = 10;
 // ────────────────────────────────────────────────────────────────────────────
 
 function formatTokens(count: number): string {
-	if (count < 1000) return count.toString();
-	if (count < 10000) return `${(count / 1000).toFixed(1)}k`;
-	if (count < 1000000) return `${Math.round(count / 1000)}k`;
+	if (count < 1000) {return count.toString();}
+	if (count < 10000) {return `${(count / 1000).toFixed(1)}k`;}
+	if (count < 1000000) {return `${Math.round(count / 1000)}k`;}
 	return `${(count / 1000000).toFixed(1)}M`;
 }
 
@@ -75,16 +75,16 @@ function formatUsageStats(
 ): string {
 	const parts: string[] = [];
 	if (usage.turns)
-		parts.push(`${usage.turns} turn${usage.turns > 1 ? "s" : ""}`);
-	if (usage.input) parts.push(`↑${formatTokens(usage.input)}`);
-	if (usage.output) parts.push(`↓${formatTokens(usage.output)}`);
-	if (usage.cacheRead) parts.push(`R${formatTokens(usage.cacheRead)}`);
-	if (usage.cacheWrite) parts.push(`W${formatTokens(usage.cacheWrite)}`);
-	if (usage.cost) parts.push(`$${usage.cost.toFixed(4)}`);
+		{parts.push(`${usage.turns} turn${usage.turns > 1 ? "s" : ""}`);}
+	if (usage.input) {parts.push(`↑${formatTokens(usage.input)}`);}
+	if (usage.output) {parts.push(`↓${formatTokens(usage.output)}`);}
+	if (usage.cacheRead) {parts.push(`R${formatTokens(usage.cacheRead)}`);}
+	if (usage.cacheWrite) {parts.push(`W${formatTokens(usage.cacheWrite)}`);}
+	if (usage.cost) {parts.push(`$${usage.cost.toFixed(4)}`);}
 	if (usage.contextTokens && usage.contextTokens > 0) {
 		parts.push(`ctx:${formatTokens(usage.contextTokens)}`);
 	}
-	if (model) parts.push(model);
+	if (model) {parts.push(model);}
 	return parts.join(" ");
 }
 
@@ -127,7 +127,7 @@ function formatToolCall(
 			const content = (args["content"] || "") as string;
 			const lines = content.split("\n").length;
 			let text = themeFg("muted", "write ") + themeFg("accent", filePath);
-			if (lines > 1) text += themeFg("dim", ` (${lines} lines)`);
+			if (lines > 1) {text += themeFg("dim", ` (${lines} lines)`);}
 			return text;
 		}
 		case "edit": {
@@ -177,8 +177,8 @@ function formatParallelProgress(snapshot: ParallelRunSnapshot): string {
 	const { completed, failed, cancelled, queued, running } = snapshot.counts;
 	const done = completed + failed + cancelled;
 	const parts = [`${done}/${snapshot.entries.length} done`];
-	if (running > 0) parts.push(`${running} running`);
-	if (queued > 0) parts.push(`${queued} queued`);
+	if (running > 0) {parts.push(`${running} running`);}
+	if (queued > 0) {parts.push(`${queued} queued`);}
 	return `Parallel: ${parts.join(", ")}...`;
 }
 
@@ -191,13 +191,13 @@ function getDisplayItems(messages: Message[]): DisplayItem[] {
 	for (const msg of messages) {
 		if (msg.role === "assistant") {
 			for (const part of msg.content) {
-				if (part.type === "text") items.push({ type: "text", text: part.text });
+				if (part.type === "text") {items.push({ type: "text", text: part.text });}
 				else if (part.type === "toolCall")
-					items.push({
+					{items.push({
 						type: "toolCall",
 						name: part.name,
 						args: part.arguments,
-					});
+					});}
 			}
 		}
 	}
@@ -350,7 +350,7 @@ export default function (pi: ExtensionAPI) {
 						runTask: (task, onTaskUpdate) =>
 							runRequestedAgent(task.agent, task.task, task.cwd, (partial) => {
 								const result = partial.details?.results[0];
-								if (result) onTaskUpdate(result);
+								if (result) {onTaskUpdate(result);}
 							}),
 						onUpdate: (nextSnapshot) => {
 							if (onUpdate) {
@@ -460,7 +460,7 @@ export default function (pi: ExtensionAPI) {
 					text += `\n  ${theme.fg("accent", t.agent)}${theme.fg("dim", ` ${preview}`)}`;
 				}
 				if (args.tasks.length > 3)
-					text += `\n  ${theme.fg("muted", `... +${args.tasks.length - 3} more`)}`;
+					{text += `\n  ${theme.fg("muted", `... +${args.tasks.length - 3} more`)}`;}
 				return new Text(text, 0, 0);
 			}
 			const agentName = args.agent || "...";
@@ -495,7 +495,7 @@ export default function (pi: ExtensionAPI) {
 					limit && items.length > limit ? items.length - limit : 0;
 				let text = "";
 				if (skipped > 0)
-					text += theme.fg("muted", `... ${skipped} earlier items\n`);
+					{text += theme.fg("muted", `... ${skipped} earlier items\n`);}
 				for (const item of toShow) {
 					if (item.type === "text") {
 						const preview = expanded
@@ -510,7 +510,7 @@ export default function (pi: ExtensionAPI) {
 			};
 
 			if (details.mode === "single" && details.results?.length === 1) {
-				const r = details.results[0]!;
+				const r = details.results[0];
 				const isError = isFailedResult(r);
 				const icon = isError
 					? theme.fg("error", "✗")
@@ -522,12 +522,12 @@ export default function (pi: ExtensionAPI) {
 					const container = new Container();
 					let header = `${icon} ${theme.fg("toolTitle", theme.bold(r.agent))}${theme.fg("muted", ` (${r.agentSource})`)}`;
 					if (isError && r.stopReason)
-						header += ` ${theme.fg("error", `[${r.stopReason}]`)}`;
+						{header += ` ${theme.fg("error", `[${r.stopReason}]`)}`;}
 					container.addChild(new Text(header, 0, 0));
 					if (isError && r.errorMessage)
-						container.addChild(
+						{container.addChild(
 							new Text(theme.fg("error", `Error: ${r.errorMessage}`), 0, 0),
-						);
+						);}
 					container.addChild(new Spacer(1));
 					container.addChild(new Text(theme.fg("muted", "─── Task ───"), 0, 0));
 					container.addChild(new Text(theme.fg("dim", r.task), 0, 0));
@@ -542,7 +542,7 @@ export default function (pi: ExtensionAPI) {
 					} else {
 						for (const item of displayItems) {
 							if (item.type === "toolCall")
-								container.addChild(
+								{container.addChild(
 									new Text(
 										theme.fg("muted", "→ ") +
 											formatToolCall(
@@ -553,7 +553,7 @@ export default function (pi: ExtensionAPI) {
 										0,
 										0,
 									),
-								);
+								);}
 						}
 						if (finalOutput) {
 							container.addChild(new Spacer(1));
@@ -572,18 +572,18 @@ export default function (pi: ExtensionAPI) {
 
 				let text = `${icon} ${theme.fg("toolTitle", theme.bold(r.agent))}${theme.fg("muted", ` (${r.agentSource})`)}`;
 				if (isError && r.stopReason)
-					text += ` ${theme.fg("error", `[${r.stopReason}]`)}`;
+					{text += ` ${theme.fg("error", `[${r.stopReason}]`)}`;}
 				if (isError && r.errorMessage)
-					text += `\n${theme.fg("error", `Error: ${r.errorMessage}`)}`;
+					{text += `\n${theme.fg("error", `Error: ${r.errorMessage}`)}`;}
 				else if (displayItems.length === 0)
-					text += `\n${theme.fg("muted", "(no output)")}`;
+					{text += `\n${theme.fg("muted", "(no output)")}`;}
 				else {
 					text += `\n${renderDisplayItems(displayItems, COLLAPSED_ITEM_COUNT)}`;
 					if (displayItems.length > COLLAPSED_ITEM_COUNT)
-						text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;
+						{text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;}
 				}
 				const usageStr = formatUsageStats(r.usage, r.model);
-				if (usageStr) text += `\n${theme.fg("dim", usageStr)}`;
+				if (usageStr) {text += `\n${theme.fg("dim", usageStr)}`;}
 				return new Text(text, 0, 0);
 			}
 
@@ -698,7 +698,7 @@ export default function (pi: ExtensionAPI) {
 						if (result) {
 							const taskUsage = formatUsageStats(result.usage, result.model);
 							if (taskUsage)
-								container.addChild(new Text(theme.fg("dim", taskUsage), 0, 0));
+								{container.addChild(new Text(theme.fg("dim", taskUsage), 0, 0));}
 						} else if (entry.status === "cancelled") {
 							container.addChild(
 								new Text(theme.fg("muted", "(cancelled)"), 0, 0),
@@ -731,13 +731,13 @@ export default function (pi: ExtensionAPI) {
 										? "(cancelled)"
 										: "(no output)";
 						text += `\n${theme.fg("muted", emptyText)}`;
-					} else text += `\n${renderDisplayItems(displayItems, 5)}`;
+					} else {text += `\n${renderDisplayItems(displayItems, 5)}`;}
 				}
 				if (unfinished === 0) {
 					const usageStr = formatUsageStats(aggregateUsage(settledResults));
-					if (usageStr) text += `\n\n${theme.fg("dim", `Total: ${usageStr}`)}`;
+					if (usageStr) {text += `\n\n${theme.fg("dim", `Total: ${usageStr}`)}`;}
 				}
-				if (!expanded) text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;
+				if (!expanded) {text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;}
 				return new Text(text, 0, 0);
 			}
 
@@ -770,7 +770,7 @@ export default function (pi: ExtensionAPI) {
 			if (agentMatch) {
 				const matchedName = agentMatch[1];
 				const matchedBrief = agentMatch[2];
-				if (matchedName) agentName = matchedName;
+				if (matchedName) {agentName = matchedName;}
 				brief = (matchedBrief ?? "").trim() || task;
 			}
 
@@ -801,7 +801,7 @@ export default function (pi: ExtensionAPI) {
 					const summary = finalOutput.trim() || "(no text output)";
 					const message =
 						`Background subagent "${agent.name}" settled (session: ${sessionDir}).\n\n` +
-						`${summary.length > 4000 ? summary.slice(0, 4000) + "\n…(truncated)" : summary}`;
+						(summary.length > 4000 ? summary.slice(0, 4000) + "\n…(truncated)" : summary);
 					piApi.sendUserMessage(message, { deliverAs: "followUp" });
 					ctx.ui.notify(`Background subagent "${agent.name}" settled`, "info");
 				},

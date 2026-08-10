@@ -1,14 +1,22 @@
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+/**
+ * opencode action runtime.
+ *
+ * The opencode equivalent of the Pi extension's action-runtime: adapts the
+ * shared TrackerSession and the tool's host context into the small runtime
+ * the handlers speak, producing opencode-shaped results
+ * ({ output, metadata }) instead of Pi's { content, details }.
+ */
+
 import {
 	localTrackerRoot,
 	type IssueTracker,
-	type TrackerSession,
 	type WayfinderTracker,
 } from "issue-tools-core";
+import type { OpenCodeSession } from "./tracker.ts";
 
 export type ActionResult = {
-	content: { type: "text"; text: string }[];
-	details: unknown;
+	output: string;
+	metadata: Record<string, unknown>;
 };
 
 export type ActionRuntime = {
@@ -22,22 +30,26 @@ export type ActionRuntime = {
 	error(message: string): ActionResult;
 };
 
+type HostContext = {
+	worktree: string;
+};
+
 type RuntimeContext = {
-	trackerSession: TrackerSession;
+	session: OpenCodeSession;
 };
 
 export async function createActionRuntime(
-	ext: ExtensionContext,
+	host: HostContext,
 	ctx: RuntimeContext,
 ): Promise<ActionRuntime> {
 	const [modules, claimant] = await Promise.all([
-		ctx.trackerSession.get(ext),
-		ctx.trackerSession.getClaimant(),
+		ctx.session.get(),
+		ctx.session.getClaimant(),
 	]);
-	const mode = ctx.trackerSession.getMode() ?? "local";
+	const mode = ctx.session.getMode() ?? "local";
 	const trackerDetails = {
 		tracker: mode,
-		...(mode === "local" ? { root: localTrackerRoot(ext.cwd) } : {}),
+		...(mode === "local" ? { root: localTrackerRoot(host.worktree) } : {}),
 	};
 
 	const details = (extra: Record<string, unknown>) => ({
@@ -49,8 +61,8 @@ export async function createActionRuntime(
 		text: string,
 		extra: Record<string, unknown> = {},
 	): ActionResult => ({
-		content: [{ type: "text", text }],
-		details: details(extra),
+		output: text,
+		metadata: details(extra),
 	});
 
 	return {
@@ -61,23 +73,20 @@ export async function createActionRuntime(
 			return modules.issues;
 		},
 		requireMapId(params) {
-			return ctx.trackerSession.resolveMapId(params.map_id);
+			return ctx.session.resolveMapId(params.map_id);
 		},
 		getActiveMap() {
-			return ctx.trackerSession.getActiveMap();
+			return ctx.session.getActiveMap();
 		},
 		setActiveMap(mapId) {
-			ctx.trackerSession.setActiveMap(mapId, ext);
+			ctx.session.setActiveMap(mapId);
 		},
 		claimant() {
 			return claimant;
 		},
 		success,
 		error(message) {
-			return {
-				content: [{ type: "text", text: `Error: ${message}` }],
-				details: {},
-			};
+			return { output: `Error: ${message}`, metadata: {} };
 		},
 	};
 }

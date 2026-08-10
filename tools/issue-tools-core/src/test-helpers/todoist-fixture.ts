@@ -17,6 +17,7 @@ import {
 	type TodoistClient,
 } from "doist-core";
 import { TodoistAdapter } from "../todoist-adapter.ts";
+import { DatabaseSync } from "node:sqlite";
 
 function syncItem(overrides: Partial<DbTask> = {}): DbTask {
 	return {
@@ -183,7 +184,10 @@ export function createTodoistFixture(
 		taskTimestamps?: { created: string; updated: string };
 	} = {},
 ): TodoistTestFixture {
-	const db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+	const db = new Database(
+		{ dbPath: ":memory:", rcPath: "/tmp/.doistrc" },
+		(path) => new DatabaseSync(path),
+	);
 	const client = new FakeTodoistClient(
 		options.taskTimestamps ? { taskTimestamps: options.taskTimestamps } : {},
 	);

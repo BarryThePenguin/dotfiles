@@ -2,44 +2,45 @@
 
 import { ATTR_ERROR_TYPE } from "@opentelemetry/semantic-conventions";
 import { defineCommand, runMain } from "citty";
-import { basename } from "node:path";
-import * as v from "valibot";
 import {
-	createContainer,
+	addFilter,
 	addTask,
+	addTaskComment,
+	ATTR_EXITCODE,
 	completeTasks,
-	uncompleteTasks,
-	moveTask,
-	updateTask,
-	listSections,
-	resolveProject,
-	parseAddTaskFields,
-	parseUpdateTaskFields,
-	parseAddFilterFields,
-	parseUpdateFilterFields,
-	parseFilterQueryInput,
-	parseAddCommentFields,
 	countSyncData,
+	createContainer,
+	deleteFilter,
+	filterByEnergy,
+	findDuplicateCandidates,
+	findMissingEnergyMetadata,
+	findStaleCandidates,
+	groupStaleByProject,
+	listFilters,
+	listSections,
+	listTaskComments,
+	moveTask,
+	parseAddCommentFields,
+	parseAddFilterFields,
+	parseAddTaskFields,
+	parseFilterQueryInput,
+	parseUpdateFilterFields,
+	parseUpdateTaskFields,
+	resolveProject,
+	runFilterQuery,
 	syncAndPersist,
 	tracer,
-	ATTR_EXITCODE,
-	findDuplicateCandidates,
-	findStaleCandidates,
-	findMissingEnergyMetadata,
-	groupStaleByProject,
-	filterByEnergy,
-	listFilters,
-	addFilter,
+	uncompleteTasks,
 	updateFilter,
-	deleteFilter,
-	runFilterQuery,
-	addTaskComment,
-	listTaskComments,
+	updateTask,
 } from "doist-core";
+import { basename } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import * as v from "valibot";
 import { shutdown } from "./instrumentation.ts";
 import { out } from "./output.ts";
 
-const container = createContainer();
+const container = createContainer((path) => new DatabaseSync(path));
 const { addProject, removeProject, listProjects, listProjectIds, client } =
 	container;
 

@@ -12,6 +12,8 @@
 
 // -- Issue domain --------------------------------------------------------
 
+export type { DriverFactory } from "doist-core";
+
 export type {
 	CreateIssueInput,
 	Issue,
@@ -76,6 +78,17 @@ export {
 	renderTicketDetails,
 	stripPrefix,
 } from "./responses.ts";
+
+// -- Session lifecycle ----------------------------------------------------
+
+export { createTrackerSession, localTrackerRoot } from "./session.ts";
+export { resolveClaimant } from "./claimant.ts";
+export type {
+	CreateWayfinderTrackerOptions,
+	TrackerMode,
+	TrackerSession,
+	TrackerSessionOptions,
+} from "./session.ts";
 
 // -- Setup ----------------------------------------------------------------
 

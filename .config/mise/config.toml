@@ -77,6 +77,12 @@ login_shell = "/bin/zsh"
 "~/.config/jj/config.toml" = { mode = "symlink" }
 "~/.config/kube/config" = { mode = "symlink" }
 "~/.config/mise" = { mode = "symlink-each"}
+"~/.config/opencode/cli.json" = { mode = "symlink" }
+"~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
+"~/.config/opencode/plugins/workmux-status.ts" = { mode = "symlink" }
+"~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/dotfiles/tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
+"~/.config/opencode/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
+"~/.config/opencode/tui.json" = { mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }

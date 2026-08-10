@@ -2,6 +2,8 @@ import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
+import { createContainer } from "doist-core";
+import { toolInventory } from "issue-tools-core";
 import {
 	mkdirSync,
 	mkdtempDisposableSync,
@@ -10,9 +12,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createContainer } from "doist-core";
-import { toolInventory } from "issue-tools-core";
 import wayfinderExtension from "./index.ts";
 
 type CapturedNotify = {
@@ -205,7 +206,9 @@ describe("/setup-issue-tracker command", () => {
 
 		// Re-read the .doistrc through the real container to verify the
 		// marker landed.
-		const projects = createContainer().listProjects();
+		const projects = createContainer(
+			(path) => new DatabaseSync(path),
+		).listProjects();
 		expect(projects).toEqual([{ id: "p1", label: "Work", repo: true }]);
 
 		const success = t.notifications.find((n) =>
@@ -332,7 +335,9 @@ describe("/setup-issue-tracker command", () => {
 		const cancel = t.notifications.find((n) => n.message.includes("cancelled"));
 		expect(cancel?.type).toBe("info");
 		// No marker should be written.
-		const projects = createContainer().listProjects();
+		const projects = createContainer(
+			(path) => new DatabaseSync(path),
+		).listProjects();
 		expect(projects.find((p) => p.repo === true)).toBeUndefined();
 	});
 
@@ -359,7 +364,9 @@ describe("/setup-issue-tracker command", () => {
 		expect(success?.type).toBe("info");
 		expect(t.selections).toHaveLength(0);
 
-		const projects = createContainer().listProjects();
+		const projects = createContainer(
+			(path) => new DatabaseSync(path),
+		).listProjects();
 		expect(projects).toEqual([
 			{ id: "p1", label: "First", repo: true },
 			{ id: "p2", label: "Second" },

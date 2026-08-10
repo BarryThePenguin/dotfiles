@@ -9,7 +9,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
 import * as v from "valibot";
-import { Database } from "./db.ts";
+import { Database, type DriverFactory } from "./db.ts";
 import type { ConfigPaths } from "./paths.ts";
 import { findPaths } from "./paths.ts";
 import { applyRepoMarker } from "./repo-project.ts";
@@ -63,13 +63,16 @@ export interface Container {
  *
  * @param rcDir Optional directory to start the `.doistrc` search from;
  *   defaults to `TODOIST_RC_DIR` or the process cwd
+ * @param driverFactory Opens the SQLite database against the host runtime's
+ *   native module — the host supplies it: `new DatabaseSync(path)` from
+ *   `node:sqlite` under node, `new Database(path)` from `bun:sqlite` under bun
  * @returns A fully initialized container
  *
  * @throws If Database initialization fails or paths cannot be resolved
  *
  * Example:
  * ```ts
- * const container = createContainer();
+ * const container = createContainer((path) => new DatabaseSync(path));
  * try {
  *   await runCli(container);
  * } finally {
@@ -77,7 +80,10 @@ export interface Container {
  * }
  * ```
  */
-export function createContainer(rcDir?: string): Container {
+export function createContainer(
+	driverFactory: DriverFactory,
+	rcDir?: string,
+): Container {
 	const env = parseEnv(process.env);
 	const dir = rcDir ?? (env.success ? env.output.TODOIST_RC_DIR : cwd());
 	let paths = findPaths(dir, { exists: existsSync });
@@ -99,7 +105,7 @@ export function createContainer(rcDir?: string): Container {
 	function getDb() {
 		const paths = getPaths();
 		if (paths) {
-			db ??= new Database(paths);
+			db ??= new Database(paths, driverFactory);
 		}
 
 		if (!db) {

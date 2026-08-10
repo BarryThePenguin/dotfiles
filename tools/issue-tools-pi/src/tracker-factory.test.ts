@@ -1,17 +1,16 @@
-import { mkdirSync, writeFileSync, mkdtempDisposableSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { createContainer } from "doist-core";
-import type { TrackerModules } from "issue-tools-core";
 import {
-	buildTrackerModules,
-	createTrackerModules,
 	createTrackerSession,
 	localTrackerRoot,
-	pickRepoProjectId,
-} from "./tracker.ts";
+	selectTodoistRepoProjectId as pickRepoProjectId,
+	type TrackerModules,
+} from "issue-tools-core";
+import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createTrackerModules } from "./index.ts";
 
 // ---------------------------------------------------------------------------
 // Env + tempdir plumbing
@@ -41,46 +40,6 @@ describe("localTrackerRoot", () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildTrackerModules
-// ---------------------------------------------------------------------------
-
-describe("buildTrackerModules", () => {
-	it("throws when TODOIST_API_TOKEN is missing", async () => {
-		using dir = tempDir();
-		writeFileSync(
-			join(dir.path, ".doistrc"),
-			'{"projects":[{"id":"p1","label":"Test"}]}\n',
-		);
-		process.env["TODOIST_RC_DIR"] = dir.path;
-
-		await expect(buildTrackerModules()).rejects.toThrow(
-			/Expected "TODOIST_API_TOKEN" but received undefined/,
-		);
-	});
-
-	it("throws when .doistrc has no projects", async () => {
-		using dir = tempDir();
-		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
-		process.env["TODOIST_API_TOKEN"] = "test";
-		process.env["TODOIST_RC_DIR"] = dir.path;
-
-		await expect(buildTrackerModules()).rejects.toThrow(
-			"Could not create Todoist tracker: no-projects",
-		);
-	});
-
-	it("throws when no .doistrc is found", async () => {
-		using dir = tempDir();
-		process.env["TODOIST_API_TOKEN"] = "test";
-		process.env["TODOIST_RC_DIR"] = dir.path;
-
-		await expect(buildTrackerModules()).rejects.toThrow(
-			"Could not create Todoist tracker: no-config",
-		);
-	});
-});
-
-// ---------------------------------------------------------------------------
 // createTrackerSession
 // ---------------------------------------------------------------------------
 
@@ -104,9 +63,9 @@ describe("createTrackerSession", () => {
 		});
 
 		const [first, concurrent, subsequent] = await Promise.all([
-			session.get({} as ExtensionContext),
-			session.get({} as ExtensionContext),
-			session.get({} as ExtensionContext),
+			session.get({}),
+			session.get({}),
+			session.get({}),
 		]);
 
 		expect(selectMode).toHaveBeenCalledOnce();
@@ -157,9 +116,9 @@ describe("createTrackerSession", () => {
 			updateStatus: vi.fn(),
 		});
 
-		const first = await session.get({} as ExtensionContext);
+		const first = await session.get({});
 		session.reset();
-		const second = await session.get({} as ExtensionContext);
+		const second = await session.get({});
 
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildModules).toHaveBeenCalledTimes(2);
@@ -183,39 +142,10 @@ describe("createTrackerSession", () => {
 			updateStatus: vi.fn(),
 		});
 
-		await expect(session.get({} as ExtensionContext)).rejects.toThrow(error);
-		await expect(session.get({} as ExtensionContext)).resolves.toBe(built);
+		await expect(session.get({})).rejects.toThrow(error);
+		await expect(session.get({})).resolves.toBe(built);
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildModules).toHaveBeenCalledTimes(2);
-	});
-});
-
-// ---------------------------------------------------------------------------
-// createTrackerModules (no silent fallback: throws on Todoist build error)
-// ---------------------------------------------------------------------------
-
-describe("createTrackerModules", () => {
-	it("throws when Todoist build fails", async () => {
-		using dir = tempDir();
-		writeFileSync(join(dir.path, ".doistrc"), '{"projects":[]}\n');
-		process.env["TODOIST_API_TOKEN"] = "test";
-		process.env["TODOIST_RC_DIR"] = dir.path;
-
-		await expect(
-			createTrackerModules({ cwd: dir.path, mode: "todoist" }),
-		).rejects.toThrow("Could not create Todoist tracker: no-projects");
-	});
-
-	it("builds local Issue and Wayfinder modules", async () => {
-		using dir = tempDir();
-		mkdirSync(join(dir.path, ".scratch"));
-
-		const modules = await createTrackerModules({
-			cwd: dir.path,
-			mode: "local",
-		});
-		expect(modules.issues).toBeDefined();
-		expect(modules.wayfinder).toBeDefined();
 	});
 });
 
@@ -237,7 +167,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		]);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		expect(pickRepoProjectId(container)).toBe("dotfiles");
 	});
 
@@ -249,7 +179,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		]);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		expect(pickRepoProjectId(container)).toBe("first");
 	});
 
@@ -263,7 +193,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		]);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		expect(pickRepoProjectId(container)).toBe("dotfiles");
 	});
 
@@ -271,7 +201,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		using dir = tempDir();
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		expect(pickRepoProjectId(container)).toBeUndefined();
 	});
 });

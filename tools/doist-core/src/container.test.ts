@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { createContainer } from "./container.ts";
 
@@ -31,7 +32,7 @@ function setupContainer() {
 describe("createContainer", () => {
 	it("does not open a db when no .doistrc exists in the git repo", () => {
 		using tempDir = setupContainer();
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		onTestFinished(() => {
 			container.close();
 		});
@@ -47,7 +48,7 @@ describe("createContainer", () => {
 		using tempDir = setupContainer();
 		const rcPath = join(tempDir.path, ".doistrc");
 		writeFileSync(rcPath, JSON.stringify({ projects: [] }), "utf8");
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		onTestFinished(() => {
 			container.close();
 		});
@@ -68,7 +69,10 @@ describe("createContainer", () => {
 			"utf8",
 		);
 		// TODOIST_RC_DIR points at tempDir; the passed dir must win.
-		const container = createContainer(otherDir.path);
+		const container = createContainer(
+			(path) => new DatabaseSync(path),
+			otherDir.path,
+		);
 		onTestFinished(() => {
 			container.close();
 		});
@@ -79,7 +83,7 @@ describe("createContainer", () => {
 
 	it("can still create a new .doistrc via projects add", () => {
 		using tempDir = setupContainer();
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		onTestFinished(() => {
 			container.close();
 		});
@@ -104,7 +108,7 @@ describe("createContainer", () => {
 			'{"projects":[{"id":"p1","label":"Work"},{"id":"p2","label":"Personal"}]}\n',
 			"utf8",
 		);
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		onTestFinished(() => {
 			container.close();
 		});
@@ -123,7 +127,7 @@ describe("createContainer", () => {
 			'{"projects":[{"id":"p1","label":"Work"},{"id":"p2","label":"Personal"}]}\n',
 			"utf8",
 		);
-		const container = createContainer();
+		const container = createContainer((path) => new DatabaseSync(path));
 		onTestFinished(() => {
 			container.close();
 		});

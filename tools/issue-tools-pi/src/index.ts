@@ -7,10 +7,15 @@ import type {
 	ExtensionCommandContext,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import { createContainer } from "doist-core";
 import {
 	ChartParams,
 	ClaimParams,
+	createLocalTrackerModules,
+	createTodoistTrackerModules,
+	createTrackerSession,
 	CreateTicketParams,
+	detectTrackerSelection,
 	GetMapParams,
 	GetTicketParams,
 	IssueCloseParams,
@@ -21,21 +26,42 @@ import {
 	IssueReadParams,
 	ListFrontierParams,
 	ListMapsParams,
+	localTrackerRoot,
 	ResolveParams,
 	SetBlockingParams,
-	detectTrackerSelection,
 	toolInventory,
 	UpdateMapParams,
+	type CreateWayfinderTrackerOptions,
+	type DriverFactory,
+	type TrackerMode,
+	type TrackerModules,
 } from "issue-tools-core";
-import { createContainer } from "doist-core";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult } from "./render.ts";
-import {
-	createTrackerModules,
-	createTrackerSession,
-	localTrackerRoot,
-	type TrackerMode,
-} from "./tracker.ts";
+
+// SQLite binds to the host runtime's native module (doist-core takes the
+// driver from the host, never sniffing it itself). Pi runs on Bun, so
+// `bun:sqlite` is the primary driver; fall back to `node:sqlite` elsewhere
+// (e.g. vitest under Node).
+let driverFactory: DriverFactory;
+
+try {
+	const { Database } = await import("bun:sqlite");
+	driverFactory = (path: string) => new Database(path);
+} catch {
+	const { DatabaseSync } = await import("node:sqlite");
+	driverFactory = (path: string) => new DatabaseSync(path);
+}
+
+export async function createTrackerModules({
+	cwd,
+	mode,
+}: CreateWayfinderTrackerOptions): Promise<TrackerModules> {
+	if (mode === "local") {
+		return createLocalTrackerModules(localTrackerRoot(cwd));
+	}
+	return createTodoistTrackerModules(driverFactory);
+}
 
 const STATUS_KEY = "issue-tools";
 
@@ -47,7 +73,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	const selectTrackerMode = async (
 		ctx: ExtensionContext,
 	): Promise<TrackerMode> => {
-		const selection = detectTrackerSelection(ctx.cwd);
+		const selection = detectTrackerSelection(ctx.cwd, driverFactory);
 		if (selection === "local" || selection === "todoist") {
 			return selection;
 		}
@@ -70,7 +96,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		ctx: ExtensionContext,
 		state: { mode: TrackerMode | null; activeMap: string | null },
 	) => {
-		const mode = state.mode ?? detectTrackerSelection(ctx.cwd);
+		const mode = state.mode ?? detectTrackerSelection(ctx.cwd, driverFactory);
 		if (mode === "both" || mode === "neither") {
 			ctx.ui.setStatus(
 				STATUS_KEY,
@@ -264,8 +290,8 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "issue_create",
 		label: "Issue: Create",
-		description: "Create a generic issue on the selected tracker.",
-		promptSnippet: "Create a generic issue on the selected tracker",
+		description: "Create a repository Issue/spec.",
+		promptSnippet: "Create a repository Issue/spec",
 		parameters: IssueCreateParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("issue_create", params, getState(), ctx);
@@ -277,8 +303,8 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "issue_read",
 		label: "Issue: Read",
-		description: "Read a generic issue from the selected tracker.",
-		promptSnippet: "Read a generic issue from the selected tracker",
+		description: "Read a repository Issue/spec by its tracker ID or URL.",
+		promptSnippet: "Read a repository Issue/spec by ID or URL",
 		parameters: IssueReadParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("issue_read", params, getState(), ctx);
@@ -291,8 +317,8 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "issue_label",
 		label: "Issue: Label",
 		description:
-			"Apply and remove triage labels on a generic issue with add/remove delta semantics.",
-		promptSnippet: "Apply and remove triage labels on a generic issue",
+			"Add or remove triage labels on a repository Issue/spec identified by ID or URL.",
+		promptSnippet: "Add or remove triage labels on a repository Issue/spec",
 		parameters: IssueLabelParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("issue_label", params, getState(), ctx);
@@ -304,8 +330,9 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "issue_comment",
 		label: "Issue: Comment",
-		description: "Post a comment on a generic issue.",
-		promptSnippet: "Post a comment on a generic issue",
+		description:
+			"Post a comment on a repository Issue/spec identified by ID or URL.",
+		promptSnippet: "Post a comment on a repository Issue/spec",
 		parameters: IssueCommentParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("issue_comment", params, getState(), ctx);
@@ -318,8 +345,8 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "issue_close",
 		label: "Issue: Close",
 		description:
-			"Close a generic issue, optionally with a closing note (one atomic sync).",
-		promptSnippet: "Close a generic issue on the selected tracker",
+			"Close a repository Issue/spec identified by ID or URL, optionally with a closing note.",
+		promptSnippet: "Close a repository Issue/spec",
 		parameters: IssueCloseParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("issue_close", params, getState(), ctx);
@@ -332,8 +359,8 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		name: "issue_list",
 		label: "Issue: List",
 		description:
-			"List generic issues on the selected tracker, filterable by state, labels (all-of), and unlabeled. Oldest first.",
-		promptSnippet: "List generic issues on the selected tracker",
+			"List repository Issues/specs, optionally filtered by state, labels, or unlabeled status. Results are oldest first.",
+		promptSnippet: "List repository Issues/specs",
 		parameters: IssueListParams,
 		async execute(_id, params, _signal, _onUpdate, ctx) {
 			return handleAction("issue_list", params, getState(), ctx);
@@ -355,7 +382,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 
 async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 	const cwd = ctx.cwd;
-	const selection = detectTrackerSelection(cwd);
+	const selection = detectTrackerSelection(cwd, driverFactory);
 
 	let resolvedMode: "local" | "todoist";
 	if (selection === "local" || selection === "todoist") {
@@ -384,7 +411,7 @@ async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 		return;
 	}
 
-	const container = createContainer();
+	const container = createContainer(driverFactory);
 	const projects = container.listProjects();
 	if (projects.length === 0) {
 		ctx.ui.notify(

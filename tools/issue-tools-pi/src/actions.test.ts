@@ -4,13 +4,13 @@ import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { createLocalTrackerModules } from "issue-tools-core";
-import { handleAction, type ToolContext } from "./actions.ts";
 import {
-	createTrackerModules,
+	createLocalTrackerModules,
 	createTrackerSession,
 	localTrackerRoot,
-} from "./tracker.ts";
+} from "issue-tools-core";
+import { createTrackerModules } from "./index.ts";
+import { handleAction, type ToolContext } from "./actions.ts";
 
 function tempDir() {
 	return mkdtempDisposableSync(join(tmpdir(), "wayfinder-actions-"));

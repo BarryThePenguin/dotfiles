@@ -18,11 +18,8 @@ import {
 	type Selectable,
 	type SqlBool,
 } from "kysely";
-import { createRequire } from "node:module";
 import { jsonArrayFrom } from "kysely/helpers/sqlite";
-import type { DatabaseSync, SQLInputValue, StatementSync } from "node:sqlite";
-
-const require = createRequire(import.meta.url);
+import type { SQLInputValue } from "node:sqlite";
 import type { ConfigPaths } from "./paths.ts";
 import {
 	normalizeFilter,
@@ -40,6 +37,30 @@ import {
 } from "./schema.ts";
 import { SPAN_NAME_DB_QUERY, SPAN_NAME_DB_TRANSACTION } from "./semconv.ts";
 import { tracer } from "./telemetry.ts";
+
+export interface SqliteStatement {
+	run(...params: unknown[]): unknown;
+	get(...params: unknown[]): unknown;
+	all(...params: unknown[]): unknown;
+}
+
+export interface SqliteDriver {
+	exec(sql: string): void;
+	prepare(sql: string): SqliteStatement;
+	close(): void;
+}
+
+/**
+ * Opens a SQLite database against a host runtime's native module.
+ *
+ * The host supplies the factory: `new Database(path)` from `bun:sqlite` under
+ * bun (opencode and Pi's embedded runtimes), `new DatabaseSync(path)` from
+ * `node:sqlite` elsewhere. It is passed explicitly into `createContainer` and
+ * `Database` from the host entry point, so no adapter is ever chosen by
+ * runtime sniffing inside doist-core — only the host's own driver enters its
+ * module graph.
+ */
+export type DriverFactory = (dbPath: string) => SqliteDriver;
 
 interface ProjectTable {
 	id: string;
@@ -338,15 +359,13 @@ function parseNestedNotes(value: unknown): AppNote[] {
 }
 
 export class Database {
-	readonly #raw: DatabaseSync;
-	readonly #stmts = new Map<string, StatementSync>();
+	readonly #raw: SqliteDriver;
+	readonly #stmts = new Map<string, SqliteStatement>();
 	readonly #q: Kysely<Schema>;
 
-	constructor({ dbPath }: ConfigPaths) {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		const { DatabaseSync } = require("node:sqlite");
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-		this.#raw = new DatabaseSync(dbPath);
+	constructor({ dbPath }: ConfigPaths, driverFactory: DriverFactory) {
+		// SQLite binds to the host runtime's native module (see DriverFactory).
+		this.#raw = driverFactory(dbPath);
 
 		this.#raw.exec(SCHEMA_SQL);
 
@@ -365,7 +384,7 @@ export class Database {
 		this.#raw.close();
 	}
 
-	#prepare(sql: string): StatementSync {
+	#prepare(sql: string): SqliteStatement {
 		let stmt = this.#stmts.get(sql);
 		if (!stmt) {
 			stmt = this.#raw.prepare(sql);

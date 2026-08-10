@@ -1,5 +1,7 @@
 packages:
   - tools/*
+overrides:
+  "@types/node": 24.13.3
 allowBuilds:
   "@google/genai": true
   "@mongodb-js/zstd": false

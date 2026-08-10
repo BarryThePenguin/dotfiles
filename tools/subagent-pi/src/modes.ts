@@ -18,7 +18,7 @@ export interface ModeParams {
 /** Return the execution modes represented by a tool call. */
 export function getRequestedModes(params: ModeParams): SubagentMode[] {
 	const modes: SubagentMode[] = [];
-	if (params.agent && params.task) modes.push("single");
-	if (params.tasks && params.tasks.length > 0) modes.push("parallel");
+	if (params.agent && params.task) {modes.push("single");}
+	if (params.tasks && params.tasks.length > 0) {modes.push("parallel");}
 	return modes;
 }
