@@ -2,13 +2,13 @@
  * Child-process mechanics for subagents (forked from pi's example subagent extension).
  *
  * Fork changes over the example:
- *  - requested agent names pass through the alias surface (resolveAgentName)
- *  - effective spawn config merges .pi/personas.json overrides; the child spawn
- *    passes --provider and --thinking when set (the example only passed --model)
  *  - spawnBackgroundAgent(): the async detached-RPC background command (extension-fit
  *    research gap 1) — spawns a detached `pi --mode rpc --session-dir <dir>` child,
  *    drives it with the prompt command, and fires onSettled on agent_settled so the
  *    parent can inject the result via sendUserMessage.
+ *
+ * Launch config resolution (agent discovery, alias resolution, persona overrides)
+ * lives in launcher.ts; this module is pure process mechanics.
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
@@ -17,12 +17,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { Message } from "@earendil-works/pi-ai";
-import { resolveAgentName, type AgentConfig } from "./agents.ts";
-import {
-	effectiveSpawnConfig,
-	type EffectiveSpawnConfig,
-	type PersonaOverride,
-} from "./personas.ts";
+import type { AgentConfig } from "./agents.ts";
+import type { EffectiveSpawnConfig } from "./personas.ts";
 
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
 
@@ -57,27 +53,6 @@ export interface SpawnContext {
 	effective: EffectiveSpawnConfig;
 }
 
-export interface SpawnContextOptions {
-	agent: AgentConfig;
-	task: string;
-	cwd: string;
-	overrides: Map<string, PersonaOverride>;
-	parentProvider?: string | undefined;
-}
-
-export interface SpawnContextRequest {
-	defaultCwd: string;
-	agents: AgentConfig[];
-	agentName: string;
-	task: string;
-	cwd?: string | undefined;
-	overrides: Map<string, PersonaOverride>;
-	parentProvider?: string | undefined;
-}
-
-export type SpawnContextResolution =
-	{ context: SpawnContext } | { result: SingleResult };
-
 function emptyUsage(): UsageStats {
 	return {
 		input: 0,
@@ -87,19 +62,6 @@ function emptyUsage(): UsageStats {
 		cost: 0,
 		contextTokens: 0,
 		turns: 0,
-	};
-}
-
-export function createSpawnContext(options: SpawnContextOptions): SpawnContext {
-	return {
-		agent: options.agent,
-		task: options.task,
-		cwd: options.cwd,
-		effective: effectiveSpawnConfig(
-			options.agent,
-			options.overrides,
-			options.parentProvider,
-		),
 	};
 }
 
@@ -113,52 +75,6 @@ function createInitialResult(context: SpawnContext): SingleResult {
 		stderr: "",
 		usage: emptyUsage(),
 		...(context.effective.model ? { model: context.effective.model } : {}),
-	};
-}
-
-function createUnknownAgentResult(
-	agentName: string,
-	task: string,
-	agents: AgentConfig[],
-): SingleResult {
-	const available = agents.map((a) => `"${a.name}"`).join(", ") || "none";
-	return {
-		agent: agentName,
-		agentSource: "unknown",
-		task,
-		exitCode: 1,
-		messages: [],
-		stderr: `Unknown agent: "${agentName}". Available agents: ${available}.`,
-		usage: emptyUsage(),
-	};
-}
-
-/** Resolve a requested agent and package its launch settings into one context. */
-export function resolveSpawnContext(
-	request: SpawnContextRequest,
-): SpawnContextResolution {
-	const resolvedName = resolveAgentName(request.agentName);
-	const agent = request.agents.find(
-		(candidate) => candidate.name === resolvedName,
-	);
-	if (!agent) {
-		return {
-			result: createUnknownAgentResult(
-				request.agentName,
-				request.task,
-				request.agents,
-			),
-		};
-	}
-
-	return {
-		context: createSpawnContext({
-			agent,
-			task: request.task,
-			cwd: request.cwd ?? request.defaultCwd,
-			overrides: request.overrides,
-			parentProvider: request.parentProvider,
-		}),
 	};
 }
 

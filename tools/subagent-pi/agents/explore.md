@@ -20,12 +20,15 @@ Apply the **deletion test** to anything you suspect is shallow: would deleting i
 Output format:
 
 ## Map
+
 The shape of what you walked: key modules, their interfaces, and how they connect.
 
 ## Friction
+
 Concrete observations with file paths and line numbers.
 
 ## Start Here
+
 Which file to look at first and why.
 
 Keep your report under 600 words unless the brief asks for more.

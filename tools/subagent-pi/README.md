@@ -25,10 +25,10 @@ prompts/         Intentionally README-only workflow prompt surface; see README
 
 ## Roster
 
-| Agent    | Model             | Tools                          | Serves |
-|----------|-------------------|--------------------------------|--------|
-| `general`| deepseek-v4-flash   | read, grep, find, ls, bash, webfetch | review, research, design briefs (the minion) |
-| `explore`| deepseek-v4-flash   | read, grep, find, ls (read-only)     | organic codebase exploration |
+| Agent     | Model             | Tools                                | Serves                                       |
+| --------- | ----------------- | ------------------------------------ | -------------------------------------------- |
+| `general` | deepseek-v4-flash | read, grep, find, ls, bash, webfetch | review, research, design briefs (the minion) |
+| `explore` | deepseek-v4-flash | read, grep, find, ls (read-only)     | organic codebase exploration                 |
 
 **Alias surface** (a naming contract with the skills — zero skill edits): `general-purpose` → `general`
 (code-review), `Explore` → `explore` (improve-codebase-architecture, case-insensitive).
@@ -39,7 +39,7 @@ prompts/         Intentionally README-only workflow prompt surface; see README
    agent, so the parent model can pick organically instead of guessing.
 2. **Alias surface** — agent names pass through `resolveAgentName`.
 3. **Persona override layer** — project-local `.pi/personas.json` (`{ provider?, model?,
-   thinkingLevel? }` keyed by canonical agent name) merges over user-level `agents.md`
+thinkingLevel? }` keyed by canonical agent name) merges over user-level `agents.md`
    frontmatter, discovered nearest-up from cwd. This changes spawn settings only and does
    not add project agents. The child spawn passes `--provider` and `--thinking` when set;
    provider defaults to the parent session's provider.
@@ -61,9 +61,9 @@ Run 2 explore subagents in parallel: one over src/, one over tests/
 The `subagent` tool intentionally exposes only the modes required by the
 originating contract:
 
-| Mode | Parameters | Description |
-|------|------------|-------------|
-| Single | `{ agent, task }` | Delegate one bounded task to one isolated subagent. |
+| Mode     | Parameters         | Description                                                              |
+| -------- | ------------------ | ------------------------------------------------------------------------ |
+| Single   | `{ agent, task }`  | Delegate one bounded task to one isolated subagent.                      |
 | Parallel | `{ tasks: [...] }` | Delegate independent tasks concurrently (maximum 8 tasks, 4 concurrent). |
 
 Sequential chains are not part of this extension's contract. Skills and the
@@ -74,7 +74,7 @@ parent session own any orchestration that needs to happen between delegations.
 ```jsonc
 // .pi/personas.json (project root — walked up from cwd)
 {
-  "general": { "provider": "gpt", "model": "gpt-5.5", "thinkingLevel": "high" }
+	"general": { "provider": "gpt", "model": "gpt-5.5", "thinkingLevel": "high" },
 }
 ```
 

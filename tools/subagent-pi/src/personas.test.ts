@@ -3,7 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { resolveAgentName } from "./agents.ts";
-import { effectiveSpawnConfig, findNearestPersonasFile, loadPersonaOverrides } from "./personas.ts";
+import {
+	effectiveSpawnConfig,
+	findNearestPersonasFile,
+	loadPersonaOverrides,
+} from "./personas.ts";
 
 const tmpDirs: string[] = [];
 function makeRepo(): string {
@@ -52,7 +56,9 @@ describe("personas.json override layer", () => {
 		writeFileSync(join(piDir, "personas.json"), "{}");
 		mkdirSync(join(repo, "packages", "foo"), { recursive: true });
 
-		expect(findNearestPersonasFile(join(repo, "packages", "foo"))).toBe(join(piDir, "personas.json"));
+		expect(findNearestPersonasFile(join(repo, "packages", "foo"))).toBe(
+			join(piDir, "personas.json"),
+		);
 		expect(findNearestPersonasFile(repo)).toBe(join(piDir, "personas.json"));
 	});
 
@@ -67,11 +73,16 @@ describe("personas.json override layer", () => {
 		mkdirSync(piDir);
 		writeFileSync(
 			join(piDir, "personas.json"),
-			JSON.stringify({ "general-purpose": { provider: "gpt", model: "gpt-5.5" } }),
+			JSON.stringify({
+				"general-purpose": { provider: "gpt", model: "gpt-5.5" },
+			}),
 		);
 
 		const overrides = loadPersonaOverrides(repo);
-		expect(overrides.get("general")).toEqual({ provider: "gpt", model: "gpt-5.5" });
+		expect(overrides.get("general")).toEqual({
+			provider: "gpt",
+			model: "gpt-5.5",
+		});
 		expect(overrides.has("general-purpose")).toBe(false);
 	});
 
@@ -90,23 +101,39 @@ describe("effectiveSpawnConfig (frontmatter merged under override)", () => {
 
 	it("returns frontmatter when no override", () => {
 		const config = effectiveSpawnConfig(agent, new Map(), "opencode-go");
-		expect(config).toEqual({ provider: "opencode-go", model: "deepseek-v4-pro", thinking: "high" });
+		expect(config).toEqual({
+			provider: "opencode-go",
+			model: "deepseek-v4-pro",
+			thinking: "high",
+		});
 	});
 
 	it("falls back to parent provider when neither layer pins one", () => {
-		const config = effectiveSpawnConfig({ name: "general", model: "x" }, new Map());
+		const config = effectiveSpawnConfig(
+			{ name: "general", model: "x" },
+			new Map(),
+		);
 		expect(config.provider).toBeUndefined();
 	});
 
 	it("override wins per-field over frontmatter", () => {
-		const overrides = new Map([["general", { provider: "gpt", model: "gpt-5.5", thinkingLevel: "low" }]]);
+		const overrides = new Map([
+			["general", { provider: "gpt", model: "gpt-5.5", thinkingLevel: "low" }],
+		]);
 		const config = effectiveSpawnConfig(agent, overrides, "opencode-go");
-		expect(config).toEqual({ provider: "gpt", model: "gpt-5.5", thinking: "low" });
+		expect(config).toEqual({
+			provider: "gpt",
+			model: "gpt-5.5",
+			thinking: "low",
+		});
 	});
 
 	it("override model does not leak to a different agent", () => {
 		const overrides = new Map([["general", { model: "gpt-5.5" }]]);
-		const config = effectiveSpawnConfig({ name: "explore", model: "deepseek-v4-flash" }, overrides);
+		const config = effectiveSpawnConfig(
+			{ name: "explore", model: "deepseek-v4-flash" },
+			overrides,
+		);
 		expect(config.model).toBe("deepseek-v4-flash");
 	});
 });

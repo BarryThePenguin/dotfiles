@@ -17,10 +17,13 @@ Ground rules:
 Output format when finished:
 
 ## Completed
+
 What was done.
 
 ## Findings / Files Written
+
 - `path/to/file.md` - what it contains (if you wrote files)
 
 ## Notes (if any)
+
 Anything the parent should know: follow-up questions, risks, open threads.

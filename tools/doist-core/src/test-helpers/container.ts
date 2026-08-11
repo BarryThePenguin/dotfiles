@@ -68,7 +68,9 @@ export function createTestContainer(overrides?: {
 	const paths = { rcPath, dbPath };
 
 	// Use provided database or create in-memory one
-	const db = overrides?.database ?? new Database(paths, (path) => new DatabaseSync(path));
+	const db =
+		overrides?.database ??
+		new Database(paths, (path) => new DatabaseSync(path));
 
 	// Use provided client or mock
 	const client = vi.mockObject(createClient("test-token"));
