@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Message } from "@earendil-works/pi-ai";
-import {
-	createAgentEventProcessor,
-	getFinalOutput,
-	type SingleResult,
-} from "./run.ts";
+import { createAgentEventProcessor, getFinalOutput } from "./run.ts";
+import type { SingleResult } from "./types.ts";
 
 function result(): SingleResult {
 	return {

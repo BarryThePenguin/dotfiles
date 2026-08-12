@@ -5,8 +5,8 @@ import {
 	RoutingMetrics,
 	type UsageResult,
 } from "opencode-go-usage";
-import { createLauncher } from "./launcher.ts";
-import { chooseQuotaRoute } from "./quota-routing.ts";
+import { createLauncher, loadLauncherDeps } from "./launcher.ts";
+import { chooseQuotaRoute, type QuotaRoutingPolicy } from "./quota-routing.ts";
 import { getRequestedModes, type SubagentMode } from "./modes.ts";
 import {
 	getFinalOutput,
@@ -16,7 +16,6 @@ import {
 	spawnBackgroundAgent,
 	truncateOutput,
 	type RunSingleAgentOptions,
-	type SingleResult,
 } from "./run.ts";
 import {
 	MAX_PARALLEL_TASKS,
@@ -26,12 +25,8 @@ import {
 	type ParallelRunSnapshot,
 	type ParallelRunTask,
 } from "./parallel-run.ts";
-
-export interface SubagentDetails {
-	mode: SubagentMode;
-	results: SingleResult[];
-	snapshot?: ParallelRunSnapshot;
-}
+import type { SubagentDetails } from "./details.ts";
+import type { SingleResult } from "./types.ts";
 
 export interface SubagentExecuteParams {
 	agent?: string | undefined;
@@ -79,6 +74,11 @@ function usageFields(result: UsageResult) {
 	};
 }
 
+const DEFAULT_QUOTA_POLICY: QuotaRoutingPolicy = {
+	fallbackAtPercent: 75,
+	fallbackAgents: new Set(["explore", "general"]),
+};
+
 export async function executeSubagent(
 	_toolCallId: string,
 	params: SubagentExecuteParams,
@@ -87,15 +87,11 @@ export async function executeSubagent(
 	ctx: ExecuteContext,
 	metrics?: RoutingMetrics,
 ): Promise<ExecuteResult> {
-	const launcher = createLauncher({
-		cwd: ctx.cwd,
-		parentProvider: ctx.model?.provider,
-	});
+	const launcher = createLauncher(
+		{ cwd: ctx.cwd, parentProvider: ctx.model?.provider },
+		loadLauncherDeps(ctx.cwd),
+	);
 	const usageClient = metrics ? new OpenCodeGoUsageClient() : undefined;
-	const quotaPolicy = {
-		fallbackAtPercent: 75,
-		fallbackAgents: new Set(["explore", "general"]),
-	};
 
 	const requestedModes = getRequestedModes(params);
 	const modeCount = requestedModes.length;
@@ -144,7 +140,7 @@ export async function executeSubagent(
 		const usage = usageClient ? await usageClient.get() : undefined;
 		const decision =
 			allowFallback && usage
-				? chooseQuotaRoute(resolution.context, usage, quotaPolicy)
+				? chooseQuotaRoute(resolution.context, usage, DEFAULT_QUOTA_POLICY)
 				: {
 						context: resolution.context,
 						policy: "normal" as const,
@@ -235,7 +231,7 @@ export async function executeSubagent(
 						task.task,
 						task.cwd,
 						(partial) => {
-							const result = partial.details?.results[0];
+							const result = partial.details.results[0];
 							if (result) {
 								onTaskUpdate(result);
 							}
@@ -370,10 +366,10 @@ export function createBackgroundCommandHandler(pi: ExtensionAPI) {
 			brief = (matchedBrief ?? "").trim() || task;
 		}
 
-		const launcher = createLauncher({
-			cwd: ctx.cwd,
-			parentProvider: ctx.model?.provider,
-		});
+		const launcher = createLauncher(
+			{ cwd: ctx.cwd, parentProvider: ctx.model?.provider },
+			loadLauncherDeps(ctx.cwd),
+		);
 		const resolution = launcher.resolve(agentName, brief);
 		if ("result" in resolution) {
 			ctx.ui.notify(resolution.result.stderr, "error");
@@ -383,10 +379,7 @@ export function createBackgroundCommandHandler(pi: ExtensionAPI) {
 		const { context } = resolution;
 		const { agent } = context;
 		const usage = await new OpenCodeGoUsageClient().get();
-		const decision = chooseQuotaRoute(context, usage, {
-			fallbackAtPercent: 75,
-			fallbackAgents: new Set(["explore", "general"]),
-		});
+		const decision = chooseQuotaRoute(context, usage, DEFAULT_QUOTA_POLICY);
 		const routedContext = decision.context;
 
 		const handle = spawnBackgroundAgent({

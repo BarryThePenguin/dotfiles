@@ -1,5 +1,5 @@
-import type { SingleResult, UsageStats } from "./run.ts";
 import { isFailedResult } from "./run.ts";
+import { emptyUsage, type SingleResult } from "./types.ts";
 
 export const MAX_PARALLEL_TASKS = 8;
 export const PARALLEL_CONCURRENCY = 4;
@@ -62,18 +62,6 @@ interface MutableParallelTaskEntry {
 	task: ParallelRunTask;
 	status: ParallelTaskStatus;
 	result?: SingleResult;
-}
-
-function emptyUsage(): UsageStats {
-	return {
-		input: 0,
-		output: 0,
-		cacheRead: 0,
-		cacheWrite: 0,
-		cost: 0,
-		contextTokens: 0,
-		turns: 0,
-	};
 }
 
 function cloneResult(result: SingleResult): SingleResult {

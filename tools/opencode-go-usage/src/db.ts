@@ -1,6 +1,6 @@
-import type { Generated, Insertable, Selectable } from "kysely";
+import type { Generated, Insertable, Kysely, Selectable } from "kysely";
 import { SyncSqliteDatabase } from "sqlite-kysely";
-import { driverFactory, type SqliteDriver } from "sqlite-runtime";
+import { driverFactory } from "sqlite-runtime";
 import type { OpenCodeGoUsage } from "./index.ts";
 
 export type { SqliteDriver } from "sqlite-runtime";
@@ -100,15 +100,13 @@ const SCHEMA_SQL = `
 
 /** Small SQLite repository for the provider usage snapshot. */
 export class Database {
-	readonly #raw: SqliteDriver;
-	readonly #q: SyncSqliteDatabase<Schema>["query"];
 	readonly #sync: SyncSqliteDatabase<Schema>;
+	readonly #query: Kysely<Schema>;
 
 	constructor(dbPath: string) {
-		this.#raw = driverFactory(dbPath);
-		this.#raw.exec(SCHEMA_SQL);
-		this.#sync = new SyncSqliteDatabase({ driver: this.#raw });
-		this.#q = this.#sync.query;
+		this.#sync = new SyncSqliteDatabase({ driver: driverFactory(dbPath) });
+		this.#sync.migrate(SCHEMA_SQL);
+		this.#query = this.#sync.query;
 	}
 
 	close(): void {
@@ -117,7 +115,7 @@ export class Database {
 
 	getUsage(): UsageRow | undefined {
 		return this.#sync.get(
-			this.#q
+			this.#query
 				.selectFrom("usage_cache")
 				.selectAll()
 				.where("cache_key", "=", "current")
@@ -127,7 +125,7 @@ export class Database {
 
 	upsertUsage(fetchedAt: string, usage: OpenCodeGoUsage): void {
 		this.#sync.run(
-			this.#q
+			this.#query
 				.insertInto("usage_cache")
 				.values({
 					cache_key: "current",
@@ -165,12 +163,14 @@ export class Database {
 			output_tokens: event.outputTokens ?? null,
 			cost: event.cost ?? null,
 		};
-		this.#sync.run(this.#q.insertInto("routing_events").values(row).compile());
+		this.#sync.run(
+			this.#query.insertInto("routing_events").values(row).compile(),
+		);
 	}
 
 	routingSummary(): RoutingSummary[] {
 		return this.#sync.all(
-			this.#q
+			this.#query
 				.selectFrom("routing_events")
 				.select([
 					"policy",

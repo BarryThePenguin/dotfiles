@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { UsageResult } from "opencode-go-usage";
 import { chooseQuotaRoute, type QuotaRoutingPolicy } from "./quota-routing.ts";
-import type { SpawnContext } from "./run.ts";
+import type { SpawnContext } from "./types.ts";
 
 const context: SpawnContext = {
 	agent: {

@@ -5,7 +5,7 @@ import {
 	runParallelRun,
 	type ParallelRunTask,
 } from "./parallel-run.ts";
-import type { SingleResult } from "./run.ts";
+import type { SingleResult } from "./types.ts";
 
 function result(task: ParallelRunTask, text = task.agent): SingleResult {
 	return {

@@ -2,8 +2,9 @@ import * as os from "node:os";
 import type { Message } from "@earendil-works/pi-ai";
 import { getMarkdownTheme } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
-import { getFinalOutput, isFailedResult, type SingleResult } from "./run.ts";
-import type { SubagentDetails } from "./execute.ts";
+import { getFinalOutput, isFailedResult } from "./run.ts";
+import type { SubagentDetails } from "./details.ts";
+import type { SingleResult } from "./types.ts";
 
 const COLLAPSED_ITEM_COUNT = 10;
 

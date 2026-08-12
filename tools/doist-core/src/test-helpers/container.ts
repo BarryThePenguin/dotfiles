@@ -9,29 +9,16 @@ import { mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { vi, type Mocked } from "vitest";
-import type { ProjectRef } from "../container.ts";
+import type { OperationalContainer, ProjectRef } from "../container.ts";
 import { Database } from "../db.ts";
 import { type ConfigPaths } from "../paths.ts";
-import type { SyncAndPersistResult } from "../sync.ts";
 import { createClient, type TodoistClient } from "../todoist.ts";
 
-export interface TestContainer {
+/** OperationalContainer with narrowed mock types for test code. */
+export interface TestContainer extends OperationalContainer {
 	readonly paths: ConfigPaths;
 	readonly db: Mocked<Database>;
 	readonly client: Mocked<TodoistClient>;
-
-	addProject: (ref: ProjectRef) => void;
-	removeProject: (id: string) => void;
-	listProjects: () => ProjectRef[];
-	listProjectIds: () => string[];
-	projectCount: () => number;
-	setRepoProject: (id: string) => void;
-	sync: (
-		projectIds: string[],
-		forceFullSync?: boolean,
-	) => Promise<SyncAndPersistResult>;
-
-	close(): void;
 }
 
 /**
@@ -84,7 +71,7 @@ export function createTestContainer(overrides?: {
 			)
 		: new Map<string, ProjectRef>();
 
-	return {
+	return ({
 		addProject(ref: ProjectRef) {
 			projects.set(ref.id, ref);
 		},
@@ -130,5 +117,5 @@ export function createTestContainer(overrides?: {
 			testDir.remove();
 			db.close();
 		},
-	};
+	}) satisfies OperationalContainer;
 }

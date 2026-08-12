@@ -1,5 +1,5 @@
 import type { UsageResult } from "opencode-go-usage";
-import type { SpawnContext } from "./run.ts";
+import type { SpawnContext } from "./types.ts";
 
 export interface QuotaRoutingPolicy {
 	fallbackAtPercent: number;

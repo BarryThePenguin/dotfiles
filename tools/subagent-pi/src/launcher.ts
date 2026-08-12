@@ -8,7 +8,7 @@ import {
 	loadPersonaOverrides,
 	type PersonaOverride,
 } from "./personas.ts";
-import { type SingleResult, type SpawnContext } from "./run.ts";
+import { emptyUsage, type SingleResult, type SpawnContext } from "./types.ts";
 
 export interface SpawnContextOptions {
 	agent: AgentConfig;
@@ -57,15 +57,7 @@ function unknownAgentResult(
 		exitCode: 1,
 		messages: [],
 		stderr: `Unknown agent: "${agentName}". Available agents: ${available}.`,
-		usage: {
-			input: 0,
-			output: 0,
-			cacheRead: 0,
-			cacheWrite: 0,
-			cost: 0,
-			contextTokens: 0,
-			turns: 0,
-		},
+		usage: emptyUsage(),
 	};
 }
 
@@ -107,14 +99,24 @@ export interface Launcher {
 	resolve(agentName: string, task: string, cwd?: string): LaunchResolution;
 }
 
-/**
- * Build a launcher that owns the full pre-spawn pipeline: agent discovery,
- * persona override loading, name resolution, and context assembly.
- * Discovery and overrides are loaded once and shared across all resolve() calls.
- */
-export function createLauncher(ctx: LaunchContext): Launcher {
+export interface LauncherDeps {
+	agents: readonly AgentConfig[];
+	overrides: Map<string, PersonaOverride>;
+}
+
+/** Load filesystem deps — call once, then pass to createLauncher. */
+export function loadLauncherDeps(cwd: string): LauncherDeps {
 	const { agents } = discoverAgents();
-	const overrides = loadPersonaOverrides(ctx.cwd);
+	const overrides = loadPersonaOverrides(cwd);
+	return { agents, overrides };
+}
+
+/** Pure factory — testable with injected deps. */
+export function createLauncher(
+	ctx: LaunchContext,
+	deps: LauncherDeps,
+): Launcher {
+	const { agents, overrides } = deps;
 	return {
 		agents,
 		resolve(agentName, task, cwd) {

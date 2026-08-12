@@ -17,53 +17,9 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { Message } from "@earendil-works/pi-ai";
-import type { AgentConfig } from "./agents.ts";
-import type { EffectiveSpawnConfig } from "./personas.ts";
+import { emptyUsage, type SingleResult, type SpawnContext } from "./types.ts";
 
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
-
-export interface UsageStats {
-	input: number;
-	output: number;
-	cacheRead: number;
-	cacheWrite: number;
-	cost: number;
-	contextTokens: number;
-	turns: number;
-}
-
-export interface SingleResult {
-	agent: string;
-	agentSource: "user" | "unknown";
-	task: string;
-	exitCode: number;
-	messages: Message[];
-	stderr: string;
-	usage: UsageStats;
-	model?: string;
-	stopReason?: string;
-	errorMessage?: string;
-}
-
-/** Everything needed to launch one child process. */
-export interface SpawnContext {
-	agent: AgentConfig;
-	task: string;
-	cwd: string;
-	effective: EffectiveSpawnConfig;
-}
-
-function emptyUsage(): UsageStats {
-	return {
-		input: 0,
-		output: 0,
-		cacheRead: 0,
-		cacheWrite: 0,
-		cost: 0,
-		contextTokens: 0,
-		turns: 0,
-	};
-}
 
 function createInitialResult(context: SpawnContext): SingleResult {
 	return {

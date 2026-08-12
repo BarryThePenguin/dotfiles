@@ -329,7 +329,7 @@ function parseNestedNotes(value: unknown): AppNote[] {
 
 export class Database {
 	readonly #raw: SqliteDriver;
-	readonly #q: Kysely<Schema>;
+	readonly #query: Kysely<Schema>;
 	readonly #sync: SyncSqliteDatabase<Schema>;
 
 	constructor({ dbPath }: ConfigPaths) {
@@ -338,7 +338,7 @@ export class Database {
 		this.#raw.exec(SCHEMA_SQL);
 
 		this.#sync = new SyncSqliteDatabase({ driver: this.#raw });
-		this.#q = this.#sync.query;
+		this.#query = this.#sync.query;
 	}
 
 	close() {
@@ -350,15 +350,15 @@ export class Database {
 	}
 
 	private projects() {
-		return this.#q.selectFrom("projects").selectAll();
+		return this.#query.selectFrom("projects").selectAll();
 	}
 
 	private tasks() {
-		return this.#q.selectFrom("tasks").selectAll();
+		return this.#query.selectFrom("tasks").selectAll();
 	}
 
 	private notes() {
-		return this.#q.selectFrom("notes").selectAll();
+		return this.#query.selectFrom("notes").selectAll();
 	}
 
 	getTaskById(id: string): AppTask | null {
@@ -434,7 +434,7 @@ export class Database {
 
 	// Section queries
 	selectSections(projectId?: string): AppSection[] {
-		let query = this.#q.selectFrom("sections").selectAll();
+		let query = this.#query.selectFrom("sections").selectAll();
 
 		if (projectId) {
 			query = query.where("project_id", "=", projectId);
@@ -459,7 +459,7 @@ export class Database {
 	// Label queries
 	selectAllLabels(): AppLabel[] {
 		return this.#sync
-			.all(this.#q.selectFrom("labels").selectAll().orderBy("name").compile())
+			.all(this.#query.selectFrom("labels").selectAll().orderBy("name").compile())
 			.map(normalizeLabel);
 	}
 
@@ -469,7 +469,7 @@ export class Database {
 	 * one task query plus one notes query per read.
 	 */
 	selectTasksWithNotes(criteria?: TaskCriteria): AppTaskWithNotes[] {
-		let query = this.#q
+		let query = this.#query
 			.selectFrom("tasks")
 			.selectAll("tasks")
 			.select((eb) => [
@@ -516,7 +516,7 @@ export class Database {
 
 	// Filter queries
 	private filters() {
-		return this.#q.selectFrom("filters").selectAll();
+		return this.#query.selectFrom("filters").selectAll();
 	}
 
 	selectFilters(): AppFilter[] {
@@ -545,7 +545,7 @@ export class Database {
 		column: keyof Schema[T] & string,
 		values: Insertable<Schema[T]>,
 	): void {
-		const compiled = this.#q
+		const compiled = this.#query
 			.insertInto(table)
 			.values(values)
 			.onConflict((oc) => oc.column(column).doUpdateSet(values))
@@ -572,7 +572,7 @@ export class Database {
 
 	deleteFilterById(id: string): void {
 		this.#sync.run(
-			this.#q.deleteFrom("filters").where("id", "=", id).compile(),
+			this.#query.deleteFrom("filters").where("id", "=", id).compile(),
 		);
 	}
 
@@ -590,7 +590,7 @@ export class Database {
 		}
 		const now = new Date().toISOString();
 		this.#sync.run(
-			this.#q
+			this.#query
 				.updateTable("tasks")
 				.set({ is_completed: 1, synced_at: now })
 				.where("id", "in", ids)
@@ -604,7 +604,7 @@ export class Database {
 		}
 		const now = new Date().toISOString();
 		this.#sync.run(
-			this.#q
+			this.#query
 				.updateTable("tasks")
 				.set({ is_completed: 0, synced_at: now })
 				.where("id", "in", ids)
@@ -617,7 +617,7 @@ export class Database {
 			return;
 		}
 		this.#sync.run(
-			this.#q.deleteFrom("tasks").where("id", "in", ids).compile(),
+			this.#query.deleteFrom("tasks").where("id", "in", ids).compile(),
 		);
 	}
 
@@ -626,14 +626,14 @@ export class Database {
 			return;
 		}
 		this.#sync.run(
-			this.#q.deleteFrom("notes").where("id", "in", ids).compile(),
+			this.#query.deleteFrom("notes").where("id", "in", ids).compile(),
 		);
 	}
 
 	// Metadata operations
 	getMeta(key: string): string | null {
 		const row = this.#sync.get(
-			this.#q
+			this.#query
 				.selectFrom("meta")
 				.select("value")
 				.where("key", "=", key)
@@ -644,7 +644,7 @@ export class Database {
 
 	setMeta(key: string, value: string): void {
 		this.#sync.run(
-			this.#q
+			this.#query
 				.insertInto("meta")
 				.values({ key, value })
 				.onConflict((oc) => oc.column("key").doUpdateSet({ value }))
@@ -653,7 +653,7 @@ export class Database {
 	}
 
 	deleteMeta(key: string): void {
-		this.#sync.run(this.#q.deleteFrom("meta").where("key", "=", key).compile());
+		this.#sync.run(this.#query.deleteFrom("meta").where("key", "=", key).compile());
 	}
 
 	// Backward compatibility wrappers

@@ -140,6 +140,11 @@ export class SyncSqliteDatabase<Schema extends Record<string, unknown>> {
 		);
 	}
 
+	/** Run DDL or multi-statement SQL directly against the driver. */
+	migrate(sql: string): void {
+		this.#raw.exec(sql);
+	}
+
 	close(): void {
 		this.#raw.close();
 	}
