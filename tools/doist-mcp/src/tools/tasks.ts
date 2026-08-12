@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import type { Container } from "doist-core";
+import type { OperationalContainer } from "doist-core";
 import {
 	addTask,
 	addTaskComment,
@@ -25,7 +25,10 @@ import {
 } from "./shared.ts";
 import { registerTool } from "./traced-tool.ts";
 
-export function registerTaskTools(mcp: McpServer, container: Container): void {
+export function registerTaskTools(
+	mcp: McpServer,
+	container: OperationalContainer,
+): void {
 	registerTool({
 		mcp,
 		name: "todoist_tasks_list",
@@ -57,13 +60,8 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			attributes: { project: args.project },
 		}),
 		callback: async ({ project, details, sync: shouldSync, ...rest }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 
 			const projectId = project ? resolveProject(db, project) : undefined;
 			const { priority, ...filters } = rest;
@@ -112,9 +110,8 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			attributes: { id: Array.isArray(args.id) ? args.id.join(",") : args.id },
 		}),
 		callback: async ({ id }: { id: string | string[] }) => {
-			const { db, client } = container;
 			const taskIds = Array.isArray(id) ? id : [id];
-			const result = await completeTasks(db, client, taskIds);
+			const result = await completeTasks(container, taskIds);
 			return {
 				data: { ok: result.ok, completed: result.result },
 				text:
@@ -144,9 +141,8 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			},
 		}),
 		callback: async ({ id }: { id: string | string[] }) => {
-			const { db, client } = container;
 			const taskIds = Array.isArray(id) ? id : [id];
-			const result = await uncompleteTasks(db, client, taskIds);
+			const result = await uncompleteTasks(container, taskIds);
 			return {
 				data: { ok: result.ok, reopened: result.result },
 				text:
@@ -177,14 +173,14 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			attributes: { id: args.id },
 		}),
 		callback: async ({ id, ...fields }) => {
-			const { db, client } = container;
+			const { db } = container;
 			if (Object.values(fields).every((v) => v === undefined)) {
 				throw new Error("at least one field must be provided");
 			}
 			if (!db.getTaskById(id)) {
 				throw new Error(`task not found: ${id}`);
 			}
-			const result = await updateTask(db, client, id, fields);
+			const result = await updateTask(container, id, fields);
 			const fieldsChanged = Object.keys(fields);
 			return {
 				data: result.result,
@@ -218,11 +214,11 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			attributes: { id: args.id, project: args.project },
 		}),
 		callback: async ({ id, project }) => {
-			const { db, client } = container;
+			const { db } = container;
 			if (!db.getTaskById(id)) {
 				throw new Error(`task not found: ${id}`);
 			}
-			const result = await moveTask(db, client, id, project);
+			const result = await moveTask(container, id, project);
 			return {
 				data: result.result,
 				text: `Moved task ${id}`,
@@ -240,8 +236,7 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 		},
 		spanOptions: {},
 		callback: async (fields) => {
-			const { db, client } = container;
-			const result = await addTask(db, client, fields);
+			const result = await addTask(container, fields);
 			return {
 				data: result.result,
 				text: "Added task",
@@ -317,13 +312,8 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			attributes: { taskId: args.taskId },
 		}),
 		callback: async ({ taskId, sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 
 			const result = listTaskComments(db, taskId);
 			const comments = result.result.map((n) => ({
@@ -363,8 +353,7 @@ export function registerTaskTools(mcp: McpServer, container: Container): void {
 			attributes: { taskId: args.taskId },
 		}),
 		callback: async ({ taskId, content }) => {
-			const { db, client } = container;
-			const result = await addTaskComment(db, client, taskId, content);
+			const result = await addTaskComment(container, taskId, content);
 			const note = result.result;
 
 			return {

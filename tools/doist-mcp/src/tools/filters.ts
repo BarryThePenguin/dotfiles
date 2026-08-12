@@ -9,7 +9,7 @@ import {
 	updateFilter,
 	FilterQueryInputSchema as FilterQueryInputRaw,
 } from "doist-core";
-import type { Container } from "doist-core";
+import type { OperationalContainer } from "doist-core";
 import {
 	FormattedTaskSchema,
 	maybeSyncSummary,
@@ -77,7 +77,7 @@ const FilterQueryOutputSchema = toStandardJsonSchema(
 
 export function registerFilterTools(
 	mcp: McpServer,
-	container: Container,
+	container: OperationalContainer,
 ): void {
 	registerTool({
 		mcp,
@@ -92,13 +92,8 @@ export function registerFilterTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 			const filters = listFilters(db);
 			return {
 				data: { sync: syncResult, filters },
@@ -135,14 +130,8 @@ export function registerFilterTools(
 			isFavorite,
 			sync: shouldSync,
 		}) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
-			const result = await addFilter(db, client, {
+			const syncResult = await maybeSyncSummary(container, shouldSync);
+			const result = await addFilter(container, {
 				name,
 				query,
 				color,
@@ -187,14 +176,8 @@ export function registerFilterTools(
 			isFavorite,
 			sync: shouldSync,
 		}) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
-			const result = await updateFilter(db, client, id, {
+			const syncResult = await maybeSyncSummary(container, shouldSync);
+			const result = await updateFilter(container, id, {
 				name,
 				query,
 				color,
@@ -230,14 +213,8 @@ export function registerFilterTools(
 			attributes: { "filter.id": args.id ?? "unknown" },
 		}),
 		callback: async ({ id, sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
-			await deleteFilter(db, client, id);
+			const syncResult = await maybeSyncSummary(container, shouldSync);
+			await deleteFilter(container, id);
 			return {
 				data: { sync: syncResult },
 				text: `Deleted filter ${id}`,
@@ -262,13 +239,8 @@ export function registerFilterTools(
 			attributes: { "filter.query": args.query ?? "unknown" },
 		}),
 		callback: async ({ query, limit, sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { client } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 			const result = await runFilterQuery(client, query, limit ?? 50);
 			if (!result.ok) {
 				throw new Error("Failed to run filter query");

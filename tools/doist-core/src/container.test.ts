@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
-import { createContainer } from "./container.ts";
+import { createContainer, hasProjects } from "./container.ts";
 
 beforeEach(() => {
 	vi.stubEnv("TODOIST_API_TOKEN", undefined);
@@ -115,6 +115,22 @@ describe("createContainer", () => {
 		]);
 	});
 
+	it("can sync via container.sync() without accessing db or client directly", async () => {
+		using tempDir = setupContainer();
+		const rcPath = join(tempDir.path, ".doistrc");
+		writeFileSync(
+			rcPath,
+			JSON.stringify({ projects: [{ id: "p1", label: "Work" }] }),
+			"utf8",
+		);
+		const container = createContainer();
+		onTestFinished(() => {
+			container.close();
+		});
+
+		expect(container.sync).toBeTypeOf("function");
+	});
+
 	it("setRepoProject marks the given project, removing the marker from any other", () => {
 		using tempDir = setupContainer();
 		const rcPath = join(tempDir.path, ".doistrc");
@@ -139,5 +155,64 @@ describe("createContainer", () => {
 			{ id: "p1", label: "Work", repo: true },
 			{ id: "p2", label: "Personal" },
 		]);
+	});
+});
+
+describe("hasProjects", () => {
+	it("returns false when no .doistrc exists", () => {
+		using tempDir = mkdtempDisposableSync(
+			join(tmpdir(), "doist-has-projects-"),
+		);
+		mkdirSync(join(tempDir.path, ".git"));
+		expect(hasProjects(tempDir.path)).toBe(false);
+	});
+
+	it("returns false when .doistrc has no projects", () => {
+		using tempDir = mkdtempDisposableSync(
+			join(tmpdir(), "doist-has-projects-"),
+		);
+		mkdirSync(join(tempDir.path, ".git"));
+		writeFileSync(
+			join(tempDir.path, ".doistrc"),
+			JSON.stringify({ projects: [] }),
+			"utf8",
+		);
+		expect(hasProjects(tempDir.path)).toBe(false);
+	});
+
+	it("returns true when .doistrc has at least one project", () => {
+		using tempDir = mkdtempDisposableSync(
+			join(tmpdir(), "doist-has-projects-"),
+		);
+		mkdirSync(join(tempDir.path, ".git"));
+		writeFileSync(
+			join(tempDir.path, ".doistrc"),
+			JSON.stringify({ projects: [{ id: "p1", label: "Work" }] }),
+			"utf8",
+		);
+		expect(hasProjects(tempDir.path)).toBe(true);
+	});
+
+	it("returns false when .doistrc is malformed JSON", () => {
+		using tempDir = mkdtempDisposableSync(
+			join(tmpdir(), "doist-has-projects-"),
+		);
+		mkdirSync(join(tempDir.path, ".git"));
+		writeFileSync(join(tempDir.path, ".doistrc"), "not-json", "utf8");
+		expect(hasProjects(tempDir.path)).toBe(false);
+	});
+
+	it("does not open a database file", () => {
+		using tempDir = mkdtempDisposableSync(
+			join(tmpdir(), "doist-has-projects-"),
+		);
+		mkdirSync(join(tempDir.path, ".git"));
+		writeFileSync(
+			join(tempDir.path, ".doistrc"),
+			JSON.stringify({ projects: [{ id: "p1", label: "Work" }] }),
+			"utf8",
+		);
+		hasProjects(tempDir.path);
+		expect(existsSync(join(tempDir.path, "todoist.db"))).toBe(false);
 	});
 });

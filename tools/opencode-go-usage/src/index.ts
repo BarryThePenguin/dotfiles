@@ -271,16 +271,21 @@ export function classifyError(error: unknown): string {
 		message.includes("401") ||
 		message.includes("403") ||
 		message.includes("auth")
-	)
-		{return "auth";}
-	if (message.includes("429") || message.includes("rate"))
-		{return "rate_limited";}
-	if (message.includes("quota") || message.includes("limit"))
-		{return "quota_exceeded";}
-	if (message.includes("timeout") || message.includes("abort"))
-		{return "timeout";}
-	if (message.includes("network") || message.includes("fetch"))
-		{return "network";}
+	) {
+		return "auth";
+	}
+	if (message.includes("429") || message.includes("rate")) {
+		return "rate_limited";
+	}
+	if (message.includes("quota") || message.includes("limit")) {
+		return "quota_exceeded";
+	}
+	if (message.includes("timeout") || message.includes("abort")) {
+		return "timeout";
+	}
+	if (message.includes("network") || message.includes("fetch")) {
+		return "network";
+	}
 	return "unknown";
 }
 

@@ -1,7 +1,8 @@
+import { vi } from "vitest";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import type { DbTask, SyncCommand } from "doist-core";
-import { setToken } from "doist-core";
+import { setToken, syncAndPersist } from "doist-core";
 import type { TestContainer } from "doist-core/test-helpers";
 import { createTestContainer } from "doist-core/test-helpers";
 import { writeFileSync } from "node:fs";
@@ -104,6 +105,15 @@ export async function createDefaultHarness(): Promise<{
 	container.db.upsertTask(TASK_B);
 	setToken(container.db, "tok");
 	container.db.setLastSyncedAt(NOW);
+
+	vi.spyOn(container, "sync").mockImplementation((projectIds, forceFullSync) =>
+		syncAndPersist(
+			container.db,
+			container.client,
+			projectIds,
+			forceFullSync ?? false,
+		),
+	);
 
 	container.client.sync.mockImplementation(
 		(_syncToken, ...commands: SyncCommand[]) => {

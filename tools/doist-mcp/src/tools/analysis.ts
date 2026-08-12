@@ -7,7 +7,7 @@ import {
 	findStaleCandidates,
 	groupStaleByProject,
 } from "doist-core";
-import type { Container } from "doist-core";
+import type { OperationalContainer } from "doist-core";
 import {
 	EmptyInput,
 	FormattedTaskSchema,
@@ -131,7 +131,7 @@ function pickBestTriageCategory(
 
 export function registerAnalysisTools(
 	mcp: McpServer,
-	container: Container,
+	container: OperationalContainer,
 ): void {
 	registerTool({
 		mcp,
@@ -145,13 +145,8 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const sync = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const sync = await maybeSyncSummary(container, shouldSync);
 
 			const allTasks = db.selectTasks();
 			const duplicates = findDuplicateCandidates(allTasks);
@@ -238,13 +233,8 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 			const enrich = createEnricher(db);
 			const analysis = findDuplicateCandidates(db.selectTasks());
 			const enrichedGroups = analysis.groups.map((g) => ({
@@ -282,13 +272,8 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 			const tasks = db.selectTasks({
 				orderBy: { field: "updated_at", direction: "asc" },
 			});

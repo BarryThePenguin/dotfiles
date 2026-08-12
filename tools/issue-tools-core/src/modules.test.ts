@@ -664,8 +664,6 @@ describe("Resolution workflow", () => {
 		});
 
 		expect(result.outcome).toBe("complete");
-		expect(result.resolutionPosted).toBe(true);
-		expect(result.decisionRecorded).toBe(true);
 		expect(result.resolvedTicket).toMatchObject({
 			id: "map/01-blocker",
 			status: "closed",
@@ -698,8 +696,6 @@ describe("Resolution workflow", () => {
 
 		expect(result).toMatchObject({
 			outcome: "partial",
-			decisionRecorded: false,
-			resolutionPosted: true,
 			unblocked: [
 				{
 					id: blocked.id,
@@ -724,8 +720,6 @@ describe("Resolution workflow", () => {
 
 		expect(result).toMatchObject({
 			outcome: "terminal",
-			resolutionPosted: false,
-			decisionRecorded: false,
 			resolvedTicket: { status: "closed" },
 		});
 		expect(result.error).toMatch(/closed without/i);
@@ -759,7 +753,6 @@ describe("Resolution workflow", () => {
 
 		expect(first.outcome).toBe("complete");
 		expect(retry.outcome).toBe("complete");
-		expect(retry.decisionRecorded).toBe(true);
 		expect(retry.resolvedTicket.status).toBe("closed");
 		expect(retry.map?.decisionsSoFar).toHaveLength(1);
 		expect(retry.map?.decisionsSoFar).toEqual([

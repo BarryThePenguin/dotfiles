@@ -13,6 +13,7 @@ import { Database } from "./db.ts";
 import type { ConfigPaths } from "./paths.ts";
 import { findPaths } from "./paths.ts";
 import { applyRepoMarker } from "./repo-project.ts";
+import { syncAndPersist, type SyncAndPersistResult } from "./sync.ts";
 import { createClient, type TodoistClient } from "./todoist.ts";
 
 export const ProjectRefSchema = v.object({
@@ -40,13 +41,32 @@ const EnvSchema = v.object({
 
 const parseEnv = v.safeParser(EnvSchema);
 
+function resolveRcDir(rcDir?: string): string {
+	return rcDir ?? process.env["TODOIST_RC_DIR"] ?? cwd();
+}
+
+function findRcPaths(dir: string) {
+	return findPaths(dir, { exists: existsSync });
+}
+
 /**
- * Container bundles dependencies and manages their lifecycle.
+ * Raw persistence access: the database and the Todoist API client.
+ *
+ * Kept separate from Container so that code which only needs configuration
+ * (project list, paths) does not incidentally gain access to the database or
+ * the API token. Callers that genuinely need both surfaces use
+ * `OperationalContainer`.
+ */
+export interface PersistenceLayer {
+	readonly db: Database;
+	readonly client: TodoistClient;
+}
+
+/**
+ * Container manages configuration and lifecycle without exposing persistence.
  */
 export interface Container {
 	readonly paths: ConfigPaths | null;
-	readonly db: Database;
-	readonly client: TodoistClient;
 
 	addProject: (ref: ProjectRef) => void;
 	removeProject: (id: string) => void;
@@ -55,8 +75,22 @@ export interface Container {
 	projectCount: () => number;
 	setRepoProject: (id: string) => void;
 
+	/** Sync Todoist data into the local database. */
+	sync(
+		projectIds: string[],
+		forceFullSync?: boolean,
+	): Promise<SyncAndPersistResult>;
+
 	close(): void;
 }
+
+/**
+ * The full operational type: config + lifecycle + persistence access.
+ *
+ * Use this type at call sites that need to read from the database or write via
+ * the Todoist API. `createContainer()` always returns this type.
+ */
+export type OperationalContainer = Container & PersistenceLayer;
 
 /**
  * Create a production container with real dependencies.
@@ -77,10 +111,10 @@ export interface Container {
  * }
  * ```
  */
-export function createContainer(rcDir?: string): Container {
+export function createContainer(rcDir?: string): OperationalContainer {
 	const env = parseEnv(process.env);
-	const dir = rcDir ?? (env.success ? env.output.TODOIST_RC_DIR : cwd());
-	let paths = findPaths(dir, { exists: existsSync });
+	const dir = resolveRcDir(rcDir);
+	let paths = findRcPaths(dir);
 	let client: TodoistClient | null = null;
 	let db: Database | null = null;
 
@@ -89,7 +123,7 @@ export function createContainer(rcDir?: string): Container {
 	let cachedProjects: ProjectRef[] | null = null;
 
 	function getPaths(): ConfigPaths | null {
-		return (paths ??= findPaths(dir, { exists: existsSync }));
+		return (paths ??= findRcPaths(dir));
 	}
 
 	function getRcPath(): string {
@@ -189,6 +223,14 @@ export function createContainer(rcDir?: string): Container {
 		get client(): TodoistClient {
 			return getClient();
 		},
+		sync(projectIds: string[], forceFullSync?: boolean) {
+			return syncAndPersist(
+				getDb(),
+				getClient(),
+				projectIds,
+				forceFullSync ?? false,
+			);
+		},
 		close() {
 			if (db) {
 				db.close();
@@ -196,4 +238,23 @@ export function createContainer(rcDir?: string): Container {
 			}
 		},
 	};
+}
+
+/**
+ * Returns true when the repo at `rcDir` has a `.doistrc` with at least one
+ * configured project. Reads only the config file — does not open the database
+ * or validate the API token.
+ */
+export function hasProjects(rcDir?: string): boolean {
+	try {
+		const dir = resolveRcDir(rcDir);
+		const paths = findRcPaths(dir);
+		if (!paths) {
+			return false;
+		}
+		const config = parseConfigSchema(readFileSync(paths.rcPath, "utf-8"));
+		return config.projects.length > 0;
+	} catch {
+		return false;
+	}
 }

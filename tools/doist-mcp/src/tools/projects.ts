@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import type { Container } from "doist-core";
+import type { OperationalContainer } from "doist-core";
 import { listSections, RestApiProjectSchema } from "doist-core";
 import {
 	EmptyInput,
@@ -17,7 +17,7 @@ const MAX_AUTO_PAGES = 10;
 
 export function registerProjectTools(
 	mcp: McpServer,
-	container: Container,
+	container: OperationalContainer,
 ): void {
 	registerTool({
 		mcp,
@@ -161,13 +161,8 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 			const labels = db.selectAllLabels().map(({ id, name }) => ({ id, name }));
 			return {
 				data: { sync: syncResult, labels },
@@ -196,13 +191,8 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async ({ project, sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const syncResult = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db } = container;
+			const syncResult = await maybeSyncSummary(container, shouldSync);
 			const sections = listSections(db, project);
 			return {
 				data: { sync: syncResult, sections },

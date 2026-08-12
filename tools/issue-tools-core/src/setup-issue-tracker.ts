@@ -19,7 +19,7 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { createContainer } from "doist-core";
+import { hasProjects } from "doist-core";
 import {
 	PiIssueToolNames,
 	PiToolNames,
@@ -33,7 +33,7 @@ const LOCAL_TRACKER_MARKER = ".scratch";
 
 export function detectTrackerSelection(cwd: string): TrackerSelection {
 	const hasScratch = existsSync(join(cwd, LOCAL_TRACKER_MARKER));
-	const hasTodoist = hasTodoistProjects(cwd);
+	const hasTodoist = hasProjects(cwd);
 	if (hasScratch && hasTodoist) {
 		return "both";
 	}
@@ -44,24 +44,6 @@ export function detectTrackerSelection(cwd: string): TrackerSelection {
 		return "todoist";
 	}
 	return "neither";
-}
-
-/**
- * A repo can use Todoist when a `.doistrc` with at least one Project is
- * reachable from the cwd. A missing or malformed config reads as "no" —
- * the detector reports what the tracker can actually build.
- */
-function hasTodoistProjects(cwd: string): boolean {
-	try {
-		const container = createContainer(cwd);
-		try {
-			return container.listProjectIds().length > 0;
-		} finally {
-			container.close();
-		}
-	} catch {
-		return false;
-	}
 }
 
 export type ToolInventoryEntry = {

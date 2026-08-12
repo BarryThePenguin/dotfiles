@@ -75,7 +75,10 @@ describe("TodoistAdapter", () => {
 			title: "Completed map",
 			destination: "This map should not be listed.",
 		});
-		await completeTask(fixture.db, fixture.client, completedMap.id);
+		await completeTask(
+			{ db: fixture.db, client: fixture.client },
+			completedMap.id,
+		);
 		await modules.issues.createIssue({
 			title: "Not a map",
 			body: "This task has no wayfinder_map label.",
@@ -235,8 +238,7 @@ describe("TodoistAdapter", () => {
 		});
 
 		await addTaskComment(
-			fixture.db,
-			fixture.client,
+			{ db: fixture.db, client: fixture.client },
 			ticket.id,
 			"Historical note",
 		);
@@ -304,7 +306,11 @@ describe("TodoistAdapter", () => {
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
-		await addTaskComment(fixture.db, fixture.client, created.id, "Existing");
+		await addTaskComment(
+			{ db: fixture.db, client: fixture.client },
+			created.id,
+			"Existing",
+		);
 		const nestedSpy = vi.spyOn(Database.prototype, "getTaskWithNotes");
 
 		fixture.client.syncCalls.length = 0;
@@ -586,12 +592,15 @@ describe("TodoistAdapter", () => {
 
 	it("scopes the list to the tracker's project (does not leak sibling projects)", async () => {
 		// A task in a different project should not appear in this list.
-		await addTask(fixture.db, fixture.client, {
-			title: "From another project",
-			description: "Body.",
-			labels: [],
-			project: "project-2",
-		});
+		await addTask(
+			{ db: fixture.db, client: fixture.client },
+			{
+				title: "From another project",
+				description: "Body.",
+				labels: [],
+				project: "project-2",
+			},
+		);
 		const ours = await modules.issues.createIssue({
 			title: "Our project",
 			body: "Body.",
@@ -688,12 +697,15 @@ describe("TodoistAdapter nested comment reads", () => {
 			question: "What is next?",
 		});
 		await addTaskComment(
-			fixture.db,
-			fixture.client,
+			{ db: fixture.db, client: fixture.client },
 			blocker.id,
 			"Blocker note",
 		);
-		await addTaskComment(fixture.db, fixture.client, target.id, "Target note");
+		await addTaskComment(
+			{ db: fixture.db, client: fixture.client },
+			target.id,
+			"Target note",
+		);
 
 		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
 		const modules = modulesFor(fixture);
@@ -725,7 +737,11 @@ describe("TodoistAdapter nested comment reads", () => {
 			type: "task",
 			question: "Q",
 		});
-		await addTaskComment(fixture.db, fixture.client, ticket.id, "Comment");
+		await addTaskComment(
+			{ db: fixture.db, client: fixture.client },
+			ticket.id,
+			"Comment",
+		);
 
 		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
 
@@ -743,7 +759,11 @@ describe("TodoistAdapter nested comment reads", () => {
 			title: "Single issue",
 			body: "Body.",
 		});
-		await addTaskComment(fixture.db, fixture.client, issue.id, "Comment");
+		await addTaskComment(
+			{ db: fixture.db, client: fixture.client },
+			issue.id,
+			"Comment",
+		);
 
 		const nestedSpy = vi.spyOn(Database.prototype, "selectTasksWithNotes");
 
@@ -820,8 +840,16 @@ describe("TodoistAdapter nested comment reads", () => {
 			type: "task",
 			question: "Q",
 		});
-		await addTaskComment(fixture.db, fixture.client, ticket.id, "first");
-		await addTaskComment(fixture.db, fixture.client, ticket.id, "second");
+		await addTaskComment(
+			{ db: fixture.db, client: fixture.client },
+			ticket.id,
+			"first",
+		);
+		await addTaskComment(
+			{ db: fixture.db, client: fixture.client },
+			ticket.id,
+			"second",
+		);
 
 		const children = await fixture.adapter.listChildTickets(map.id);
 
@@ -839,7 +867,11 @@ describe("TodoistAdapter nested comment reads", () => {
 			type: "task",
 			question: "Q",
 		});
-		await addTaskComment(fixture.db, fixture.client, ticket.id, "Existing");
+		await addTaskComment(
+			{ db: fixture.db, client: fixture.client },
+			ticket.id,
+			"Existing",
+		);
 
 		const nestedSpy = vi.spyOn(Database.prototype, "getTaskWithNotes");
 

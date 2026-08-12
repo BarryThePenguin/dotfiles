@@ -61,8 +61,6 @@ async function resolve(
 			mapId: input.mapId,
 			unblocked: [],
 			error: error.message,
-			resolutionPosted: false,
-			decisionRecorded: false,
 		};
 	}
 
@@ -92,8 +90,6 @@ async function resolve(
 			map,
 			mapId: input.mapId,
 			unblocked,
-			resolutionPosted: true,
-			decisionRecorded: true,
 		};
 	} catch (error) {
 		return {
@@ -102,8 +98,6 @@ async function resolve(
 			mapId: input.mapId,
 			unblocked,
 			error: error instanceof Error ? error.message : String(error),
-			resolutionPosted: true,
-			decisionRecorded: false,
 		};
 	}
 }

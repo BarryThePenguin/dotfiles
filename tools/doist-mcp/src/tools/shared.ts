@@ -1,6 +1,6 @@
 import * as v from "valibot";
-import type { AppProject, Database, TodoistClient } from "doist-core";
-import { countSyncData, syncAndPersist } from "doist-core";
+import type { AppProject, Database, OperationalContainer } from "doist-core";
+import { countSyncData } from "doist-core";
 
 export const EmptyInput = v.object({ sync: v.optional(v.boolean(), false) });
 export const SyncInput = v.object({ sync: v.optional(v.boolean(), false) });
@@ -76,14 +76,12 @@ export function createEnricher(db: Database) {
 }
 
 export async function maybeSyncSummary(
-	db: Database,
-	client: TodoistClient,
-	listProjectIds: () => string[],
+	container: OperationalContainer,
 	sync?: boolean,
 ) {
 	if (!sync) {
 		return undefined;
 	}
-	const result = await syncAndPersist(db, client, listProjectIds(), false);
+	const result = await container.sync(container.listProjectIds(), false);
 	return countSyncData(result);
 }

@@ -12,6 +12,7 @@ import { vi, type Mocked } from "vitest";
 import type { ProjectRef } from "../container.ts";
 import { Database } from "../db.ts";
 import { type ConfigPaths } from "../paths.ts";
+import type { SyncAndPersistResult } from "../sync.ts";
 import { createClient, type TodoistClient } from "../todoist.ts";
 
 export interface TestContainer {
@@ -25,6 +26,10 @@ export interface TestContainer {
 	listProjectIds: () => string[];
 	projectCount: () => number;
 	setRepoProject: (id: string) => void;
+	sync: (
+		projectIds: string[],
+		forceFullSync?: boolean,
+	) => Promise<SyncAndPersistResult>;
 
 	close(): void;
 }
@@ -103,6 +108,21 @@ export function createTestContainer(overrides?: {
 				});
 			}
 		},
+		sync: vi.fn().mockResolvedValue({
+			data: {
+				projects: [],
+				sections: [],
+				labels: [],
+				filters: [],
+				tasks: [],
+				notes: [],
+				completedTaskIds: [],
+				deletedTaskIds: [],
+				deletedNoteIds: [],
+				syncToken: "",
+			},
+			reconciled: 0,
+		}),
 		paths,
 		db: vi.mocked(db),
 		client,

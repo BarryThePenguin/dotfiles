@@ -87,8 +87,6 @@ export type ResolveTicketResult = {
 	mapId: string;
 	unblocked: WayfinderTrackerReference[];
 	error?: string;
-	resolutionPosted: boolean;
-	decisionRecorded: boolean;
 };
 
 /** A blocker as resolved by getTicketDetail: sibling info for a blockerId. */

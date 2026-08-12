@@ -1,8 +1,11 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/server";
 import { cwd } from "node:process";
-import type { Container } from "doist-core";
+import type { OperationalContainer } from "doist-core";
 
-export function registerResources(mcp: McpServer, container: Container): void {
+export function registerResources(
+	mcp: McpServer,
+	container: OperationalContainer,
+): void {
 	mcp.registerResource(
 		"todoist_config",
 		"todoist://config",

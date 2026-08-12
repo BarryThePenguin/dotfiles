@@ -33,7 +33,11 @@ function todoistFixture(): Fixture {
 	return {
 		tracker: engine.adapter,
 		addOrdinaryComment: async (ticketId, body) => {
-			await addTaskComment(engine.db, engine.client, ticketId, body);
+			await addTaskComment(
+				{ db: engine.db, client: engine.client },
+				ticketId,
+				body,
+			);
 		},
 		cleanup: () => {
 			engine.cleanup();

@@ -274,8 +274,8 @@ async function resolve(
 		mapId: result.mapId,
 		outcome: result.outcome,
 		unblocked: result.unblocked,
-		resolutionPosted: result.resolutionPosted,
-		decisionRecorded: result.decisionRecorded,
+		resolutionPosted: result.outcome !== "terminal",
+		decisionRecorded: result.outcome === "complete",
 		...(result.error ? { error: result.error } : {}),
 	});
 }

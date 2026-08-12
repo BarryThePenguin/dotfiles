@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import type { Container, RestApiTaskByFilter } from "doist-core";
+import type { OperationalContainer, RestApiTaskByFilter } from "doist-core";
 import {
 	buildProjectMap,
 	FormattedTaskSchema,
@@ -71,7 +71,7 @@ function toFormatted(
 
 export function registerSessionTools(
 	mcp: McpServer,
-	container: Container,
+	container: OperationalContainer,
 ): void {
 	registerTool({
 		mcp,
@@ -89,13 +89,8 @@ export function registerSessionTools(
 			attributes: { energy: args.energy ?? "none" },
 		}),
 		callback: async ({ energy, sync: shouldSync }) => {
-			const { db, client, listProjectIds } = container;
-			const sync = await maybeSyncSummary(
-				db,
-				client,
-				listProjectIds,
-				shouldSync,
-			);
+			const { db, client } = container;
+			const sync = await maybeSyncSummary(container, shouldSync);
 
 			const projectMap = buildProjectMap(db.selectProjects());
 

@@ -1,4 +1,5 @@
 import type { Database, DbNote } from "./db.ts";
+import type { PersistenceLayer } from "./container.ts";
 import {
 	normalizeFilter,
 	normalizeNote,
@@ -79,8 +80,7 @@ export interface OperationResult<T> {
  * @returns { ok: true, result: updatedTask } on success
  */
 export async function updateTask(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	id: string,
 	{
 		title,
@@ -144,8 +144,7 @@ export async function updateTask(
  * @returns { ok: true, result: movedTask } on success
  */
 export async function moveTask(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	id: string,
 	project: string,
 ): Promise<OperationResult<AppTask>> {
@@ -174,8 +173,7 @@ export async function moveTask(
  * - { ok: true, result: newTask } on success
  */
 export async function addTask(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	{
 		title,
 		project,
@@ -220,8 +218,7 @@ export async function addTask(
  * @returns { ok: true, count: number of completed tasks } on success
  */
 export async function completeTasks(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	ids: string[],
 ): Promise<OperationResult<number>> {
 	if (ids.length === 0) {
@@ -249,8 +246,7 @@ export async function completeTasks(
  * @returns { ok: true, count: number of reopened tasks } on success
  */
 export async function uncompleteTasks(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	ids: string[],
 ): Promise<OperationResult<number>> {
 	if (ids.length === 0) {
@@ -279,8 +275,7 @@ export async function uncompleteTasks(
  * @returns { ok: true, result: completedTaskId } on success
  */
 export async function completeTask(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	id: string,
 	comment?: string,
 ): Promise<OperationResult<string>> {
@@ -325,8 +320,7 @@ export function listFilters(db: Database): AppFilter[] {
  * Add a new filter via the Todoist sync API.
  */
 export async function addFilter(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	{ name, query, color, itemOrder, isFavorite }: AddFilterFields,
 ): Promise<OperationResult<AppFilter>> {
 	const tempId = crypto.randomUUID();
@@ -356,8 +350,7 @@ export async function addFilter(
  * Update an existing filter via the Todoist sync API.
  */
 export async function updateFilter(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	id: string,
 	{ name, query, color, itemOrder, isFavorite }: UpdateFilterFields,
 ): Promise<OperationResult<AppFilter>> {
@@ -386,8 +379,7 @@ export async function updateFilter(
  * Delete a filter via the Todoist sync API.
  */
 export async function deleteFilter(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	id: string,
 ): Promise<OperationResult<void>> {
 	const allData = await client.sync(
@@ -465,8 +457,7 @@ export async function runFilterQuery(
  * @returns { ok: true, result: note } on success
  */
 export async function addTaskComment(
-	db: Database,
-	client: TodoistClient,
+	{ db, client }: PersistenceLayer,
 	taskId: string,
 	content: string,
 ): Promise<OperationResult<AppNote>> {

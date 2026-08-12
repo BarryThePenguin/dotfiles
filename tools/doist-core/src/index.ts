@@ -9,8 +9,13 @@ export type {
 	DbFilter,
 	DbNote,
 } from "./db.ts";
-export { createContainer, ProjectRefSchema } from "./container.ts";
-export type { Container, ProjectRef } from "./container.ts";
+export { createContainer, hasProjects, ProjectRefSchema } from "./container.ts";
+export type {
+	Container,
+	OperationalContainer,
+	PersistenceLayer,
+	ProjectRef,
+} from "./container.ts";
 export type { ConfigPaths } from "./paths.ts";
 
 // Schema transformations

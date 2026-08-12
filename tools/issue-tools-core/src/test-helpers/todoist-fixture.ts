@@ -188,8 +188,7 @@ export function createTodoistFixture(
 		options.taskTimestamps ? { taskTimestamps: options.taskTimestamps } : {},
 	);
 	const adapter = new TodoistAdapter(
-		db,
-		client,
+		{ db, client },
 		options.projectId ? { projectId: options.projectId } : {},
 	);
 	return {

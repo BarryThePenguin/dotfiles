@@ -1,9 +1,4 @@
-import {
-	createContainer,
-	selectRepoProject,
-	syncAndPersist,
-	type Container,
-} from "doist-core";
+import { createContainer, selectRepoProject, type Container } from "doist-core";
 import { createTrackerModulesFromBackend } from "./modules.ts";
 import type { TrackerModules } from "./modules.ts";
 import { TodoistAdapter } from "./todoist-adapter.ts";
@@ -29,14 +24,10 @@ async function createTodoistTrackerContext(): Promise<TodoistTrackerContext> {
 		throw new Error("Could not create Todoist tracker: no-projects");
 	}
 
-	await syncAndPersist(container.db, container.client, projectIds, false);
+	await container.sync(projectIds, false);
 	const projectId = repoProjectId(container);
 	return {
-		persistence: new TodoistAdapter(
-			container.db,
-			container.client,
-			projectId ? { projectId } : {},
-		),
+		persistence: new TodoistAdapter(container, projectId ? { projectId } : {}),
 	};
 }
 

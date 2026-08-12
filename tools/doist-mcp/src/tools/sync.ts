@@ -1,11 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
-import type { Container } from "doist-core";
+import type { OperationalContainer } from "doist-core";
 import { countSyncData, syncAndPersist } from "doist-core";
 import { FullSyncInput, SyncSummarySchema } from "./shared.ts";
 import { registerTool } from "./traced-tool.ts";
 
-export function registerSyncTools(mcp: McpServer, container: Container): void {
+export function registerSyncTools(
+	mcp: McpServer,
+	container: OperationalContainer,
+): void {
 	registerTool({
 		mcp,
 		name: "todoist_sync",

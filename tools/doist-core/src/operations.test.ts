@@ -97,9 +97,13 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
-				title: "Updated via API",
-			});
+			const result = await updateTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				{
+					title: "Updated via API",
+				},
+			);
 
 			// Verify result
 			expect(result.ok).toBe(true);
@@ -135,9 +139,13 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
-				addLabels: ["high"],
-			});
+			const result = await updateTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				{
+					addLabels: ["high"],
+				},
+			);
 
 			// Verify result
 			expect(result.ok).toBe(true);
@@ -169,9 +177,13 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
-				addLabels: ["home", "new"],
-			});
+			const result = await updateTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				{
+					addLabels: ["home", "new"],
+				},
+			);
 
 			// Order preserved: existing first (with duplicates dropped), then new appends
 			expect(result.ok).toBe(true);
@@ -200,9 +212,13 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
-				addLabels: ["zeta", "alpha", "mike"],
-			});
+			const result = await updateTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				{
+					addLabels: ["zeta", "alpha", "mike"],
+				},
+			);
 
 			expect(result.result.labels).toEqual(["urgent", "zeta", "alpha", "mike"]);
 		});
@@ -227,9 +243,13 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
-				removeLabels: ["home"],
-			});
+			const result = await updateTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				{
+					removeLabels: ["home"],
+				},
+			);
 
 			expect(result.ok).toBe(true);
 			expect(result.result.labels).toEqual(["urgent", "work"]);
@@ -255,10 +275,14 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
-				addLabels: ["new", "home"],
-				removeLabels: ["home"],
-			});
+			const result = await updateTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				{
+					addLabels: ["new", "home"],
+					removeLabels: ["home"],
+				},
+			);
 
 			// "home" is in both addLabels and removeLabels → remove wins; result does not include "home"
 			expect(result.ok).toBe(true);
@@ -285,9 +309,13 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await updateTask(container.db, client, TASK_IDS.alpha, {
-				addLabels: ["fresh", "label"],
-			});
+			const result = await updateTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				{
+					addLabels: ["fresh", "label"],
+				},
+			);
 
 			expect(result.result.labels).toEqual(["fresh", "label"]);
 		});
@@ -317,8 +345,7 @@ describe("mock HTTP client", () => {
 
 			const client = createClient("test-token");
 			const result = await moveTask(
-				container.db,
-				client,
+				{ db: container.db, client },
 				TASK_IDS.alpha,
 				"Personal",
 			);
@@ -372,10 +399,13 @@ describe("mock HTTP client", () => {
 			});
 
 			const client = createClient("test-token");
-			const result = await addTask(container.db, client, {
-				title: "Buy groceries",
-				priority: 2,
-			});
+			const result = await addTask(
+				{ db: container.db, client },
+				{
+					title: "Buy groceries",
+					priority: 2,
+				},
+			);
 
 			expect(result.ok).toBe(true);
 			expect(result.result.id).toBe("t-new-real");
@@ -410,10 +440,13 @@ describe("mock HTTP client", () => {
 			});
 
 			const client = createClient("test-token");
-			const result = await addTask(container.db, client, {
-				title: "Task in Inbox",
-				project: "Inbox",
-			});
+			const result = await addTask(
+				{ db: container.db, client },
+				{
+					title: "Task in Inbox",
+					project: "Inbox",
+				},
+			);
 
 			expect(result.ok).toBe(true);
 			expect(result.result.id).toBe("t-new");
@@ -444,12 +477,15 @@ describe("mock HTTP client", () => {
 			});
 
 			const client = createClient("test-token");
-			const result = await addTask(container.db, client, {
-				title: "Complete task",
-				priority: 3,
-				due: "2026-05-25",
-				labels: ["urgent"],
-			});
+			const result = await addTask(
+				{ db: container.db, client },
+				{
+					title: "Complete task",
+					priority: 3,
+					due: "2026-05-25",
+					labels: ["urgent"],
+				},
+			);
 
 			expect(result.ok).toBe(true);
 			expect(result.result.content).toBe("Complete task");
@@ -484,10 +520,13 @@ describe("mock HTTP client", () => {
 			});
 
 			const client = createClient("test-token");
-			const result = await addTask(container.db, client, {
-				title: "Nested task",
-				parentId: "parent-task-id",
-			});
+			const result = await addTask(
+				{ db: container.db, client },
+				{
+					title: "Nested task",
+					parentId: "parent-task-id",
+				},
+			);
 
 			expect(result.ok).toBe(true);
 			expect(result.result.parentId).toBe("parent-task-id");
@@ -533,7 +572,7 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await completeTasks(container.db, client, [
+			const result = await completeTasks({ db: container.db, client }, [
 				TASK_IDS.alpha,
 				TASK_IDS.beta,
 			]);
@@ -578,7 +617,7 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await completeTasks(container.db, client, [
+			const result = await completeTasks({ db: container.db, client }, [
 				TASK_IDS.alpha,
 			]);
 
@@ -590,7 +629,7 @@ describe("mock HTTP client", () => {
 
 		it("handles empty array case", async () => {
 			const client = createClient("test-token");
-			const result = await completeTasks(container.db, client, []);
+			const result = await completeTasks({ db: container.db, client }, []);
 
 			expect(result.ok).toBe(true);
 			expect(result.result).toBe(0);
@@ -624,7 +663,7 @@ describe("mock HTTP client", () => {
 			);
 
 			const client = createClient("test-token");
-			const result = await uncompleteTasks(container.db, client, [
+			const result = await uncompleteTasks({ db: container.db, client }, [
 				TASK_IDS.done,
 			]);
 
@@ -636,7 +675,7 @@ describe("mock HTTP client", () => {
 
 		it("handles empty array case", async () => {
 			const client = createClient("test-token");
-			const result = await uncompleteTasks(container.db, client, []);
+			const result = await uncompleteTasks({ db: container.db, client }, []);
 
 			expect(result.ok).toBe(true);
 			expect(result.result).toBe(0);
@@ -676,7 +715,10 @@ describe("mock HTTP client", () => {
 			});
 
 			const client = createClient("test-token");
-			const result = await completeTask(container.db, client, TASK_IDS.alpha);
+			const result = await completeTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+			);
 
 			expect(result.ok).toBe(true);
 			expect(result.result).toBe(TASK_IDS.alpha);
@@ -721,8 +763,7 @@ describe("mock HTTP client", () => {
 
 			const client = createClient("test-token");
 			const result = await completeTask(
-				container.db,
-				client,
+				{ db: container.db, client },
 				TASK_IDS.alpha,
 				"Closing: wontfix",
 			);
@@ -794,8 +835,7 @@ describe("mock HTTP client", () => {
 
 			const client = createClient("test-token");
 			const result = await addTaskComment(
-				container.db,
-				client,
+				{ db: container.db, client },
 				"t1",
 				"Resolution: done",
 			);
@@ -838,8 +878,7 @@ describe("mock HTTP client", () => {
 
 			const client = createClient("test-token");
 			const result = await addTaskComment(
-				container.db,
-				client,
+				{ db: container.db, client },
 				"t1",
 				"Resolution: done",
 			);
@@ -872,7 +911,7 @@ describe("mock HTTP client", () => {
 			});
 
 			const client = createClient("test-token");
-			await addTaskComment(container.db, client, "t1", "hi");
+			await addTaskComment({ db: container.db, client }, "t1", "hi");
 			expect(getToken(container.db)).toBe("tok-1");
 		});
 	});
@@ -918,7 +957,7 @@ describe("mock HTTP client", () => {
 
 			const client = createClient("test-token");
 			await expect(
-				deleteFilter(container.db, client, "f-ghost"),
+				deleteFilter({ db: container.db, client }, "f-ghost"),
 			).rejects.toBeInstanceOf(SyncCommandError);
 
 			// The local row must still be there — persistMutations never ran.
