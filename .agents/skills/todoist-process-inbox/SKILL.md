@@ -14,34 +14,35 @@ Call `todoist_tasks_list` with `label: "thoughts"`, `details: true`, and `sync: 
 
 If the list is empty: say so and stop.
 
-*Completion: you have the full list of thought-labelled tasks.*
+_Completion: you have the full list of thought-labelled tasks._
 
 ## Step 2 — Clarify one at a time
 
 Present tasks one at a time. For each, show the task name linked to its Todoist URL and its current project. Ask: **what is this?**
 
-| What it is | Action |
-|---|---|
-| Clear next step | Route to right project, remove `thoughts` label |
+| What it is                                    | Action                                               |
+| --------------------------------------------- | ---------------------------------------------------- |
+| Clear next step                               | Route to right project, remove `thoughts` label      |
 | Vague ("look into X", "do something about Y") | **Rewrite** into a specific action first, then route |
-| Idea / someday | Move to Personal, remove `thoughts` label |
-| Not worth keeping | Complete (discard) |
+| Idea / someday                                | Move to Personal, remove `thoughts` label            |
+| Not worth keeping                             | Complete (discard)                                   |
 
 **Rewriting:** push back if the rewritten version is still vague. "Look into X" → "Find out [specific question] about X". "Sort out Y" → "[Verb] Y by [doing what]". One round of pushback is enough — if they can't clarify it, park it in Personal.
 
 **Dates:** don't set a due date unless the user names a specific time they'll do it. Leave tasks undated — a floating task is honest. A placeholder date just creates overdue noise in every check-in until triage cleans it up.
 
-*Completion: every thought has been assigned an outcome. None undecided.*
+_Completion: every thought has been assigned an outcome. None undecided._
 
 ## Step 3 — Confirm and apply
 
 Summarise before touching anything:
+
 - N updated (N rewritten), destinations listed
 - N completed (discarded)
 
 Get confirmation, then apply. Use `todoist_tasks_complete` for discards, `todoist_tasks_update` / `todoist_tasks_move` for the rest.
 
-*Completion: `thoughts` label removed from all processed tasks, discards completed.*
+_Completion: `thoughts` label removed from all processed tasks, discards completed._
 
 ## Step 4 — Done
 

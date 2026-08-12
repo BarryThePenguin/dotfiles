@@ -12,14 +12,15 @@ A deliberate cleanup session — not a check-in. Set expectations upfront: 10-20
 
 Call `todoist_triage_analysis` with `sync: true`.
 
-*Completion: `result.duplicates`, `result.stale`, `result.unroutedInbox`, and `result.missingEnergyMetadata` in hand.*
+_Completion: `result.duplicates`, `result.stale`, `result.unroutedInbox`, and `result.missingEnergyMetadata` in hand._
 
 ## Step 2 — Present the situation
 
 > **Triage summary:**
+>
 > - Duplicate groups: `result.duplicates.groups.length`
 > - Stale tasks: `result.stale.candidates.length`
-> - Unrouted inbox items: `result.unroutedInbox.length` *(excludes `thoughts`)*
+> - Unrouted inbox items: `result.unroutedInbox.length` _(excludes `thoughts`)_
 > - Missing energy context: `result.missingEnergyMetadata.length`
 >
 > Where do you want to start?
@@ -29,14 +30,18 @@ If no preference, recommend the highest-count category. If unrouted inbox is non
 ## Step 3 — Work one category at a time
 
 ### Duplicates
+
 For each group in `result.duplicates.groups`:
+
 - Show the canonical task and its matches, linked: `[Task name](task.url)`
 - Show the recommendation (merge / review / ignore) and the reason
 - Ask: keep one and complete the rest, ignore, or handle manually?
 - Queue the decision — don't apply yet
 
 ### Stale tasks
+
 For each candidate in `result.stale.candidates`:
+
 - Show task with project, linked: `[Task name](task.url)`
 - Show the signals that flagged it and the recommendation
 - Ask based on `recommendationCode`:
@@ -48,7 +53,9 @@ For each candidate in `result.stale.candidates`:
 - Queue the decision
 
 ### Unrouted inbox
+
 Tasks in Inbox without the `thoughts` label are captures that never got routed:
+
 - Show each, linked: `[Task name](task.url)`
 - For each: route to a project, rewrite as a clearer action, or complete it
 - Queue the decision
@@ -56,24 +63,27 @@ Tasks in Inbox without the `thoughts` label are captures that never got routed:
 ### Missing energy context
 
 Tasks with no priority and no energy label (`low-energy`, `medium-energy`, `high-energy`, `quick`) are invisible to the check-in's energy-based suggestions. For each:
+
 - Show the task, linked: `[Task name](task.url)`
 - Ask: assign an energy label (`low-energy` / `medium-energy` / `high-energy`), mark it `quick`, set a priority (1–3), or skip?
 - Queue the update
 
 If the list is long, do a batch: show all at once and let the user assign in one pass rather than one at a time.
 
-**When a task gets `high-energy`:** pause and ask — *"This one needs real focus to start. Is it actually worth doing, or has it been sitting here because you're avoiding it?"* A task that keeps getting deferred probably isn't going to happen. Better to complete it now than let it haunt the list. Don't do this for every `high-energy` assignment — only when the task looks like it's been around a while or has been rescheduled.
+**When a task gets `high-energy`:** pause and ask — _"This one needs real focus to start. Is it actually worth doing, or has it been sitting here because you're avoiding it?"_ A task that keeps getting deferred probably isn't going to happen. Better to complete it now than let it haunt the list. Don't do this for every `high-energy` assignment — only when the task looks like it's been around a while or has been rescheduled.
 
 If `thoughts`-label tasks appear during any category: skip them, note they belong in `todoist-process-inbox`.
 
 ### Pacing
-After finishing a category: *"Want to keep going or stop here?"* Don't push. A partial triage is better than a forced one.
+
+After finishing a category: _"Want to keep going or stop here?"_ Don't push. A partial triage is better than a forced one.
 
 ## Step 4 — Confirm and apply
 
 Before any changes, show the full queue:
 
 > **About to make N changes:**
+>
 > - Complete: [task](url), [task](url)
 > - Move to Personal: [task](url)
 > - Rewrite: [old name](url) → "new name"
@@ -83,13 +93,13 @@ Before any changes, show the full queue:
 
 Apply only on explicit yes. Then execute all queued changes.
 
-*Completion: all queued changes applied.*
+_Completion: all queued changes applied._
 
 ## Step 5 — Reflection
 
 One question after applying:
 
-> *"What pattern kept coming up?"*
+> _"What pattern kept coming up?"_
 
 Don't analyse for them — just prompt and listen. Common signals worth naming: vague tasks that never get started, the same idea captured multiple times, tasks rescheduled so often they've lost meaning. These point to upstream capture or workflow problems, not just clutter.
 

@@ -13,6 +13,7 @@ A scan — quick read of what's due and what's possible. Goal: leave with 0-2 th
 One question, three options:
 
 > "How's your energy right now?"
+>
 > - **Low** — winding down, want easy wins or just a scan
 > - **Medium** — can focus for an hour
 > - **Have a block** — got real time, want something meaningful
@@ -22,43 +23,49 @@ One question, three options:
 Call `todoist_session_summary` with `energy` set to the answer from Step 1 (`low`, `medium`, or `high`) and `sync: true`.
 
 **If `result.requiresTriage` is true:** Say:
-> *"You have N overdue tasks — the system needs a triage, not a scan. Run `todoist-triage` to clear the backlog."*
-Then skip to Step 4. Don't proceed with the scan.
+
+> _"You have N overdue tasks — the system needs a triage, not a scan. Run `todoist-triage` to clear the backlog."_
+> Then skip to Step 4. Don't proceed with the scan.
 
 **Otherwise:** Present clearly and briefly:
+
 - **Overdue** (`result.overdue`): list with project name, linked `[Task name](task.url)`.
 - **Due today** (`result.today`): same format.
 - **Nothing due:** say so plainly and continue to Step 3.
 
-*Completion: due and overdue tasks surfaced, or user redirected to triage.*
+_Completion: due and overdue tasks surfaced, or user redirected to triage._
 
 ## Step 3 — Surface 1-2 options
 
 Use `result.suggested` from Step 2 as the starting point. Present as a short list, not a decision tree.
 
 **Low energy:**
+
 - Suggest tasks labelled `low-energy` or `quick`
-- Or confirm nothing needs doing: *"Nothing urgent — enjoy your evening."* and stop.
-- If `high-energy` tasks are due or overdue, acknowledge them briefly: *"You have N high-energy tasks due — best tackled fresh, not when winding down."* Don't list them. Don't push.
+- Or confirm nothing needs doing: _"Nothing urgent — enjoy your evening."_ and stop.
+- If `high-energy` tasks are due or overdue, acknowledge them briefly: _"You have N high-energy tasks due — best tackled fresh, not when winding down."_ Don't list them. Don't push.
 
 **Medium energy:**
+
 - Suggest tasks labelled `low-energy`, `medium-energy`, or `quick`
 - If `high-energy` tasks are due or overdue, same acknowledgement as low energy — medium energy isn't enough unless momentum has already built up in the session, which you can't know at the start
 
 **Have a block:**
+
 - Surface `high-energy` tasks first — this is when they're worth tackling
 - If none are due, ask what they feel like working on and pull relevant tasks
 
 If they say "none of these" or "not feeling it" — that's fine. Don't push.
 
-*Completion: 1-2 options presented and user has responded.*
+_Completion: 1-2 options presented and user has responded._
 
 ## Step 4 — Inbox note
 
 Use `result.thoughtsCount` from Step 2 — no additional tool call needed.
 
 If count > 0:
-> *"You have N thoughts waiting in your inbox — review them when you have energy."*
+
+> _"You have N thoughts waiting in your inbox — review them when you have energy."_
 
 If count is 0: skip entirely.
 
