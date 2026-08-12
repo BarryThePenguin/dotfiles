@@ -1,8 +1,9 @@
 {
 	"extends": "./tsconfig.base.json",
 	"compilerOptions": {
+		"composite": true,
 		"noEmit": true,
-		"outDir": "./dist"
+		"tsBuildInfoFile": "./dist/tsconfig.repo-config-files.tsbuildinfo"
 	},
 	"include": ["eslint.config.js", "vitest.config.ts", ".pi/agent/extensions"]
 }

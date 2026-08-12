@@ -5,5 +5,5 @@
 		"outDir": "./dist",
 		"types": ["node", "bun"]
 	},
-	"references": []
+	"references": [{ "path": "../issue-tools-core/tsconfig.build.json" }]
 }

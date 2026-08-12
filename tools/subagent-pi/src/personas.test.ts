@@ -136,4 +136,24 @@ describe("effectiveSpawnConfig (frontmatter merged under override)", () => {
 		);
 		expect(config.model).toBe("deepseek-v4-flash");
 	});
+
+	it("carries an explicit quota fallback into the effective config", () => {
+		const overrides = new Map([
+			[
+				"explore",
+				{
+					model: "deepseek-v4-flash",
+					quotaFallback: { provider: "opencode", model: "big-pickle" },
+				},
+			],
+		]);
+		const config = effectiveSpawnConfig(
+			{ name: "explore", model: "deepseek-v4-flash" },
+			overrides,
+		);
+		expect(config.fallback).toEqual({
+			provider: "opencode",
+			model: "big-pickle",
+		});
+	});
 });

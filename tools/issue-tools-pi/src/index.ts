@@ -32,26 +32,11 @@ import {
 	toolInventory,
 	UpdateMapParams,
 	type CreateWayfinderTrackerOptions,
-	type DriverFactory,
 	type TrackerMode,
 	type TrackerModules,
 } from "issue-tools-core";
 import { handleAction, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult } from "./render.ts";
-
-// SQLite binds to the host runtime's native module (doist-core takes the
-// driver from the host, never sniffing it itself). Pi runs on Bun, so
-// `bun:sqlite` is the primary driver; fall back to `node:sqlite` elsewhere
-// (e.g. vitest under Node).
-let driverFactory: DriverFactory;
-
-try {
-	const { Database } = await import("bun:sqlite");
-	driverFactory = (path: string) => new Database(path);
-} catch {
-	const { DatabaseSync } = await import("node:sqlite");
-	driverFactory = (path: string) => new DatabaseSync(path);
-}
 
 export async function createTrackerModules({
 	cwd,
@@ -60,7 +45,7 @@ export async function createTrackerModules({
 	if (mode === "local") {
 		return createLocalTrackerModules(localTrackerRoot(cwd));
 	}
-	return createTodoistTrackerModules(driverFactory);
+	return createTodoistTrackerModules();
 }
 
 const STATUS_KEY = "issue-tools";
@@ -73,7 +58,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	const selectTrackerMode = async (
 		ctx: ExtensionContext,
 	): Promise<TrackerMode> => {
-		const selection = detectTrackerSelection(ctx.cwd, driverFactory);
+		const selection = detectTrackerSelection(ctx.cwd);
 		if (selection === "local" || selection === "todoist") {
 			return selection;
 		}
@@ -96,7 +81,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 		ctx: ExtensionContext,
 		state: { mode: TrackerMode | null; activeMap: string | null },
 	) => {
-		const mode = state.mode ?? detectTrackerSelection(ctx.cwd, driverFactory);
+		const mode = state.mode ?? detectTrackerSelection(ctx.cwd);
 		if (mode === "both" || mode === "neither") {
 			ctx.ui.setStatus(
 				STATUS_KEY,
@@ -382,7 +367,7 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 
 async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 	const cwd = ctx.cwd;
-	const selection = detectTrackerSelection(cwd, driverFactory);
+	const selection = detectTrackerSelection(cwd);
 
 	let resolvedMode: "local" | "todoist";
 	if (selection === "local" || selection === "todoist") {
@@ -411,7 +396,7 @@ async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 		return;
 	}
 
-	const container = createContainer(driverFactory);
+	const container = createContainer();
 	const projects = container.listProjects();
 	if (projects.length === 0) {
 		ctx.ui.notify(

@@ -71,10 +71,10 @@ describe("issue_tracker_setup", () => {
 
 		const h = await hooks();
 		const setup = h.tool?.["issue_tracker_setup"];
-		const result = await setup.execute({}, {
+		const result = await setup!.execute({}, {
 			worktree: dir.path,
 			metadata: () => ({ id: "t1", title: "Test" }),
-		} as ToolContext);
+		} as unknown as ToolContext);
 
 		expect((result as { output: string }).output).toContain(
 			"Marked p1 as the repo project",
@@ -82,6 +82,6 @@ describe("issue_tracker_setup", () => {
 		const rc = JSON.parse(
 			await readFile(join(dir.path, ".doistrc"), "utf8"),
 		) as { projects: { id: string; repo?: boolean }[] };
-		expect(rc.projects[0].repo).toBe(true);
+		expect(rc.projects[0]!.repo).toBe(true);
 	});
 });

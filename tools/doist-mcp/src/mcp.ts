@@ -2,11 +2,10 @@
 
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import { createContainer } from "doist-core";
-import { DatabaseSync } from "node:sqlite";
 import { shutdown } from "./instrumentation.ts";
 import { buildServer } from "./server.ts";
 
-const container = createContainer((path) => new DatabaseSync(path));
+const container = createContainer();
 const server = buildServer(container);
 
 process.on("SIGTERM", close(130));

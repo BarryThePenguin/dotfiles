@@ -8,28 +8,18 @@
  */
 
 import { tool, type Hooks, type Plugin } from "@opencode-ai/plugin";
-import { createContainer, type DriverFactory } from "doist-core";
+import { createContainer } from "doist-core";
 import { detectTrackerSelection } from "issue-tools-core";
 import { handleAction } from "./actions.ts";
 import { TOOLS } from "./tool-schemas.ts";
 import { getOpenCodeSession } from "./tracker.ts";
 
 type SetupArgs = {
-	tracker?: "local" | "todoist" | "auto";
-	project_id?: string;
+	tracker?: "local" | "todoist" | "auto" | undefined;
+	project_id?: string | undefined;
 };
 
 type SetupResult = { output: string; metadata: Record<string, unknown> };
-
-let driverFactory: DriverFactory;
-
-try {
-	const { Database } = await import("bun:sqlite");
-	driverFactory = (path: string) => new Database(path);
-} catch {
-	const { DatabaseSync } = await import("node:sqlite");
-	driverFactory = (path: string) => new DatabaseSync(path);
-}
 
 function runSetup(worktree: string, args: SetupArgs): SetupResult {
 	if (args.tracker) {
@@ -42,7 +32,7 @@ function runSetup(worktree: string, args: SetupArgs): SetupResult {
 		};
 	}
 
-	const selection = detectTrackerSelection(worktree, driverFactory);
+	const selection = detectTrackerSelection(worktree);
 	if (selection === "local") {
 		return {
 			output:
@@ -58,7 +48,7 @@ function runSetup(worktree: string, args: SetupArgs): SetupResult {
 		};
 	}
 
-	const container = createContainer(driverFactory, worktree);
+	const container = createContainer(worktree);
 	const projects = container.listProjects();
 	if (projects.length === 0) {
 		return {

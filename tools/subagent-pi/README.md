@@ -18,6 +18,7 @@ and `explore`; `general-purpose` and `Explore` are compatibility aliases.
 src/index.ts     Extension entry: subagent tool + /subagent-bg command + rendering
 src/agents.ts    Agent discovery (forked: adds `thinking` frontmatter + alias surface)
 src/personas.ts  .pi/personas.json override layer (tree-walk, canonical-keyed)
+src/quota-routing.ts  OpenCode Go fallback policy for low-stakes parallel/background work
 src/run.ts       Child spawning: sync json-mode children + detached RPC background child
 agents/          The agent roster (user-level): general, explore
 prompts/         Intentionally README-only workflow prompt surface; see README
@@ -39,11 +40,14 @@ prompts/         Intentionally README-only workflow prompt surface; see README
    agent, so the parent model can pick organically instead of guessing.
 2. **Alias surface** — agent names pass through `resolveAgentName`.
 3. **Persona override layer** — project-local `.pi/personas.json` (`{ provider?, model?,
-thinkingLevel? }` keyed by canonical agent name) merges over user-level `agents.md`
+thinkingLevel?, quotaFallback? }` keyed by canonical agent name) merges over user-level `agents.md`
    frontmatter, discovered nearest-up from cwd. This changes spawn settings only and does
    not add project agents. The child spawn passes `--provider` and `--thinking` when set;
    provider defaults to the parent session's provider.
-4. **Background command** — `/subagent-bg [agent:<name>] <brief>` spawns a detached
+4. **Quota-aware fallbacks** — parallel and background `explore`/`general` work can use an
+   explicit `quotaFallback` when OpenCode Go usage reaches 75%. Foreground single-agent work,
+   protected agents, non-Go providers, and unavailable usage preserve the requested route.
+5. **Background command** — `/subagent-bg [agent:<name>] <brief>` spawns a detached
    `pi --mode rpc` child (`--session-dir` for resumability); when it settles the final
    output is injected into the session via `sendUserMessage`, so the parent keeps working
    while the subagent reads (background/AFK research).
@@ -78,8 +82,21 @@ parent session own any orchestration that needs to happen between delegations.
 }
 ```
 
-Only `provider` / `model` / `thinkingLevel` are overridable; name, description, tools,
-and system prompt stay in the dotfiles agents.
+Only `provider` / `model` / `thinkingLevel` / `quotaFallback` are overridable; name,
+description, tools, and system prompt stay in the dotfiles agents. For example:
+
+```jsonc
+{
+	"explore": {
+		"quotaFallback": { "provider": "opencode", "model": "big-pickle" },
+	},
+	"general": {
+		"quotaFallback": { "provider": "opencode", "model": "big-pickle" },
+	},
+}
+```
+
+Fallbacks are opt-in and should only name models that are acceptable substitutes.
 
 ## Dotfiles wiring
 

@@ -12,8 +12,6 @@
 
 // -- Issue domain --------------------------------------------------------
 
-export type { DriverFactory } from "doist-core";
-
 export type {
 	CreateIssueInput,
 	Issue,

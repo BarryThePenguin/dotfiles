@@ -198,7 +198,7 @@ describe("Generic issue actions", () => {
 		const idMatch = /ID: (\S+)/.exec(createResult.output);
 		const issueId = idMatch?.[1];
 		expect(issueId).toBeDefined();
-		expect(createResult.metadata.id).toBe(issueId);
+		expect(createResult.metadata["id"]).toBe(issueId);
 
 		const readResult = await handleAction(
 			"issue_read",
@@ -237,7 +237,7 @@ describe("Generic issue actions", () => {
 			host,
 		);
 		expect(result.output).toContain(`Issue ${issue.id}: labels now bug`);
-		expect(result.metadata.labels).toEqual(["bug"]);
+		expect(result.metadata["labels"]).toEqual(["bug"]);
 	});
 
 	it("posts a comment via issue_comment and reports the post", async () => {
@@ -256,7 +256,7 @@ describe("Generic issue actions", () => {
 			host,
 		);
 		expect(result.output).toContain("Comment posted on");
-		expect(result.metadata.comment).toEqual({ content: "First agent note" });
+		expect(result.metadata["comment"]).toEqual({ content: "First agent note" });
 	});
 
 	it("closes an issue via issue_close with an optional closing note", async () => {
@@ -277,7 +277,7 @@ describe("Generic issue actions", () => {
 		expect(result.output).toContain(
 			`Issue ${issue.id}: closed (closing note posted)`,
 		);
-		expect(result.metadata.status).toBe("closed");
+		expect(result.metadata["status"]).toBe("closed");
 
 		const after = await modules.issues.readIssue(issue.id);
 		expect(after.status).toBe("closed");

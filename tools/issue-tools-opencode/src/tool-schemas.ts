@@ -11,9 +11,9 @@
 import { tool } from "@opencode-ai/plugin";
 import type { ActionMap } from "./actions.ts";
 
-const z = tool.schema;
+const z: typeof tool.schema = tool.schema;
 
-type Args = z.ZodRawShape;
+type Args = Parameters<typeof z.object>[0];
 
 export type ToolSpec<A extends Args = Args> = {
 	name: string;

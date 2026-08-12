@@ -7,7 +7,6 @@ import {
 	extensionToolCount,
 	toolInventory,
 } from "./setup-issue-tracker.ts";
-import { DatabaseSync } from "node:sqlite";
 
 function tempRepo() {
 	const dir = mkdtempDisposableSync(join(tmpdir(), "issue-tools-setup-"));
@@ -23,49 +22,37 @@ describe("detectTrackerSelection", () => {
 	it("returns 'local' when .scratch exists", () => {
 		using dir = tempRepo();
 		mkdirSync(join(dir.path, ".scratch"));
-		expect(
-			detectTrackerSelection(dir.path, (path) => new DatabaseSync(path)),
-		).toBe("local");
+		expect(detectTrackerSelection(dir.path)).toBe("local");
 	});
 
 	it("returns 'todoist' when a .doistrc with projects is reachable", () => {
 		using dir = tempRepo();
 		writeRc(dir.path, [{ id: "p1", label: "Test" }]);
-		expect(
-			detectTrackerSelection(dir.path, (path) => new DatabaseSync(path)),
-		).toBe("todoist");
+		expect(detectTrackerSelection(dir.path)).toBe("todoist");
 	});
 
 	it("returns 'both' when .scratch and a populated .doistrc exist", () => {
 		using dir = tempRepo();
 		mkdirSync(join(dir.path, ".scratch"));
 		writeRc(dir.path, [{ id: "p1", label: "Test" }]);
-		expect(
-			detectTrackerSelection(dir.path, (path) => new DatabaseSync(path)),
-		).toBe("both");
+		expect(detectTrackerSelection(dir.path)).toBe("both");
 	});
 
 	it("returns 'neither' when no markers exist", () => {
 		using dir = tempRepo();
-		expect(
-			detectTrackerSelection(dir.path, (path) => new DatabaseSync(path)),
-		).toBe("neither");
+		expect(detectTrackerSelection(dir.path)).toBe("neither");
 	});
 
 	it("returns 'neither' when .doistrc has no projects", () => {
 		using dir = tempRepo();
 		writeRc(dir.path, []);
-		expect(
-			detectTrackerSelection(dir.path, (path) => new DatabaseSync(path)),
-		).toBe("neither");
+		expect(detectTrackerSelection(dir.path)).toBe("neither");
 	});
 
 	it("returns 'neither' for a malformed .doistrc", () => {
 		using dir = tempRepo();
 		writeFileSync(join(dir.path, ".doistrc"), "not json", "utf8");
-		expect(
-			detectTrackerSelection(dir.path, (path) => new DatabaseSync(path)),
-		).toBe("neither");
+		expect(detectTrackerSelection(dir.path)).toBe("neither");
 	});
 
 	it("reports the repo's own markers, not the process cwd's", () => {
@@ -74,12 +61,8 @@ describe("detectTrackerSelection", () => {
 		// A sibling repo with a scratch dir must not flip this repo's result.
 		const sibling = tempRepo();
 		mkdirSync(join(sibling.path, ".scratch"));
-		expect(
-			detectTrackerSelection(dir.path, (path) => new DatabaseSync(path)),
-		).toBe("todoist");
-		expect(
-			detectTrackerSelection(sibling.path, (path) => new DatabaseSync(path)),
-		).toBe("local");
+		expect(detectTrackerSelection(dir.path)).toBe("todoist");
+		expect(detectTrackerSelection(sibling.path)).toBe("local");
 	});
 });
 

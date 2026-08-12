@@ -18,12 +18,15 @@
 import * as path from "node:path";
 import {
 	type ExtensionAPI,
+	type ExtensionContext,
 	getAgentDir,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { discoverAgents } from "./agents.ts";
+import { OpenCodeGoUsageClient, RoutingMetrics } from "opencode-go-usage";
 import { createBackgroundCommandHandler, executeSubagent } from "./execute.ts";
 import { renderCall, renderResult } from "./render.ts";
+import { formatGoUsageStatus, GO_USAGE_STATUS_KEY } from "./go-usage-status.ts";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tool schema
@@ -67,6 +70,28 @@ const SubagentParams = Type.Object({
 
 export default function (pi: ExtensionAPI) {
 	const rosterAgents = discoverAgents().agents;
+	const usageClient = new OpenCodeGoUsageClient();
+	const routingMetrics = new RoutingMetrics();
+	let usageTimer: ReturnType<typeof setInterval> | undefined;
+
+	const refreshUsageStatus = async (ctx: ExtensionContext) => {
+		const result = await usageClient.get();
+		const status = formatGoUsageStatus(result);
+		ctx.ui.setStatus(
+			GO_USAGE_STATUS_KEY,
+			ctx.ui.theme.fg(status.color, status.text),
+		);
+	};
+
+	pi.on("session_start", async (_event, ctx) => {
+		await refreshUsageStatus(ctx);
+		if (!usageTimer) {
+			usageTimer = setInterval(
+				() => void refreshUsageStatus(ctx),
+				10 * 60 * 1000,
+			);
+		}
+	});
 	const rosterLine =
 		rosterAgents.map((a) => `${a.name} — ${a.description}`).join(" | ") ||
 		"none";
@@ -78,7 +103,7 @@ export default function (pi: ExtensionAPI) {
 			"Delegate tasks to specialized user-level subagents with isolated context windows (each runs in a separate pi process).",
 			"Supported modes: single (agent + task) and parallel (tasks array, max 8, 4 concurrent).",
 			`Agents are discovered only from ${path.join(getAgentDir(), "agents")}.`,
-			`Per-project persona overrides come from .pi/personas.json ({ provider?, model?, thinkingLevel? } keyed by agent name).`,
+			`Per-project persona overrides come from .pi/personas.json ({ provider?, model?, thinkingLevel?, quotaFallback? } keyed by agent name). Quota fallbacks are opt-in for low-stakes parallel/background work.`,
 			`Agents: ${rosterLine}`,
 		].join(" "),
 		parameters: SubagentParams,
@@ -91,7 +116,15 @@ export default function (pi: ExtensionAPI) {
 			'Use subagent with agent: "explore" (alias Explore) for read-only organic codebase exploration; it cannot modify files.',
 			"Use parallel mode ({ tasks: [...] }, max 8 tasks, 4 concurrent) when independent chunks can run concurrently.",
 		],
-		execute: executeSubagent,
+		execute: (toolCallId, params, signal, onUpdate, ctx) =>
+			executeSubagent(
+				toolCallId,
+				params,
+				signal,
+				onUpdate,
+				ctx,
+				routingMetrics,
+			),
 		renderCall,
 		renderResult,
 	});

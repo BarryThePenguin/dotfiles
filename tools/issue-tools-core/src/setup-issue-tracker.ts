@@ -3,7 +3,7 @@
  *
  * Pure setup helpers used by the Pi `/setup-issue-tracker` command:
  *
- * - `detectTrackerSelection(cwd, driverFactory)` — the raw fact of which
+ * - `detectTrackerSelection(cwd)` — the raw fact of which
  *   Issue tracker the repo can use: a `.scratch/` directory selects Local
  *   Markdown; a `.doistrc` with at least one Project selects Todoist. Call
  *   sites keep their own interpretation of `both` and `neither` (prompt vs.
@@ -19,7 +19,7 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { createContainer, type DriverFactory } from "doist-core";
+import { createContainer } from "doist-core";
 import {
 	PiIssueToolNames,
 	PiToolNames,
@@ -31,12 +31,9 @@ export type TrackerSelection = "local" | "todoist" | "both" | "neither";
 /** The directory marker that selects the Local Markdown tracker. */
 const LOCAL_TRACKER_MARKER = ".scratch";
 
-export function detectTrackerSelection(
-	cwd: string,
-	driverFactory: DriverFactory,
-): TrackerSelection {
+export function detectTrackerSelection(cwd: string): TrackerSelection {
 	const hasScratch = existsSync(join(cwd, LOCAL_TRACKER_MARKER));
-	const hasTodoist = hasTodoistProjects(cwd, driverFactory);
+	const hasTodoist = hasTodoistProjects(cwd);
 	if (hasScratch && hasTodoist) {
 		return "both";
 	}
@@ -54,12 +51,9 @@ export function detectTrackerSelection(
  * reachable from the cwd. A missing or malformed config reads as "no" —
  * the detector reports what the tracker can actually build.
  */
-function hasTodoistProjects(
-	cwd: string,
-	driverFactory: DriverFactory,
-): boolean {
+function hasTodoistProjects(cwd: string): boolean {
 	try {
-		const container = createContainer(driverFactory, cwd);
+		const container = createContainer(cwd);
 		try {
 			return container.listProjectIds().length > 0;
 		} finally {

@@ -16,10 +16,16 @@ import * as path from "node:path";
 import { CONFIG_DIR_NAME } from "@earendil-works/pi-coding-agent";
 import { resolveAgentName } from "./agents.ts";
 
+export interface PersonaFallback {
+	provider?: string;
+	model?: string;
+}
+
 export interface PersonaOverride {
 	provider?: string;
 	model?: string;
 	thinkingLevel?: string;
+	quotaFallback?: PersonaFallback;
 }
 
 /** The effective spawn config for an agent: frontmatter merged under the override layer. */
@@ -27,6 +33,7 @@ export interface EffectiveSpawnConfig {
 	provider?: string;
 	model?: string;
 	thinking?: string;
+	fallback?: PersonaFallback;
 }
 
 export function findNearestPersonasFile(cwd: string): string | null {
@@ -79,6 +86,18 @@ export function loadPersonaOverrides(
 		if (typeof value.thinkingLevel === "string") {
 			override.thinkingLevel = value.thinkingLevel;
 		}
+		if (value.quotaFallback && typeof value.quotaFallback === "object") {
+			const fallback: PersonaFallback = {};
+			if (typeof value.quotaFallback.provider === "string") {
+				fallback.provider = value.quotaFallback.provider;
+			}
+			if (typeof value.quotaFallback.model === "string") {
+				fallback.model = value.quotaFallback.model;
+			}
+			if (fallback.provider || fallback.model) {
+				override.quotaFallback = fallback;
+			}
+		}
 		map.set(canonical, override);
 	}
 
@@ -104,5 +123,6 @@ export function effectiveSpawnConfig(
 		...(provider ? { provider } : {}),
 		...(model ? { model } : {}),
 		...(thinking ? { thinking } : {}),
+		...(o?.quotaFallback ? { fallback: o.quotaFallback } : {}),
 	};
 }

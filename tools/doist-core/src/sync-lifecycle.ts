@@ -1,10 +1,10 @@
 import type {
 	Database,
 	DbFilter,
-	DbTask,
 	DbLabel,
 	DbNote,
 	DbSection,
+	DbTask,
 } from "./db.ts";
 
 /**

@@ -1,5 +1,12 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import {
+	classifyError,
+	OpenCodeGoUsageClient,
+	RoutingMetrics,
+	type UsageResult,
+} from "opencode-go-usage";
 import { createLauncher } from "./launcher.ts";
+import { chooseQuotaRoute } from "./quota-routing.ts";
 import { getRequestedModes, type SubagentMode } from "./modes.ts";
 import {
 	getFinalOutput,
@@ -22,7 +29,7 @@ import {
 
 export interface SubagentDetails {
 	mode: SubagentMode;
-	results?: SingleResult[];
+	results: SingleResult[];
 	snapshot?: ParallelRunSnapshot;
 }
 
@@ -59,17 +66,36 @@ function formatParallelProgress(snapshot: ParallelRunSnapshot): string {
 	return `Parallel: ${parts.join(", ")}...`;
 }
 
+function usageFields(result: UsageResult) {
+	if (!result.usage) {
+		return { usageStale: result.stale };
+	}
+	return {
+		rollingPercent: result.usage.rolling.percent,
+		weeklyPercent: result.usage.weekly.percent,
+		monthlyPercent: result.usage.monthly.percent,
+		usageFetchedAt: result.fetchedAt,
+		usageStale: result.stale,
+	};
+}
+
 export async function executeSubagent(
 	_toolCallId: string,
 	params: SubagentExecuteParams,
 	signal: AbortSignal | undefined,
 	onUpdate: RunSingleAgentOptions["onUpdate"],
 	ctx: ExecuteContext,
+	metrics?: RoutingMetrics,
 ): Promise<ExecuteResult> {
 	const launcher = createLauncher({
 		cwd: ctx.cwd,
 		parentProvider: ctx.model?.provider,
 	});
+	const usageClient = metrics ? new OpenCodeGoUsageClient() : undefined;
+	const quotaPolicy = {
+		fallbackAtPercent: 75,
+		fallbackAgents: new Set(["explore", "general"]),
+	};
 
 	const requestedModes = getRequestedModes(params);
 	const modeCount = requestedModes.length;
@@ -84,6 +110,7 @@ export async function executeSubagent(
 		snapshot: ParallelRunSnapshot,
 	): SubagentDetails => ({
 		mode: "parallel",
+		results: [],
 		snapshot,
 	});
 
@@ -102,21 +129,91 @@ export async function executeSubagent(
 		};
 	}
 
-	const runRequestedAgent = (
+	const runRequestedAgent = async (
 		agentName: string,
 		task: string,
 		cwd: string | undefined,
 		onUpdate: RunSingleAgentOptions["onUpdate"],
+		allowFallback = false,
 	): Promise<SingleResult> => {
 		const resolution = launcher.resolve(agentName, task, cwd);
 		if ("result" in resolution) {
-			return Promise.resolve(resolution.result);
+			return resolution.result;
 		}
-		return runSingleAgent({
-			context: resolution.context,
-			signal,
-			onUpdate,
-		});
+
+		const usage = usageClient ? await usageClient.get() : undefined;
+		const decision =
+			allowFallback && usage
+				? chooseQuotaRoute(resolution.context, usage, quotaPolicy)
+				: {
+						context: resolution.context,
+						policy: "normal" as const,
+						reason: allowFallback
+							? "usage unavailable"
+							: "foreground invocation",
+					};
+		const startedAt = Date.now();
+		try {
+			const result = await runSingleAgent({
+				context: decision.context,
+				signal,
+				onUpdate,
+			});
+			metrics?.record({
+				occurredAt: new Date().toISOString(),
+				agent: resolution.context.agent.name,
+				provider: resolution.context.effective.provider,
+				requestedModel: resolution.context.effective.model,
+				selectedModel: result.model ?? decision.context.effective.model,
+				policy: decision.policy,
+				reason: decision.reason,
+				...usageFields(
+					usage ?? {
+						usage: null,
+						stale: false,
+						source: "none",
+						error: "not collected",
+					},
+				),
+				outcome: isFailedResult(result) ? "failure" : "success",
+				durationMs: Date.now() - startedAt,
+				...(result.usage.input ? { inputTokens: result.usage.input } : {}),
+				...(result.usage.output ? { outputTokens: result.usage.output } : {}),
+				...(result.usage.cost ? { cost: result.usage.cost } : {}),
+				...(isFailedResult(result)
+					? {
+							errorKind: classifyError(
+								new Error(
+									result.errorMessage ?? result.stopReason ?? result.stderr,
+								),
+							),
+						}
+					: {}),
+			});
+			return result;
+		} catch (error) {
+			metrics?.record({
+				occurredAt: new Date().toISOString(),
+				agent: resolution.context.agent.name,
+				provider: resolution.context.effective.provider,
+				requestedModel: resolution.context.effective.model,
+				selectedModel: decision.context.effective.model,
+				policy: decision.policy,
+				reason: decision.reason,
+				...usageFields(
+					usage ?? {
+						usage: null,
+						stale: false,
+						source: "none",
+						error: "not collected",
+					},
+				),
+				outcome: signal?.aborted ? "cancelled" : "failure",
+				durationMs: Date.now() - startedAt,
+				errorKind: classifyError(error),
+			});
+			throw error;
+		}
 	};
 
 	if (params.tasks && params.tasks.length > 0) {
@@ -133,12 +230,18 @@ export async function executeSubagent(
 				concurrency: PARALLEL_CONCURRENCY,
 				...(signal ? { signal } : {}),
 				runTask: (task, onTaskUpdate) =>
-					runRequestedAgent(task.agent, task.task, task.cwd, (partial) => {
-						const result = partial.details?.results[0];
-						if (result) {
-							onTaskUpdate(result);
-						}
-					}),
+					runRequestedAgent(
+						task.agent,
+						task.task,
+						task.cwd,
+						(partial) => {
+							const result = partial.details?.results[0];
+							if (result) {
+								onTaskUpdate(result);
+							}
+						},
+						true,
+					),
 				onUpdate: (nextSnapshot) => {
 					if (onUpdate) {
 						onUpdate({
@@ -279,9 +382,15 @@ export function createBackgroundCommandHandler(pi: ExtensionAPI) {
 
 		const { context } = resolution;
 		const { agent } = context;
+		const usage = await new OpenCodeGoUsageClient().get();
+		const decision = chooseQuotaRoute(context, usage, {
+			fallbackAtPercent: 75,
+			fallbackAgents: new Set(["explore", "general"]),
+		});
+		const routedContext = decision.context;
 
 		const handle = spawnBackgroundAgent({
-			context,
+			context: routedContext,
 			onSettled: ({ finalOutput, sessionDir }) => {
 				const summary = finalOutput.trim() || "(no text output)";
 				const message =
@@ -306,6 +415,9 @@ export function createBackgroundCommandHandler(pi: ExtensionAPI) {
 
 		ctx.ui.notify(
 			`Background subagent "${handle.agent}" started (session dir: ${handle.sessionDir}). ` +
+				(decision.policy === "fallback"
+					? `Using quota fallback (${decision.reason}). `
+					: "") +
 				"You'll be notified when it settles; resume with pi --session-dir <dir> --resume.",
 			"info",
 		);

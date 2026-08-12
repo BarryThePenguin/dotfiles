@@ -1,7 +1,6 @@
 import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTodoistTrackerModules } from "./todoist-tracker-factory.ts";
 
@@ -25,9 +24,9 @@ describe("createTodoistTrackerModules", () => {
 		);
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		await expect(
-			createTodoistTrackerModules((path) => new DatabaseSync(path)),
-		).rejects.toThrow(/Expected "TODOIST_API_TOKEN" but received undefined/);
+		await expect(createTodoistTrackerModules()).rejects.toThrow(
+			/Expected "TODOIST_API_TOKEN" but received undefined/,
+		);
 	});
 
 	it("throws when .doistrc has no projects", async () => {
@@ -36,9 +35,9 @@ describe("createTodoistTrackerModules", () => {
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		await expect(
-			createTodoistTrackerModules((path) => new DatabaseSync(path)),
-		).rejects.toThrow("Could not create Todoist tracker: no-projects");
+		await expect(createTodoistTrackerModules()).rejects.toThrow(
+			"Could not create Todoist tracker: no-projects",
+		);
 	});
 
 	it("throws when no .doistrc is found", async () => {
@@ -46,8 +45,8 @@ describe("createTodoistTrackerModules", () => {
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		await expect(
-			createTodoistTrackerModules((path) => new DatabaseSync(path)),
-		).rejects.toThrow("Could not create Todoist tracker: no-config");
+		await expect(createTodoistTrackerModules()).rejects.toThrow(
+			"Could not create Todoist tracker: no-config",
+		);
 	});
 });

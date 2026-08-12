@@ -3,7 +3,7 @@
 	"compilerOptions": {
 		"noEmit": true,
 		"outDir": "./dist",
-		"types": ["node"]
+		"types": ["node", "bun"]
 	},
-	"references": []
+	"references": [{ "path": "../doist-core/tsconfig.build.json" }]
 }

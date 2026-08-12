@@ -19,7 +19,8 @@
 		"@earendil-works/pi-coding-agent": "0.84.1",
 		"@earendil-works/pi-tui": "0.84.1",
 		"doist-core": "workspace:*",
-		"issue-tools-core": "workspace:*"
+		"issue-tools-core": "workspace:*",
+		"sqlite-runtime": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/bun": "1.3.14"

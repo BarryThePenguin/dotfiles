@@ -8,7 +8,6 @@ import {
 import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTrackerModules } from "./index.ts";
 
@@ -167,7 +166,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		]);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer((path) => new DatabaseSync(path));
+		const container = createContainer();
 		expect(pickRepoProjectId(container)).toBe("dotfiles");
 	});
 
@@ -179,7 +178,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		]);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer((path) => new DatabaseSync(path));
+		const container = createContainer();
 		expect(pickRepoProjectId(container)).toBe("first");
 	});
 
@@ -193,7 +192,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		]);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer((path) => new DatabaseSync(path));
+		const container = createContainer();
 		expect(pickRepoProjectId(container)).toBe("dotfiles");
 	});
 
@@ -201,7 +200,7 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 		using dir = tempDir();
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
-		const container = createContainer((path) => new DatabaseSync(path));
+		const container = createContainer();
 		expect(pickRepoProjectId(container)).toBeUndefined();
 	});
 });

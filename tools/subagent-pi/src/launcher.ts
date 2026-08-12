@@ -6,7 +6,6 @@ import {
 import {
 	effectiveSpawnConfig,
 	loadPersonaOverrides,
-	type EffectiveSpawnConfig,
 	type PersonaOverride,
 } from "./personas.ts";
 import { type SingleResult, type SpawnContext } from "./run.ts";

@@ -35,12 +35,11 @@ import {
 	updateTask,
 } from "doist-core";
 import { basename } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import * as v from "valibot";
 import { shutdown } from "./instrumentation.ts";
 import { out } from "./output.ts";
 
-const container = createContainer((path) => new DatabaseSync(path));
+const container = createContainer();
 const { addProject, removeProject, listProjects, listProjectIds, client } =
 	container;
 

@@ -8,7 +8,6 @@ export type {
 	DbSection,
 	DbFilter,
 	DbNote,
-	DriverFactory,
 } from "./db.ts";
 export { createContainer, ProjectRefSchema } from "./container.ts";
 export type { Container, ProjectRef } from "./container.ts";

@@ -85,7 +85,7 @@ describe("state store", () => {
 		store.write({ mode: "todoist", activeMap: "map-1" });
 		expect(store.read()).toEqual({ mode: "todoist", activeMap: "map-1" });
 
-		store.write({ mode: undefined, activeMap: null });
+		store.write({ activeMap: null });
 		expect(store.read()).toEqual({ activeMap: null });
 	});
 

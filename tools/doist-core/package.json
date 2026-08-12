@@ -32,6 +32,8 @@
 		"kysely": "^0.29.0",
 		"pino": "^10.0.0",
 		"pino-opentelemetry-transport": "^4.0.0",
+		"sqlite-kysely": "workspace:*",
+		"sqlite-runtime": "workspace:*",
 		"valibot": "^1.4.0"
 	},
 	"devDependencies": {

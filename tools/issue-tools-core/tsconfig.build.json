@@ -1,8 +1,7 @@
 {
 	"extends": "../../tsconfig.build.json",
 	"compilerOptions": {
-		"composite": true,
-		"types": ["node"]
+		"types": ["node", "bun"]
 	},
 	"references": [
 		{

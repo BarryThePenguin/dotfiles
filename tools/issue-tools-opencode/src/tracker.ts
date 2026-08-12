@@ -14,7 +14,6 @@ import {
 	createTrackerSession,
 	detectTrackerSelection,
 	localTrackerRoot,
-	type DriverFactory,
 	type TrackerMode,
 	type TrackerModules,
 } from "issue-tools-core";
@@ -33,16 +32,6 @@ export type OpenCodeSession = {
 	setTrackerMode(mode: TrackerMode | "auto"): void;
 };
 
-let driverFactory: DriverFactory;
-
-try {
-	const { Database } = await import("bun:sqlite");
-	driverFactory = (path: string) => new Database(path);
-} catch {
-	const { DatabaseSync } = await import("node:sqlite");
-	driverFactory = (path: string) => new DatabaseSync(path);
-}
-
 /**
  * Deterministic mode selection: an explicit override wins, otherwise the
  * markers decide. `both` and `neither` fall back to local, matching the Pi
@@ -55,7 +44,7 @@ export function resolveMode(
 	if (override) {
 		return override;
 	}
-	const selection = detectTrackerSelection(worktree, driverFactory);
+	const selection = detectTrackerSelection(worktree);
 	return selection === "todoist" ? "todoist" : "local";
 }
 
@@ -73,9 +62,13 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 					? Promise.resolve(
 							createLocalTrackerModules(localTrackerRoot(worktree)),
 						)
-					: createTodoistTrackerModules(driverFactory),
+					: createTodoistTrackerModules(),
 			persistState: (activeMap) => {
-				state.write({ mode: session.getMode() ?? undefined, activeMap });
+				const currentMode = session.getMode();
+				state.write({
+					...(currentMode != null && { mode: currentMode }),
+					activeMap,
+				});
 			},
 			updateStatus: () => {},
 		});
@@ -97,7 +90,7 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 		},
 		setTrackerMode(mode) {
 			state.write({
-				mode: mode === "auto" ? undefined : mode,
+				...(mode !== "auto" && { mode }),
 				activeMap: session.getActiveMap(),
 			});
 			session.reset();

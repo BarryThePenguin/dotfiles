@@ -1,16 +1,5 @@
-import type { api } from "@opentelemetry/sdk-node";
 import {
-	ATTR_DB_OPERATION_NAME,
-	ATTR_DB_QUERY_TEXT,
-	ATTR_DB_SYSTEM_NAME,
-} from "@opentelemetry/semantic-conventions";
-import {
-	CompiledQuery,
-	DummyDriver,
 	Kysely,
-	SqliteAdapter,
-	SqliteIntrospector,
-	SqliteQueryCompiler,
 	sql,
 	type Expression,
 	type ExpressionBuilder,
@@ -19,7 +8,8 @@ import {
 	type SqlBool,
 } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/sqlite";
-import type { SQLInputValue } from "node:sqlite";
+import { SyncSqliteDatabase } from "sqlite-kysely";
+import { driverFactory, type SqliteDriver } from "sqlite-runtime";
 import type { ConfigPaths } from "./paths.ts";
 import {
 	normalizeFilter,
@@ -35,33 +25,12 @@ import {
 	type AppSection,
 	type AppTask,
 } from "./schema.ts";
-import { SPAN_NAME_DB_QUERY, SPAN_NAME_DB_TRANSACTION } from "./semconv.ts";
-import { tracer } from "./telemetry.ts";
-
-export interface SqliteStatement {
-	run(...params: unknown[]): unknown;
-	get(...params: unknown[]): unknown;
-	all(...params: unknown[]): unknown;
-}
-
-export interface SqliteDriver {
-	exec(sql: string): void;
-	prepare(sql: string): SqliteStatement;
-	close(): void;
-}
 
 /**
  * Opens a SQLite database against a host runtime's native module.
  *
- * The host supplies the factory: `new Database(path)` from `bun:sqlite` under
- * bun (opencode and Pi's embedded runtimes), `new DatabaseSync(path)` from
- * `node:sqlite` elsewhere. It is passed explicitly into `createContainer` and
- * `Database` from the host entry point, so no adapter is ever chosen by
- * runtime sniffing inside doist-core — only the host's own driver enters its
- * module graph.
+ * The SQLite runtime selects the native driver for the current host.
  */
-export type DriverFactory = (dbPath: string) => SqliteDriver;
-
 interface ProjectTable {
 	id: string;
 	name: string;
@@ -360,144 +329,24 @@ function parseNestedNotes(value: unknown): AppNote[] {
 
 export class Database {
 	readonly #raw: SqliteDriver;
-	readonly #stmts = new Map<string, SqliteStatement>();
 	readonly #q: Kysely<Schema>;
+	readonly #sync: SyncSqliteDatabase<Schema>;
 
-	constructor({ dbPath }: ConfigPaths, driverFactory: DriverFactory) {
-		// SQLite binds to the host runtime's native module (see DriverFactory).
+	constructor({ dbPath }: ConfigPaths) {
 		this.#raw = driverFactory(dbPath);
 
 		this.#raw.exec(SCHEMA_SQL);
 
-		this.#q = new Kysely<Schema>({
-			dialect: {
-				createAdapter: () => new SqliteAdapter(),
-				createDriver: () => new DummyDriver(),
-				createIntrospector: (db) => new SqliteIntrospector(db),
-				createQueryCompiler: () => new SqliteQueryCompiler(),
-			},
-		});
+		this.#sync = new SyncSqliteDatabase({ driver: this.#raw });
+		this.#q = this.#sync.query;
 	}
 
 	close() {
-		this.#stmts.clear();
-		this.#raw.close();
-	}
-
-	#prepare(sql: string): SqliteStatement {
-		let stmt = this.#stmts.get(sql);
-		if (!stmt) {
-			stmt = this.#raw.prepare(sql);
-			this.#stmts.set(sql, stmt);
-		}
-		return stmt;
-	}
-
-	#normalizeSql(sql: string) {
-		return sql.trim().replace(/\s+/g, " ");
-	}
-
-	#getDbOperation(sql: string) {
-		return (sql.trim().split(" ", 1)[0] ?? "query").toUpperCase();
-	}
-
-	#spanAttributes(query: CompiledQuery): api.Attributes {
-		const sql = this.#normalizeSql(query.sql);
-		const attributes: api.Attributes = {
-			[ATTR_DB_SYSTEM_NAME]: "sqlite",
-			[ATTR_DB_QUERY_TEXT]: sql,
-			[ATTR_DB_OPERATION_NAME]: this.#getDbOperation(sql),
-		};
-
-		const parameters = query.parameters as unknown;
-		if (Array.isArray(parameters)) {
-			for (const [index, value] of parameters.entries()) {
-				attributes[`db.query.parameter.${index}`] = String(value);
-			}
-		} else if (parameters && typeof parameters === "object") {
-			for (const [key, value] of Object.entries(parameters)) {
-				attributes[`db.query.parameter.${key}`] = String(value);
-			}
-		}
-
-		return attributes;
-	}
-
-	all<R>(query: CompiledQuery<R>): R[] {
-		return tracer.startActiveSpan(
-			SPAN_NAME_DB_QUERY,
-			{
-				attributes: this.#spanAttributes(query),
-			},
-			(span) => {
-				try {
-					const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
-					return this.#prepare(query.sql).all(...parameters) as R[];
-				} finally {
-					span.end();
-				}
-			},
-		);
-	}
-
-	get<R>(query: CompiledQuery<R>): R | undefined {
-		return tracer.startActiveSpan(
-			SPAN_NAME_DB_QUERY,
-			{
-				attributes: this.#spanAttributes(query),
-			},
-			(span) => {
-				try {
-					const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
-					return this.#prepare(query.sql).get(...parameters) as R | undefined;
-				} finally {
-					span.end();
-				}
-			},
-		);
-	}
-
-	run(query: CompiledQuery): void {
-		tracer.startActiveSpan(
-			SPAN_NAME_DB_QUERY,
-			{
-				attributes: this.#spanAttributes(query),
-			},
-			(span) => {
-				try {
-					const parameters = query.parameters as ReadonlyArray<SQLInputValue>;
-					return this.#prepare(query.sql).run(...parameters);
-				} finally {
-					span.end();
-				}
-			},
-		);
+		this.#sync.close();
 	}
 
 	transaction<T>(fn: () => T): T {
-		return tracer.startActiveSpan(
-			SPAN_NAME_DB_TRANSACTION,
-			{
-				attributes: {
-					[ATTR_DB_SYSTEM_NAME]: "sqlite",
-					[ATTR_DB_OPERATION_NAME]: "TRANSACTION",
-				},
-			},
-			(span) => {
-				this.#raw.exec("BEGIN");
-				try {
-					const result = fn();
-					this.#raw.exec("COMMIT");
-					return result;
-				} catch (err) {
-					this.#raw.exec("ROLLBACK");
-					span.recordException(err as Error);
-					throw err;
-				} finally {
-					span.end();
-				}
-			},
-		);
+		return this.#sync.transaction(fn);
 	}
 
 	private projects() {
@@ -513,7 +362,7 @@ export class Database {
 	}
 
 	getTaskById(id: string): AppTask | null {
-		const task = this.get(this.tasks().where("id", "=", id).compile());
+		const task = this.#sync.get(this.tasks().where("id", "=", id).compile());
 		return task ? normalizeTask(task) : null;
 	}
 
@@ -539,11 +388,13 @@ export class Database {
 			query = query.offset(criteria.offset);
 		}
 
-		return this.all(query.compile()).map(normalizeTask);
+		return this.#sync.all(query.compile()).map(normalizeTask);
 	}
 
 	getProjectById(id: string): AppProject | null {
-		const project = this.get(this.projects().where("id", "=", id).compile());
+		const project = this.#sync.get(
+			this.projects().where("id", "=", id).compile(),
+		);
 		return project ? normalizeProject(project) : null;
 	}
 
@@ -578,7 +429,7 @@ export class Database {
 
 		query = query.orderBy("name");
 
-		return this.all(query.compile()).map(normalizeProject);
+		return this.#sync.all(query.compile()).map(normalizeProject);
 	}
 
 	// Section queries
@@ -593,7 +444,7 @@ export class Database {
 			query = query.orderBy("section_order");
 		}
 
-		return this.all(query.compile()).map(normalizeSection);
+		return this.#sync.all(query.compile()).map(normalizeSection);
 	}
 
 	// Backward compatibility wrappers
@@ -607,9 +458,9 @@ export class Database {
 
 	// Label queries
 	selectAllLabels(): AppLabel[] {
-		return this.all(
-			this.#q.selectFrom("labels").selectAll().orderBy("name").compile(),
-		).map(normalizeLabel);
+		return this.#sync
+			.all(this.#q.selectFrom("labels").selectAll().orderBy("name").compile())
+			.map(normalizeLabel);
 	}
 
 	/**
@@ -640,7 +491,7 @@ export class Database {
 			query = query.limit(criteria.limit);
 		}
 
-		return this.all(query.compile()).map((row) => ({
+		return this.#sync.all(query.compile()).map((row) => ({
 			...normalizeTask(row),
 			notes: parseNestedNotes(row.notes),
 		}));
@@ -652,13 +503,15 @@ export class Database {
 
 	// Note queries
 	selectNotesByTask(itemId: string): AppNote[] {
-		return this.all(
-			this.notes()
-				.where("item_id", "=", itemId)
-				.where("is_deleted", "=", 0)
-				.orderBy("posted_at", "asc")
-				.compile(),
-		).map(normalizeNote);
+		return this.#sync
+			.all(
+				this.notes()
+					.where("item_id", "=", itemId)
+					.where("is_deleted", "=", 0)
+					.orderBy("posted_at", "asc")
+					.compile(),
+			)
+			.map(normalizeNote);
 	}
 
 	// Filter queries
@@ -667,18 +520,22 @@ export class Database {
 	}
 
 	selectFilters(): AppFilter[] {
-		return this.all(this.filters().orderBy("item_order").compile()).map(
-			normalizeFilter,
-		);
+		return this.#sync
+			.all(this.filters().orderBy("item_order").compile())
+			.map(normalizeFilter);
 	}
 
 	getFilterById(id: string): AppFilter | null {
-		const filter = this.get(this.filters().where("id", "=", id).compile());
+		const filter = this.#sync.get(
+			this.filters().where("id", "=", id).compile(),
+		);
 		return filter ? normalizeFilter(filter) : null;
 	}
 
 	getFilterByName(name: string): AppFilter | null {
-		const filter = this.get(this.filters().where("name", "=", name).compile());
+		const filter = this.#sync.get(
+			this.filters().where("name", "=", name).compile(),
+		);
 		return filter ? normalizeFilter(filter) : null;
 	}
 
@@ -694,7 +551,7 @@ export class Database {
 			.onConflict((oc) => oc.column(column).doUpdateSet(values))
 			.compile();
 
-		this.run(compiled);
+		this.#sync.run(compiled);
 	}
 
 	upsertProject(project: Insertable<ProjectTable>): void {
@@ -714,7 +571,9 @@ export class Database {
 	}
 
 	deleteFilterById(id: string): void {
-		this.run(this.#q.deleteFrom("filters").where("id", "=", id).compile());
+		this.#sync.run(
+			this.#q.deleteFrom("filters").where("id", "=", id).compile(),
+		);
 	}
 
 	upsertTask(task: Insertable<TaskTable>): void {
@@ -730,7 +589,7 @@ export class Database {
 			return;
 		}
 		const now = new Date().toISOString();
-		this.run(
+		this.#sync.run(
 			this.#q
 				.updateTable("tasks")
 				.set({ is_completed: 1, synced_at: now })
@@ -744,7 +603,7 @@ export class Database {
 			return;
 		}
 		const now = new Date().toISOString();
-		this.run(
+		this.#sync.run(
 			this.#q
 				.updateTable("tasks")
 				.set({ is_completed: 0, synced_at: now })
@@ -757,19 +616,23 @@ export class Database {
 		if (ids.length === 0) {
 			return;
 		}
-		this.run(this.#q.deleteFrom("tasks").where("id", "in", ids).compile());
+		this.#sync.run(
+			this.#q.deleteFrom("tasks").where("id", "in", ids).compile(),
+		);
 	}
 
 	deleteNotesByIds(ids: string[]): void {
 		if (ids.length === 0) {
 			return;
 		}
-		this.run(this.#q.deleteFrom("notes").where("id", "in", ids).compile());
+		this.#sync.run(
+			this.#q.deleteFrom("notes").where("id", "in", ids).compile(),
+		);
 	}
 
 	// Metadata operations
 	getMeta(key: string): string | null {
-		const row = this.get(
+		const row = this.#sync.get(
 			this.#q
 				.selectFrom("meta")
 				.select("value")
@@ -780,7 +643,7 @@ export class Database {
 	}
 
 	setMeta(key: string, value: string): void {
-		this.run(
+		this.#sync.run(
 			this.#q
 				.insertInto("meta")
 				.values({ key, value })
@@ -790,7 +653,7 @@ export class Database {
 	}
 
 	deleteMeta(key: string): void {
-		this.run(this.#q.deleteFrom("meta").where("key", "=", key).compile());
+		this.#sync.run(this.#q.deleteFrom("meta").where("key", "=", key).compile());
 	}
 
 	// Backward compatibility wrappers

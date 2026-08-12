@@ -10,9 +10,9 @@ export const SUPPORTED_MODES = ["single", "parallel"] as const;
 export type SubagentMode = (typeof SUPPORTED_MODES)[number];
 
 export interface ModeParams {
-	agent?: string;
-	task?: string;
-	tasks?: readonly { agent: string; task: string }[];
+	agent?: string | undefined;
+	task?: string | undefined;
+	tasks?: readonly { agent: string; task: string }[] | undefined;
 }
 
 /** Return the execution modes represented by a tool call. */
