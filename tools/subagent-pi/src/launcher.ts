@@ -20,7 +20,7 @@ export interface SpawnContextOptions {
 
 export interface SpawnContextRequest {
 	defaultCwd: string;
-	agents: AgentConfig[];
+	agents: readonly AgentConfig[];
 	agentName: string;
 	task: string;
 	cwd?: string | undefined;

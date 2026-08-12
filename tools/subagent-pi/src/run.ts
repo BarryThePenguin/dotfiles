@@ -98,12 +98,16 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 	return { command: "pi", args };
 }
 
+export type OnUpdate = (
+	partial: AgentToolResult<{
+		results: SingleResult[];
+	}>,
+) => void;
+
 export interface RunSingleAgentOptions {
 	context: SpawnContext;
 	signal?: AbortSignal | undefined;
-	onUpdate?:
-		| ((partial: AgentToolResult<{ results: SingleResult[] }>) => void)
-		| undefined;
+	onUpdate: OnUpdate;
 }
 
 /** Build child CLI args from the complete spawn context. */

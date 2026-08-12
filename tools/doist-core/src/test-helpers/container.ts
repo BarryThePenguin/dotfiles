@@ -71,7 +71,7 @@ export function createTestContainer(overrides?: {
 			)
 		: new Map<string, ProjectRef>();
 
-	return ({
+	return {
 		addProject(ref: ProjectRef) {
 			projects.set(ref.id, ref);
 		},
@@ -117,5 +117,5 @@ export function createTestContainer(overrides?: {
 			testDir.remove();
 			db.close();
 		},
-	}) satisfies OperationalContainer;
+	} satisfies OperationalContainer;
 }

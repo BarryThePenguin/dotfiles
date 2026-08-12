@@ -459,7 +459,9 @@ export class Database {
 	// Label queries
 	selectAllLabels(): AppLabel[] {
 		return this.#sync
-			.all(this.#query.selectFrom("labels").selectAll().orderBy("name").compile())
+			.all(
+				this.#query.selectFrom("labels").selectAll().orderBy("name").compile(),
+			)
 			.map(normalizeLabel);
 	}
 
@@ -653,7 +655,9 @@ export class Database {
 	}
 
 	deleteMeta(key: string): void {
-		this.#sync.run(this.#query.deleteFrom("meta").where("key", "=", key).compile());
+		this.#sync.run(
+			this.#query.deleteFrom("meta").where("key", "=", key).compile(),
+		);
 	}
 
 	// Backward compatibility wrappers

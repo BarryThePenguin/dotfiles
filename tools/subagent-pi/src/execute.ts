@@ -1,22 +1,9 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import {
-	classifyError,
-	OpenCodeGoUsageClient,
-	RoutingMetrics,
-	type UsageResult,
-} from "opencode-go-usage";
+import { OpenCodeGoUsageClient, RoutingMetrics } from "opencode-go-usage";
+import { createAgentRunner, DEFAULT_QUOTA_POLICY } from "./agent-runner.ts";
+import type { SubagentDetails } from "./details.ts";
 import { createLauncher, loadLauncherDeps } from "./launcher.ts";
-import { chooseQuotaRoute, type QuotaRoutingPolicy } from "./quota-routing.ts";
 import { getRequestedModes, type SubagentMode } from "./modes.ts";
-import {
-	getFinalOutput,
-	getResultOutput,
-	isFailedResult,
-	runSingleAgent,
-	spawnBackgroundAgent,
-	truncateOutput,
-	type RunSingleAgentOptions,
-} from "./run.ts";
 import {
 	MAX_PARALLEL_TASKS,
 	PARALLEL_CONCURRENCY,
@@ -25,7 +12,15 @@ import {
 	type ParallelRunSnapshot,
 	type ParallelRunTask,
 } from "./parallel-run.ts";
-import type { SubagentDetails } from "./details.ts";
+import { chooseQuotaRoute } from "./quota-routing.ts";
+import {
+	getFinalOutput,
+	getResultOutput,
+	isFailedResult,
+	spawnBackgroundAgent,
+	truncateOutput,
+	type OnUpdate,
+} from "./run.ts";
 import type { SingleResult } from "./types.ts";
 
 export interface SubagentExecuteParams {
@@ -61,29 +56,11 @@ function formatParallelProgress(snapshot: ParallelRunSnapshot): string {
 	return `Parallel: ${parts.join(", ")}...`;
 }
 
-function usageFields(result: UsageResult) {
-	if (!result.usage) {
-		return { usageStale: result.stale };
-	}
-	return {
-		rollingPercent: result.usage.rolling.percent,
-		weeklyPercent: result.usage.weekly.percent,
-		monthlyPercent: result.usage.monthly.percent,
-		usageFetchedAt: result.fetchedAt,
-		usageStale: result.stale,
-	};
-}
-
-const DEFAULT_QUOTA_POLICY: QuotaRoutingPolicy = {
-	fallbackAtPercent: 75,
-	fallbackAgents: new Set(["explore", "general"]),
-};
-
 export async function executeSubagent(
 	_toolCallId: string,
 	params: SubagentExecuteParams,
 	signal: AbortSignal | undefined,
-	onUpdate: RunSingleAgentOptions["onUpdate"],
+	onUpdate: OnUpdate | undefined,
 	ctx: ExecuteContext,
 	metrics?: RoutingMetrics,
 ): Promise<ExecuteResult> {
@@ -92,6 +69,7 @@ export async function executeSubagent(
 		loadLauncherDeps(ctx.cwd),
 	);
 	const usageClient = metrics ? new OpenCodeGoUsageClient() : undefined;
+	const runner = createAgentRunner({ launcher, signal, usageClient, metrics });
 
 	const requestedModes = getRequestedModes(params);
 	const modeCount = requestedModes.length;
@@ -125,93 +103,6 @@ export async function executeSubagent(
 		};
 	}
 
-	const runRequestedAgent = async (
-		agentName: string,
-		task: string,
-		cwd: string | undefined,
-		onUpdate: RunSingleAgentOptions["onUpdate"],
-		allowFallback = false,
-	): Promise<SingleResult> => {
-		const resolution = launcher.resolve(agentName, task, cwd);
-		if ("result" in resolution) {
-			return resolution.result;
-		}
-
-		const usage = usageClient ? await usageClient.get() : undefined;
-		const decision =
-			allowFallback && usage
-				? chooseQuotaRoute(resolution.context, usage, DEFAULT_QUOTA_POLICY)
-				: {
-						context: resolution.context,
-						policy: "normal" as const,
-						reason: allowFallback
-							? "usage unavailable"
-							: "foreground invocation",
-					};
-		const startedAt = Date.now();
-		try {
-			const result = await runSingleAgent({
-				context: decision.context,
-				signal,
-				onUpdate,
-			});
-			metrics?.record({
-				occurredAt: new Date().toISOString(),
-				agent: resolution.context.agent.name,
-				provider: resolution.context.effective.provider,
-				requestedModel: resolution.context.effective.model,
-				selectedModel: result.model ?? decision.context.effective.model,
-				policy: decision.policy,
-				reason: decision.reason,
-				...usageFields(
-					usage ?? {
-						usage: null,
-						stale: false,
-						source: "none",
-						error: "not collected",
-					},
-				),
-				outcome: isFailedResult(result) ? "failure" : "success",
-				durationMs: Date.now() - startedAt,
-				...(result.usage.input ? { inputTokens: result.usage.input } : {}),
-				...(result.usage.output ? { outputTokens: result.usage.output } : {}),
-				...(result.usage.cost ? { cost: result.usage.cost } : {}),
-				...(isFailedResult(result)
-					? {
-							errorKind: classifyError(
-								new Error(
-									result.errorMessage ?? result.stopReason ?? result.stderr,
-								),
-							),
-						}
-					: {}),
-			});
-			return result;
-		} catch (error) {
-			metrics?.record({
-				occurredAt: new Date().toISOString(),
-				agent: resolution.context.agent.name,
-				provider: resolution.context.effective.provider,
-				requestedModel: resolution.context.effective.model,
-				selectedModel: decision.context.effective.model,
-				policy: decision.policy,
-				reason: decision.reason,
-				...usageFields(
-					usage ?? {
-						usage: null,
-						stale: false,
-						source: "none",
-						error: "not collected",
-					},
-				),
-				outcome: signal?.aborted ? "cancelled" : "failure",
-				durationMs: Date.now() - startedAt,
-				errorKind: classifyError(error),
-			});
-			throw error;
-		}
-	};
-
 	if (params.tasks && params.tasks.length > 0) {
 		const tasks: ParallelRunTask[] = params.tasks.map((task) => ({
 			agent: task.agent,
@@ -226,30 +117,17 @@ export async function executeSubagent(
 				concurrency: PARALLEL_CONCURRENCY,
 				...(signal ? { signal } : {}),
 				runTask: (task, onTaskUpdate) =>
-					runRequestedAgent(
-						task.agent,
-						task.task,
-						task.cwd,
-						(partial) => {
-							const result = partial.details.results[0];
-							if (result) {
-								onTaskUpdate(result);
-							}
-						},
-						true,
-					),
+					runner.run(task.agent, task.task, onTaskUpdate, task.cwd, true),
 				onUpdate: (nextSnapshot) => {
-					if (onUpdate) {
-						onUpdate({
-							content: [
-								{
-									type: "text",
-									text: formatParallelProgress(nextSnapshot),
-								},
-							],
-							details: makeParallelDetails(nextSnapshot),
-						});
-					}
+					onUpdate?.({
+						content: [
+							{
+								type: "text",
+								text: formatParallelProgress(nextSnapshot),
+							},
+						],
+						details: makeParallelDetails(nextSnapshot),
+					});
 				},
 			});
 		} catch (error) {
@@ -290,11 +168,21 @@ export async function executeSubagent(
 	}
 
 	if (params.agent && params.task) {
-		const result = await runRequestedAgent(
+		const result = await runner.run(
 			params.agent,
 			params.task,
+			(partial) => {
+				onUpdate?.({
+					content: [
+						{
+							type: "text",
+							text: getFinalOutput(partial.messages) || "(running...)",
+						},
+					],
+					details: makeDetails("single")([partial]),
+				});
+			},
 			params.cwd,
-			onUpdate,
 		);
 		if (isFailedResult(result)) {
 			const errorMsg = getResultOutput(result);
