@@ -2,8 +2,8 @@ import * as undici from "undici";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { OpenCodeGoUsageClient } from "./index.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { OpenCodeGoUsageClient } from "./client.ts";
 
 const usage = {
 	rolling: { percent: 12, resetsAt: "2026-01-02T00:00:00Z" },
@@ -87,6 +87,8 @@ describe("OpenCodeGoUsageClient", () => {
 	});
 
 	it("does not make a request without an API key", async () => {
+		vi.stubEnv("OPENCODE_API_KEY", undefined);
+
 		const result = await new OpenCodeGoUsageClient({
 			databasePath: await cachePath(),
 		}).get();

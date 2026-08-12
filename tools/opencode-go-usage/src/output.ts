@@ -1,4 +1,4 @@
-import type { UsageResult, UsageWindow } from "./index.ts";
+import type { UsageResult, UsageWindow } from "./types.ts";
 
 const WINDOW_ORDER = ["rolling", "weekly", "monthly"] as const;
 

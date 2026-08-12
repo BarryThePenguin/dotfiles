@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { defineCommand, runMain } from "citty";
-import { OpenCodeGoUsageClient, RoutingMetrics } from "./index.ts";
+import { RoutingMetrics } from "./index.ts";
+import { OpenCodeGoUsageClient } from "./client.ts";
 import { asJson, formatUsage, isStrictFailure } from "./output.ts";
 
 const main = defineCommand({

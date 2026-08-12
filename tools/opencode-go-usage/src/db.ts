@@ -1,9 +1,7 @@
 import type { Generated, Insertable, Kysely, Selectable } from "kysely";
 import { SyncSqliteDatabase } from "sqlite-kysely";
 import { driverFactory } from "sqlite-runtime";
-import type { OpenCodeGoUsage } from "./index.ts";
-
-export type { SqliteDriver } from "sqlite-runtime";
+import type { OpenCodeGoUsage } from "./types.ts";
 
 interface UsageCacheTable {
 	cache_key: string;
