@@ -11,7 +11,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@opencode-ai/plugin": "1.18.15",
+		"@opencode-ai/plugin": "1.18.16",
 		"doist-core": "workspace:*",
 		"issue-tools-core": "workspace:*",
 		"sqlite-runtime": "workspace:*"
