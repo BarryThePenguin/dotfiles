@@ -1,10 +1,4 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["config:best-practices"],
-	"packageRules": [
-		{
-			"matchUpdateTypes": ["minor", "patch"],
-			"automerge": true
-		}
-	]
+	"extends": ["github>BarryThePenguin/renovate-config"]
 }
