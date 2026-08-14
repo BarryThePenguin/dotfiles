@@ -7,7 +7,8 @@
  * are identical to the Pi surface so docs and skills apply to both hosts.
  */
 
-import { tool, type Hooks, type Plugin } from "@opencode-ai/plugin";
+import { Plugin } from "@opencode-ai/plugin";
+import { Schema } from "effect";
 import { createContainer } from "doist-core";
 import { detectTrackerSelection } from "issue-tools-core";
 import { handleAction } from "./actions.ts";
@@ -81,48 +82,54 @@ function runSetup(worktree: string, args: SetupArgs): SetupResult {
 	};
 }
 
-export const issueToolsPlugin: Plugin = ((): Promise<Hooks> => {
-	const tools: Hooks["tool"] = {};
+export default Plugin.define({
+	id: "issue-tools-opencode",
+	setup: async ({ tool, session }) => {
+		await tool.transform((tools) => {
+			for (const { action, input, description, name, title } of TOOLS) {
+				tools.add({
+					options: {
+						codemode: false,
+					},
+					name,
+					description,
+					input,
+					async execute(args, ctx) {
+						await ctx.progress({ title });
+						const { location } = await session.get(ctx);
+						const result = await handleAction(
+							action,
+							args,
+							{ session: getOpenCodeSession(location.directory) },
+							{ worktree: location.directory },
+						);
+						return { output: result.output, metadata: result.metadata };
+					},
+				});
+			}
 
-	for (const spec of TOOLS) {
-		tools[spec.name] = tool({
-			description: spec.description,
-			args: spec.args,
-			async execute(args, ctx) {
-				ctx.metadata({ title: spec.title });
-				const result = await handleAction(
-					spec.action,
-					args as never,
-					{ session: getOpenCodeSession(ctx.worktree) },
-					{ worktree: ctx.worktree },
-				);
-				return { output: result.output, metadata: result.metadata };
-			},
+			tools.add({
+				name: "issue_tracker_setup",
+				description:
+					"Configure which Issue tracker this repo uses: wire the repo's .doistrc project (Todoist) or confirm local Markdown (.scratch).",
+				input: Schema.Struct({
+					tracker: Schema.optional(
+						Schema.Literals(["local", "todoist", "auto"]),
+					).annotate({
+						description:
+							"Force the tracker mode ('auto' clears a previous override)",
+					}),
+					project_id: Schema.optional(Schema.String).annotate({
+						description:
+							"Todoist project ID to mark as the repo project when .doistrc has several",
+					}),
+				}),
+				async execute(args, ctx) {
+					await ctx.progress({ title: "Issue Tracker Setup" });
+					const { location } = await session.get(ctx);
+					return runSetup(location.directory, args);
+				},
+			});
 		});
-	}
-
-	tools["issue_tracker_setup"] = tool({
-		description:
-			"Configure which Issue tracker this repo uses: wire the repo's .doistrc project (Todoist) or confirm local Markdown (.scratch).",
-		args: {
-			tracker: tool.schema
-				.enum(["local", "todoist", "auto"])
-				.optional()
-				.describe("Force the tracker mode ('auto' clears a previous override)"),
-			project_id: tool.schema
-				.string()
-				.optional()
-				.describe(
-					"Todoist project ID to mark as the repo project when .doistrc has several",
-				),
-		},
-		execute(args, ctx) {
-			ctx.metadata({ title: "Issue: Setup Tracker" });
-			return Promise.resolve(runSetup(ctx.worktree, args));
-		},
-	});
-
-	return Promise.resolve({ tool: tools });
-}) satisfies Plugin;
-
-export default issueToolsPlugin;
+	},
+});

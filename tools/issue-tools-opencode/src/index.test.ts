@@ -1,4 +1,4 @@
-import type { Hooks, PluginInput, ToolContext } from "@opencode-ai/plugin";
+import type { Plugin } from "@opencode-ai/plugin";
 import { mkdirSync, mkdtempDisposableSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -6,10 +6,31 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import plugin from "./index.ts";
 
-const input = {} as PluginInput;
+async function setupPlugin() {
+	const tools = new Map<string, any>();
+	const mockSession = { get: vi.fn() };
 
-async function hooks(): Promise<Hooks> {
-	return plugin(input);
+	await plugin.setup({
+		tool: {
+			transform: async (callback: (draft: any) => void) => {
+				callback({ add: (t: any) => tools.set(t.name, t) });
+				return { dispose: async () => {} };
+			},
+		},
+		session: mockSession,
+	} as unknown as Plugin.Context);
+
+	return { tools, mockSession };
+}
+
+function makeCtx() {
+	return {
+		sessionID: "s1",
+		agent: "a1",
+		messageID: "m1",
+		id: "t1",
+		progress: vi.fn().mockResolvedValue(undefined),
+	};
 }
 
 let cacheDir: ReturnType<typeof mkdtempDisposableSync>;
@@ -25,8 +46,8 @@ afterEach(() => {
 
 describe("plugin surface", () => {
 	it("registers every wayfinder_* and issue_* tool exactly once plus setup", async () => {
-		const h = await hooks();
-		expect(Object.keys(h.tool ?? {}).sort()).toEqual([
+		const { tools } = await setupPlugin();
+		expect([...tools.keys()].sort()).toEqual([
 			"issue_close",
 			"issue_comment",
 			"issue_create",
@@ -47,11 +68,11 @@ describe("plugin surface", () => {
 		]);
 	});
 
-	it("gives every registered tool a description, args schema, and execute", async () => {
-		const h = await hooks();
-		for (const def of Object.values(h.tool ?? {})) {
+	it("gives every registered tool a description, input schema, and execute", async () => {
+		const { tools } = await setupPlugin();
+		for (const def of tools.values()) {
 			expect(def.description).toBeTruthy();
-			expect(def.args).toBeDefined();
+			expect(def.input).toBeDefined();
 			expect(typeof def.execute).toBe("function");
 		}
 	});
@@ -69,12 +90,12 @@ describe("issue_tracker_setup", () => {
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
 		vi.stubEnv("XDG_CACHE_HOME", cacheDir.path);
 
-		const h = await hooks();
-		const setup = h.tool?.["issue_tracker_setup"];
-		const result = await setup!.execute({}, {
-			worktree: dir.path,
-			metadata: () => ({ id: "t1", title: "Test" }),
-		} as unknown as ToolContext);
+		const { tools, mockSession } = await setupPlugin();
+		const setup = tools.get("issue_tracker_setup");
+		const ctx = makeCtx();
+		mockSession.get.mockResolvedValue({ location: { directory: dir.path } });
+
+		const result = await setup!.execute({}, ctx);
 
 		expect((result as { output: string }).output).toContain(
 			"Marked p1 as the repo project",

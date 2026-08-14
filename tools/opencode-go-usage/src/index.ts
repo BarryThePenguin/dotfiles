@@ -6,6 +6,7 @@ export { OpenCodeGoUsageClient, classifyError } from "./client.ts";
 export { Database } from "./db.ts";
 export type { RoutingEvent, RoutingSummary } from "./db.ts";
 export type { SqliteDriver, SqliteStatement } from "sqlite-runtime";
+export type { UsageResult } from "./types.ts";
 
 export interface RoutingMetricsOptions {
 	databasePath?: string;
