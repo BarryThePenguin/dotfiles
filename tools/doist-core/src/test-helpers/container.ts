@@ -9,6 +9,7 @@ import { mkdtempDisposableSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { vi, type Mocked } from "vitest";
+import { driverFactory } from "sqlite-runtime";
 import type { OperationalContainer, ProjectRef } from "../container.ts";
 import { Database } from "../db.ts";
 import { type ConfigPaths } from "../paths.ts";
@@ -59,7 +60,8 @@ export function createTestContainer(overrides?: {
 	const paths = { rcPath, dbPath };
 
 	// Use provided database or create in-memory one
-	const db = overrides?.database ?? new Database(paths);
+	const db =
+		overrides?.database ?? new Database({ driver: driverFactory(dbPath) });
 
 	// Use provided client or mock
 	const client = vi.mockObject(createClient("test-token"));

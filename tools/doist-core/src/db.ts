@@ -9,8 +9,7 @@ import {
 } from "kysely";
 import { jsonArrayFrom } from "kysely/helpers/sqlite";
 import { SyncSqliteDatabase } from "sqlite-kysely";
-import { driverFactory, type SqliteDriver } from "sqlite-runtime";
-import type { ConfigPaths } from "./paths.ts";
+import type { SqliteDriver } from "sqlite-runtime";
 import {
 	normalizeFilter,
 	normalizeLabel,
@@ -327,13 +326,17 @@ function parseNestedNotes(value: unknown): AppNote[] {
 	});
 }
 
+type DatabaseOptions = {
+	driver: SqliteDriver;
+};
+
 export class Database {
 	readonly #raw: SqliteDriver;
 	readonly #query: Kysely<Schema>;
 	readonly #sync: SyncSqliteDatabase<Schema>;
 
-	constructor({ dbPath }: ConfigPaths) {
-		this.#raw = driverFactory(dbPath);
+	constructor({ driver }: DatabaseOptions) {
+		this.#raw = driver;
 
 		this.#raw.exec(SCHEMA_SQL);
 

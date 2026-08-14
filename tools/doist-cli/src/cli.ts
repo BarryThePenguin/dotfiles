@@ -39,8 +39,6 @@ import { shutdown } from "./instrumentation.ts";
 import { out } from "./output.ts";
 
 const container = createContainer();
-const { addProject, removeProject, listProjects, listProjectIds, client } =
-	container;
 
 const parseListTask = v.parser(
 	v.object({
@@ -91,7 +89,10 @@ const syncCmd = defineCommand({
 		},
 	},
 	async run({ args }) {
-		const result = await container.sync(listProjectIds(), args.full ?? false);
+		const result = await container.sync(
+			container.listProjectIds(),
+			args.full ?? false,
+		);
 		out(countSyncData(result));
 	},
 });
@@ -111,13 +112,16 @@ const projectsCmd = defineCommand({
 			async run({ args }) {
 				if (args.sync) {
 					const { db } = container;
-					const syncResult = await container.sync(listProjectIds(), false);
+					const syncResult = await container.sync(
+						container.listProjectIds(),
+						false,
+					);
 					out({
 						synced: countSyncData(syncResult),
 						projects: db.selectProjects(),
 					});
 				} else {
-					out(listProjects());
+					out(container.listProjects());
 				}
 			},
 		}),
@@ -132,7 +136,7 @@ const projectsCmd = defineCommand({
 				},
 			},
 			run({ args }) {
-				addProject({ id: args.id, label: args.label });
+				container.addProject({ id: args.id, label: args.label });
 				out({ ok: true, added: { id: args.id, label: args.label } });
 			},
 		}),
@@ -142,7 +146,7 @@ const projectsCmd = defineCommand({
 				id: { type: "positional", description: "project id", required: true },
 			},
 			run({ args }) {
-				removeProject(args.id);
+				container.removeProject(args.id);
 				out({ ok: true, removed: args.id });
 			},
 		}),
@@ -166,7 +170,10 @@ const sectionsCmd = defineCommand({
 				const { db } = container;
 				const sections = listSections(db, args.project);
 				if (args.sync) {
-					const syncResult = await container.sync(listProjectIds(), false);
+					const syncResult = await container.sync(
+						container.listProjectIds(),
+						false,
+					);
 
 					out({
 						synced: countSyncData(syncResult),
@@ -195,7 +202,10 @@ const labelsCmd = defineCommand({
 			async run({ args }) {
 				const { db } = container;
 				if (args.sync) {
-					const syncResult = await container.sync(listProjectIds(), false);
+					const syncResult = await container.sync(
+						container.listProjectIds(),
+						false,
+					);
 					out({
 						synced: countSyncData(syncResult),
 						labels: db.selectAllLabels(),
@@ -244,7 +254,10 @@ const tasksCmd = defineCommand({
 								...(projectId ? { projectId } : {}),
 							});
 				if (args.sync) {
-					const syncResult = await container.sync(listProjectIds(), false);
+					const syncResult = await container.sync(
+						container.listProjectIds(),
+						false,
+					);
 					out({
 						synced: countSyncData(syncResult),
 						tasks,
@@ -450,7 +463,7 @@ const tasksCmd = defineCommand({
 					async run({ args }) {
 						const { db } = container;
 						if (args.sync) {
-							await container.sync(listProjectIds(), false);
+							await container.sync(container.listProjectIds(), false);
 						}
 						out(listTaskComments(db, args.task));
 					},
@@ -479,7 +492,9 @@ const analysisCmd = defineCommand({
 				const { db } = container;
 				let sync: ReturnType<typeof countSyncData> | undefined;
 				if (args.sync) {
-					sync = countSyncData(await container.sync(listProjectIds(), false));
+					sync = countSyncData(
+						await container.sync(container.listProjectIds(), false),
+					);
 				}
 
 				const allTasks = db.selectTasks();
@@ -533,7 +548,9 @@ const analysisCmd = defineCommand({
 				const { db } = container;
 				let sync: ReturnType<typeof countSyncData> | undefined;
 				if (args.sync) {
-					sync = countSyncData(await container.sync(listProjectIds(), false));
+					sync = countSyncData(
+						await container.sync(container.listProjectIds(), false),
+					);
 				}
 				const analysis = findDuplicateCandidates(db.selectTasks());
 				out({ sync, ...analysis, syncedAt: db.getLastSyncedAt() });
@@ -551,7 +568,9 @@ const analysisCmd = defineCommand({
 				const { db } = container;
 				let sync: ReturnType<typeof countSyncData> | undefined;
 				if (args.sync) {
-					sync = countSyncData(await container.sync(listProjectIds(), false));
+					sync = countSyncData(
+						await container.sync(container.listProjectIds(), false),
+					);
 				}
 				const projects = db.selectProjects();
 				const inboxId = projects.find((p) => p.isInbox)?.id ?? null;
@@ -584,7 +603,9 @@ const analysisCmd = defineCommand({
 				const { db } = container;
 				let sync: ReturnType<typeof countSyncData> | undefined;
 				if (args.sync) {
-					sync = countSyncData(await container.sync(listProjectIds(), false));
+					sync = countSyncData(
+						await container.sync(container.listProjectIds(), false),
+					);
 				}
 				const tasks = findMissingEnergyMetadata(db.selectTasks());
 				out({ sync, tasks, syncedAt: db.getLastSyncedAt() });
@@ -618,7 +639,9 @@ const sessionCmd = defineCommand({
 				const { db } = container;
 				let sync: ReturnType<typeof countSyncData> | undefined;
 				if (args.sync) {
-					sync = countSyncData(await container.sync(listProjectIds(), false));
+					sync = countSyncData(
+						await container.sync(container.listProjectIds(), false),
+					);
 				}
 
 				const overdue = db.selectTasks({ due: "overdue" });
@@ -662,7 +685,7 @@ const filtersCmd = defineCommand({
 			async run({ args }) {
 				const { db } = container;
 				if (args.sync) {
-					await container.sync(listProjectIds(), false);
+					await container.sync(container.listProjectIds(), false);
 				}
 				out(listFilters(db));
 			},
@@ -687,7 +710,7 @@ const filtersCmd = defineCommand({
 			},
 			async run({ args }) {
 				if (args.sync) {
-					await container.sync(listProjectIds(), false);
+					await container.sync(container.listProjectIds(), false);
 				}
 				const fields = parseAddFilterFields({
 					name: args.name,
@@ -715,7 +738,7 @@ const filtersCmd = defineCommand({
 			},
 			async run({ args }) {
 				if (args.sync) {
-					await container.sync(listProjectIds(), false);
+					await container.sync(container.listProjectIds(), false);
 				}
 				const fields = parseUpdateFilterFields({
 					name: args.name ?? undefined,
@@ -738,7 +761,7 @@ const filtersCmd = defineCommand({
 			},
 			async run({ args }) {
 				if (args.sync) {
-					await container.sync(listProjectIds(), false);
+					await container.sync(container.listProjectIds(), false);
 				}
 				await deleteFilter(container, args.id);
 				out({ ok: true, deleted: args.id });
@@ -763,14 +786,14 @@ const filtersCmd = defineCommand({
 			},
 			async run({ args }) {
 				if (args.sync) {
-					await container.sync(listProjectIds(), false);
+					await container.sync(container.listProjectIds(), false);
 				}
 				const parsed = parseFilterQueryInput({
 					query: args.query,
 					limit: args.limit ? Number(args.limit) : undefined,
 				});
 				const result = await runFilterQuery(
-					client,
+					container.client,
 					parsed.query,
 					parsed.limit ?? 50,
 				);

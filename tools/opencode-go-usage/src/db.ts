@@ -1,6 +1,6 @@
 import type { Generated, Insertable, Kysely, Selectable } from "kysely";
 import { SyncSqliteDatabase } from "sqlite-kysely";
-import { driverFactory } from "sqlite-runtime";
+import type { SqliteDriver } from "sqlite-runtime";
 import type { OpenCodeGoUsage } from "./types.ts";
 
 interface UsageCacheTable {
@@ -96,13 +96,17 @@ const SCHEMA_SQL = `
   );
 `;
 
+interface DatabaseOptions {
+	driver: SqliteDriver;
+}
+
 /** Small SQLite repository for the provider usage snapshot. */
 export class Database {
 	readonly #sync: SyncSqliteDatabase<Schema>;
 	readonly #query: Kysely<Schema>;
 
-	constructor(dbPath: string) {
-		this.#sync = new SyncSqliteDatabase({ driver: driverFactory(dbPath) });
+	constructor({ driver }: DatabaseOptions) {
+		this.#sync = new SyncSqliteDatabase({ driver });
 		this.#sync.migrate(SCHEMA_SQL);
 		this.#query = this.#sync.query;
 	}

@@ -1,33 +1,13 @@
 /**
- * opencode action runtime.
- *
- * The opencode equivalent of the Pi extension's action-runtime: adapts the
- * shared TrackerSession and the tool's host context into the small runtime
- * the handlers speak, producing opencode-shaped results
- * ({ output, metadata }) instead of Pi's { content, details }.
+ * OpenCode action runtime — adapts OpenCodeSession into ActionRuntime<ActionResult>.
  */
 
-import {
-	localTrackerRoot,
-	type IssueTracker,
-	type WayfinderTracker,
-} from "issue-tools-core";
+import { localTrackerRoot, type ActionRuntime } from "issue-tools-core";
 import type { OpenCodeSession } from "./tracker.ts";
 
 export type ActionResult = {
 	output: string;
 	metadata: Record<string, unknown>;
-};
-
-export type ActionRuntime = {
-	wayfinder(): WayfinderTracker;
-	issues(): IssueTracker;
-	requireMapId(params: { map_id?: string }): string | null;
-	getActiveMap(): string | null;
-	setActiveMap(mapId: string): void;
-	claimant(): string;
-	success(text: string, details?: Record<string, unknown>): ActionResult;
-	error(message: string): ActionResult;
 };
 
 type HostContext = {
@@ -41,7 +21,7 @@ type RuntimeContext = {
 export async function createActionRuntime(
 	host: HostContext,
 	ctx: RuntimeContext,
-): Promise<ActionRuntime> {
+): Promise<ActionRuntime<ActionResult>> {
 	const [modules, claimant] = await Promise.all([
 		ctx.session.get(),
 		ctx.session.getClaimant(),

@@ -9,6 +9,7 @@
  * ones.
  */
 
+import { driverFactory } from "sqlite-runtime";
 import {
 	Database,
 	type AllData,
@@ -183,7 +184,7 @@ export function createTodoistFixture(
 		taskTimestamps?: { created: string; updated: string };
 	} = {},
 ): TodoistTestFixture {
-	const db = new Database({ dbPath: ":memory:", rcPath: "/tmp/.doistrc" });
+	const db = new Database({ driver: driverFactory(":memory:") });
 	const client = new FakeTodoistClient(
 		options.taskTimestamps ? { taskTimestamps: options.taskTimestamps } : {},
 	);

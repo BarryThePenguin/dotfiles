@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Database, type DbTask } from "./db.ts";
 import { markDeleted, reconcileCompleted } from "./reconciliation.ts";
+import { openDb } from "./test-helpers/database.ts";
 
 describe("Reconciliation", () => {
 	let db: Database;
 
 	beforeEach(() => {
-		db = new Database({
-			dbPath: ":memory:",
-			rcPath: "/tmp/.doistrc",
-		});
+		db = openDb();
 	});
 
 	describe("reconcileCompleted", () => {

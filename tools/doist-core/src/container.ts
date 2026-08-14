@@ -9,6 +9,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
 import * as v from "valibot";
+import { driverFactory } from "sqlite-runtime";
 import { Database } from "./db.ts";
 import type { ConfigPaths } from "./paths.ts";
 import { findPaths } from "./paths.ts";
@@ -133,7 +134,7 @@ export function createContainer(rcDir?: string): OperationalContainer {
 	function getDb() {
 		const paths = getPaths();
 		if (paths) {
-			db ??= new Database(paths);
+			db ??= new Database({ driver: driverFactory(paths.dbPath) });
 		}
 
 		if (!db) {

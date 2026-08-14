@@ -9,7 +9,7 @@
  */
 
 import { Schema } from "effect";
-import type { ActionMap } from "./actions.ts";
+import type { ActionMap } from "issue-tools-core";
 
 export type ToolSpec<A> = {
 	name: string;

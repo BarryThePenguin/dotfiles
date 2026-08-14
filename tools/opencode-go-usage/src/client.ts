@@ -1,6 +1,7 @@
 import { mkdir } from "fs/promises";
 import { homedir } from "os";
 import { dirname, join } from "path/posix";
+import { driverFactory } from "sqlite-runtime";
 import * as v from "valibot";
 import { Database } from "./db.ts";
 import type {
@@ -101,7 +102,7 @@ export class OpenCodeGoUsageClient {
 			return this.database;
 		}
 		await mkdir(dirname(this.databasePath), { recursive: true, mode: 0o700 });
-		this.database = new Database(this.databasePath);
+		this.database = new Database({ driver: driverFactory(this.databasePath) });
 		return this.database;
 	}
 

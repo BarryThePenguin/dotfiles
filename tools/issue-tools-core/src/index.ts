@@ -100,6 +100,11 @@ export type {
 	TrackerSelection,
 } from "./setup-issue-tracker.ts";
 
+// -- Action handlers (framework-agnostic) ---------------------------------
+
+export type { ActionMap, ActionRuntime } from "./actions.ts";
+export { handleAction } from "./actions.ts";
+
 // -- Tool parameter schemas (Pi surface) ----------------------------------
 
 export {

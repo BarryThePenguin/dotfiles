@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import type { OperationalContainer } from "doist-core";
-import { countSyncData, syncAndPersist } from "doist-core";
+import { countSyncData } from "doist-core";
 import { FullSyncInput, SyncSummarySchema } from "./shared.ts";
 import { registerTool } from "./traced-tool.ts";
 
@@ -21,12 +21,11 @@ export function registerSyncTools(
 			attributes: { "sync.full": args.full },
 		}),
 		callback: async ({ full }) => {
-			const { db, client, listProjectIds } = container;
-			const result = await syncAndPersist(db, client, listProjectIds(), full);
+			const result = await container.sync(container.listProjectIds(), full);
 			const counts = countSyncData(result);
 			return {
 				data: counts,
-				text: `Last synced at ${db.getLastSyncedAt()}`,
+				text: `Last synced at ${container.db.getLastSyncedAt()}`,
 				track: {
 					"sync.full": full,
 					"sync.projects": counts.projects,
