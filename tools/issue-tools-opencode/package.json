@@ -13,7 +13,7 @@
 	"dependencies": {
 		"@opencode-ai/plugin": "0.0.0-next-17403",
 		"doist-core": "workspace:*",
-		"effect": "4.0.0-beta.101",
+		"effect": "4.0.0-beta.107",
 		"issue-tools-core": "workspace:*",
 		"sqlite-runtime": "workspace:*"
 	},

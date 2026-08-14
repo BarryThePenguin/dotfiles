@@ -241,8 +241,8 @@ importers:
         specifier: workspace:*
         version: link:../doist-core
       effect:
-        specifier: 4.0.0-beta.101
-        version: 4.0.0-beta.101
+        specifier: 4.0.0-beta.107
+        version: 4.0.0-beta.107
       issue-tools-core:
         specifier: workspace:*
         version: link:../issue-tools-core
@@ -1903,6 +1903,9 @@ packages:
 
   effect@4.0.0-beta.101:
     resolution: {integrity: sha512-HjowumlIo+orthn4jMlEJPuzIYPBV+uq/XiciHWhiedLsXQpWHdNJHO5d59BVDP5s1LPuvERcktwFqRXnJqnhA==}
+
+  effect@4.0.0-beta.107:
+    resolution: {integrity: sha512-OoBAv8eF+yanc+C6xhgEUnWeXUSHA6ynnscYqpkAY9GSnzZWystsIjBowVqCkLpHGlnRtdIqYT3wHwpOY6JDnQ==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -4544,6 +4547,14 @@ snapshots:
       toml: 4.3.0
       uuid: 14.0.1
       yaml: 2.9.0
+
+  effect@4.0.0-beta.107:
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      fast-check: 4.9.0
+      kubernetes-types: 1.30.0
+      msgpackr: 2.0.5
+      uuid: 14.0.1
 
   emoji-regex@8.0.0: {}
 
