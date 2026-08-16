@@ -27,15 +27,15 @@ export type TrackerSessionOptions<TExt> = {
 };
 
 export type TrackerSession<TExt = unknown> = {
-	get(ext: TExt): Promise<TrackerModules>;
-	getClaimant(): Promise<string>;
-	getActiveMap(): string | null;
-	getMode(): TrackerMode | null;
-	resolveMapId(explicitMapId: string | undefined): string | null;
-	setActiveMap(mapId: string, ext: TExt): void;
-	restore(state: { activeMap: string | null }): void;
-	refresh(ext: TExt): void;
-	reset(): void;
+	get: (ext: TExt) => Promise<TrackerModules>;
+	getClaimant: () => Promise<string>;
+	getActiveMap: () => string | null;
+	getMode: () => TrackerMode | null;
+	resolveMapId: (explicitMapId: string | undefined) => string | null;
+	setActiveMap: (mapId: string, ext: TExt) => void;
+	restore: (state: { activeMap: string | null }) => void;
+	refresh: (ext: TExt) => void;
+	reset: () => void;
 };
 
 /**

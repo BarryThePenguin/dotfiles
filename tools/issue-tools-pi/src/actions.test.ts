@@ -7,7 +7,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	createLocalTrackerModules,
 	createTrackerSession,
-	localTrackerRoot,
 } from "issue-tools-core";
 import { handleAction, type ToolContext } from "./actions.ts";
 

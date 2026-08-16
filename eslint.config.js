@@ -61,4 +61,51 @@ export default defineConfig([
 			"@typescript-eslint/unbound-method": "off",
 		},
 	},
+	{
+		files: ["tools/issue-tools-core/src/**/*.{ts,tsx}"],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: [
+						{
+							name: "issue-tools-pi",
+							message: "issue-tools-core must remain host-independent.",
+						},
+						{
+							name: "issue-tools-opencode",
+							message: "issue-tools-core must remain host-independent.",
+						},
+					],
+				},
+			],
+		},
+	},
+	{
+		files: ["tools/doist-core/src/**/*.{ts,tsx}"],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: [
+						"doist-cli",
+						"doist-mcp",
+						"issue-tools-pi",
+						"issue-tools-opencode",
+					],
+				},
+			],
+		},
+	},
+	{
+		files: ["tools/sqlite-kysely/src/**/*.{ts,tsx}"],
+		rules: {
+			"no-restricted-imports": [
+				"error",
+				{
+					paths: ["doist-core", "doist-cli", "doist-mcp"],
+				},
+			],
+		},
+	},
 ]);

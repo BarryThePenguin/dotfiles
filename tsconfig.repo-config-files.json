@@ -5,5 +5,11 @@
 		"noEmit": true,
 		"tsBuildInfoFile": "./dist/tsconfig.repo-config-files.tsbuildinfo"
 	},
-	"include": ["eslint.config.js", "vitest.config.ts", ".pi/agent/extensions"]
+	"include": [
+		"eslint.config.js",
+		"vitest.config.ts",
+		"scripts/*.mjs",
+		".pi/agent/extensions",
+		".config/opencode/plugins"
+	]
 }

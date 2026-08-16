@@ -17,7 +17,7 @@ import { createActionRuntime, type ActionResult } from "./action-runtime.ts";
 export type { ActionMap };
 
 export interface ToolContext {
-	trackerSession: TrackerSession;
+	trackerSession: TrackerSession<ExtensionContext>;
 }
 
 export function handleAction<K extends keyof ActionMap>(

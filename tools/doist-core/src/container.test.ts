@@ -115,7 +115,7 @@ describe("createContainer", () => {
 		]);
 	});
 
-	it("can sync via container.sync() without accessing db or client directly", async () => {
+	it("can sync via container.sync() without accessing db or client directly", () => {
 		using tempDir = setupContainer();
 		const rcPath = join(tempDir.path, ".doistrc");
 		writeFileSync(

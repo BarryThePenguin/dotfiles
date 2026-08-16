@@ -12,7 +12,7 @@ export type ActionResult = {
 };
 
 type RuntimeContext = {
-	trackerSession: TrackerSession;
+	trackerSession: TrackerSession<ExtensionContext>;
 };
 
 export async function createActionRuntime(

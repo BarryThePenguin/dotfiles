@@ -12,7 +12,8 @@
 	},
 	"scripts": {
 		"build": "tsc --build",
-		"test": "vitest"
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
 	},
 	"engines": {
 		"node": ">=24"

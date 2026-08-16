@@ -2,10 +2,11 @@
 	"name": "dotfiles",
 	"type": "module",
 	"scripts": {
+		"check": "pnpm typecheck && pnpm lint && pnpm test",
 		"knip": "knip",
 		"lint": "eslint .",
 		"prettier": "prettier --write .",
-		"test": "vitest",
+		"test": "vitest run",
 		"typecheck": "tsc --build"
 	},
 	"devDependencies": {
