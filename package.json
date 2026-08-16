@@ -23,7 +23,7 @@
 		"doist-mcp": "workspace:*",
 		"eslint": "10.8.1",
 		"globals": "17.9.0",
-		"knip": "6.32.1",
+		"knip": "6.32.2",
 		"prettier": "3.9.6",
 		"typescript": "npm:@typescript/typescript6@6.0.2",
 		"typescript-eslint": "8.67.0",
