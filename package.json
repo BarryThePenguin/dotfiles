@@ -10,6 +10,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "10.0.1",
+		"@opencode-ai/plugin": "next",
 		"@tsconfig/node-ts": "23.6.4",
 		"@tsconfig/node24": "24.0.4",
 		"@tsconfig/strictest": "2.0.8",
@@ -24,6 +25,7 @@
 		"eslint": "10.8.1",
 		"globals": "17.9.0",
 		"knip": "6.32.2",
+		"opencode-go-usage": "workspace:*",
 		"prettier": "3.9.6",
 		"typescript": "npm:@typescript/typescript6@6.0.2",
 		"typescript-eslint": "8.67.0",

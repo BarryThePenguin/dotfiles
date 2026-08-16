@@ -9,7 +9,8 @@ A personal dotfiles monorepo managed with [mise](https://mise.jdx.dev/). Configu
 ## Structure
 
 ```
-.config/          → XDG config files (mise, git, atuin, ghostty, zellij, etc.)
+.config/          → XDG config files (mise, git, atuin, ghostty, zellij, opencode, etc.)
+.opencode/        → Project-level opencode config
 .agents/          → Claude Code agent skills
 .claude/          → Claude Code settings, plugins, MCP config
 .config/zsh/      → Zsh config (ZDOTDIR=~/.config/zsh)
@@ -60,7 +61,7 @@ Supported modes per entry: `symlink`, `symlink-each`, `copy`, `template`.
 
 ### Issue tracker
 
-Issues and specs live in Todoist (project: Dotfiles, id `6h9Wxp68J6HrG99m`). See `docs/agents/issue-tracker.md`.
+Issues and specs live in Todoist (project: Dotfiles, id `6h9Wxp68J6HrG99m`). See `docs/agents/issue-tracker.md`. The `issue_*`/`wayfinder_*` tools are exposed by the Pi extension and by the global opencode plugin (`tools/issue-tools-opencode`, loaded via `~/.config/opencode/plugins/issue-tools.ts`).
 
 ### Triage labels
 
