@@ -3,35 +3,22 @@
 import { ATTR_ERROR_TYPE } from "@opentelemetry/semantic-conventions";
 import { defineCommand, runMain } from "citty";
 import {
-	addFilter,
-	addTask,
-	addTaskComment,
+	createTodoistOperations,
 	ATTR_EXITCODE,
-	completeTasks,
 	countSyncData,
 	createContainer,
-	deleteFilter,
 	filterByEnergy,
 	findDuplicateCandidates,
 	findMissingEnergyMetadata,
 	findStaleCandidates,
 	groupStaleByProject,
-	listFilters,
-	listSections,
-	listTaskComments,
-	moveTask,
 	parseAddCommentFields,
 	parseAddFilterFields,
 	parseAddTaskFields,
 	parseFilterQueryInput,
 	parseUpdateFilterFields,
 	parseUpdateTaskFields,
-	resolveProject,
-	runFilterQuery,
 	tracer,
-	uncompleteTasks,
-	updateFilter,
-	updateTask,
 } from "doist-core";
 import { basename } from "node:path";
 import * as v from "valibot";
@@ -39,6 +26,7 @@ import { shutdown } from "./instrumentation.ts";
 import { out } from "./output.ts";
 
 const container = createContainer();
+const operations = createTodoistOperations(container);
 
 const parseListTask = v.parser(
 	v.object({
@@ -167,8 +155,7 @@ const sectionsCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
-				const { db } = container;
-				const sections = listSections(db, args.project);
+				const sections = operations.listSections(args.project);
 				if (args.sync) {
 					const syncResult = await container.sync(
 						container.listProjectIds(),
@@ -245,7 +232,9 @@ const tasksCmd = defineCommand({
 			async run({ args }) {
 				const { db } = container;
 				const { project, ...fields } = parseListTask(args);
-				const projectId = project ? resolveProject(db, project) : undefined;
+				const projectId = project
+					? operations.resolveProject(project)
+					: undefined;
 				const tasks =
 					project && !projectId
 						? []
@@ -303,7 +292,7 @@ const tasksCmd = defineCommand({
 			},
 			async run({ args }) {
 				const ids = args.id.split(",").map((s) => s.trim());
-				out(await completeTasks(container, ids));
+				out(await operations.completeTasks(ids));
 			},
 		}),
 		uncomplete: defineCommand({
@@ -317,7 +306,7 @@ const tasksCmd = defineCommand({
 			},
 			async run({ args }) {
 				const ids = args.id.split(",").map((s) => s.trim());
-				out(await uncompleteTasks(container, ids));
+				out(await operations.uncompleteTasks(ids));
 			},
 		}),
 		move: defineCommand({
@@ -335,7 +324,7 @@ const tasksCmd = defineCommand({
 				if (!db.getTaskById(args.id)) {
 					throw new Error(`task not found: ${args.id}`);
 				}
-				out(await moveTask(container, args.id, args.project));
+				out(await operations.moveTask(args.id, args.project));
 			},
 		}),
 		update: defineCommand({
@@ -366,7 +355,7 @@ const tasksCmd = defineCommand({
 					addLabels: parseLabelList(args.label),
 					removeLabels: parseLabelList(args.removeLabel),
 				});
-				out(await updateTask(container, args.id, fields));
+				out(await operations.updateTask(args.id, fields));
 			},
 		}),
 		search: defineCommand({
@@ -419,7 +408,7 @@ const tasksCmd = defineCommand({
 					labels: parseLabelList(args.label),
 					parentId: args.parent ?? undefined,
 				});
-				out(await addTask(container, fields));
+				out(await operations.addTask(fields));
 			},
 		}),
 		comments: defineCommand({
@@ -444,7 +433,7 @@ const tasksCmd = defineCommand({
 							taskId: args.task,
 							content: args.content,
 						});
-						out(await addTaskComment(container, fields.taskId, fields.content));
+						out(await operations.addTaskComment(fields.taskId, fields.content));
 					},
 				}),
 				list: defineCommand({
@@ -461,11 +450,10 @@ const tasksCmd = defineCommand({
 						},
 					},
 					async run({ args }) {
-						const { db } = container;
 						if (args.sync) {
 							await container.sync(container.listProjectIds(), false);
 						}
-						out(listTaskComments(db, args.task));
+						out(operations.listTaskComments(args.task));
 					},
 				}),
 			},
@@ -683,11 +671,10 @@ const filtersCmd = defineCommand({
 				},
 			},
 			async run({ args }) {
-				const { db } = container;
 				if (args.sync) {
 					await container.sync(container.listProjectIds(), false);
 				}
-				out(listFilters(db));
+				out(operations.listFilters());
 			},
 		}),
 		add: defineCommand({
@@ -721,7 +708,7 @@ const filtersCmd = defineCommand({
 						: undefined,
 					isFavorite: args["is-favorite"] ?? undefined,
 				});
-				const result = await addFilter(container, fields);
+				const result = await operations.addFilter(fields);
 				out(result);
 			},
 		}),
@@ -749,7 +736,7 @@ const filtersCmd = defineCommand({
 						: undefined,
 					isFavorite: args["is-favorite"] ?? undefined,
 				});
-				const result = await updateFilter(container, args.id, fields);
+				const result = await operations.updateFilter(args.id, fields);
 				out(result);
 			},
 		}),
@@ -763,7 +750,7 @@ const filtersCmd = defineCommand({
 				if (args.sync) {
 					await container.sync(container.listProjectIds(), false);
 				}
-				await deleteFilter(container, args.id);
+				await operations.deleteFilter(args.id);
 				out({ ok: true, deleted: args.id });
 			},
 		}),
@@ -792,8 +779,7 @@ const filtersCmd = defineCommand({
 					query: args.query,
 					limit: args.limit ? Number(args.limit) : undefined,
 				});
-				const result = await runFilterQuery(
-					container.client,
+				const result = await operations.runFilterQuery(
 					parsed.query,
 					parsed.limit ?? 50,
 				);

@@ -3,14 +3,7 @@ import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
 import type { OperationalContainer } from "doist-core";
 import {
-	addTask,
-	addTaskComment,
-	completeTasks,
-	listTaskComments,
-	moveTask,
-	uncompleteTasks,
-	updateTask,
-	resolveProject,
+	createTodoistOperations,
 	AddCommentFieldsSchema,
 	AddTaskFieldsSchema,
 	ListTaskSchema,
@@ -29,6 +22,7 @@ export function registerTaskTools(
 	mcp: McpServer,
 	container: OperationalContainer,
 ): void {
+	const operations = createTodoistOperations(container);
 	registerTool({
 		mcp,
 		name: "todoist_tasks_list",
@@ -63,7 +57,9 @@ export function registerTaskTools(
 			const { db } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
 
-			const projectId = project ? resolveProject(db, project) : undefined;
+			const projectId = project
+				? operations.resolveProject(project)
+				: undefined;
 			const { priority, ...filters } = rest;
 			const tasks: ListTaskItem[] =
 				project && !projectId
@@ -111,7 +107,7 @@ export function registerTaskTools(
 		}),
 		callback: async ({ id }: { id: string | string[] }) => {
 			const taskIds = Array.isArray(id) ? id : [id];
-			const result = await completeTasks(container, taskIds);
+			const result = await operations.completeTasks(taskIds);
 			return {
 				data: { ok: result.ok, completed: result.result },
 				text:
@@ -142,7 +138,7 @@ export function registerTaskTools(
 		}),
 		callback: async ({ id }: { id: string | string[] }) => {
 			const taskIds = Array.isArray(id) ? id : [id];
-			const result = await uncompleteTasks(container, taskIds);
+			const result = await operations.uncompleteTasks(taskIds);
 			return {
 				data: { ok: result.ok, reopened: result.result },
 				text:
@@ -180,7 +176,7 @@ export function registerTaskTools(
 			if (!db.getTaskById(id)) {
 				throw new Error(`task not found: ${id}`);
 			}
-			const result = await updateTask(container, id, fields);
+			const result = await operations.updateTask(id, fields);
 			const fieldsChanged = Object.keys(fields);
 			return {
 				data: result.result,
@@ -218,7 +214,7 @@ export function registerTaskTools(
 			if (!db.getTaskById(id)) {
 				throw new Error(`task not found: ${id}`);
 			}
-			const result = await moveTask(container, id, project);
+			const result = await operations.moveTask(id, project);
 			return {
 				data: result.result,
 				text: `Moved task ${id}`,
@@ -236,7 +232,7 @@ export function registerTaskTools(
 		},
 		spanOptions: {},
 		callback: async (fields) => {
-			const result = await addTask(container, fields);
+			const result = await operations.addTask(fields);
 			return {
 				data: result.result,
 				text: "Added task",
@@ -312,10 +308,9 @@ export function registerTaskTools(
 			attributes: { taskId: args.taskId },
 		}),
 		callback: async ({ taskId, sync: shouldSync }) => {
-			const { db } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
 
-			const result = listTaskComments(db, taskId);
+			const result = operations.listTaskComments(taskId);
 			const comments = result.result.map((n) => ({
 				id: n.id,
 				taskId: n.itemId,
@@ -353,7 +348,7 @@ export function registerTaskTools(
 			attributes: { taskId: args.taskId },
 		}),
 		callback: async ({ taskId, content }) => {
-			const result = await addTaskComment(container, taskId, content);
+			const result = await operations.addTaskComment(taskId, content);
 			const note = result.result;
 
 			return {

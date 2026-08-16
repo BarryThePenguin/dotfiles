@@ -167,7 +167,7 @@ export function createClient(token: string): TodoistClient {
 	}
 
 	return {
-		sync: (syncToken, ...commands) => sync(syncToken, ...commands),
+		sync,
 
 		fetchProjects(limit, cursor) {
 			return fetchProjectsFromApi(token, limit, cursor);

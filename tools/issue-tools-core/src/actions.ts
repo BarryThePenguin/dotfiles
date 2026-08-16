@@ -38,8 +38,8 @@ import type { WayfinderTracker, WayfinderTrackerTicket } from "./tracker.ts";
 // ---------------------------------------------------------------------------
 
 export interface ActionRuntime<R> {
-	wayfinder(): WayfinderTracker;
-	issues(): IssueTracker;
+	readonly wayfinder: WayfinderTracker;
+	readonly issues: IssueTracker;
 	requireMapId(params: { map_id?: string }): string | null;
 	getActiveMap(): string | null;
 	setActiveMap(mapId: string): void;
@@ -128,8 +128,8 @@ async function listMaps(
 	_params: Record<string, never>,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
-	const maps = await tracker.listMaps();
+	const { wayfinder } = runtime;
+	const maps = await wayfinder.listMaps();
 	if (maps.length === 0) {
 		return runtime.success("No open wayfinder maps.", { maps: [] });
 	}
@@ -152,8 +152,8 @@ async function chart(
 	params: ChartParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
-	const map = await tracker.createMap({
+	const { wayfinder } = runtime;
+	const map = await wayfinder.createMap({
 		title: params.title,
 		destination: params.destination,
 		...(params.notes !== undefined ? { notes: params.notes } : {}),
@@ -169,12 +169,12 @@ async function getMap(
 	params: GetMapParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
+	const { wayfinder } = runtime;
 	const mapId = runtime.requireMapId(params);
 	if (!mapId) {
 		return runtime.error("no map_id provided and no active map.");
 	}
-	const detail = await tracker.getMapDetail(mapId);
+	const detail = await wayfinder.getMapDetail(mapId);
 	const open = detail.openCount;
 	const closed = detail.closedCount;
 	const summary = renderMapSummary(detail.map, open, closed);
@@ -199,12 +199,12 @@ async function createTicket(
 	params: CreateTicketParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
+	const { wayfinder } = runtime;
 	const mapId = runtime.requireMapId(params);
 	if (!mapId) {
 		return runtime.error("no map_id and no active map.");
 	}
-	const ticket = await tracker.createChildTicket({
+	const ticket = await wayfinder.createChildTicket({
 		mapId,
 		title: params.title,
 		type: params.type,
@@ -225,8 +225,10 @@ async function getTicket(
 	params: GetTicketParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
-	const { ticket, blockers } = await tracker.getTicketDetail(params.ticket_id);
+	const { wayfinder } = runtime;
+	const { ticket, blockers } = await wayfinder.getTicketDetail(
+		params.ticket_id,
+	);
 	const blockerTitles = blockers.map((b) => b.title);
 	return runtime.success(renderTicketDetails(ticket, blockerTitles), {
 		id: ticket.id,
@@ -243,8 +245,8 @@ async function resolve(
 	params: ResolveParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
-	const result = await tracker.resolveTicket({
+	const { wayfinder } = runtime;
+	const result = await wayfinder.resolveTicket({
 		mapId: params.map_id,
 		ticketId: params.ticket_id,
 		resolution: renderResolution(params.resolution),
@@ -280,12 +282,12 @@ async function updateMap(
 	params: UpdateMapParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
+	const { wayfinder } = runtime;
 	const mapId = runtime.requireMapId(params);
 	if (!mapId) {
 		return runtime.error("no map_id and no active map.");
 	}
-	const map = await tracker.updateMapSection(
+	const map = await wayfinder.updateMapSection(
 		mapId,
 		params.section,
 		params.content,
@@ -300,12 +302,12 @@ async function setBlocking(
 	params: SetBlockingParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
-	const ticket = await tracker.setBlockingDependencies(
+	const { wayfinder } = runtime;
+	const ticket = await wayfinder.setBlockingDependencies(
 		params.ticket_id,
 		params.blocked_by,
 	);
-	const detail = await tracker.getTicketDetail(ticket.id);
+	const detail = await wayfinder.getTicketDetail(ticket.id);
 	const status =
 		detail.blockers.length > 0
 			? `Blocked by: ${detail.blockers.map(formatTicketReference).join(", ")}`
@@ -320,12 +322,12 @@ async function listFrontier(
 	params: ListFrontierParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
+	const { wayfinder } = runtime;
 	const mapId = runtime.requireMapId(params);
 	if (!mapId) {
 		return runtime.error("no map_id and no active map.");
 	}
-	const { frontier, blocked, claimed } = await tracker.getMapDetail(mapId);
+	const { frontier, blocked, claimed } = await wayfinder.getMapDetail(mapId);
 	if (frontier.length === 0 && blocked.length === 0 && claimed.length === 0) {
 		return runtime.success("No open tickets on this map.", {
 			frontier,
@@ -358,19 +360,19 @@ async function claim(
 	params: ClaimParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.wayfinder();
+	const { wayfinder } = runtime;
 	const shouldClaim = params.claim !== false;
 	let claimed = false;
 	let ticket: WayfinderTrackerTicket;
 	if (shouldClaim) {
-		const result = await tracker.claimTicketIfUnclaimed(
+		const result = await wayfinder.claimTicketIfUnclaimed(
 			params.ticket_id,
 			runtime.claimant(),
 		);
 		claimed = result.claimed;
 		ticket = result.ticket;
 	} else {
-		ticket = await tracker.unclaimTicket(params.ticket_id);
+		ticket = await wayfinder.unclaimTicket(params.ticket_id);
 	}
 	return runtime.success(
 		`${claimed ? "Claimed" : shouldClaim ? "Could not claim" : "Unclaimed"} ticket ${formatTicketReference(ticket)}`,
@@ -386,8 +388,8 @@ async function createIssue(
 	params: IssueCreateParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.issues();
-	const issue = await tracker.createIssue({
+	const { issues } = runtime;
+	const issue = await issues.createIssue({
 		title: params.title,
 		...(params.body !== undefined ? { body: params.body } : {}),
 		...(params.labels !== undefined ? { labels: params.labels } : {}),
@@ -402,8 +404,8 @@ async function readIssue(
 	params: IssueReadParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.issues();
-	const issue = await tracker.readIssue(params.id);
+	const { issues } = runtime;
+	const issue = await issues.readIssue(params.id);
 	return runtime.success(renderIssueDetails(issue), {
 		id: issue.id,
 		url: issue.url,
@@ -418,8 +420,8 @@ async function labelIssue(
 	params: IssueLabelParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.issues();
-	const issue = await tracker.updateIssueLabels(params.id, {
+	const { issues } = runtime;
+	const issue = await issues.updateIssueLabels(params.id, {
 		...(params.add ? { add: [...params.add] } : {}),
 		...(params.remove ? { remove: [...params.remove] } : {}),
 	});
@@ -433,8 +435,8 @@ async function commentIssue(
 	params: IssueCommentParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.issues();
-	const { comment } = await tracker.commentOnIssue(params.id, params.body);
+	const { issues } = runtime;
+	const { comment } = await issues.commentOnIssue(params.id, params.body);
 	return runtime.success(
 		`Comment posted on ${params.id}${comment.postedAt ? ` at ${comment.postedAt}` : ""}.`,
 		{
@@ -451,8 +453,8 @@ async function closeIssue(
 	params: IssueCloseParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.issues();
-	const { status } = await tracker.closeIssue(
+	const { issues } = runtime;
+	const { status } = await issues.closeIssue(
 		params.id,
 		params.comment ? { comment: params.comment } : undefined,
 	);
@@ -466,8 +468,7 @@ async function listIssues(
 	params: IssueListParams,
 	runtime: AnyRuntime,
 ): Promise<unknown> {
-	const tracker = runtime.issues();
-	const issues = await tracker.listIssues({
+	const issues = await runtime.issues.listIssues({
 		...(params.state ? { state: params.state } : {}),
 		...(params.labels ? { labels: [...params.labels] } : {}),
 		...(params.unlabeled ? { unlabeled: params.unlabeled } : {}),

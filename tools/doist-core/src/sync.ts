@@ -44,6 +44,58 @@ export function countSyncData(
 	};
 }
 
+function createSyncHelper(
+	db: Database,
+	client: TodoistClient,
+	allowedProjects: string[],
+	full: boolean,
+) {
+	if (full) {
+		resetToken(db);
+	}
+	const token = getToken(db) ?? "*";
+	const isFullSync = token === "*";
+
+	return async (log = false) => {
+		const tokenLabel =
+			token === "*" ? "FULL_SYNC" : `token_${token.slice(0, 8)}...`;
+		if (log) {
+			logger.info(
+				{ token: tokenLabel, allowedProjects },
+				"syncAndFetch: syncing",
+			);
+		}
+
+		const raw = await client.sync(token);
+		if (log) {
+			logger.info(
+				{
+					tasks_in_response: raw.tasks.length,
+					projects_in_response: raw.projects.length,
+					sections_in_response: raw.sections.length,
+					labels_in_response: raw.labels.length,
+					filters_in_response: raw.filters.length,
+					has_syncToken: !!raw.syncToken,
+					task_ids: raw.tasks.map((t) => t.id),
+				},
+				"syncAndFetch: received sync response",
+			);
+		}
+
+		const filtered = filterToAllowedProjects(raw, allowedProjects);
+		if (log) {
+			logger.info(
+				{
+					filtered_tasks: filtered.tasks.length,
+					task_ids_after_filter: filtered.tasks.map((t) => t.id),
+				},
+				"syncAndFetch: after filtering to allowed projects",
+			);
+		}
+		return { raw, filtered, isFullSync };
+	};
+}
+
 /**
  * Fetch and filter sync response without persisting.
  *
@@ -62,36 +114,12 @@ export async function syncAndFetch(
 	allowedProjects: string[] = [],
 	full = false,
 ): Promise<AllData> {
-	if (full) {
-		resetToken(db);
-	}
-	const token = getToken(db) ?? "*";
-	const tokenLabel =
-		token === "*" ? "FULL_SYNC" : `token_${token.slice(0, 8)}...`;
-	logger.info({ token: tokenLabel, allowedProjects }, "syncAndFetch: syncing");
-	const raw = await client.sync(token);
-
-	logger.info(
-		{
-			tasks_in_response: raw.tasks.length,
-			projects_in_response: raw.projects.length,
-			sections_in_response: raw.sections.length,
-			labels_in_response: raw.labels.length,
-			filters_in_response: raw.filters.length,
-			has_syncToken: !!raw.syncToken,
-			task_ids: raw.tasks.map((t) => t.id),
-		},
-		"syncAndFetch: received sync response",
-	);
-
-	const filtered = filterToAllowedProjects(raw, allowedProjects);
-	logger.info(
-		{
-			filtered_tasks: filtered.tasks.length,
-			task_ids_after_filter: filtered.tasks.map((t) => t.id),
-		},
-		"syncAndFetch: after filtering to allowed projects",
-	);
+	const { filtered } = await createSyncHelper(
+		db,
+		client,
+		allowedProjects,
+		full,
+	)(true);
 	return filtered;
 }
 
@@ -116,13 +144,12 @@ export async function syncAndPersist(
 	allowedProjects: string[] = [],
 	full = false,
 ): Promise<SyncAndPersistResult> {
-	if (full) {
-		resetToken(db);
-	}
-	const token = getToken(db) ?? "*";
-	const isFullSync = token === "*";
-	const raw = await client.sync(token);
-	const filtered = filterToAllowedProjects(raw, allowedProjects);
+	const { raw, filtered, isFullSync } = await createSyncHelper(
+		db,
+		client,
+		allowedProjects,
+		full,
+	)();
 
 	const {
 		projects,

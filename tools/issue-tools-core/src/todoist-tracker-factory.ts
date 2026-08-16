@@ -14,8 +14,10 @@ function repoProjectId(container: Container): string | undefined {
 	return selectRepoProject(container.listProjects())?.id;
 }
 
-async function createTodoistTrackerContext(): Promise<TodoistTrackerContext> {
-	const container = createContainer();
+async function createTodoistTrackerContext(
+	rcDir?: string,
+): Promise<TodoistTrackerContext> {
+	const container = createContainer(rcDir);
 	if (!container.paths) {
 		throw new Error("Could not create Todoist tracker: no-config");
 	}
@@ -34,9 +36,13 @@ async function createTodoistTrackerContext(): Promise<TodoistTrackerContext> {
 /**
  * Build the complete module set backed by one synchronized Todoist context.
  *
+ * @param rcDir Optional directory to start the `.doistrc` search from;
+ *   defaults to `TODOIST_RC_DIR` or the process cwd.
  */
-export async function createTodoistTrackerModules(): Promise<TrackerModules> {
-	const context = await createTodoistTrackerContext();
+export async function createTodoistTrackerModules(
+	rcDir?: string,
+): Promise<TrackerModules> {
+	const context = await createTodoistTrackerContext(rcDir);
 	return createTrackerModulesFromBackend(context.persistence);
 }
 

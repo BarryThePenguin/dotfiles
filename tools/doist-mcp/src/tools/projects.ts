@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
 import type { OperationalContainer } from "doist-core";
-import { listSections, RestApiProjectSchema } from "doist-core";
+import { createTodoistOperations, RestApiProjectSchema } from "doist-core";
 import {
 	EmptyInput,
 	ListLabelSchema,
@@ -19,6 +19,7 @@ export function registerProjectTools(
 	mcp: McpServer,
 	container: OperationalContainer,
 ): void {
+	const operations = createTodoistOperations(container);
 	registerTool({
 		mcp,
 		name: "todoist_projects_fetch",
@@ -191,9 +192,8 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async ({ project, sync: shouldSync }) => {
-			const { db } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const sections = listSections(db, project);
+			const sections = operations.listSections(project);
 			return {
 				data: { sync: syncResult, sections },
 				text: `Sections for project ${project}`,

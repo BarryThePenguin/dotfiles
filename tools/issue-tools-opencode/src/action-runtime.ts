@@ -2,7 +2,11 @@
  * OpenCode action runtime — adapts OpenCodeSession into ActionRuntime<ActionResult>.
  */
 
-import { localTrackerRoot, type ActionRuntime } from "issue-tools-core";
+import {
+	createActionRuntime as createCoreActionRuntime,
+	localTrackerRoot,
+	type ActionRuntime,
+} from "issue-tools-core";
 import type { OpenCodeSession } from "./tracker.ts";
 
 export type ActionResult = {
@@ -22,51 +26,20 @@ export async function createActionRuntime(
 	host: HostContext,
 	ctx: RuntimeContext,
 ): Promise<ActionRuntime<ActionResult>> {
-	const [modules, claimant] = await Promise.all([
-		ctx.session.get(),
-		ctx.session.getClaimant(),
-	]);
-	const mode = ctx.session.getMode() ?? "local";
-	const trackerDetails = {
-		tracker: mode,
-		...(mode === "local" ? { root: localTrackerRoot(host.worktree) } : {}),
-	};
-
-	const details = (extra: Record<string, unknown>) => ({
-		...trackerDetails,
-		...extra,
-	});
-
-	const success = (
-		text: string,
-		extra: Record<string, unknown> = {},
-	): ActionResult => ({
-		output: text,
-		metadata: details(extra),
-	});
-
-	return {
-		wayfinder() {
-			return modules.wayfinder;
-		},
-		issues() {
-			return modules.issues;
-		},
-		requireMapId(params) {
-			return ctx.session.resolveMapId(params.map_id);
-		},
-		getActiveMap() {
-			return ctx.session.getActiveMap();
-		},
-		setActiveMap(mapId) {
+	return createCoreActionRuntime({
+		loadModules: () => ctx.session.get(),
+		loadClaimant: () => ctx.session.getClaimant(),
+		getMode: () => ctx.session.getMode(),
+		requireMapId: (params) => ctx.session.resolveMapId(params.map_id),
+		getActiveMap: () => ctx.session.getActiveMap(),
+		setActiveMap: (mapId) => {
 			ctx.session.setActiveMap(mapId);
 		},
-		claimant() {
-			return claimant;
-		},
-		success,
-		error(message) {
-			return { output: `Error: ${message}`, metadata: {} };
-		},
-	};
+		trackerDetails: (mode) => ({
+			tracker: mode,
+			...(mode === "local" ? { root: localTrackerRoot(host.worktree) } : {}),
+		}),
+		success: (text, metadata) => ({ output: text, metadata }),
+		error: (message) => ({ output: `Error: ${message}`, metadata: {} }),
+	});
 }

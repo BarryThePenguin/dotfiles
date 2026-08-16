@@ -75,6 +75,41 @@ export interface OperationResult<T> {
 }
 
 /**
+ * Operations bound to one database and Todoist client.
+ *
+ * Keeping the persistence layer in the closure prevents callers from having
+ * to thread the same pair through every operation while retaining the
+ * standalone functions below for consumers that need them.
+ */
+export function createTodoistOperations(persistence: PersistenceLayer) {
+	return {
+		resolveProject: (nameOrId: string) =>
+			resolveProject(persistence.db, nameOrId),
+		listSections: (project?: string) => listSections(persistence.db, project),
+		updateTask: (id: string, fields: UpdateTaskFields) =>
+			updateTask(persistence, id, fields),
+		moveTask: (id: string, project: string) =>
+			moveTask(persistence, id, project),
+		addTask: (fields: AddTaskFields) => addTask(persistence, fields),
+		completeTasks: (ids: string[]) => completeTasks(persistence, ids),
+		uncompleteTasks: (ids: string[]) => uncompleteTasks(persistence, ids),
+		completeTask: (id: string, comment?: string) =>
+			completeTask(persistence, id, comment),
+		listFilters: () => listFilters(persistence.db),
+		addFilter: (fields: AddFilterFields) => addFilter(persistence, fields),
+		updateFilter: (id: string, fields: UpdateFilterFields) =>
+			updateFilter(persistence, id, fields),
+		deleteFilter: (id: string) => deleteFilter(persistence, id),
+		runFilterQuery: (query: string, limit = 50) =>
+			runFilterQuery(persistence.client, query, limit),
+		addTaskComment: (taskId: string, content: string) =>
+			addTaskComment(persistence, taskId, content),
+		listTaskComments: (taskId: string) =>
+			listTaskComments(persistence.db, taskId),
+	};
+}
+
+/**
  * Update a task with new field values.
  *
  * @returns { ok: true, result: updatedTask } on success

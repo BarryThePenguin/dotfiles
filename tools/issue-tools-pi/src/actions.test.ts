@@ -9,7 +9,6 @@ import {
 	createTrackerSession,
 	localTrackerRoot,
 } from "issue-tools-core";
-import { createTrackerModules } from "./index.ts";
 import { handleAction, type ToolContext } from "./actions.ts";
 
 function tempDir() {
@@ -22,7 +21,8 @@ function makeContext(cwd: string) {
 	const trackerSession = createTrackerSession({
 		cwd,
 		selectMode: () => Promise.resolve("local"),
-		buildModules: createTrackerModules,
+		buildLocalModules: () => createLocalTrackerModules(cwd),
+		buildTodoistModules: vi.fn(),
 		persistState,
 		updateStatus,
 	});
@@ -38,7 +38,7 @@ function makeContext(cwd: string) {
 describe("Wayfinder actions", () => {
 	it("makes the only listed map active so follow-up map tools can omit map_id", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "GENIE 2780",
@@ -78,7 +78,7 @@ describe("Wayfinder actions", () => {
 describe("Wayfinder presentation and claims", () => {
 	it("puts ticket names first and claims for the dev driving the map", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Presentation map",
@@ -124,7 +124,7 @@ describe("Wayfinder presentation and claims", () => {
 describe("Resolution actions", () => {
 	it("renders complete and terminal outcomes without using the active map", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const tracker = modules.wayfinder;
 		const map = await tracker.createMap({
 			title: "Resolution map",
@@ -179,7 +179,7 @@ describe("Resolution actions", () => {
 			type: "research",
 			question: "What happened?",
 		});
-		const closedPath = join(localTrackerRoot(dir.path), map.id, closed.url);
+		const closedPath = join(dir.path, map.id, closed.url);
 		const closedBody = await readFile(closedPath, "utf8");
 		await writeFile(
 			closedPath,
@@ -258,7 +258,7 @@ describe("Generic issue actions", () => {
 
 	it("reads a generic issue by its URL", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const issues = modules.issues;
 		const issue = await issues.createIssue({
 			title: "Untracked question",
@@ -277,7 +277,7 @@ describe("Generic issue actions", () => {
 
 	it("applies and removes labels via issue_label and returns the resulting set", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const issues = modules.issues;
 		const issue = await issues.createIssue({
 			title: "Triage me",
@@ -305,7 +305,7 @@ describe("Generic issue actions", () => {
 
 	it("posts a comment via issue_comment and reports the post", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const issues = modules.issues;
 		const issue = await issues.createIssue({
 			title: "Triage me",
@@ -326,7 +326,7 @@ describe("Generic issue actions", () => {
 
 	it("closes an issue via issue_close with an optional closing note", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const issues = modules.issues;
 		const issue = await issues.createIssue({
 			title: "Triage me",
@@ -356,7 +356,7 @@ describe("Generic issue actions", () => {
 
 	it("lists issues via issue_list with state/labels/unlabeled filters", async () => {
 		using dir = tempDir();
-		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
+		const modules = createLocalTrackerModules(dir.path);
 		const issues = modules.issues;
 
 		const unlabeled = await issues.createIssue({

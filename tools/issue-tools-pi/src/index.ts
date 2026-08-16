@@ -22,22 +22,10 @@ import {
 	detectTrackerSelection,
 	localTrackerRoot,
 	toolCatalog,
-	type CreateWayfinderTrackerOptions,
 	type TrackerMode,
-	type TrackerModules,
 } from "issue-tools-core";
 import { handleAction, type ActionMap, type ToolContext } from "./actions.ts";
 import { renderCall, renderResult, type RenderCallArgs } from "./render.ts";
-
-export async function createTrackerModules({
-	cwd,
-	mode,
-}: CreateWayfinderTrackerOptions): Promise<TrackerModules> {
-	if (mode === "local") {
-		return createLocalTrackerModules(localTrackerRoot(cwd));
-	}
-	return createTodoistTrackerModules();
-}
 
 const STATUS_KEY = "issue-tools";
 
@@ -112,22 +100,20 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 
 	// -- Session lifecycle ---------------------------------------------------
 
-	let trackerSession = createTrackerSession({
-		cwd: ".",
-		selectMode: selectTrackerMode,
-		buildModules: createTrackerModules,
-		persistState,
-		updateStatus,
-	});
-
-	pi.on("session_start", (_event, ctx) => {
-		trackerSession = createTrackerSession({
-			cwd: ctx.cwd,
+	const createSession = (cwd: string) =>
+		createTrackerSession({
+			cwd,
 			selectMode: selectTrackerMode,
-			buildModules: createTrackerModules,
+			buildLocalModules: () => createLocalTrackerModules(localTrackerRoot(cwd)),
+			buildTodoistModules: () => createTodoistTrackerModules(cwd),
 			persistState,
 			updateStatus,
 		});
+
+	let trackerSession = createSession(".");
+
+	pi.on("session_start", (_event, ctx) => {
+		trackerSession = createSession(ctx.cwd);
 		for (const entry of ctx.sessionManager.getBranch()) {
 			if (entry.type === "custom" && entry.customType === "issue-tools-state") {
 				// `maps` was dropped from the persisted shape; older sessions may

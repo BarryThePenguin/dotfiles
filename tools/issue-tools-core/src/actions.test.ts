@@ -26,8 +26,8 @@ function makeRuntime(opts: {
 		get activeMap() {
 			return activeMap;
 		},
-		wayfinder: () => opts.wayfinder ?? makeFakeWayfinderTracker(),
-		issues: () => opts.issues ?? makeFakeIssueTracker(),
+		wayfinder: opts.wayfinder ?? makeFakeWayfinderTracker(),
+		issues: opts.issues ?? makeFakeIssueTracker(),
 		requireMapId: (params) => params.map_id ?? activeMap,
 		getActiveMap: () => activeMap,
 		setActiveMap: (id) => {

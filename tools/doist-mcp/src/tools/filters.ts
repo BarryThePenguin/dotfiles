@@ -2,11 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
 import {
-	addFilter,
-	deleteFilter,
-	listFilters,
-	runFilterQuery,
-	updateFilter,
+	createTodoistOperations,
 	FilterQueryInputSchema as FilterQueryInputRaw,
 } from "doist-core";
 import type { OperationalContainer } from "doist-core";
@@ -79,6 +75,7 @@ export function registerFilterTools(
 	mcp: McpServer,
 	container: OperationalContainer,
 ): void {
+	const operations = createTodoistOperations(container);
 	registerTool({
 		mcp,
 		name: "todoist_filters_list",
@@ -92,9 +89,8 @@ export function registerFilterTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const filters = listFilters(db);
+			const filters = operations.listFilters();
 			return {
 				data: { sync: syncResult, filters },
 				text: `${filters.length} saved filters`,
@@ -131,7 +127,7 @@ export function registerFilterTools(
 			sync: shouldSync,
 		}) => {
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const result = await addFilter(container, {
+			const result = await operations.addFilter({
 				name,
 				query,
 				color,
@@ -177,7 +173,7 @@ export function registerFilterTools(
 			sync: shouldSync,
 		}) => {
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const result = await updateFilter(container, id, {
+			const result = await operations.updateFilter(id, {
 				name,
 				query,
 				color,
@@ -214,7 +210,7 @@ export function registerFilterTools(
 		}),
 		callback: async ({ id, sync: shouldSync }) => {
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			await deleteFilter(container, id);
+			await operations.deleteFilter(id);
 			return {
 				data: { sync: syncResult },
 				text: `Deleted filter ${id}`,
@@ -239,9 +235,8 @@ export function registerFilterTools(
 			attributes: { "filter.query": args.query ?? "unknown" },
 		}),
 		callback: async ({ query, limit, sync: shouldSync }) => {
-			const { client } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const result = await runFilterQuery(client, query, limit ?? 50);
+			const result = await operations.runFilterQuery(query, limit ?? 50);
 			if (!result.ok) {
 				throw new Error("Failed to run filter query");
 			}

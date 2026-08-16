@@ -7,6 +7,7 @@ import {
 	type TrackerModules,
 } from "./modules.ts";
 import { createLocalTrackerModules } from "./local-tracker-factory.ts";
+import { localTrackerRoot } from "./session.ts";
 import { createTodoistFixture } from "./test-helpers/todoist-fixture.ts";
 /**
  * The domain contract is deliberately exercised through the two public
@@ -32,7 +33,7 @@ async function withFixture(
 
 	const root = mkdtempDisposableSync(join(tmpdir(), "tracker-conformance-"));
 	try {
-		await callback(createLocalTrackerModules(root.path));
+		await callback(createLocalTrackerModules(localTrackerRoot(root.path)));
 	} finally {
 		root.remove();
 	}

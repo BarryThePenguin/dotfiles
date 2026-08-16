@@ -8,20 +8,15 @@ export function localTrackerRoot(cwd: string): string {
 	return resolve(cwd, ".scratch");
 }
 
-export type CreateWayfinderTrackerOptions = {
-	cwd: string;
-	mode: TrackerMode;
-};
-
 export type TrackerSessionOptions<TExt> = {
 	/** The repository the session is scoped to. */
 	cwd: string;
 	/** Selects which Issue tracker this session uses. */
 	selectMode: (ext: TExt) => Promise<TrackerMode>;
-	/** Builds the domain modules for the selected tracker. */
-	buildModules: (
-		options: CreateWayfinderTrackerOptions,
-	) => Promise<TrackerModules>;
+	/** Builds the domain modules for the local tracker. */
+	buildLocalModules: () => TrackerModules;
+	/** Builds the domain modules for the Todoist tracker. */
+	buildTodoistModules: () => Promise<TrackerModules>;
 	/** Persists the session's active map. */
 	persistState: (activeMap: string | null) => void;
 	/** Refreshes the host's status from the session's state. */
@@ -56,7 +51,8 @@ export type TrackerSession<TExt = unknown> = {
 export function createTrackerSession<TExt>({
 	cwd,
 	selectMode,
-	buildModules,
+	buildLocalModules,
+	buildTodoistModules,
 	persistState,
 	updateStatus,
 }: TrackerSessionOptions<TExt>): TrackerSession<TExt> {
@@ -72,7 +68,7 @@ export function createTrackerSession<TExt>({
 			if (!modules) {
 				const pending = (async () => {
 					mode = await selectMode(ext);
-					return buildModules({ cwd, mode });
+					return mode === "local" ? buildLocalModules() : buildTodoistModules();
 				})();
 				const cached = pending.catch((error: unknown) => {
 					if (modules === cached) {

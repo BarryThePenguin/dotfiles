@@ -82,7 +82,6 @@ export {
 export { resolveClaimant } from "./claimant.ts";
 export { createTrackerSession, localTrackerRoot } from "./session.ts";
 export type {
-	CreateWayfinderTrackerOptions,
 	TrackerMode,
 	TrackerSession,
 	TrackerSessionOptions,
@@ -97,6 +96,8 @@ export type { TrackerSelection } from "./setup-issue-tracker.ts";
 
 export { handleAction } from "./actions.ts";
 export type { ActionMap, ActionRuntime } from "./actions.ts";
+export { createActionRuntime } from "./action-runtime.ts";
+export type { ActionRuntimeOptions } from "./action-runtime.ts";
 
 // -- Tool parameter schemas (host-agnostic JSON Schema) --------------------
 

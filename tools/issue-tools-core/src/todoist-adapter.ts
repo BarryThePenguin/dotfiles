@@ -1,11 +1,7 @@
 import {
-	addTask,
-	addTaskComment,
-	completeTask,
-	updateTask,
 	type AppTask,
 	type Database,
-	type TodoistClient,
+	createTodoistOperations,
 } from "doist-core";
 import type { PersistenceLayer } from "doist-core";
 import {
@@ -143,7 +139,7 @@ function sortById<T extends { id: string }>(records: T[]): T[] {
  */
 export class TodoistAdapter {
 	readonly #db: Database;
-	readonly #client: TodoistClient;
+	readonly #operations: ReturnType<typeof createTodoistOperations>;
 	readonly #projectId: string | undefined;
 
 	constructor(
@@ -151,28 +147,25 @@ export class TodoistAdapter {
 		options: TodoistAdapterOptions,
 	) {
 		this.#db = db;
-		this.#client = client;
+		this.#operations = createTodoistOperations({ db, client });
 		this.#projectId = options.projectId;
 	}
 
 	async createMap(
 		input: CreateWayfinderMapInput,
 	): Promise<WayfinderTrackerMap> {
-		const { result } = await addTask(
-			{ db: this.#db, client: this.#client },
-			{
-				title: input.title,
-				description: renderMapBody({
-					destination: input.destination,
-					notes: input.notes ?? "",
-					decisionsSoFar: [],
-					notYetSpecified: input.notYetSpecified ?? [],
-					outOfScope: [],
-				}),
-				labels: [WAYFINDER_MAP_LABEL],
-				...(this.#projectId ? { project: this.#projectId } : {}),
-			},
-		);
+		const { result } = await this.#operations.addTask({
+			title: input.title,
+			description: renderMapBody({
+				destination: input.destination,
+				notes: input.notes ?? "",
+				decisionsSoFar: [],
+				notYetSpecified: input.notYetSpecified ?? [],
+				outOfScope: [],
+			}),
+			labels: [WAYFINDER_MAP_LABEL],
+			...(this.#projectId ? { project: this.#projectId } : {}),
+		});
 		return toMap(this.#withoutComments(result));
 	}
 
@@ -199,19 +192,16 @@ export class TodoistAdapter {
 			text: task.content,
 			url: task.url,
 		}));
-		const { result } = await addTask(
-			{ db: this.#db, client: this.#client },
-			{
-				title: input.title,
-				description: renderTicketBody({
-					question: input.question,
-					blockers,
-				}),
-				labels: [ticketTypeToTodoistLabel(input.type)],
-				...(this.#projectId ? { project: this.#projectId } : {}),
-				parentId: input.mapId,
-			},
-		);
+		const { result } = await this.#operations.addTask({
+			title: input.title,
+			description: renderTicketBody({
+				question: input.question,
+				blockers,
+			}),
+			labels: [ticketTypeToTodoistLabel(input.type)],
+			...(this.#projectId ? { project: this.#projectId } : {}),
+			parentId: input.mapId,
+		});
 		return toTicket(this.#withoutComments(result));
 	}
 
@@ -265,13 +255,9 @@ export class TodoistAdapter {
 			return { claimed: false, ticket };
 		}
 
-		const { result } = await updateTask(
-			{ db: this.#db, client: this.#client },
-			id,
-			{
-				description: setClaimedBy(task.description, claimant),
-			},
-		);
+		const { result } = await this.#operations.updateTask(id, {
+			description: setClaimedBy(task.description, claimant),
+		});
 		return {
 			claimed: true,
 			ticket: toTicket(withExistingComments(result, task.comments)),
@@ -280,19 +266,15 @@ export class TodoistAdapter {
 
 	async unclaimTicket(id: string): Promise<WayfinderTrackerTicket> {
 		const task = this.#readTask(id);
-		const { result } = await updateTask(
-			{ db: this.#db, client: this.#client },
-			id,
-			{
-				description: setClaimedBy(task.description, undefined),
-			},
-		);
+		const { result } = await this.#operations.updateTask(id, {
+			description: setClaimedBy(task.description, undefined),
+		});
 		return toTicket(withExistingComments(result, task.comments));
 	}
 
 	async closeTicket(id: string): Promise<WayfinderTrackerTicket> {
 		const task = this.#readTask(id);
-		await completeTask({ db: this.#db, client: this.#client }, id);
+		await this.#operations.completeTask(id);
 		return toTicket({ ...task, isCompleted: true });
 	}
 
@@ -319,8 +301,7 @@ export class TodoistAdapter {
 		// observed, finish the retry without adding a duplicate comment. Reuse
 		// the nested read rather than loading the task's comments again after the
 		// mutation.
-		await completeTask(
-			{ db: this.#db, client: this.#client },
+		await this.#operations.completeTask(
 			id,
 			matchingResolution ? undefined : resolution,
 		);
@@ -344,13 +325,9 @@ export class TodoistAdapter {
 			url: task.url,
 		}));
 		const task = this.#readTaskBody(id);
-		const { result } = await updateTask(
-			{ db: this.#db, client: this.#client },
-			id,
-			{
-				description: setBlockedBySection(task.description, blockers),
-			},
-		);
+		const { result } = await this.#operations.updateTask(id, {
+			description: setBlockedBySection(task.description, blockers),
+		});
 		return toTicket(this.#withoutComments(result));
 	}
 
@@ -362,13 +339,9 @@ export class TodoistAdapter {
 		mapId: string,
 		body: string,
 	): Promise<WayfinderTrackerMap> {
-		const { result } = await updateTask(
-			{ db: this.#db, client: this.#client },
-			mapId,
-			{
-				description: body,
-			},
-		);
+		const { result } = await this.#operations.updateTask(mapId, {
+			description: body,
+		});
 		return toMap(this.#withoutComments(result));
 	}
 
@@ -397,15 +370,12 @@ export class TodoistAdapter {
 	// -- Generic issue persistence --------------------------------------
 
 	async createIssueRecord(input: CreateIssueInput): Promise<Issue> {
-		const { result } = await addTask(
-			{ db: this.#db, client: this.#client },
-			{
-				title: input.title,
-				description: input.body ?? "",
-				labels: input.labels ?? [],
-				...(this.#projectId ? { project: this.#projectId } : {}),
-			},
-		);
+		const { result } = await this.#operations.addTask({
+			title: input.title,
+			description: input.body ?? "",
+			labels: input.labels ?? [],
+			...(this.#projectId ? { project: this.#projectId } : {}),
+		});
 		return toIssue(this.#withoutComments(result));
 	}
 
@@ -428,14 +398,10 @@ export class TodoistAdapter {
 		if (addLabels.length === 0 && removeLabels.length === 0) {
 			return currentIssue;
 		}
-		const { result } = await updateTask(
-			{ db: this.#db, client: this.#client },
-			taskId,
-			{
-				...(addLabels.length > 0 ? { addLabels } : {}),
-				...(removeLabels.length > 0 ? { removeLabels } : {}),
-			},
-		);
+		const { result } = await this.#operations.updateTask(taskId, {
+			...(addLabels.length > 0 ? { addLabels } : {}),
+			...(removeLabels.length > 0 ? { removeLabels } : {}),
+		});
 		const comments = currentIssue.comments.map((comment) => ({
 			content: comment.content,
 			postedAt: comment.postedAt ?? null,
@@ -448,11 +414,7 @@ export class TodoistAdapter {
 		body: string,
 	): Promise<{ comment: { content: string; postedAt?: string } }> {
 		const taskId = extractTodoistTaskId(id);
-		const { result } = await addTaskComment(
-			{ db: this.#db, client: this.#client },
-			taskId,
-			body,
-		);
+		const { result } = await this.#operations.addTaskComment(taskId, body);
 		return {
 			comment: {
 				content: body,
@@ -466,11 +428,7 @@ export class TodoistAdapter {
 		options: { comment?: string } | undefined,
 	): Promise<{ status: "open" | "closed" }> {
 		const taskId = extractTodoistTaskId(id);
-		await completeTask(
-			{ db: this.#db, client: this.#client },
-			taskId,
-			options?.comment,
-		);
+		await this.#operations.completeTask(taskId, options?.comment);
 		return { status: "closed" as const };
 	}
 

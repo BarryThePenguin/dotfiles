@@ -1,5 +1,6 @@
 import { createContainer } from "doist-core";
 import {
+	createLocalTrackerModules,
 	createTrackerSession,
 	localTrackerRoot,
 	selectTodoistRepoProjectId as pickRepoProjectId,
@@ -9,7 +10,6 @@ import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTrackerModules } from "./index.ts";
 
 // ---------------------------------------------------------------------------
 // Env + tempdir plumbing
@@ -52,11 +52,13 @@ describe("createTrackerSession", () => {
 	it("selects and builds once for concurrent and subsequent requests", async () => {
 		const built = modules();
 		const selectMode = vi.fn(() => Promise.resolve("local" as const));
-		const buildModules = vi.fn(() => Promise.resolve(built));
+		const buildLocalModules = vi.fn(() => built);
+		const buildTodoistModules = vi.fn();
 		const session = createTrackerSession({
 			cwd,
 			selectMode,
-			buildModules,
+			buildLocalModules,
+			buildTodoistModules,
 			persistState: vi.fn(),
 			updateStatus: vi.fn(),
 		});
@@ -68,10 +70,8 @@ describe("createTrackerSession", () => {
 		]);
 
 		expect(selectMode).toHaveBeenCalledOnce();
-		expect(buildModules).toHaveBeenCalledExactlyOnceWith({
-			cwd,
-			mode: "local",
-		});
+		expect(buildLocalModules).toHaveBeenCalledOnce();
+		expect(buildTodoistModules).not.toHaveBeenCalled();
 		expect(first).toBe(built);
 		expect(concurrent).toBe(built);
 		expect(subsequent).toBe(built);
@@ -81,7 +81,8 @@ describe("createTrackerSession", () => {
 		const session = createTrackerSession({
 			cwd,
 			selectMode: () => Promise.resolve("local" as const),
-			buildModules: () => Promise.resolve(modules()),
+			buildLocalModules: () => modules(),
+			buildTodoistModules: vi.fn(),
 			persistState: vi.fn(),
 			updateStatus: vi.fn(),
 		});
@@ -103,14 +104,16 @@ describe("createTrackerSession", () => {
 			.fn()
 			.mockResolvedValueOnce("local" as const)
 			.mockResolvedValueOnce("todoist" as const);
-		const buildModules = vi
+		const buildLocalModules = vi
 			.fn()
-			.mockResolvedValueOnce(firstModules)
-			.mockResolvedValueOnce(secondModules);
+			.mockReturnValueOnce(firstModules)
+			.mockReturnValueOnce(modules());
+		const buildTodoistModules = vi.fn().mockResolvedValueOnce(secondModules);
 		const session = createTrackerSession({
 			cwd,
 			selectMode,
-			buildModules,
+			buildLocalModules,
+			buildTodoistModules,
 			persistState: vi.fn(),
 			updateStatus: vi.fn(),
 		});
@@ -120,7 +123,8 @@ describe("createTrackerSession", () => {
 		const second = await session.get({});
 
 		expect(selectMode).toHaveBeenCalledTimes(2);
-		expect(buildModules).toHaveBeenCalledTimes(2);
+		expect(buildLocalModules).toHaveBeenCalledOnce();
+		expect(buildTodoistModules).toHaveBeenCalledOnce();
 		expect(second).toBe(secondModules);
 		expect(second).not.toBe(first);
 	});
@@ -129,14 +133,18 @@ describe("createTrackerSession", () => {
 		const error = new Error("temporary construction failure");
 		const built = modules();
 		const selectMode = vi.fn(() => Promise.resolve("local" as const));
-		const buildModules = vi
+		const buildLocalModules = vi
 			.fn()
-			.mockRejectedValueOnce(error)
-			.mockResolvedValueOnce(built);
+			.mockImplementationOnce(() => {
+				throw error;
+			})
+			.mockReturnValueOnce(built);
+		const buildTodoistModules = vi.fn();
 		const session = createTrackerSession({
 			cwd,
 			selectMode,
-			buildModules,
+			buildLocalModules,
+			buildTodoistModules,
 			persistState: vi.fn(),
 			updateStatus: vi.fn(),
 		});
@@ -144,7 +152,7 @@ describe("createTrackerSession", () => {
 		await expect(session.get({})).rejects.toThrow(error);
 		await expect(session.get({})).resolves.toBe(built);
 		expect(selectMode).toHaveBeenCalledTimes(2);
-		expect(buildModules).toHaveBeenCalledTimes(2);
+		expect(buildLocalModules).toHaveBeenCalledTimes(2);
 	});
 });
 
@@ -205,8 +213,8 @@ describe("pickRepoProjectId over a real .doistrc", () => {
 	});
 });
 
-describe("createTrackerModules repo-aware project selection", () => {
-	it("the local modules ignore repo selection (always .scratch)", async () => {
+describe("local modules ignore repo-aware project selection", () => {
+	it("always build from .scratch regardless of the .doistrc", () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));
 		writeRc(dir.path, [
@@ -216,10 +224,7 @@ describe("createTrackerModules repo-aware project selection", () => {
 		process.env["TODOIST_API_TOKEN"] = "test";
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
-		const modules = await createTrackerModules({
-			cwd: dir.path,
-			mode: "local",
-		});
+		const modules = createLocalTrackerModules(localTrackerRoot(dir.path));
 		expect(modules.issues).toBeDefined();
 		expect(modules.wayfinder).toBeDefined();
 	});

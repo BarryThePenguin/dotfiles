@@ -38,6 +38,7 @@ export {
 
 // Operations
 export {
+	createTodoistOperations,
 	addTask,
 	completeTask,
 	completeTasks,

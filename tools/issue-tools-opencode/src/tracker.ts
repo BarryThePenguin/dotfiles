@@ -57,12 +57,9 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 			cwd: worktree,
 			selectMode: () =>
 				Promise.resolve(resolveMode(worktree, state.read().mode)),
-			buildModules: async (options) =>
-				options.mode === "local"
-					? Promise.resolve(
-							createLocalTrackerModules(localTrackerRoot(worktree)),
-						)
-					: createTodoistTrackerModules(),
+			buildLocalModules: () =>
+				createLocalTrackerModules(localTrackerRoot(worktree)),
+			buildTodoistModules: () => createTodoistTrackerModules(worktree),
 			persistState: (activeMap) => {
 				const currentMode = session.getMode();
 				state.write({
@@ -81,10 +78,10 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 
 	return {
 		get: () => session.get(NO_EXT),
-		getClaimant: () => session.getClaimant(),
-		getActiveMap: () => session.getActiveMap(),
-		getMode: () => session.getMode(),
-		resolveMapId: (explicitMapId) => session.resolveMapId(explicitMapId),
+		getClaimant: session.getClaimant,
+		getActiveMap: session.getActiveMap,
+		getMode: session.getMode,
+		resolveMapId: session.resolveMapId,
 		setActiveMap: (mapId) => {
 			session.setActiveMap(mapId, NO_EXT);
 		},
