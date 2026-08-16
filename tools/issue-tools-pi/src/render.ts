@@ -6,7 +6,7 @@ import type { AgentToolResult, Theme } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import type { ActionMap } from "./actions.ts";
 
-type RenderCallArgs = {
+export type RenderCallArgs = {
 	title?: string;
 	ticket_id?: string;
 	type?: string;

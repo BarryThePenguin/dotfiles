@@ -24,6 +24,10 @@ export type {
 
 // -- Wayfinder domain -----------------------------------------------------
 
+export {
+	BlockerNotOnMapError,
+	ClosedTicketWithoutResolutionError,
+} from "./tracker.ts";
 export type {
 	BlockedFrontierTicket,
 	CreateWayfinderChildTicketInput,
@@ -36,15 +40,11 @@ export type {
 	WayfinderClaimResult,
 	WayfinderMapDetail,
 	WayfinderTicketDetail,
-	WayfinderTrackerReference,
+	WayfinderTicketStatus,
 	WayfinderTracker,
 	WayfinderTrackerMap,
+	WayfinderTrackerReference,
 	WayfinderTrackerTicket,
-	WayfinderTicketStatus,
-} from "./tracker.ts";
-export {
-	ClosedTicketWithoutResolutionError,
-	BlockerNotOnMapError,
 } from "./tracker.ts";
 
 // -- Domain records -------------------------------------------------------
@@ -60,8 +60,8 @@ export type {
 
 // -- Tracker modules ------------------------------------------------------
 
-export type { TrackerModules } from "./modules.ts";
 export { createLocalTrackerModules } from "./local-tracker-factory.ts";
+export type { TrackerModules } from "./modules.ts";
 export {
 	createTodoistTrackerModules,
 	selectTodoistRepoProjectId,
@@ -79,8 +79,8 @@ export {
 
 // -- Session lifecycle ----------------------------------------------------
 
-export { createTrackerSession, localTrackerRoot } from "./session.ts";
 export { resolveClaimant } from "./claimant.ts";
+export { createTrackerSession, localTrackerRoot } from "./session.ts";
 export type {
 	CreateWayfinderTrackerOptions,
 	TrackerMode,
@@ -90,24 +90,40 @@ export type {
 
 // -- Setup ----------------------------------------------------------------
 
-export {
-	detectTrackerSelection,
-	extensionToolCount,
-	toolInventory,
-} from "./setup-issue-tracker.ts";
-export type {
-	ToolInventoryEntry,
-	TrackerSelection,
-} from "./setup-issue-tracker.ts";
+export { detectTrackerSelection } from "./setup-issue-tracker.ts";
+export type { TrackerSelection } from "./setup-issue-tracker.ts";
 
 // -- Action handlers (framework-agnostic) ---------------------------------
 
-export type { ActionMap, ActionRuntime } from "./actions.ts";
 export { handleAction } from "./actions.ts";
+export type { ActionMap, ActionRuntime } from "./actions.ts";
 
-// -- Tool parameter schemas (Pi surface) ----------------------------------
+// -- Tool parameter schemas (host-agnostic JSON Schema) --------------------
 
 export {
+	chartParams,
+	claimParams,
+	createTicketParams,
+	getMapParams,
+	getTicketParams,
+	issueCloseParams,
+	issueCommentParams,
+	issueCreateParams,
+	issueIdOrUrl,
+	issueLabelParams,
+	issueListParams,
+	issueReadParams,
+	listFrontierParams,
+	listMapsParams,
+	mapId,
+	mapSectionSchema,
+	resolveParams,
+	setBlockingParams,
+	ticketId,
+	ticketTypeSchema,
+	updateMapParams,
+} from "./tool-schemas.ts";
+export type {
 	ChartParams,
 	ClaimParams,
 	CreateTicketParams,
@@ -116,20 +132,38 @@ export {
 	IssueCloseParams,
 	IssueCommentParams,
 	IssueCreateParams,
+	IssueIdOrUrl,
 	IssueLabelParams,
 	IssueListParams,
 	IssueReadParams,
-	IssueIdOrUrl,
 	ListFrontierParams,
 	ListMapsParams,
 	MapId,
-	MapSectionSchema,
-	PiIssueToolNames,
-	PiToolNames,
-	PiWayfinderToolNames,
 	ResolveParams,
 	SetBlockingParams,
 	TicketId,
-	TicketTypeSchema,
 	UpdateMapParams,
 } from "./tool-schemas.ts";
+
+// -- Tool catalog (registered surface) -------------------------------------
+
+export {
+	issueClose,
+	issueComment,
+	issueCreate,
+	issueLabel,
+	issueList,
+	issueRead,
+	toolCatalog,
+	wayfinderChart,
+	wayfinderClaim,
+	wayfinderCreateTicket,
+	wayfinderGetMap,
+	wayfinderGetTicket,
+	wayfinderListFrontier,
+	wayfinderListMaps,
+	wayfinderResolve,
+	wayfinderSetBlocking,
+	wayfinderUpdateMap,
+} from "./tool-catalog.ts";
+export type { ToolCatalogEntry } from "./tool-catalog.ts";

@@ -2,11 +2,7 @@ import { mkdirSync, mkdtempDisposableSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-	detectTrackerSelection,
-	extensionToolCount,
-	toolInventory,
-} from "./setup-issue-tracker.ts";
+import { detectTrackerSelection } from "./setup-issue-tracker.ts";
 
 function tempRepo() {
 	const dir = mkdtempDisposableSync(join(tmpdir(), "issue-tools-setup-"));
@@ -63,38 +59,5 @@ describe("detectTrackerSelection", () => {
 		mkdirSync(join(sibling.path, ".scratch"));
 		expect(detectTrackerSelection(dir.path)).toBe("todoist");
 		expect(detectTrackerSelection(sibling.path)).toBe("local");
-	});
-});
-
-describe("toolInventory", () => {
-	it("includes the Pi wayfinder tool names (not the internal core names)", () => {
-		const inventory = toolInventory();
-		const wayfinder = inventory
-			.filter((entry) => entry.group === "wayfinder")
-			.map((entry) => entry.name);
-		expect(wayfinder).toContain("wayfinder_chart");
-		expect(wayfinder).toContain("wayfinder_resolve");
-		expect(wayfinder).toContain("wayfinder_list_frontier");
-		expect(wayfinder).toContain("wayfinder_claim");
-		expect(wayfinder).not.toContain("wayfinder_create_map");
-	});
-
-	it("includes the six issue tools in their registered names", () => {
-		const inventory = toolInventory();
-		const issue = inventory
-			.filter((entry) => entry.group === "issue")
-			.map((entry) => entry.name);
-		expect(issue).toEqual([
-			"issue_create",
-			"issue_read",
-			"issue_label",
-			"issue_comment",
-			"issue_close",
-			"issue_list",
-		]);
-	});
-
-	it("extensionToolCount matches the sum of wayfinder + issue tools", () => {
-		expect(extensionToolCount()).toBe(toolInventory().length);
 	});
 });

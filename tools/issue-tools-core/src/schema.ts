@@ -2,7 +2,7 @@
  * Domain types and constants for the Issue and Wayfinder domain.
  *
  * This is the domain vocabulary home: everything here is tracker-neutral and
- * tool-neutral. The Pi tool parameter schemas (TypeBox encodings and the
+ * tool-neutral. The tool parameter schemas (JSON Schema encodings and the
  * registered tool names) live in `./tool-schemas.ts`, which imports the
  * constants from here — the dependency direction is tool → domain, never the
  * reverse.

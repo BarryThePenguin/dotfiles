@@ -3,7 +3,6 @@ import type {
 	ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 import { createContainer } from "doist-core";
-import { toolInventory } from "issue-tools-core";
 import {
 	mkdirSync,
 	mkdtempDisposableSync,
@@ -212,10 +211,6 @@ describe("/setup-issue-tracker command", () => {
 			n.message.includes("Marked p1"),
 		);
 		expect(success?.type).toBe("info");
-		// Pin the full tool inventory so adding a tool forces an update here.
-		for (const entry of toolInventory()) {
-			expect(success?.message).toContain(entry.name);
-		}
 	});
 
 	it("prompts with both options when .scratch and .doistrc are present", async () => {

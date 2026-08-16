@@ -8,9 +8,6 @@
  *   Markdown; a `.doistrc` with at least one Project selects Todoist. Call
  *   sites keep their own interpretation of `both` and `neither` (prompt vs.
  *   default).
- * - `toolInventory()` — the extension's full tool list, derived from
- *   the schema constants so the docs cannot drift from the registered
- *   surface.
  *
  * The command's UI prompts and the hand-off to the setup skill are
  * handled in the Pi extension; this module owns the deterministic
@@ -20,11 +17,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { hasProjects } from "doist-core";
-import {
-	PiIssueToolNames,
-	PiToolNames,
-	PiWayfinderToolNames,
-} from "./tool-schemas.ts";
 
 export type TrackerSelection = "local" | "todoist" | "both" | "neither";
 
@@ -44,24 +36,4 @@ export function detectTrackerSelection(cwd: string): TrackerSelection {
 		return "todoist";
 	}
 	return "neither";
-}
-
-export type ToolInventoryEntry = {
-	name: string;
-	group: "wayfinder" | "issue";
-};
-
-export function toolInventory(): ToolInventoryEntry[] {
-	const inventory: ToolInventoryEntry[] = [];
-	for (const name of PiWayfinderToolNames) {
-		inventory.push({ name, group: "wayfinder" });
-	}
-	for (const name of PiIssueToolNames) {
-		inventory.push({ name, group: "issue" });
-	}
-	return inventory;
-}
-
-export function extensionToolCount(): number {
-	return PiToolNames.length;
 }

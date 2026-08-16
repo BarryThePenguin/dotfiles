@@ -12,8 +12,9 @@
 	},
 	"dependencies": {
 		"@opencode-ai/plugin": "next",
+		"@opencode-ai/schema": "next",
 		"doist-core": "workspace:*",
-		"effect": "4.0.0-rc.108",
+		"effect": "4.0.0-beta.101",
 		"issue-tools-core": "workspace:*",
 		"sqlite-runtime": "workspace:*"
 	},

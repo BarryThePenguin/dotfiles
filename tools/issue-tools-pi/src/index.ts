@@ -1,5 +1,11 @@
 /**
- * Wayfinder Pi Extension — Maps large efforts as decision tickets on the selected tracker.
+ * Pi extension for the shared issue-tools surface.
+ *
+ * Registers the full `wayfinder_*` and `issue_*` tool catalog from
+ * issue-tools-core — names, labels, descriptions, and parameter schemas all
+ * come from the catalog so this surface matches the opencode plugin by
+ * construction — backed by a per-session tracker (local Markdown or Todoist),
+ * plus a `/setup-issue-tracker` command.
  */
 
 import type {
@@ -8,35 +14,20 @@ import type {
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
 import { createContainer } from "doist-core";
+import { Type } from "typebox";
 import {
-	ChartParams,
-	ClaimParams,
 	createLocalTrackerModules,
 	createTodoistTrackerModules,
 	createTrackerSession,
-	CreateTicketParams,
 	detectTrackerSelection,
-	GetMapParams,
-	GetTicketParams,
-	IssueCloseParams,
-	IssueCommentParams,
-	IssueCreateParams,
-	IssueLabelParams,
-	IssueListParams,
-	IssueReadParams,
-	ListFrontierParams,
-	ListMapsParams,
 	localTrackerRoot,
-	ResolveParams,
-	SetBlockingParams,
-	toolInventory,
-	UpdateMapParams,
+	toolCatalog,
 	type CreateWayfinderTrackerOptions,
 	type TrackerMode,
 	type TrackerModules,
 } from "issue-tools-core";
-import { handleAction, type ToolContext } from "./actions.ts";
-import { renderCall, renderResult } from "./render.ts";
+import { handleAction, type ActionMap, type ToolContext } from "./actions.ts";
+import { renderCall, renderResult, type RenderCallArgs } from "./render.ts";
 
 export async function createTrackerModules({
 	cwd,
@@ -50,7 +41,28 @@ export async function createTrackerModules({
 
 const STATUS_KEY = "issue-tools";
 
-export default function wayfinderExtension(pi: ExtensionAPI) {
+/** Pi-only per-tool prompt snippets, keyed by ActionMap key (exhaustive). */
+const PROMPT_SNIPPETS = {
+	chart:
+		"Create a wayfinder map after confirming the destination with grilling and domain modeling",
+	get_map: "Read the low-resolution wayfinder map from the selected tracker",
+	list_maps: "List wayfinder maps from the selected tracker",
+	create_ticket: "Create a wayfinder ticket on the selected tracker",
+	get_ticket: "Read a wayfinder ticket from the selected tracker",
+	resolve: "Resolve a wayfinder ticket on the selected tracker",
+	update_map: "Update a wayfinder map section on the selected tracker",
+	set_blocking: "Set blocking on a wayfinder ticket on the selected tracker",
+	list_frontier: "List wayfinder frontier tickets from the selected tracker",
+	claim: "Claim a wayfinder ticket on the selected tracker",
+	issue_create: "Create a repository Issue/spec",
+	issue_read: "Read a repository Issue/spec by ID or URL",
+	issue_label: "Add or remove triage labels on a repository Issue/spec",
+	issue_comment: "Post a comment on a repository Issue/spec",
+	issue_close: "Close a repository Issue/spec",
+	issue_list: "List repository Issues/specs",
+} as const satisfies Record<keyof ActionMap, string>;
+
+export default function issueToolsExtension(pi: ExtensionAPI) {
 	const persistState = (activeMap: string | null) => {
 		pi.appendEntry("issue-tools-state", { activeMap });
 	};
@@ -58,22 +70,17 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	const selectTrackerMode = async (
 		ctx: ExtensionContext,
 	): Promise<TrackerMode> => {
-		const selection = detectTrackerSelection(ctx.cwd);
-		if (selection === "local" || selection === "todoist") {
-			return selection;
-		}
-
-		// both markers or neither: ask the user
-		if (!ctx.hasUI) {
+		const { mode, prompted } = await resolveTrackerMode(
+			ctx,
+			"Wayfinder tracker",
+		);
+		if (mode === null) {
+			// ambiguous and no UI to ask: default to local
 			return "local";
 		}
-
-		const choice = await ctx.ui.select("Wayfinder tracker", [
-			"Local Markdown (.scratch)",
-			"Todoist (.doistrc)",
-		]);
-		const mode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
-		ctx.ui.notify(`Wayfinder tracker: ${mode}`, "info");
+		if (prompted) {
+			ctx.ui.notify(`Wayfinder tracker: ${mode}`, "info");
+		}
 		return mode;
 	};
 
@@ -134,225 +141,26 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 
 	// -- Tools ---------------------------------------------------------------
 
-	pi.registerTool({
-		name: "wayfinder_chart",
-		label: "Wayfinder: Chart",
-		description:
-			"Create a new wayfinder map after /grilling and /domain-modeling have confirmed the destination.",
-		promptSnippet:
-			"Create a wayfinder map after confirming the destination with grilling and domain modeling",
-		parameters: ChartParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("chart", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("chart", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_get_map",
-		label: "Wayfinder: Get Map",
-		description: "Read the low-resolution wayfinder map.",
-		promptSnippet:
-			"Read the low-resolution wayfinder map from the selected tracker",
-		parameters: GetMapParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("get_map", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("get_map", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_list_maps",
-		label: "Wayfinder: List Maps",
-		description: "List all open wayfinder maps.",
-		promptSnippet: "List wayfinder maps from the selected tracker",
-		parameters: ListMapsParams,
-		async execute(_id, _params, _signal, _onUpdate, ctx) {
-			return handleAction("list_maps", {}, getState(), ctx);
-		},
-		renderCall: (_args, theme) => renderCall("list_maps", {}, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_create_ticket",
-		label: "Wayfinder: Create Ticket",
-		description: "Create a decision ticket on a wayfinder map.",
-		promptSnippet: "Create a wayfinder ticket on the selected tracker",
-		parameters: CreateTicketParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("create_ticket", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("create_ticket", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_get_ticket",
-		label: "Wayfinder: Get Ticket",
-		description: "Read a wayfinder ticket's details.",
-		promptSnippet: "Read a wayfinder ticket from the selected tracker",
-		parameters: GetTicketParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("get_ticket", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("get_ticket", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_resolve",
-		label: "Wayfinder: Resolve",
-		description:
-			"Resolve a ticket: record resolution, close it, append to map's Decisions.",
-		promptSnippet: "Resolve a wayfinder ticket on the selected tracker",
-		parameters: ResolveParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("resolve", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("resolve", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_update_map",
-		label: "Wayfinder: Update Map",
-		description:
-			"Replace content of a map section (destination, notes, decisions, fog, out of scope).",
-		promptSnippet: "Update a wayfinder map section on the selected tracker",
-		parameters: UpdateMapParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("update_map", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("update_map", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_set_blocking",
-		label: "Wayfinder: Set Blocking",
-		description: "Wire blocking edges between tickets.",
-		promptSnippet: "Set blocking on a wayfinder ticket on the selected tracker",
-		parameters: SetBlockingParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("set_blocking", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("set_blocking", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_list_frontier",
-		label: "Wayfinder: List Frontier",
-		description:
-			"List open, unblocked, unclaimed tickets — the edge of the known.",
-		promptSnippet: "List wayfinder frontier tickets from the selected tracker",
-		parameters: ListFrontierParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("list_frontier", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("list_frontier", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "wayfinder_claim",
-		label: "Wayfinder: Claim",
-		description: "Claim or unclaim a ticket so concurrent sessions skip it.",
-		promptSnippet: "Claim a wayfinder ticket on the selected tracker",
-		parameters: ClaimParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("claim", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("claim", args, theme),
-		renderResult,
-	});
-
-	// -- Generic issue tools ---------------------------------------------
-
-	pi.registerTool({
-		name: "issue_create",
-		label: "Issue: Create",
-		description: "Create a repository Issue/spec.",
-		promptSnippet: "Create a repository Issue/spec",
-		parameters: IssueCreateParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("issue_create", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("issue_create", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "issue_read",
-		label: "Issue: Read",
-		description: "Read a repository Issue/spec by its tracker ID or URL.",
-		promptSnippet: "Read a repository Issue/spec by ID or URL",
-		parameters: IssueReadParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("issue_read", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("issue_read", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "issue_label",
-		label: "Issue: Label",
-		description:
-			"Add or remove triage labels on a repository Issue/spec identified by ID or URL.",
-		promptSnippet: "Add or remove triage labels on a repository Issue/spec",
-		parameters: IssueLabelParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("issue_label", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("issue_label", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "issue_comment",
-		label: "Issue: Comment",
-		description:
-			"Post a comment on a repository Issue/spec identified by ID or URL.",
-		promptSnippet: "Post a comment on a repository Issue/spec",
-		parameters: IssueCommentParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("issue_comment", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("issue_comment", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "issue_close",
-		label: "Issue: Close",
-		description:
-			"Close a repository Issue/spec identified by ID or URL, optionally with a closing note.",
-		promptSnippet: "Close a repository Issue/spec",
-		parameters: IssueCloseParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("issue_close", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("issue_close", args, theme),
-		renderResult,
-	});
-
-	pi.registerTool({
-		name: "issue_list",
-		label: "Issue: List",
-		description:
-			"List repository Issues/specs, optionally filtered by state, labels, or unlabeled status. Results are oldest first.",
-		promptSnippet: "List repository Issues/specs",
-		parameters: IssueListParams,
-		async execute(_id, params, _signal, _onUpdate, ctx) {
-			return handleAction("issue_list", params, getState(), ctx);
-		},
-		renderCall: (args, theme) => renderCall("issue_list", args, theme),
-		renderResult,
-	});
+	for (const tool of toolCatalog) {
+		pi.registerTool({
+			name: tool.name,
+			label: tool.title,
+			description: tool.description,
+			promptSnippet: PROMPT_SNIPPETS[tool.action],
+			parameters: Type.Unsafe(tool.params),
+			async execute(_id, params, _signal, _onUpdate, ctx) {
+				return handleAction(
+					tool.action,
+					params as ActionMap[keyof ActionMap],
+					getState(),
+					ctx,
+				);
+			},
+			renderCall: (args, theme) =>
+				renderCall(tool.action, args as RenderCallArgs, theme),
+			renderResult,
+		});
+	}
 
 	// -- /setup-issue-tracker command -----------------------------------
 
@@ -365,30 +173,45 @@ export default function wayfinderExtension(pi: ExtensionAPI) {
 	});
 }
 
-async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
-	const cwd = ctx.cwd;
-	const selection = detectTrackerSelection(cwd);
-
-	let resolvedMode: "local" | "todoist";
+/**
+ * Resolve a repo's tracker mode: a clear selection returns immediately;
+ * otherwise (both markers or neither) prompt the user. Returns
+ * `{ mode: null }` when the repo is ambiguous and there is no UI to ask —
+ * callers decide the fallback. `prompted` is true only when the mode was
+ * chosen through the UI.
+ */
+async function resolveTrackerMode(
+	ctx: ExtensionContext,
+	promptTitle: string,
+): Promise<{ mode: "local" | "todoist" | null; prompted: boolean }> {
+	const selection = detectTrackerSelection(ctx.cwd);
 	if (selection === "local" || selection === "todoist") {
-		resolvedMode = selection;
-	} else {
-		// both markers or neither: the repo is ambiguous
-		if (!ctx.hasUI) {
-			ctx.ui.notify(
-				"Cannot determine tracker: no UI available to prompt.",
-				"error",
-			);
-			return;
-		}
-		const choice = await ctx.ui.select("Issue tracker", [
-			"Local Markdown (.scratch)",
-			"Todoist (.doistrc)",
-		]);
-		resolvedMode = choice === "Todoist (.doistrc)" ? "todoist" : "local";
+		return { mode: selection, prompted: false };
+	}
+	if (!ctx.hasUI) {
+		return { mode: null, prompted: false };
+	}
+	const choice = await ctx.ui.select(promptTitle, [
+		"Local Markdown (.scratch)",
+		"Todoist (.doistrc)",
+	]);
+	return {
+		mode: choice === "Todoist (.doistrc)" ? "todoist" : "local",
+		prompted: true,
+	};
+}
+
+async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
+	const { mode } = await resolveTrackerMode(ctx, "Issue tracker");
+	if (mode === null) {
+		ctx.ui.notify(
+			"Cannot determine tracker: no UI available to prompt.",
+			"error",
+		);
+		return;
 	}
 
-	if (resolvedMode === "local") {
+	if (mode === "local") {
 		ctx.ui.notify(
 			"Local Markdown tracker selected. Run /setup-matt-pocock-skills to complete the docs.",
 			"info",
@@ -436,12 +259,8 @@ async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 	}
 
 	container.setRepoProject(selectedId);
-	const inventory = toolInventory();
-	const lines = inventory
-		.map((entry) => `- \`${entry.name}\` (${entry.group})`)
-		.join("\n");
 	ctx.ui.notify(
-		`Marked ${selectedId} as the repo project (repo: true). Tools:\n${lines}\n\nRun /setup-matt-pocock-skills to complete the docs.`,
+		`Marked ${selectedId} as the repo project (repo: true).\n\nRun /setup-matt-pocock-skills to complete the docs.`,
 		"info",
 	);
 }
