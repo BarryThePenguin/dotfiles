@@ -343,8 +343,8 @@ importers:
         specifier: 0.84.1
         version: 0.84.1(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)
       '@earendil-works/pi-ai':
-        specifier: 0.84.1
-        version: 0.84.1(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)
+        specifier: 0.84.2
+        version: 0.84.2(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)
       '@earendil-works/pi-coding-agent':
         specifier: 0.84.2
         version: 0.84.2(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)
@@ -510,11 +510,6 @@ packages:
   '@earendil-works/pi-agent-core@0.84.2':
     resolution: {integrity: sha512-8Pn3wSCxj0cfo5I6jxQYVB/3uuQRmHhAlEclyjqpOuMEdQMIODHizRogv56FLdbU+dTiGnybeHQ2N+sV1/L2YA==}
     engines: {node: '>=22.19.0'}
-
-  '@earendil-works/pi-ai@0.84.1':
-    resolution: {integrity: sha512-wMsAdJMxuNri08vLqTyYVI201DQQezGhPSTkzYsHdw5dYX3rCNwEmSvpaAwhi7ELKI/2tE/CEgSWg/6iRxSgdQ==}
-    engines: {node: '>=22.19.0'}
-    hasBin: true
 
   '@earendil-works/pi-ai@0.84.2':
     resolution: {integrity: sha512-6MzsrYIYNVlE7SfpbL2yYb67Qo58p/7Q+xWG1RZvoX1P80aRCHSod2/13aFpxkow1lPO2LEh3c495J0Gwmyjig==}
@@ -716,14 +711,6 @@ packages:
   '@mariozechner/clipboard@0.3.9':
     resolution: {integrity: sha512-ABnA53mdfkGZwOFUdZNv2S0CWGO/EIuPj8Vv9xmBFmSYg/qFc7ihO6q5FcQjvoE67kZpWkEc4AhD6B/os04yuA==}
     engines: {node: '>= 10'}
-
-  '@mistralai/mistralai@2.2.6':
-    resolution: {integrity: sha512-W8pX7zHxjJvMIpw8JMxeJEleapXX0Q9NPszdNzqkM3MIEoIGPObdodujj+WHteXEvGfaP/AMwlNyRfEzSY6dQQ==}
-    peerDependencies:
-      '@opentelemetry/api': ^1.9.0
-    peerDependenciesMeta:
-      '@opentelemetry/api':
-        optional: true
 
   '@modelcontextprotocol/client@2.0.0':
     resolution: {integrity: sha512-8f1OghQ2rjzIOfqgUCP+8GiUWqRs89njoWLNqAe8kWmDePv3s1fZXseej+QXemssEuuOvLLmLO/kqM3IQHtISw==}
@@ -2533,18 +2520,6 @@ packages:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
 
-  openai@6.26.0:
-    resolution: {integrity: sha512-zd23dbWTjiJ6sSAX6s0HrCZi41JwTA1bQVs0wLQPZ2/5o2gxOJA5wh7yOAUgwYybfhDXyhwlpeQf7Mlgx8EOCA==}
-    hasBin: true
-    peerDependencies:
-      ws: ^8.18.0
-      zod: ^3.25 || ^4.0
-    peerDependenciesMeta:
-      ws:
-        optional: true
-      zod:
-        optional: true
-
   openai@6.40.0:
     resolution: {integrity: sha512-MWtTjd/gQt4jpbji61NTgFWJLoY/PdRJ6wG9/ZDRMYNMlBKrCrSlkLI+KgHP1vR1qT6LKSAyAqIxno6lcK9JiA==}
     peerDependencies:
@@ -3050,11 +3025,6 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod-to-json-schema@3.25.2:
-    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
-    peerDependencies:
-      zod: ^3.25.28 || ^4
-
   zod@4.1.8:
     resolution: {integrity: sha512-5R1P+WwQqmmMIEACyzSvo4JXHY5WiAFHRMg+zBZKgKS+Q1viRa0C1hmUKtHltoIFKtIdki3pRxkmpP74jnNYHQ==}
 
@@ -3121,7 +3091,7 @@ snapshots:
       '@aws-sdk/types': 3.974.4
       '@smithy/core': 3.33.2
       '@smithy/fetch-http-handler': 5.7.2
-      '@smithy/node-http-handler': 4.7.3
+      '@smithy/node-http-handler': 4.11.2
       '@smithy/types': 4.17.2
       tslib: 2.8.1
 
@@ -3315,7 +3285,7 @@ snapshots:
 
   '@earendil-works/pi-agent-core@0.84.1(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)':
     dependencies:
-      '@earendil-works/pi-ai': 0.84.1(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)
+      '@earendil-works/pi-ai': 0.84.2(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)
       '@earendil-works/pi-telemetry': 0.84.2
       diff: 8.0.4
       ignore: 7.0.5
@@ -3337,28 +3307,6 @@ snapshots:
       ignore: 7.0.5
       typebox: 1.3.7
       yaml: 2.9.0
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@earendil-works/pi-ai@0.84.1(supports-color@7.2.0)(ws@8.21.3)(zod@4.4.3)':
-    dependencies:
-      '@anthropic-ai/sdk': 0.91.1(zod@4.4.3)
-      '@aws-sdk/client-bedrock-runtime': 3.1048.0
-      '@earendil-works/pi-telemetry': 0.84.2
-      '@google/genai': 1.52.0(supports-color@7.2.0)
-      '@mistralai/mistralai': 2.2.6(@opentelemetry/api@1.9.0)
-      '@opentelemetry/api': 1.9.0
-      '@smithy/node-http-handler': 4.7.3
-      http-proxy-agent: 7.0.2(supports-color@7.2.0)
-      https-proxy-agent: 7.0.6(supports-color@7.2.0)
-      openai: 6.26.0(ws@8.21.3)(zod@4.4.3)
-      partial-json: 0.1.7
-      typebox: 1.3.7
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - bufferutil
@@ -3593,18 +3541,6 @@ snapshots:
       '@mariozechner/clipboard-win32-arm64-msvc': 0.3.9
       '@mariozechner/clipboard-win32-x64-msvc': 0.3.9
     optional: true
-
-  '@mistralai/mistralai@2.2.6(@opentelemetry/api@1.9.0)':
-    dependencies:
-      '@opentelemetry/semantic-conventions': 1.43.0
-      ws: 8.21.3
-      zod: 4.4.3
-      zod-to-json-schema: 3.25.2(zod@4.4.3)
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
 
   '@modelcontextprotocol/client@2.0.0':
     dependencies:
@@ -4871,7 +4807,7 @@ snapshots:
   gcp-metadata@8.1.2(supports-color@7.2.0):
     dependencies:
       gaxios: 7.3.1(supports-color@7.2.0)
-      google-logging-utils: 1.1.3
+      google-logging-utils: 1.2.0
       json-bigint: 1.0.0
     transitivePeerDependencies:
       - supports-color
@@ -5392,11 +5328,6 @@ snapshots:
 
   on-exit-leak-free@2.1.2: {}
 
-  openai@6.26.0(ws@8.21.3)(zod@4.4.3):
-    optionalDependencies:
-      ws: 8.21.3
-      zod: 4.4.3
-
   openai@6.40.0(ws@8.21.3)(zod@4.4.3):
     optionalDependencies:
       ws: 8.21.3
@@ -5906,10 +5837,6 @@ snapshots:
       yargs-parser: 21.1.1
 
   yocto-queue@0.1.0: {}
-
-  zod-to-json-schema@3.25.2(zod@4.4.3):
-    dependencies:
-      zod: 4.4.3
 
   zod@4.1.8: {}
 
