@@ -1,4 +1,10 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["github>BarryThePenguin/renovate-config"]
+	"extends": ["github>BarryThePenguin/renovate-config"],
+	"packageRules": [
+		{
+			"matchPackageNames": ["@earendil-works/*"],
+			"groupName": "@earendil-works packages"
+		}
+	]
 }
