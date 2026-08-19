@@ -14,16 +14,11 @@ export type ActionResult = {
 	metadata: Record<string, unknown>;
 };
 
-type HostContext = {
-	worktree: string;
-};
-
 type RuntimeContext = {
 	session: OpenCodeSession;
 };
 
 export async function createActionRuntime(
-	host: HostContext,
 	ctx: RuntimeContext,
 ): Promise<ActionRuntime<ActionResult>> {
 	return createCoreActionRuntime({
@@ -37,7 +32,9 @@ export async function createActionRuntime(
 		},
 		trackerDetails: (mode) => ({
 			tracker: mode,
-			...(mode === "local" ? { root: localTrackerRoot(host.worktree) } : {}),
+			...(mode === "local"
+				? { root: localTrackerRoot(ctx.session.getCwd()) }
+				: {}),
 		}),
 		success: (text, metadata) => ({ output: text, metadata }),
 		error: (message) => ({ output: `Error: ${message}`, metadata: {} }),

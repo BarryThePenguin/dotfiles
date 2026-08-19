@@ -1,4 +1,3 @@
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	createActionRuntime as createCoreActionRuntime,
 	localTrackerRoot,
@@ -12,25 +11,26 @@ export type ActionResult = {
 };
 
 type RuntimeContext = {
-	trackerSession: TrackerSession<ExtensionContext>;
+	trackerSession: TrackerSession;
 };
 
 export async function createActionRuntime(
-	ext: ExtensionContext,
 	ctx: RuntimeContext,
 ): Promise<ActionRuntime<ActionResult>> {
 	return createCoreActionRuntime({
-		loadModules: () => ctx.trackerSession.get(ext),
+		loadModules: () => ctx.trackerSession.get(),
 		loadClaimant: () => ctx.trackerSession.getClaimant(),
 		getMode: () => ctx.trackerSession.getMode(),
 		requireMapId: (params) => ctx.trackerSession.resolveMapId(params.map_id),
 		getActiveMap: () => ctx.trackerSession.getActiveMap(),
 		setActiveMap: (mapId) => {
-			ctx.trackerSession.setActiveMap(mapId, ext);
+			ctx.trackerSession.setActiveMap(mapId);
 		},
 		trackerDetails: (mode) => ({
 			tracker: mode,
-			...(mode === "local" ? { root: localTrackerRoot(ext.cwd) } : {}),
+			...(mode === "local"
+				? { root: localTrackerRoot(ctx.trackerSession.getCwd()) }
+				: {}),
 		}),
 		success: (text, details) => ({
 			content: [{ type: "text", text }],

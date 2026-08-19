@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLocalTrackerModules, localTrackerRoot } from "issue-tools-core";
-import { handleAction, type ToolContext } from "./actions.ts";
+import { handleAction } from "./actions.ts";
 import { getOpenCodeSession } from "./tracker.ts";
 
 function tempDir() {
@@ -23,16 +23,6 @@ afterEach(() => {
 	delete process.env["XDG_CACHE_HOME"];
 });
 
-function makeContext(worktree: string): {
-	ctx: ToolContext;
-	host: { worktree: string };
-} {
-	return {
-		ctx: { session: getOpenCodeSession(worktree) },
-		host: { worktree },
-	};
-}
-
 describe("Wayfinder actions", () => {
 	it("makes the only listed map active so follow-up map tools can omit map_id", async () => {
 		using dir = tempDir();
@@ -42,14 +32,14 @@ describe("Wayfinder actions", () => {
 			title: "GENIE 2780",
 			destination: "A clear handoff exists.",
 		});
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 
-		const listResult = await handleAction("list_maps", {}, ctx, host);
+		const listResult = await handleAction("list_maps", {}, ctx);
 		expect(listResult.output).toContain("1 open map(s)");
 		expect(listResult.output).toContain(`${map.title} (${map.id})`);
 		expect(ctx.session.getActiveMap()).toBe(map.id);
 
-		const getResult = await handleAction("get_map", {}, ctx, host);
+		const getResult = await handleAction("get_map", {}, ctx);
 		expect(getResult.output).toContain("## GENIE 2780");
 		expect(getResult.output).not.toContain(
 			"Error: no map_id provided and no active map.",
@@ -72,14 +62,13 @@ describe("Wayfinder presentation and claims", () => {
 			type: "task",
 			question: "Which name should appear first?",
 		});
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 		vi.stubEnv("OPENCODE_ISSUE_TOOLS_CLAIMANT", "Jonathan Haines");
 
 		const frontier = await handleAction(
 			"list_frontier",
 			{ map_id: map.id },
 			ctx,
-			host,
 		);
 		expect(frontier.output).toContain(`Choose the naming rule (${ticket.id})`);
 		expect(frontier.output.indexOf(ticket.title)).toBeLessThan(
@@ -87,7 +76,7 @@ describe("Wayfinder presentation and claims", () => {
 		);
 
 		try {
-			await handleAction("claim", { ticket_id: ticket.id }, ctx, host);
+			await handleAction("claim", { ticket_id: ticket.id }, ctx);
 		} finally {
 			vi.unstubAllEnvs();
 		}
@@ -119,7 +108,7 @@ describe("Resolution actions", () => {
 			question: "How should the choice be applied?",
 		});
 		await tracker.setBlockingDependencies(dependent.id, [ticket.id]);
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 		ctx.session.setActiveMap("wrong-map");
 
 		const complete = await handleAction(
@@ -131,7 +120,6 @@ describe("Resolution actions", () => {
 				gist: "Take path A.",
 			},
 			ctx,
-			host,
 		);
 		expect(complete.output).toContain("Outcome: complete");
 		expect(complete.output).toContain("map decision recorded");
@@ -143,7 +131,6 @@ describe("Resolution actions", () => {
 			"get_ticket",
 			{ ticket_id: ticket.id },
 			ctx,
-			host,
 		);
 		expect(ticketDetails.output).toContain("Comments (1)");
 		expect(ticketDetails.output).toContain("Take path A.");
@@ -170,7 +157,6 @@ describe("Resolution actions", () => {
 				gist: "Inspect it.",
 			},
 			ctx,
-			host,
 		);
 		expect(terminal.output).toContain("Outcome: terminal");
 		expect(terminal.output).toContain("Human inspection is required");
@@ -180,7 +166,7 @@ describe("Resolution actions", () => {
 describe("Generic issue actions", () => {
 	it("creates and reads a generic issue end-to-end on the local tracker", async () => {
 		using dir = tempDir();
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 
 		const createResult = await handleAction(
 			"issue_create",
@@ -190,7 +176,6 @@ describe("Generic issue actions", () => {
 				labels: ["needs-triage", "bug"],
 			},
 			ctx,
-			host,
 		);
 		expect(createResult.output).toContain(
 			"Issue created: Add a generic issue surface",
@@ -204,7 +189,6 @@ describe("Generic issue actions", () => {
 			"issue_read",
 			{ id: issueId ?? "" },
 			ctx,
-			host,
 		);
 		expect(readResult.output).toContain("## Add a generic issue surface");
 		expect(readResult.output).toContain("Status: open");
@@ -215,7 +199,6 @@ describe("Generic issue actions", () => {
 			"issue_read",
 			{ id: `${issueId}.md` },
 			ctx,
-			host,
 		);
 		expect(readByUrl.output).toContain("## Add a generic issue surface");
 	});
@@ -228,13 +211,12 @@ describe("Generic issue actions", () => {
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 
 		const result = await handleAction(
 			"issue_label",
 			{ id: issue.id, add: ["bug"], remove: ["needs-triage"] },
 			ctx,
-			host,
 		);
 		expect(result.output).toContain(`Issue ${issue.id}: labels now bug`);
 		expect(result.metadata["labels"]).toEqual(["bug"]);
@@ -247,13 +229,12 @@ describe("Generic issue actions", () => {
 			title: "Triage me",
 			body: "Body.",
 		});
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 
 		const result = await handleAction(
 			"issue_comment",
 			{ id: issue.id, body: "First agent note" },
 			ctx,
-			host,
 		);
 		expect(result.output).toContain("Comment posted on");
 		expect(result.metadata["comment"]).toEqual({ content: "First agent note" });
@@ -266,13 +247,12 @@ describe("Generic issue actions", () => {
 			title: "Triage me",
 			body: "Body.",
 		});
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 
 		const result = await handleAction(
 			"issue_close",
 			{ id: issue.id, comment: "Won't fix in this milestone." },
 			ctx,
-			host,
 		);
 		expect(result.output).toContain(
 			`Issue ${issue.id}: closed (closing note posted)`,
@@ -304,13 +284,12 @@ describe("Generic issue actions", () => {
 			labels: ["needs-triage"],
 		});
 		await modules.issues.closeIssue(closed.id);
-		const { ctx, host } = makeContext(dir.path);
+		const ctx = { session: getOpenCodeSession(dir.path) };
 
 		const openTriage = await handleAction(
 			"issue_list",
 			{ labels: ["needs-triage"] },
 			ctx,
-			host,
 		);
 		expect(openTriage.output).toContain("1 issue(s)");
 		expect(openTriage.output).toContain("Triage me");
@@ -319,7 +298,6 @@ describe("Generic issue actions", () => {
 			"issue_list",
 			{ unlabeled: true },
 			ctx,
-			host,
 		);
 		expect(unlabeledResult.output).toContain(unlabeled.id);
 		expect(unlabeledResult.output).not.toContain("Triage me");
@@ -328,7 +306,6 @@ describe("Generic issue actions", () => {
 			"issue_list",
 			{ state: "closed" },
 			ctx,
-			host,
 		);
 		expect(closedResult.output).toContain("Closed triage");
 		expect(closedResult.output).toContain("[closed]");

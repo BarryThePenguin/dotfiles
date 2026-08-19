@@ -22,6 +22,7 @@ import {
 	detectTrackerSelection,
 	localTrackerRoot,
 	toolCatalog,
+	type SessionStateStore,
 	type TrackerMode,
 } from "issue-tools-core";
 import { handleAction, type ActionMap, type ToolContext } from "./actions.ts";
@@ -50,14 +51,28 @@ const PROMPT_SNIPPETS = {
 	issue_list: "List repository Issues/specs",
 } as const satisfies Record<keyof ActionMap, string>;
 
-export default function issueToolsExtension(pi: ExtensionAPI) {
-	const persistState = (activeMap: string | null) => {
-		pi.appendEntry("issue-tools-state", { activeMap });
+function createPiSessionStore(
+	pi: ExtensionAPI,
+	initial: string | null,
+): SessionStateStore {
+	let state = { activeMap: initial };
+	return {
+		read: () => state,
+		write: (s) => {
+			state = s;
+			pi.appendEntry("issue-tools-state", { activeMap: s.activeMap });
+		},
 	};
+}
 
-	const selectTrackerMode = async (
-		ctx: ExtensionContext,
-	): Promise<TrackerMode> => {
+export default function issueToolsExtension(pi: ExtensionAPI) {
+	let latestCtx: ExtensionContext | null = null;
+
+	const selectTrackerMode = async (): Promise<TrackerMode> => {
+		const ctx = latestCtx;
+		if (!ctx) {
+			return "local";
+		}
 		const { mode, prompted } = await resolveTrackerMode(
 			ctx,
 			"Wayfinder tracker",
@@ -72,11 +87,16 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 		return mode;
 	};
 
-	const updateStatus = (
-		ctx: ExtensionContext,
-		state: { mode: TrackerMode | null; activeMap: string | null },
-	) => {
-		const mode = state.mode ?? detectTrackerSelection(ctx.cwd);
+	const updateStatus = (state: {
+		mode: TrackerMode | null;
+		activeMap: string | null;
+	}) => {
+		const ctx = latestCtx;
+		if (!ctx) {
+			return;
+		}
+		const cwd = trackerSession.getCwd();
+		const mode = state.mode ?? detectTrackerSelection(cwd);
 		if (mode === "both" || mode === "neither") {
 			ctx.ui.setStatus(
 				STATUS_KEY,
@@ -91,7 +111,7 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 			STATUS_KEY,
 			ctx.ui.theme.fg(
 				"accent",
-				mode === "local" ? `${label} (${localTrackerRoot(ctx.cwd)})` : label,
+				mode === "local" ? `${label} (${localTrackerRoot(cwd)})` : label,
 			),
 		);
 	};
@@ -100,29 +120,32 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 
 	// -- Session lifecycle ---------------------------------------------------
 
-	const createSession = (cwd: string) =>
+	const createSession = (cwd: string, store: SessionStateStore) =>
 		createTrackerSession({
 			cwd,
 			selectMode: selectTrackerMode,
 			buildLocalModules: () => createLocalTrackerModules(localTrackerRoot(cwd)),
 			buildTodoistModules: () => createTodoistTrackerModules(cwd),
-			persistState,
+			store,
 			updateStatus,
 		});
 
-	let trackerSession = createSession(".");
+	let trackerSession = createSession(".", createPiSessionStore(pi, null));
 
 	pi.on("session_start", (_event, ctx) => {
-		trackerSession = createSession(ctx.cwd);
+		let recoveredActiveMap: string | null = null;
 		for (const entry of ctx.sessionManager.getBranch()) {
 			if (entry.type === "custom" && entry.customType === "issue-tools-state") {
 				// `maps` was dropped from the persisted shape; older sessions may
 				// still carry it. We just ignore it.
 				const data = entry.data as { activeMap?: string | null } | undefined;
-				trackerSession.restore({ activeMap: data?.activeMap ?? null });
+				recoveredActiveMap = data?.activeMap ?? null;
 			}
 		}
-		trackerSession.refresh(ctx);
+		const store = createPiSessionStore(pi, recoveredActiveMap);
+		trackerSession = createSession(ctx.cwd, store);
+		latestCtx = ctx;
+		trackerSession.refresh();
 	});
 
 	// -- Tools ---------------------------------------------------------------
@@ -135,11 +158,11 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 			promptSnippet: PROMPT_SNIPPETS[tool.action],
 			parameters: Type.Unsafe(tool.params),
 			async execute(_id, params, _signal, _onUpdate, ctx) {
+				latestCtx = ctx;
 				return handleAction(
 					tool.action,
 					params as ActionMap[keyof ActionMap],
 					getState(),
-					ctx,
 				);
 			},
 			renderCall: (args, theme) =>

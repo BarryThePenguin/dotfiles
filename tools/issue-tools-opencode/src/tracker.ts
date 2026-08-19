@@ -14,16 +14,15 @@ import {
 	createTrackerSession,
 	detectTrackerSelection,
 	localTrackerRoot,
+	type SessionStateStore,
 	type TrackerMode,
 	type TrackerModules,
 } from "issue-tools-core";
 import { createStateStore, type StateStore } from "./state.ts";
 
-/** Marker for "no extension context to thread through" (opencode tools carry no UI). */
-const NO_EXT = undefined as unknown;
-
 export type OpenCodeSession = {
 	get(): Promise<TrackerModules>;
+	getCwd(): string;
 	getClaimant(): Promise<string>;
 	getActiveMap(): string | null;
 	getMode(): TrackerMode | null;
@@ -50,40 +49,34 @@ export function resolveMode(
 
 export function createOpenCodeSession(worktree: string): OpenCodeSession {
 	const state: StateStore = createStateStore(worktree);
-	const session = buildSession();
 
-	function buildSession() {
-		return createTrackerSession({
-			cwd: worktree,
-			selectMode: () =>
-				Promise.resolve(resolveMode(worktree, state.read().mode)),
-			buildLocalModules: () =>
-				createLocalTrackerModules(localTrackerRoot(worktree)),
-			buildTodoistModules: () => createTodoistTrackerModules(worktree),
-			persistState: (activeMap) => {
-				const currentMode = session.getMode();
-				state.write({
-					...(currentMode != null && { mode: currentMode }),
-					activeMap,
-				});
-			},
-			updateStatus: () => {},
-		});
-	}
+	const coreStore: SessionStateStore = {
+		read: () => ({ activeMap: state.read().activeMap }),
+		write: ({ activeMap }) => {
+			const full = state.read();
+			state.write({ ...full, activeMap });
+		},
+	};
 
-	const restored = state.read().activeMap;
-	if (restored) {
-		session.restore({ activeMap: restored });
-	}
+	const session = createTrackerSession({
+		cwd: worktree,
+		selectMode: () => Promise.resolve(resolveMode(worktree, state.read().mode)),
+		buildLocalModules: () =>
+			createLocalTrackerModules(localTrackerRoot(worktree)),
+		buildTodoistModules: () => createTodoistTrackerModules(worktree),
+		store: coreStore,
+		updateStatus: () => {},
+	});
 
 	return {
-		get: () => session.get(NO_EXT),
+		get: () => session.get(),
+		getCwd: () => session.getCwd(),
 		getClaimant: session.getClaimant,
 		getActiveMap: session.getActiveMap,
 		getMode: session.getMode,
 		resolveMapId: session.resolveMapId,
 		setActiveMap: (mapId) => {
-			session.setActiveMap(mapId, NO_EXT);
+			session.setActiveMap(mapId);
 		},
 		setTrackerMode(mode) {
 			state.write({

@@ -30,7 +30,7 @@ import type {
 	ResolveParams,
 	SetBlockingParams,
 	UpdateMapParams,
-} from "./tool-schemas.ts";
+} from "./tool-catalog.ts";
 import type { WayfinderTracker, WayfinderTrackerTicket } from "./tracker.ts";
 
 // ---------------------------------------------------------------------------

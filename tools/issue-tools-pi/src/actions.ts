@@ -2,11 +2,10 @@
  * Pi adapter shim for the Wayfinder/Issue action surface.
  *
  * Handler bodies live in issue-tools-core. This file wires the Pi host context
- * (ExtensionContext, TrackerSession) into an ActionRuntime<ActionResult> and
- * delegates to the shared handleAction.
+ * (TrackerSession) into an ActionRuntime<ActionResult> and delegates to the
+ * shared handleAction.
  */
 
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	handleAction as coreHandleAction,
 	type ActionMap,
@@ -17,16 +16,15 @@ import { createActionRuntime, type ActionResult } from "./action-runtime.ts";
 export type { ActionMap };
 
 export interface ToolContext {
-	trackerSession: TrackerSession<ExtensionContext>;
+	trackerSession: TrackerSession;
 }
 
 export function handleAction<K extends keyof ActionMap>(
 	action: K,
 	params: ActionMap[K],
 	ctx: ToolContext,
-	ext: ExtensionContext,
 ): Promise<ActionResult> {
-	return createActionRuntime(ext, ctx).then((runtime) =>
+	return createActionRuntime(ctx).then((runtime) =>
 		coreHandleAction(action, params, runtime),
 	);
 }

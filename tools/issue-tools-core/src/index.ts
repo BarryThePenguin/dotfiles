@@ -80,8 +80,14 @@ export {
 // -- Session lifecycle ----------------------------------------------------
 
 export { resolveClaimant } from "./claimant.ts";
-export { createTrackerSession, localTrackerRoot } from "./session.ts";
+export {
+	createInMemorySessionStateStore,
+	createTrackerSession,
+	localTrackerRoot,
+} from "./session.ts";
 export type {
+	SessionState,
+	SessionStateStore,
 	TrackerMode,
 	TrackerSession,
 	TrackerSessionOptions,
@@ -98,53 +104,6 @@ export { handleAction } from "./actions.ts";
 export type { ActionMap, ActionRuntime } from "./actions.ts";
 export { createActionRuntime } from "./action-runtime.ts";
 export type { ActionRuntimeOptions } from "./action-runtime.ts";
-
-// -- Tool parameter schemas (host-agnostic JSON Schema) --------------------
-
-export {
-	chartParams,
-	claimParams,
-	createTicketParams,
-	getMapParams,
-	getTicketParams,
-	issueCloseParams,
-	issueCommentParams,
-	issueCreateParams,
-	issueIdOrUrl,
-	issueLabelParams,
-	issueListParams,
-	issueReadParams,
-	listFrontierParams,
-	listMapsParams,
-	mapId,
-	mapSectionSchema,
-	resolveParams,
-	setBlockingParams,
-	ticketId,
-	ticketTypeSchema,
-	updateMapParams,
-} from "./tool-schemas.ts";
-export type {
-	ChartParams,
-	ClaimParams,
-	CreateTicketParams,
-	GetMapParams,
-	GetTicketParams,
-	IssueCloseParams,
-	IssueCommentParams,
-	IssueCreateParams,
-	IssueIdOrUrl,
-	IssueLabelParams,
-	IssueListParams,
-	IssueReadParams,
-	ListFrontierParams,
-	ListMapsParams,
-	MapId,
-	ResolveParams,
-	SetBlockingParams,
-	TicketId,
-	UpdateMapParams,
-} from "./tool-schemas.ts";
 
 // -- Tool catalog (registered surface) -------------------------------------
 
@@ -168,3 +127,21 @@ export {
 	wayfinderUpdateMap,
 } from "./tool-catalog.ts";
 export type { ToolCatalogEntry } from "./tool-catalog.ts";
+export type {
+	ChartParams,
+	ClaimParams,
+	CreateTicketParams,
+	GetMapParams,
+	GetTicketParams,
+	IssueCloseParams,
+	IssueCommentParams,
+	IssueCreateParams,
+	IssueLabelParams,
+	IssueListParams,
+	IssueReadParams,
+	ListFrontierParams,
+	ListMapsParams,
+	ResolveParams,
+	SetBlockingParams,
+	UpdateMapParams,
+} from "./tool-catalog.ts";

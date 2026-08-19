@@ -10,25 +10,36 @@
  * tool is not catalogued here; it belongs to opencode.
  */
 
+import type { FromSchema } from "json-schema-to-ts";
 import type { ActionMap } from "./actions.ts";
-import {
-	chartParams,
-	claimParams,
-	createTicketParams,
-	getMapParams,
-	getTicketParams,
-	issueCloseParams,
-	issueCommentParams,
-	issueCreateParams,
-	issueLabelParams,
-	issueListParams,
-	issueReadParams,
-	listFrontierParams,
-	listMapsParams,
-	resolveParams,
-	setBlockingParams,
-	updateMapParams,
-} from "./tool-schemas.ts";
+import { MAP_SECTION_KEYS, TICKET_TYPES } from "./schema.ts";
+
+// -- Shared parameter fragments (module-private) ---------------------------
+
+function stringEnum<const Values extends readonly string[]>(
+	values: Values,
+	description?: string,
+) {
+	return {
+		type: "string",
+		enum: [...values],
+		...(description !== undefined ? { description } : {}),
+	} as const;
+}
+
+const ticketTypeSchema = stringEnum(TICKET_TYPES, "Ticket type");
+const mapSectionSchema = stringEnum(MAP_SECTION_KEYS, "Map section to replace");
+const mapId = {
+	type: "string",
+	description: "Map task ID (defaults to active map)",
+} as const;
+const ticketId = { type: "string", description: "Ticket task ID" } as const;
+const issueIdOrUrl = {
+	type: "string",
+	description: "Repository Issue/spec ID or URL.",
+} as const;
+
+// -- Catalog type (public) --------------------------------------------------
 
 export type ToolCatalogEntry = {
 	/** The tool name the LLM calls. */
@@ -45,13 +56,34 @@ export type ToolCatalogEntry = {
 	group: "wayfinder" | "issue";
 };
 
+// -- Catalog entries (public) -----------------------------------------------
+
 export const wayfinderChart = {
 	name: "wayfinder_chart",
 	action: "chart",
 	title: "Wayfinder: Chart",
 	description:
 		"Create a new wayfinder map after /grilling and /domain-modeling have confirmed the destination.",
-	params: chartParams,
+	params: {
+		type: "object",
+		required: ["title", "destination"],
+		properties: {
+			title: {
+				type: "string",
+				description: "Map title (without 'Wayfinder:' prefix)",
+			},
+			destination: {
+				type: "string",
+				description:
+					"User-confirmed destination after /grilling and /domain-modeling pre-map discovery (1-2 lines)",
+			},
+			notes: {
+				type: "string",
+				description:
+					"Domain language, context, skills, and preferences surfaced during pre-map discovery",
+			},
+		},
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -60,7 +92,10 @@ export const wayfinderGetMap = {
 	action: "get_map",
 	title: "Wayfinder: Get Map",
 	description: "Read the low-resolution wayfinder map.",
-	params: getMapParams,
+	params: {
+		type: "object",
+		properties: { map_id: mapId },
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -69,7 +104,10 @@ export const wayfinderListMaps = {
 	action: "list_maps",
 	title: "Wayfinder: List Maps",
 	description: "List all open wayfinder maps.",
-	params: listMapsParams,
+	params: {
+		type: "object",
+		properties: {},
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -78,7 +116,23 @@ export const wayfinderCreateTicket = {
 	action: "create_ticket",
 	title: "Wayfinder: Create Ticket",
 	description: "Create a decision ticket on a wayfinder map.",
-	params: createTicketParams,
+	params: {
+		type: "object",
+		required: ["title", "question", "type"],
+		properties: {
+			map_id: mapId,
+			title: {
+				type: "string",
+				description:
+					"Name for the ticket. Refer to tickets by name in narration and decisions — names read at a glance, bare ids do not.",
+			},
+			question: {
+				type: "string",
+				description: "The decision or investigation this ticket resolves",
+			},
+			type: ticketTypeSchema,
+		},
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -87,7 +141,11 @@ export const wayfinderGetTicket = {
 	action: "get_ticket",
 	title: "Wayfinder: Get Ticket",
 	description: "Read a wayfinder ticket's details.",
-	params: getTicketParams,
+	params: {
+		type: "object",
+		required: ["ticket_id"],
+		properties: { ticket_id: ticketId },
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -97,7 +155,25 @@ export const wayfinderResolve = {
 	title: "Wayfinder: Resolve",
 	description:
 		"Resolve a ticket: record resolution, close it, append to map's Decisions.",
-	params: resolveParams,
+	params: {
+		type: "object",
+		required: ["map_id", "ticket_id", "resolution", "gist"],
+		properties: {
+			map_id: {
+				type: "string",
+				description: "The map that owns the Decision ticket",
+			},
+			ticket_id: ticketId,
+			resolution: {
+				type: "string",
+				description: "The answer or decision (posted as comment)",
+			},
+			gist: {
+				type: "string",
+				description: "One-line summary for the map's Decisions so far",
+			},
+		},
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -107,7 +183,15 @@ export const wayfinderUpdateMap = {
 	title: "Wayfinder: Update Map",
 	description:
 		"Replace content of a map section (destination, notes, decisions, fog, out of scope).",
-	params: updateMapParams,
+	params: {
+		type: "object",
+		required: ["section", "content"],
+		properties: {
+			section: mapSectionSchema,
+			content: { type: "string", description: "New content for the section" },
+			map_id: mapId,
+		},
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -116,7 +200,18 @@ export const wayfinderSetBlocking = {
 	action: "set_blocking",
 	title: "Wayfinder: Set Blocking",
 	description: "Wire blocking edges between tickets.",
-	params: setBlockingParams,
+	params: {
+		type: "object",
+		required: ["ticket_id", "blocked_by"],
+		properties: {
+			ticket_id: ticketId,
+			blocked_by: {
+				type: "array",
+				items: { type: "string" },
+				description: "Task IDs this is blocked by (empty to clear)",
+			},
+		},
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -126,7 +221,10 @@ export const wayfinderListFrontier = {
 	title: "Wayfinder: List Frontier",
 	description:
 		"List open, unblocked, unclaimed tickets — the edge of the known.",
-	params: listFrontierParams,
+	params: {
+		type: "object",
+		properties: { map_id: mapId },
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -135,7 +233,17 @@ export const wayfinderClaim = {
 	action: "claim",
 	title: "Wayfinder: Claim",
 	description: "Claim or unclaim a ticket so concurrent sessions skip it.",
-	params: claimParams,
+	params: {
+		type: "object",
+		required: ["ticket_id"],
+		properties: {
+			ticket_id: ticketId,
+			claim: {
+				type: "boolean",
+				description: "true to claim, false to unclaim (default: true)",
+			},
+		},
+	},
 	group: "wayfinder",
 } as const satisfies ToolCatalogEntry;
 
@@ -144,7 +252,19 @@ export const issueCreate = {
 	action: "issue_create",
 	title: "Issue: Create",
 	description: "Create a repository Issue/spec.",
-	params: issueCreateParams,
+	params: {
+		type: "object",
+		required: ["title"],
+		properties: {
+			title: { type: "string", description: "Issue title" },
+			body: { type: "string", description: "Issue body / spec" },
+			labels: {
+				type: "array",
+				items: { type: "string" },
+				description: "Labels to apply",
+			},
+		},
+	},
 	group: "issue",
 } as const satisfies ToolCatalogEntry;
 
@@ -153,7 +273,11 @@ export const issueRead = {
 	action: "issue_read",
 	title: "Issue: Read",
 	description: "Read a repository Issue/spec by its tracker ID or URL.",
-	params: issueReadParams,
+	params: {
+		type: "object",
+		required: ["id"],
+		properties: { id: issueIdOrUrl },
+	},
 	group: "issue",
 } as const satisfies ToolCatalogEntry;
 
@@ -163,7 +287,23 @@ export const issueLabel = {
 	title: "Issue: Label",
 	description:
 		"Add or remove triage labels on a repository Issue/spec identified by ID or URL.",
-	params: issueLabelParams,
+	params: {
+		type: "object",
+		required: ["id"],
+		properties: {
+			id: issueIdOrUrl,
+			add: {
+				type: "array",
+				items: { type: "string" },
+				description: "Labels to add",
+			},
+			remove: {
+				type: "array",
+				items: { type: "string" },
+				description: "Labels to remove",
+			},
+		},
+	},
 	group: "issue",
 } as const satisfies ToolCatalogEntry;
 
@@ -173,7 +313,14 @@ export const issueComment = {
 	title: "Issue: Comment",
 	description:
 		"Post a comment on a repository Issue/spec identified by ID or URL.",
-	params: issueCommentParams,
+	params: {
+		type: "object",
+		required: ["id", "body"],
+		properties: {
+			id: issueIdOrUrl,
+			body: { type: "string", description: "Comment body" },
+		},
+	},
 	group: "issue",
 } as const satisfies ToolCatalogEntry;
 
@@ -183,7 +330,14 @@ export const issueClose = {
 	title: "Issue: Close",
 	description:
 		"Close a repository Issue/spec identified by ID or URL, optionally with a closing note.",
-	params: issueCloseParams,
+	params: {
+		type: "object",
+		required: ["id"],
+		properties: {
+			id: issueIdOrUrl,
+			comment: { type: "string", description: "Closing note to post" },
+		},
+	},
 	group: "issue",
 } as const satisfies ToolCatalogEntry;
 
@@ -193,7 +347,24 @@ export const issueList = {
 	title: "Issue: List",
 	description:
 		"List repository Issues/specs, optionally filtered by state, labels, or unlabeled status. Results are oldest first.",
-	params: issueListParams,
+	params: {
+		type: "object",
+		properties: {
+			state: stringEnum(
+				["open", "closed", "any"] as const,
+				"Issue state filter",
+			),
+			labels: {
+				type: "array",
+				items: { type: "string" },
+				description: "Label filter (all must match)",
+			},
+			unlabeled: {
+				type: "boolean",
+				description: "Only issues with no labels",
+			},
+		},
+	},
 	group: "issue",
 } as const satisfies ToolCatalogEntry;
 
@@ -216,3 +387,27 @@ export const toolCatalog = [
 	issueClose,
 	issueList,
 ] as const satisfies readonly ToolCatalogEntry[];
+
+// -- Type aliases (derived from catalog entries) ---------------------------
+// Used by actions.ts for typed handler params; re-exported via index.ts.
+
+export type ChartParams = FromSchema<typeof wayfinderChart.params>;
+export type GetMapParams = FromSchema<typeof wayfinderGetMap.params>;
+export type ListMapsParams = FromSchema<typeof wayfinderListMaps.params>;
+export type CreateTicketParams = FromSchema<
+	typeof wayfinderCreateTicket.params
+>;
+export type GetTicketParams = FromSchema<typeof wayfinderGetTicket.params>;
+export type ResolveParams = FromSchema<typeof wayfinderResolve.params>;
+export type UpdateMapParams = FromSchema<typeof wayfinderUpdateMap.params>;
+export type SetBlockingParams = FromSchema<typeof wayfinderSetBlocking.params>;
+export type ListFrontierParams = FromSchema<
+	typeof wayfinderListFrontier.params
+>;
+export type ClaimParams = FromSchema<typeof wayfinderClaim.params>;
+export type IssueCreateParams = FromSchema<typeof issueCreate.params>;
+export type IssueReadParams = FromSchema<typeof issueRead.params>;
+export type IssueLabelParams = FromSchema<typeof issueLabel.params>;
+export type IssueCommentParams = FromSchema<typeof issueComment.params>;
+export type IssueCloseParams = FromSchema<typeof issueClose.params>;
+export type IssueListParams = FromSchema<typeof issueList.params>;

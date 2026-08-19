@@ -1,5 +1,6 @@
 import { createContainer } from "doist-core";
 import {
+	createInMemorySessionStateStore,
 	createLocalTrackerModules,
 	createTrackerSession,
 	localTrackerRoot,
@@ -59,14 +60,14 @@ describe("createTrackerSession", () => {
 			selectMode,
 			buildLocalModules,
 			buildTodoistModules,
-			persistState: vi.fn(),
+			store: createInMemorySessionStateStore(),
 			updateStatus: vi.fn(),
 		});
 
 		const [first, concurrent, subsequent] = await Promise.all([
-			session.get({}),
-			session.get({}),
-			session.get({}),
+			session.get(),
+			session.get(),
+			session.get(),
 		]);
 
 		expect(selectMode).toHaveBeenCalledOnce();
@@ -83,7 +84,7 @@ describe("createTrackerSession", () => {
 			selectMode: () => Promise.resolve("local" as const),
 			buildLocalModules: () => modules(),
 			buildTodoistModules: vi.fn(),
-			persistState: vi.fn(),
+			store: createInMemorySessionStateStore(),
 			updateStatus: vi.fn(),
 		});
 
@@ -114,13 +115,13 @@ describe("createTrackerSession", () => {
 			selectMode,
 			buildLocalModules,
 			buildTodoistModules,
-			persistState: vi.fn(),
+			store: createInMemorySessionStateStore(),
 			updateStatus: vi.fn(),
 		});
 
-		const first = await session.get({});
+		const first = await session.get();
 		session.reset();
-		const second = await session.get({});
+		const second = await session.get();
 
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildLocalModules).toHaveBeenCalledOnce();
@@ -145,12 +146,12 @@ describe("createTrackerSession", () => {
 			selectMode,
 			buildLocalModules,
 			buildTodoistModules,
-			persistState: vi.fn(),
+			store: createInMemorySessionStateStore(),
 			updateStatus: vi.fn(),
 		});
 
-		await expect(session.get({})).rejects.toThrow(error);
-		await expect(session.get({})).resolves.toBe(built);
+		await expect(session.get()).rejects.toThrow(error);
+		await expect(session.get()).resolves.toBe(built);
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildLocalModules).toHaveBeenCalledTimes(2);
 	});

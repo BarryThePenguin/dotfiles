@@ -22,9 +22,8 @@ export function handleAction<K extends keyof ActionMap>(
 	action: K,
 	params: ActionMap[K],
 	ctx: ToolContext,
-	host: { worktree: string },
 ): Promise<ActionResult> {
-	return createActionRuntime(host, ctx).then((runtime) =>
+	return createActionRuntime(ctx).then((runtime) =>
 		coreHandleAction(action, params, runtime),
 	);
 }

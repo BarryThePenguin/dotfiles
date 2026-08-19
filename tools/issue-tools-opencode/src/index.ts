@@ -13,6 +13,7 @@
  */
 
 import { Plugin } from "@opencode-ai/plugin/effect";
+import type { SessionDomain } from "@opencode-ai/plugin/effect/session";
 import { Tool } from "@opencode-ai/schema/tool";
 import { createContainer } from "doist-core";
 import { Effect, Schema } from "effect";
@@ -101,7 +102,7 @@ function toToolError(cause: unknown): Tool.Error {
 /** Resolve the executing session's worktree, bridging the client API to the typed failure channel. */
 function resolveWorktree(
 	toolCtx: Tool.Context,
-	session: Plugin.Context["session"],
+	session: SessionDomain,
 ): Effect.Effect<string, Tool.Error> {
 	return session.get({ sessionID: toolCtx.sessionID }).pipe(
 		Effect.map((info) => info.location.directory),
@@ -121,7 +122,7 @@ function toToolResult(result: ActionResult): Tool.Result {
  */
 function runTool(
 	ctx: Tool.Context,
-	session: Plugin.Context["session"],
+	session: SessionDomain,
 	title: string,
 	run: (worktree: string) => Effect.Effect<ActionResult, Tool.Error>,
 ): Effect.Effect<Tool.Result, Tool.Error> {
@@ -140,7 +141,7 @@ function runTool(
  * are valid JSON Schema.
  */
 function actionTool(
-	session: Plugin.Context["session"],
+	session: SessionDomain,
 	spec: ToolCatalogEntry,
 ): Tool.Info {
 	return {
@@ -153,12 +154,9 @@ function actionTool(
 			runTool(ctx, session, spec.title, (worktree) =>
 				Effect.tryPromise({
 					try: () =>
-						handleAction(
-							spec.action,
-							args as ActionMap[keyof ActionMap],
-							{ session: getOpenCodeSession(worktree) },
-							{ worktree },
-						),
+						handleAction(spec.action, args as ActionMap[keyof ActionMap], {
+							session: getOpenCodeSession(worktree),
+						}),
 					catch: toToolError,
 				}),
 			),

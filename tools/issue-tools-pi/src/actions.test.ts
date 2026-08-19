@@ -1,10 +1,10 @@
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { mkdtempDisposableSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
+	createInMemorySessionStateStore,
 	createLocalTrackerModules,
 	createTrackerSession,
 } from "issue-tools-core";
@@ -15,23 +15,18 @@ function tempDir() {
 }
 
 function makeContext(cwd: string) {
-	const persistState = vi.fn();
+	const store = createInMemorySessionStateStore();
 	const updateStatus = vi.fn();
 	const trackerSession = createTrackerSession({
 		cwd,
 		selectMode: () => Promise.resolve("local"),
 		buildLocalModules: () => createLocalTrackerModules(cwd),
 		buildTodoistModules: vi.fn(),
-		persistState,
+		store,
 		updateStatus,
 	});
 	const toolContext: ToolContext = { trackerSession };
-	return {
-		toolContext,
-		persistState,
-		updateStatus,
-		extensionContext: { cwd } as ExtensionContext,
-	};
+	return { toolContext, store, updateStatus };
 }
 
 describe("Wayfinder actions", () => {
@@ -43,30 +38,19 @@ describe("Wayfinder actions", () => {
 			title: "GENIE 2780",
 			destination: "A clear handoff exists.",
 		});
-		const { extensionContext, persistState, toolContext, updateStatus } =
-			makeContext(dir.path);
+		const { store, toolContext, updateStatus } = makeContext(dir.path);
 
-		const listResult = await handleAction(
-			"list_maps",
-			{},
-			toolContext,
-			extensionContext,
-		);
+		const listResult = await handleAction("list_maps", {}, toolContext);
 		expect(listResult.content[0]?.text).toContain("1 open map(s)");
 		expect(listResult.content[0]?.text).toContain(`${map.title} (${map.id})`);
 		expect(toolContext.trackerSession.getActiveMap()).toBe(map.id);
-		expect(persistState).toHaveBeenCalledWith(map.id);
-		expect(updateStatus).toHaveBeenCalledWith(extensionContext, {
+		expect(store.read().activeMap).toBe(map.id);
+		expect(updateStatus).toHaveBeenCalledWith({
 			mode: "local",
 			activeMap: map.id,
 		});
 
-		const getResult = await handleAction(
-			"get_map",
-			{},
-			toolContext,
-			extensionContext,
-		);
+		const getResult = await handleAction("get_map", {}, toolContext);
 		expect(getResult.content[0]?.text).toContain("## GENIE 2780");
 		expect(getResult.content[0]?.text).not.toContain(
 			"Error: no map_id provided and no active map.",
@@ -89,14 +73,13 @@ describe("Wayfinder presentation and claims", () => {
 			type: "task",
 			question: "Which name should appear first?",
 		});
-		const { extensionContext, toolContext } = makeContext(dir.path);
+		const { toolContext } = makeContext(dir.path);
 		vi.stubEnv("PI_ISSUE_TOOLS_CLAIMANT", "Jonathan Haines");
 
 		const frontier = await handleAction(
 			"list_frontier",
 			{ map_id: map.id },
 			toolContext,
-			extensionContext,
 		);
 		const frontierText = frontier.content[0]?.text ?? "";
 		expect(frontierText).toContain(`Choose the naming rule (${ticket.id})`);
@@ -105,12 +88,7 @@ describe("Wayfinder presentation and claims", () => {
 		);
 
 		try {
-			await handleAction(
-				"claim",
-				{ ticket_id: ticket.id },
-				toolContext,
-				extensionContext,
-			);
+			await handleAction("claim", { ticket_id: ticket.id }, toolContext);
 		} finally {
 			vi.unstubAllEnvs();
 		}
@@ -142,8 +120,8 @@ describe("Resolution actions", () => {
 			question: "How should the choice be applied?",
 		});
 		await tracker.setBlockingDependencies(dependent.id, [ticket.id]);
-		const { extensionContext, toolContext } = makeContext(dir.path);
-		toolContext.trackerSession.setActiveMap("wrong-map", extensionContext);
+		const { toolContext } = makeContext(dir.path);
+		toolContext.trackerSession.setActiveMap("wrong-map");
 
 		const complete = await handleAction(
 			"resolve",
@@ -154,7 +132,6 @@ describe("Resolution actions", () => {
 				gist: "Take path A.",
 			},
 			toolContext,
-			extensionContext,
 		);
 		expect(complete.content[0]?.text).toContain("Outcome: complete");
 		expect(complete.content[0]?.text).toContain("map decision recorded");
@@ -166,7 +143,6 @@ describe("Resolution actions", () => {
 			"get_ticket",
 			{ ticket_id: ticket.id },
 			toolContext,
-			extensionContext,
 		);
 		expect(ticketDetails.content[0]?.text).toContain("Comments (1)");
 		expect(ticketDetails.content[0]?.text).toContain("Take path A.");
@@ -193,7 +169,6 @@ describe("Resolution actions", () => {
 				gist: "Inspect it.",
 			},
 			toolContext,
-			extensionContext,
 		);
 		expect(terminal.content[0]?.text).toContain("Outcome: terminal");
 		expect(terminal.content[0]?.text).toContain("Human inspection is required");
@@ -203,7 +178,7 @@ describe("Resolution actions", () => {
 describe("Generic issue actions", () => {
 	it("creates and reads a generic issue end-to-end on the local tracker", async () => {
 		using dir = tempDir();
-		const { extensionContext, toolContext } = makeContext(dir.path);
+		const { toolContext } = makeContext(dir.path);
 
 		const createResult = await handleAction(
 			"issue_create",
@@ -213,7 +188,6 @@ describe("Generic issue actions", () => {
 				labels: ["needs-triage", "bug"],
 			},
 			toolContext,
-			extensionContext,
 		);
 		expect(createResult.content[0]?.text).toContain(
 			"Issue created: Add a generic issue surface",
@@ -233,7 +207,6 @@ describe("Generic issue actions", () => {
 			"issue_read",
 			{ id: issueId ?? "" },
 			toolContext,
-			extensionContext,
 		);
 		expect(readResult.content[0]?.text).toContain(
 			"## Add a generic issue surface",
@@ -248,7 +221,6 @@ describe("Generic issue actions", () => {
 			"issue_read",
 			{ id: `${issueId}.md` },
 			toolContext,
-			extensionContext,
 		);
 		expect(readByUrl.content[0]?.text).toContain(
 			"## Add a generic issue surface",
@@ -264,12 +236,11 @@ describe("Generic issue actions", () => {
 			body: "Body.",
 		});
 
-		const { extensionContext, toolContext } = makeContext(dir.path);
+		const { toolContext } = makeContext(dir.path);
 		const result = await handleAction(
 			"issue_read",
 			{ id: issue.url },
 			toolContext,
-			extensionContext,
 		);
 		expect(result.content[0]?.text).toContain("## Untracked question");
 	});
@@ -284,7 +255,7 @@ describe("Generic issue actions", () => {
 			labels: ["needs-triage"],
 		});
 
-		const { extensionContext, toolContext } = makeContext(dir.path);
+		const { toolContext } = makeContext(dir.path);
 		const result = await handleAction(
 			"issue_label",
 			{
@@ -293,7 +264,6 @@ describe("Generic issue actions", () => {
 				remove: ["needs-triage"],
 			},
 			toolContext,
-			extensionContext,
 		);
 		expect(result.content[0]?.text).toContain(
 			`Issue ${issue.id}: labels now bug`,
@@ -311,12 +281,11 @@ describe("Generic issue actions", () => {
 			body: "Body.",
 		});
 
-		const { extensionContext, toolContext } = makeContext(dir.path);
+		const { toolContext } = makeContext(dir.path);
 		const result = await handleAction(
 			"issue_comment",
 			{ id: issue.id, body: "First agent note" },
 			toolContext,
-			extensionContext,
 		);
 		expect(result.content[0]?.text).toContain("Comment posted on");
 		const details = result.details as { comment: { content: string } };
@@ -333,12 +302,11 @@ describe("Generic issue actions", () => {
 			labels: ["wontfix"],
 		});
 
-		const { extensionContext, toolContext } = makeContext(dir.path);
+		const { toolContext } = makeContext(dir.path);
 		const result = await handleAction(
 			"issue_close",
 			{ id: issue.id, comment: "Won't fix in this milestone." },
 			toolContext,
-			extensionContext,
 		);
 		expect(result.content[0]?.text).toContain(
 			`Issue ${issue.id}: closed (closing note posted)`,
@@ -374,13 +342,12 @@ describe("Generic issue actions", () => {
 		});
 		await issues.closeIssue(closed.id);
 
-		const { extensionContext, toolContext } = makeContext(dir.path);
+		const { toolContext } = makeContext(dir.path);
 
 		const openTriage = await handleAction(
 			"issue_list",
 			{ labels: ["needs-triage"] },
 			toolContext,
-			extensionContext,
 		);
 		expect(openTriage.content[0]?.text).toContain("1 issue(s)");
 		expect(openTriage.content[0]?.text).toContain("Triage me");
@@ -389,7 +356,6 @@ describe("Generic issue actions", () => {
 			"issue_list",
 			{ unlabeled: true },
 			toolContext,
-			extensionContext,
 		);
 		expect(unlabeledResult.content[0]?.text).toContain(unlabeled.id);
 		expect(unlabeledResult.content[0]?.text).not.toContain("Triage me");
@@ -398,7 +364,6 @@ describe("Generic issue actions", () => {
 			"issue_list",
 			{ state: "closed" },
 			toolContext,
-			extensionContext,
 		);
 		expect(closedResult.content[0]?.text).toContain("Closed triage");
 		expect(closedResult.content[0]?.text).toContain("[closed]");

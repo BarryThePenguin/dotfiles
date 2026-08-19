@@ -8,33 +8,52 @@ export function localTrackerRoot(cwd: string): string {
 	return resolve(cwd, ".scratch");
 }
 
-export type TrackerSessionOptions<TExt> = {
+export type SessionState = { activeMap: string | null };
+
+export interface SessionStateStore {
+	read(): SessionState;
+	write(state: SessionState): void;
+}
+
+export function createInMemorySessionStateStore(
+	initial?: SessionState,
+): SessionStateStore {
+	let state: SessionState = initial ?? { activeMap: null };
+	return {
+		read: () => state,
+		write: (s) => {
+			state = s;
+		},
+	};
+}
+
+export type TrackerSessionOptions = {
 	/** The repository the session is scoped to. */
 	cwd: string;
 	/** Selects which Issue tracker this session uses. */
-	selectMode: (ext: TExt) => Promise<TrackerMode>;
+	selectMode: () => Promise<TrackerMode>;
 	/** Builds the domain modules for the local tracker. */
 	buildLocalModules: () => TrackerModules;
 	/** Builds the domain modules for the Todoist tracker. */
 	buildTodoistModules: () => Promise<TrackerModules>;
-	/** Persists the session's active map. */
-	persistState: (activeMap: string | null) => void;
-	/** Refreshes the host's status from the session's state. */
-	updateStatus: (
-		ext: TExt,
-		state: { mode: TrackerMode | null; activeMap: string | null },
-	) => void;
+	/** Persists the session's active map across calls. */
+	store: SessionStateStore;
+	/** Called after any state change so the host can refresh its status display. */
+	updateStatus: (state: {
+		mode: TrackerMode | null;
+		activeMap: string | null;
+	}) => void;
 };
 
-export type TrackerSession<TExt = unknown> = {
-	get: (ext: TExt) => Promise<TrackerModules>;
+export type TrackerSession = {
+	get: () => Promise<TrackerModules>;
+	getCwd: () => string;
 	getClaimant: () => Promise<string>;
 	getActiveMap: () => string | null;
 	getMode: () => TrackerMode | null;
 	resolveMapId: (explicitMapId: string | undefined) => string | null;
-	setActiveMap: (mapId: string, ext: TExt) => void;
-	restore: (state: { activeMap: string | null }) => void;
-	refresh: (ext: TExt) => void;
+	setActiveMap: (mapId: string) => void;
+	refresh: () => void;
 	reset: () => void;
 };
 
@@ -44,30 +63,27 @@ export type TrackerSession<TExt = unknown> = {
  * as well as its result so concurrent tool calls cannot start duplicate
  * selections or constructions. A failed selection or build is evicted so a
  * later call retries the whole sequence from scratch.
- *
- * The extension context type `TExt` is generic so every host (Pi, opencode)
- * drives the same lifecycle with its own context type.
  */
-export function createTrackerSession<TExt>({
+export function createTrackerSession({
 	cwd,
 	selectMode,
 	buildLocalModules,
 	buildTodoistModules,
-	persistState,
+	store,
 	updateStatus,
-}: TrackerSessionOptions<TExt>): TrackerSession<TExt> {
+}: TrackerSessionOptions): TrackerSession {
 	let modules: Promise<TrackerModules> | null = null;
 	let claimant: Promise<string> | null = null;
 	let mode: TrackerMode | null = null;
-	let activeMap: string | null = null;
+	let activeMap: string | null = store.read().activeMap;
 
-	const state = () => ({ mode, activeMap });
+	const sessionState = () => ({ mode, activeMap });
 
 	return {
-		async get(ext) {
+		async get() {
 			if (!modules) {
 				const pending = (async () => {
-					mode = await selectMode(ext);
+					mode = await selectMode();
 					return mode === "local" ? buildLocalModules() : buildTodoistModules();
 				})();
 				const cached = pending.catch((error: unknown) => {
@@ -79,8 +95,11 @@ export function createTrackerSession<TExt>({
 				modules = cached;
 			}
 			const result = await modules;
-			updateStatus(ext, state());
+			updateStatus(sessionState());
 			return result;
+		},
+		getCwd() {
+			return cwd;
 		},
 		getClaimant() {
 			if (!claimant) {
@@ -103,16 +122,13 @@ export function createTrackerSession<TExt>({
 		resolveMapId(explicitMapId) {
 			return explicitMapId ?? activeMap;
 		},
-		setActiveMap(mapId, ext) {
+		setActiveMap(mapId) {
 			activeMap = mapId;
-			persistState(activeMap);
-			updateStatus(ext, state());
+			store.write({ activeMap });
+			updateStatus(sessionState());
 		},
-		restore(restored) {
-			activeMap = restored.activeMap;
-		},
-		refresh(ext) {
-			updateStatus(ext, state());
+		refresh() {
+			updateStatus(sessionState());
 		},
 		reset() {
 			modules = null;
