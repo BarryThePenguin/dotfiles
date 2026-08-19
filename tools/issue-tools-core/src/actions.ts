@@ -174,24 +174,22 @@ async function getMap(
 	if (!mapId) {
 		return runtime.error("no map_id provided and no active map.");
 	}
-	const detail = await wayfinder.getMapDetail(mapId);
-	const open = detail.openCount;
-	const closed = detail.closedCount;
-	const summary = renderMapSummary(detail.map, open, closed);
+	const { map, openCount: open, closedCount } = await wayfinder.getMapDetail(mapId);
+	const summary = renderMapSummary(map, open, closedCount);
 	runtime.setActiveMap(mapId);
 	return runtime.success(summary, {
-		id: detail.map.id,
-		title: detail.map.title,
-		url: detail.map.url,
+		id: map.id,
+		title: map.title,
+		url: map.url,
 		sections: {
-			destination: detail.map.destination,
-			notes: detail.map.notes,
-			decisions: detail.map.decisionsSoFar,
-			notYetSpecified: detail.map.notYetSpecified,
-			outOfScope: detail.map.outOfScope,
+			destination: map.destination,
+			notes: map.notes,
+			decisions: map.decisionsSoFar,
+			notYetSpecified: map.notYetSpecified,
+			outOfScope: map.outOfScope,
 		},
 		openTickets: open,
-		closedTickets: closed,
+		closedTickets: closedCount,
 	});
 }
 
@@ -328,6 +326,7 @@ async function listFrontier(
 		return runtime.error("no map_id and no active map.");
 	}
 	const { frontier, blocked, claimed } = await wayfinder.getMapDetail(mapId);
+	runtime.setActiveMap(mapId);
 	if (frontier.length === 0 && blocked.length === 0 && claimed.length === 0) {
 		return runtime.success("No open tickets on this map.", {
 			frontier,

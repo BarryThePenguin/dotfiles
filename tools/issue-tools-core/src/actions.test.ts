@@ -506,6 +506,25 @@ describe("list_frontier", () => {
 		expect(result.text).toBe("No open tickets on this map.");
 	});
 
+	it("sets the requested map as active", async () => {
+		const wayfinder = makeFakeWayfinderTracker({
+			getMapDetail: () =>
+				Promise.resolve({
+					map: makeMap({ id: "m2" }),
+					frontier: [],
+					blocked: [],
+					claimed: [],
+					openCount: 0,
+					closedCount: 0,
+				}),
+		});
+		const rt = makeRuntime({ wayfinder, activeMap: "m1" });
+
+		await act("list_frontier", { map_id: "m2" }, rt);
+
+		expect(rt.activeMap).toBe("m2");
+	});
+
 	it("lists frontier, blocked, and claimed tickets", async () => {
 		const frontierTicket = makeTicket({
 			id: "t1",
