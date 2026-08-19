@@ -181,3 +181,6 @@ export {
 	filterByEnergy,
 	groupStaleByProject,
 } from "./analysis/index.ts";
+
+// Session summary
+export { TRIAGE_THRESHOLD } from "./session-summary.ts";

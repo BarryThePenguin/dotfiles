@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
 import type { OperationalContainer, RestApiTaskByFilter } from "doist-core";
+import { TRIAGE_THRESHOLD } from "doist-core";
 import {
 	buildProjectMap,
 	FormattedTaskSchema,
@@ -34,8 +35,6 @@ const SessionSummaryOutputSchema = toStandardJsonSchema(
 		syncedAt: v.nullable(v.string()),
 	}),
 );
-
-const TRIAGE_THRESHOLD = 5;
 
 function toFormatted(
 	task: RestApiTaskByFilter,

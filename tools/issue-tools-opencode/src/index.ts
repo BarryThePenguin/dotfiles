@@ -25,16 +25,26 @@ import {
 } from "issue-tools-core";
 import { handleAction } from "./actions.ts";
 import type { ActionResult } from "./action-runtime.ts";
-import { getOpenCodeSession } from "./tracker.ts";
+import {
+	createSessionRegistry,
+	type SessionRegistry,
+} from "./tracker.ts";
+
+const registry = createSessionRegistry();
 
 type SetupArgs = {
 	tracker?: "local" | "todoist" | "auto" | undefined;
 	project_id?: string | undefined;
 };
 
-function runSetup(worktree: string, args: SetupArgs): ActionResult {
+function runSetup(
+	worktree: string,
+	args: SetupArgs,
+	registry: SessionRegistry,
+): ActionResult {
+	const session = registry.get(worktree);
 	if (args.tracker) {
-		getOpenCodeSession(worktree).setTrackerMode(args.tracker);
+		session.setTrackerMode(args.tracker);
 		const mode =
 			args.tracker === "auto" ? "auto (re-detected on next use)" : args.tracker;
 		return {
@@ -81,7 +91,7 @@ function runSetup(worktree: string, args: SetupArgs): ActionResult {
 	}
 
 	container.setRepoProject(selected.id);
-	getOpenCodeSession(worktree).setTrackerMode("todoist");
+	session.setTrackerMode("todoist");
 	const note =
 		selection === "both"
 			? " Both .scratch and .doistrc are present; re-run with tracker: 'local' to force local mode."
@@ -155,7 +165,7 @@ function actionTool(
 				Effect.tryPromise({
 					try: () =>
 						handleAction(spec.action, args as ActionMap[keyof ActionMap], {
-							session: getOpenCodeSession(worktree),
+							session: registry.get(worktree),
 						}),
 					catch: toToolError,
 				}),
@@ -193,7 +203,7 @@ export default Plugin.define({
 					execute: (args, ctx) =>
 						runTool(ctx, session, "Issue Tracker Setup", (worktree) =>
 							Effect.try({
-								try: () => runSetup(worktree, args),
+								try: () => runSetup(worktree, args, registry),
 								catch: toToolError,
 							}),
 						),

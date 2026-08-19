@@ -88,17 +88,18 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 	};
 }
 
-const sessionsByWorktree = new Map<string, OpenCodeSession>();
+export type SessionRegistry = { get(worktree: string): OpenCodeSession };
 
-export function getOpenCodeSession(worktree: string): OpenCodeSession {
-	let session = sessionsByWorktree.get(worktree);
-	if (!session) {
-		session = createOpenCodeSession(worktree);
-		sessionsByWorktree.set(worktree, session);
-	}
-	return session;
-}
-
-export function resetOpenCodeSession(worktree: string): void {
-	sessionsByWorktree.delete(worktree);
+export function createSessionRegistry(): SessionRegistry {
+	const sessions = new Map<string, OpenCodeSession>();
+	return {
+		get(worktree: string): OpenCodeSession {
+			let session = sessions.get(worktree);
+			if (!session) {
+				session = createOpenCodeSession(worktree);
+				sessions.set(worktree, session);
+			}
+			return session;
+		},
+	};
 }

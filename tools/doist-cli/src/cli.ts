@@ -9,6 +9,7 @@ import {
 	createContainer,
 	filterByEnergy,
 	findDuplicateCandidates,
+	TRIAGE_THRESHOLD,
 	findMissingEnergyMetadata,
 	findStaleCandidates,
 	groupStaleByProject,
@@ -603,8 +604,6 @@ const analysisCmd = defineCommand({
 });
 
 // ── session ───────────────────────────────────────────────────
-const TRIAGE_THRESHOLD = 5;
-
 const sessionCmd = defineCommand({
 	meta: { description: "Session check-in summaries" },
 	subCommands: {

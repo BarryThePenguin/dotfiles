@@ -3,11 +3,11 @@
  * both the Pi extension and the opencode plugin register.
  *
  * This is the single source of truth for the shared registration fields —
- * `name`, `action`, `title`, `description`, and the parameter schema — so the
- * two hosts cannot drift from each other or from the setup inventory. Hosts
- * hang their own bits off these entries (Pi's `promptSnippet` and render
- * hooks, opencode's progress title). The opencode-only `issue_tracker_setup`
- * tool is not catalogued here; it belongs to opencode.
+ * `name`, `action`, `title`, `description`, `promptSnippet`, and the
+ * parameter schema — so the two hosts cannot drift from each other or from
+ * the setup inventory. Hosts hang their own host-specific bits off these
+ * entries (Pi's render hooks, opencode's progress title). The opencode-only
+ * `issue_tracker_setup` tool is not catalogued here; it belongs to opencode.
  */
 
 import type { FromSchema } from "json-schema-to-ts";
@@ -48,8 +48,15 @@ export type ToolCatalogEntry = {
 	action: keyof ActionMap;
 	/** Human-facing title (Pi tool label, opencode progress title). */
 	title: string;
-	/** Description sent to the model. */
+	/** Description sent to the model via the tool schema. */
 	description: string;
+	/**
+	 * Terse one-liner for the system prompt's "Available tools" inventory.
+	 * Distinct from `description`: description is the full tool-schema spec;
+	 * this is the compact system-prompt entry. On Pi, omitting it would exclude
+	 * the tool from the inventory entirely.
+	 */
+	promptSnippet: string;
 	/** Host-agnostic JSON Schema for the tool's parameters. */
 	params: unknown;
 	/** Inventory grouping for the setup docs. */
@@ -64,6 +71,8 @@ export const wayfinderChart = {
 	title: "Wayfinder: Chart",
 	description:
 		"Create a new wayfinder map after /grilling and /domain-modeling have confirmed the destination.",
+	promptSnippet:
+		"Chart a new wayfinder map (run /grilling and /domain-modeling first to confirm the destination)",
 	params: {
 		type: "object",
 		required: ["title", "destination"],
@@ -92,6 +101,7 @@ export const wayfinderGetMap = {
 	action: "get_map",
 	title: "Wayfinder: Get Map",
 	description: "Read the low-resolution wayfinder map.",
+	promptSnippet: "Read the active wayfinder map (low-resolution overview)",
 	params: {
 		type: "object",
 		properties: { map_id: mapId },
@@ -104,6 +114,7 @@ export const wayfinderListMaps = {
 	action: "list_maps",
 	title: "Wayfinder: List Maps",
 	description: "List all open wayfinder maps.",
+	promptSnippet: "List all open wayfinder maps",
 	params: {
 		type: "object",
 		properties: {},
@@ -116,6 +127,7 @@ export const wayfinderCreateTicket = {
 	action: "create_ticket",
 	title: "Wayfinder: Create Ticket",
 	description: "Create a decision ticket on a wayfinder map.",
+	promptSnippet: "Create a decision ticket on a wayfinder map",
 	params: {
 		type: "object",
 		required: ["title", "question", "type"],
@@ -141,6 +153,7 @@ export const wayfinderGetTicket = {
 	action: "get_ticket",
 	title: "Wayfinder: Get Ticket",
 	description: "Read a wayfinder ticket's details.",
+	promptSnippet: "Read a wayfinder ticket's full details",
 	params: {
 		type: "object",
 		required: ["ticket_id"],
@@ -155,6 +168,8 @@ export const wayfinderResolve = {
 	title: "Wayfinder: Resolve",
 	description:
 		"Resolve a ticket: record resolution, close it, append to map's Decisions.",
+	promptSnippet:
+		"Resolve a decision ticket: record the answer, close it, append to map decisions",
 	params: {
 		type: "object",
 		required: ["map_id", "ticket_id", "resolution", "gist"],
@@ -183,6 +198,8 @@ export const wayfinderUpdateMap = {
 	title: "Wayfinder: Update Map",
 	description:
 		"Replace content of a map section (destination, notes, decisions, fog, out of scope).",
+	promptSnippet:
+		"Replace a wayfinder map section (destination, notes, fog, decisions, out-of-scope)",
 	params: {
 		type: "object",
 		required: ["section", "content"],
@@ -200,6 +217,7 @@ export const wayfinderSetBlocking = {
 	action: "set_blocking",
 	title: "Wayfinder: Set Blocking",
 	description: "Wire blocking edges between tickets.",
+	promptSnippet: "Wire blocking dependencies between decision tickets",
 	params: {
 		type: "object",
 		required: ["ticket_id", "blocked_by"],
@@ -221,6 +239,7 @@ export const wayfinderListFrontier = {
 	title: "Wayfinder: List Frontier",
 	description:
 		"List open, unblocked, unclaimed tickets — the edge of the known.",
+	promptSnippet: "List frontier tickets — open, unblocked, and unclaimed",
 	params: {
 		type: "object",
 		properties: { map_id: mapId },
@@ -233,6 +252,7 @@ export const wayfinderClaim = {
 	action: "claim",
 	title: "Wayfinder: Claim",
 	description: "Claim or unclaim a ticket so concurrent sessions skip it.",
+	promptSnippet: "Claim or unclaim a ticket to coordinate concurrent sessions",
 	params: {
 		type: "object",
 		required: ["ticket_id"],
@@ -252,6 +272,7 @@ export const issueCreate = {
 	action: "issue_create",
 	title: "Issue: Create",
 	description: "Create a repository Issue/spec.",
+	promptSnippet: "Create a repository Issue or spec",
 	params: {
 		type: "object",
 		required: ["title"],
@@ -273,6 +294,7 @@ export const issueRead = {
 	action: "issue_read",
 	title: "Issue: Read",
 	description: "Read a repository Issue/spec by its tracker ID or URL.",
+	promptSnippet: "Read a repository Issue/spec by ID or URL",
 	params: {
 		type: "object",
 		required: ["id"],
@@ -287,6 +309,7 @@ export const issueLabel = {
 	title: "Issue: Label",
 	description:
 		"Add or remove triage labels on a repository Issue/spec identified by ID or URL.",
+	promptSnippet: "Add or remove triage labels on a repository Issue/spec",
 	params: {
 		type: "object",
 		required: ["id"],
@@ -313,6 +336,7 @@ export const issueComment = {
 	title: "Issue: Comment",
 	description:
 		"Post a comment on a repository Issue/spec identified by ID or URL.",
+	promptSnippet: "Post a comment on a repository Issue/spec",
 	params: {
 		type: "object",
 		required: ["id", "body"],
@@ -330,6 +354,7 @@ export const issueClose = {
 	title: "Issue: Close",
 	description:
 		"Close a repository Issue/spec identified by ID or URL, optionally with a closing note.",
+	promptSnippet: "Close a repository Issue/spec, optionally with a closing note",
 	params: {
 		type: "object",
 		required: ["id"],
@@ -347,6 +372,7 @@ export const issueList = {
 	title: "Issue: List",
 	description:
 		"List repository Issues/specs, optionally filtered by state, labels, or unlabeled status. Results are oldest first.",
+	promptSnippet: "List repository Issues/specs (filter by state, labels, or unlabeled)",
 	params: {
 		type: "object",
 		properties: {

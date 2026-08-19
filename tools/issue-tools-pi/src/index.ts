@@ -30,26 +30,6 @@ import { renderCall, renderResult, type RenderCallArgs } from "./render.ts";
 
 const STATUS_KEY = "issue-tools";
 
-/** Pi-only per-tool prompt snippets, keyed by ActionMap key (exhaustive). */
-const PROMPT_SNIPPETS = {
-	chart:
-		"Create a wayfinder map after confirming the destination with grilling and domain modeling",
-	get_map: "Read the low-resolution wayfinder map from the selected tracker",
-	list_maps: "List wayfinder maps from the selected tracker",
-	create_ticket: "Create a wayfinder ticket on the selected tracker",
-	get_ticket: "Read a wayfinder ticket from the selected tracker",
-	resolve: "Resolve a wayfinder ticket on the selected tracker",
-	update_map: "Update a wayfinder map section on the selected tracker",
-	set_blocking: "Set blocking on a wayfinder ticket on the selected tracker",
-	list_frontier: "List wayfinder frontier tickets from the selected tracker",
-	claim: "Claim a wayfinder ticket on the selected tracker",
-	issue_create: "Create a repository Issue/spec",
-	issue_read: "Read a repository Issue/spec by ID or URL",
-	issue_label: "Add or remove triage labels on a repository Issue/spec",
-	issue_comment: "Post a comment on a repository Issue/spec",
-	issue_close: "Close a repository Issue/spec",
-	issue_list: "List repository Issues/specs",
-} as const satisfies Record<keyof ActionMap, string>;
 
 function createPiSessionStore(
 	pi: ExtensionAPI,
@@ -155,7 +135,7 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 			name: tool.name,
 			label: tool.title,
 			description: tool.description,
-			promptSnippet: PROMPT_SNIPPETS[tool.action],
+			promptSnippet: tool.promptSnippet,
 			parameters: Type.Unsafe(tool.params),
 			async execute(_id, params, _signal, _onUpdate, ctx) {
 				latestCtx = ctx;

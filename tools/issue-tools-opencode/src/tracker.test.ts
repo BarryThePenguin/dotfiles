@@ -8,11 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStateStore } from "./state.ts";
-import {
-	createOpenCodeSession,
-	resetOpenCodeSession,
-	resolveMode,
-} from "./tracker.ts";
+import { createOpenCodeSession, resolveMode } from "./tracker.ts";
 
 function tempDir() {
 	return mkdtempDisposableSync(join(tmpdir(), "issue-tools-tracker-"));
@@ -115,7 +111,6 @@ describe("session lifecycle", () => {
 		session.setActiveMap("map-1");
 		expect(createStateStore(dir.path).read().activeMap).toBe("map-1");
 
-		resetOpenCodeSession(dir.path);
 		const restored = createOpenCodeSession(dir.path);
 		expect(restored.getActiveMap()).toBe("map-1");
 	});
@@ -127,7 +122,6 @@ describe("session lifecycle", () => {
 		expect(session.getMode()).toBeNull();
 		expect(createStateStore(dir.path).read().mode).toBe("todoist");
 
-		resetOpenCodeSession(dir.path);
 		const fresh = createOpenCodeSession(dir.path);
 		expect(fresh.getMode()).toBeNull();
 		expect(createStateStore(dir.path).read().mode).toBe("todoist");

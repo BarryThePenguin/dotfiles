@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLocalTrackerModules, localTrackerRoot } from "issue-tools-core";
 import { handleAction } from "./actions.ts";
-import { getOpenCodeSession } from "./tracker.ts";
+import { createOpenCodeSession } from "./tracker.ts";
 
 function tempDir() {
 	return mkdtempDisposableSync(join(tmpdir(), "issue-tools-opencode-"));
@@ -32,7 +32,7 @@ describe("Wayfinder actions", () => {
 			title: "GENIE 2780",
 			destination: "A clear handoff exists.",
 		});
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 
 		const listResult = await handleAction("list_maps", {}, ctx);
 		expect(listResult.output).toContain("1 open map(s)");
@@ -62,7 +62,7 @@ describe("Wayfinder presentation and claims", () => {
 			type: "task",
 			question: "Which name should appear first?",
 		});
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 		vi.stubEnv("OPENCODE_ISSUE_TOOLS_CLAIMANT", "Jonathan Haines");
 
 		const frontier = await handleAction(
@@ -108,7 +108,7 @@ describe("Resolution actions", () => {
 			question: "How should the choice be applied?",
 		});
 		await tracker.setBlockingDependencies(dependent.id, [ticket.id]);
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 		ctx.session.setActiveMap("wrong-map");
 
 		const complete = await handleAction(
@@ -166,7 +166,7 @@ describe("Resolution actions", () => {
 describe("Generic issue actions", () => {
 	it("creates and reads a generic issue end-to-end on the local tracker", async () => {
 		using dir = tempDir();
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 
 		const createResult = await handleAction(
 			"issue_create",
@@ -211,7 +211,7 @@ describe("Generic issue actions", () => {
 			body: "Body.",
 			labels: ["needs-triage"],
 		});
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 
 		const result = await handleAction(
 			"issue_label",
@@ -229,7 +229,7 @@ describe("Generic issue actions", () => {
 			title: "Triage me",
 			body: "Body.",
 		});
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 
 		const result = await handleAction(
 			"issue_comment",
@@ -247,7 +247,7 @@ describe("Generic issue actions", () => {
 			title: "Triage me",
 			body: "Body.",
 		});
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 
 		const result = await handleAction(
 			"issue_close",
@@ -284,7 +284,7 @@ describe("Generic issue actions", () => {
 			labels: ["needs-triage"],
 		});
 		await modules.issues.closeIssue(closed.id);
-		const ctx = { session: getOpenCodeSession(dir.path) };
+		const ctx = { session: createOpenCodeSession(dir.path) };
 
 		const openTriage = await handleAction(
 			"issue_list",
