@@ -174,7 +174,11 @@ async function getMap(
 	if (!mapId) {
 		return runtime.error("no map_id provided and no active map.");
 	}
-	const { map, openCount: open, closedCount } = await wayfinder.getMapDetail(mapId);
+	const {
+		map,
+		openCount: open,
+		closedCount,
+	} = await wayfinder.getMapDetail(mapId);
 	const summary = renderMapSummary(map, open, closedCount);
 	runtime.setActiveMap(mapId);
 	return runtime.success(summary, {

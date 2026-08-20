@@ -25,10 +25,7 @@ import {
 } from "issue-tools-core";
 import { handleAction } from "./actions.ts";
 import type { ActionResult } from "./action-runtime.ts";
-import {
-	createSessionRegistry,
-	type SessionRegistry,
-} from "./tracker.ts";
+import { createSessionRegistry, type SessionRegistry } from "./tracker.ts";
 
 const registry = createSessionRegistry();
 
@@ -150,10 +147,7 @@ function runTool(
  * (string-indexed `properties`) needs a cast — the schema objects themselves
  * are valid JSON Schema.
  */
-function actionTool(
-	session: SessionDomain,
-	spec: ToolCatalogEntry,
-): Tool.Info {
+function actionTool(session: SessionDomain, spec: ToolCatalogEntry): Tool.Info {
 	return {
 		name: spec.name,
 		description: spec.description,

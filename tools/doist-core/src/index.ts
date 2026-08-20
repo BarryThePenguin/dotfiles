@@ -55,7 +55,7 @@ export {
 	addTaskComment,
 	listTaskComments,
 } from "./operations.ts";
-export type { OperationResult } from "./operations.ts";
+export type { OperationResult, TodoistOperations } from "./operations.ts";
 
 export * as Reconciliation from "./reconciliation.ts";
 

@@ -354,7 +354,8 @@ export const issueClose = {
 	title: "Issue: Close",
 	description:
 		"Close a repository Issue/spec identified by ID or URL, optionally with a closing note.",
-	promptSnippet: "Close a repository Issue/spec, optionally with a closing note",
+	promptSnippet:
+		"Close a repository Issue/spec, optionally with a closing note",
 	params: {
 		type: "object",
 		required: ["id"],
@@ -372,7 +373,8 @@ export const issueList = {
 	title: "Issue: List",
 	description:
 		"List repository Issues/specs, optionally filtered by state, labels, or unlabeled status. Results are oldest first.",
-	promptSnippet: "List repository Issues/specs (filter by state, labels, or unlabeled)",
+	promptSnippet:
+		"List repository Issues/specs (filter by state, labels, or unlabeled)",
 	params: {
 		type: "object",
 		properties: {

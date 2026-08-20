@@ -109,6 +109,8 @@ export function createTodoistOperations(persistence: PersistenceLayer) {
 	};
 }
 
+export type TodoistOperations = ReturnType<typeof createTodoistOperations>;
+
 /**
  * Update a task with new field values.
  *

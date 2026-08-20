@@ -30,7 +30,6 @@ import { renderCall, renderResult, type RenderCallArgs } from "./render.ts";
 
 const STATUS_KEY = "issue-tools";
 
-
 function createPiSessionStore(
 	pi: ExtensionAPI,
 	initial: string | null,
