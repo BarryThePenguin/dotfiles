@@ -10,13 +10,9 @@
  */
 
 import { driverFactory } from "sqlite-runtime";
-import {
-	Database,
-	type AllData,
-	type DbTask,
-	type SyncCommand,
-	type TodoistClient,
-} from "doist-core";
+import { type AllData, type TodoistClient } from "doist-core";
+import { Database, type DbTask } from "doist-core/db";
+import type { SyncCommand } from "doist-core/sdk";
 import { TodoistAdapter } from "../todoist-adapter.ts";
 
 function syncItem(overrides: Partial<DbTask> = {}): DbTask {

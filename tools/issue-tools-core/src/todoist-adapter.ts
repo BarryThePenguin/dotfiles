@@ -1,9 +1,5 @@
-import {
-	type AppTask,
-	type Database,
-	createTodoistOperations,
-} from "doist-core";
-import type { PersistenceLayer } from "doist-core";
+import { type AppTask, createTodoistOperations } from "doist-core";
+import type { Database, PersistenceLayer } from "doist-core/db";
 import {
 	WAYFINDER_MAP_LABEL,
 	todoistLabelToTicketType,

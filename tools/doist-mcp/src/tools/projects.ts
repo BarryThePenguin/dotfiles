@@ -2,7 +2,8 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
 import type { OperationalContainer } from "doist-core";
-import { createTodoistOperations, RestApiProjectSchema } from "doist-core";
+import { createTodoistOperations } from "doist-core";
+import { RestApiProjectSchema } from "doist-core/sdk";
 import {
 	EmptyInput,
 	ListLabelSchema,

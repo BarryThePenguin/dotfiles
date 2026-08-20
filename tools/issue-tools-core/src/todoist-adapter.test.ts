@@ -1,4 +1,5 @@
-import { addTask, addTaskComment, completeTask, Database } from "doist-core";
+import { addTask, addTaskComment, completeTask } from "doist-core";
+import { Database } from "doist-core/db";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TODOIST_TICKET_TYPE_LABELS, WAYFINDER_MAP_LABEL } from "./labels.ts";
 import {

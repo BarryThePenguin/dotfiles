@@ -1,8 +1,9 @@
 import { vi } from "vitest";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
-import type { DbTask, SyncCommand } from "doist-core";
 import { setToken, syncAndPersist } from "doist-core";
+import type { DbTask } from "doist-core/db";
+import type { SyncCommand } from "doist-core/sdk";
 import type { TestContainer } from "doist-core/test-helpers";
 import { createTestContainer } from "doist-core/test-helpers";
 import { writeFileSync } from "node:fs";

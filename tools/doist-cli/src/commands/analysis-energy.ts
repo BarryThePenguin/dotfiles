@@ -1,10 +1,10 @@
 import { defineCommand } from "citty";
 import {
 	countSyncData,
-	findMissingEnergyMetadata,
 	type OperationalContainer,
 	type SyncResult,
 } from "doist-core";
+import { findMissingEnergyMetadata } from "doist-core/analysis";
 import { out } from "../output.ts";
 
 export function buildCommand(container: OperationalContainer) {

@@ -1,13 +1,15 @@
 import { defineCommand } from "citty";
 import {
 	countSyncData,
+	type OperationalContainer,
+	type SyncResult,
+} from "doist-core";
+import {
 	findDuplicateCandidates,
 	findMissingEnergyMetadata,
 	findStaleCandidates,
 	groupStaleByProject,
-	type OperationalContainer,
-	type SyncResult,
-} from "doist-core";
+} from "doist-core/analysis";
 import { out } from "../output.ts";
 
 export function buildCommand(container: OperationalContainer) {

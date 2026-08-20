@@ -1,8 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import type { OperationalContainer, RestApiTaskByFilter } from "doist-core";
+import type { OperationalContainer } from "doist-core";
 import { TRIAGE_THRESHOLD } from "doist-core";
+import type { RestApiTaskByFilter } from "doist-core/sdk";
 import {
 	buildProjectMap,
 	FormattedTaskSchema,

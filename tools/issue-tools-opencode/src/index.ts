@@ -19,6 +19,7 @@ import { createContainer } from "doist-core";
 import { Effect, Schema } from "effect";
 import {
 	detectTrackerSelection,
+	setupTodoistTracker,
 	toolCatalog,
 	type ActionMap,
 	type ToolCatalogEntry,
@@ -34,11 +35,11 @@ type SetupArgs = {
 	project_id?: string | undefined;
 };
 
-function runSetup(
+async function runSetup(
 	worktree: string,
 	args: SetupArgs,
 	registry: SessionRegistry,
-): ActionResult {
+): Promise<ActionResult> {
 	const session = registry.get(worktree);
 	if (args.tracker) {
 		session.setTrackerMode(args.tracker);
@@ -67,35 +68,45 @@ function runSetup(
 	}
 
 	const container = createContainer(worktree);
-	const projects = container.listProjects();
-	if (projects.length === 0) {
-		return {
-			output:
-				"No projects in .doistrc. Add one with `doist projects add`, then re-run this tool.",
-			metadata: { tracker: "todoist", projects: [] },
-		};
-	}
-
-	const selected = args.project_id
-		? projects.find((project) => project.id === args.project_id)
-		: (projects.find((project) => project.repo === true) ?? projects[0]);
-
-	if (!selected) {
-		return {
-			output: `Project ${args.project_id} not found in .doistrc. Available: ${projects.map((project) => project.id).join(", ")}`,
-			metadata: { tracker: "todoist" },
-		};
-	}
-
-	container.setRepoProject(selected.id);
-	session.setTrackerMode("todoist");
 	const note =
 		selection === "both"
 			? " Both .scratch and .doistrc are present; re-run with tracker: 'local' to force local mode."
 			: "";
+
+	const result = await setupTodoistTracker(container, {
+		selectProject: (projects) => {
+			if (args.project_id) {
+				return args.project_id;
+			}
+			return (projects.find((p) => p.repo === true) ?? projects[0])?.id;
+		},
+	});
+
+	if (!result.ok) {
+		if (result.reason === "no-projects") {
+			return {
+				output:
+					"No projects in .doistrc. Add one with `doist projects add`, then re-run this tool.",
+				metadata: { tracker: "todoist", projects: [] },
+			};
+		}
+		if (result.reason === "not-found") {
+			const allProjects = container.listProjects();
+			return {
+				output: `Project ${args.project_id} not found in .doistrc. Available: ${allProjects.map((p) => p.id).join(", ")}`,
+				metadata: { tracker: "todoist" },
+			};
+		}
+		return {
+			output: "Setup cancelled.",
+			metadata: { tracker: "todoist" },
+		};
+	}
+
+	session.setTrackerMode("todoist");
 	return {
-		output: `Marked ${selected.id} as the repo project. Todoist tracker active.${note}`,
-		metadata: { tracker: "todoist", projectId: selected.id },
+		output: `Marked ${result.projectId} as the repo project. Todoist tracker active.${note}`,
+		metadata: { tracker: "todoist", projectId: result.projectId },
 	};
 }
 
@@ -196,7 +207,7 @@ export default Plugin.define({
 					options: { codemode: false },
 					execute: (args, ctx) =>
 						runTool(ctx, session, "Issue Tracker Setup", (worktree) =>
-							Effect.try({
+							Effect.tryPromise({
 								try: () => runSetup(worktree, args, registry),
 								catch: toToolError,
 							}),

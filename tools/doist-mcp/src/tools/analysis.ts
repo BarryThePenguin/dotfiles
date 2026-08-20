@@ -1,13 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
+import type { OperationalContainer } from "doist-core";
 import {
 	findDuplicateCandidates,
 	findMissingEnergyMetadata,
 	findStaleCandidates,
 	groupStaleByProject,
-} from "doist-core";
-import type { OperationalContainer } from "doist-core";
+} from "doist-core/analysis";
 import {
 	EmptyInput,
 	FormattedTaskSchema,

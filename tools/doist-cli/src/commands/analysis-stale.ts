@@ -1,11 +1,10 @@
 import { defineCommand } from "citty";
 import {
 	countSyncData,
-	findStaleCandidates,
-	groupStaleByProject,
 	type OperationalContainer,
 	type SyncResult,
 } from "doist-core";
+import { findStaleCandidates, groupStaleByProject } from "doist-core/analysis";
 import { out } from "../output.ts";
 
 export function buildCommand(container: OperationalContainer) {

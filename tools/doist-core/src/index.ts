@@ -1,24 +1,13 @@
-// Domain types
-export { Database } from "./db.ts";
-export type { AppTaskWithNotes, TaskCriteria } from "./db.ts";
-export type {
-	DbProject,
-	DbTask,
-	DbLabel,
-	DbSection,
-	DbFilter,
-	DbNote,
-} from "./db.ts";
+// Container
 export { createContainer, hasProjects, ProjectRefSchema } from "./container.ts";
 export type {
 	Container,
 	OperationalContainer,
-	PersistenceLayer,
 	ProjectRef,
 } from "./container.ts";
 export type { ConfigPaths } from "./paths.ts";
 
-// Schema transformations
+// Domain types
 export type {
 	AppTask,
 	AppProject,
@@ -26,14 +15,6 @@ export type {
 	AppLabel,
 	AppFilter,
 	AppNote,
-} from "./schema.ts";
-export {
-	normalizeTask,
-	normalizeProject,
-	normalizeSection,
-	normalizeLabel,
-	normalizeFilter,
-	normalizeNote,
 } from "./schema.ts";
 
 // Operations
@@ -87,21 +68,8 @@ export type {
 	AddCommentFields,
 } from "./schemas.ts";
 
-// Char limits — single source of truth for Todoist per-field caps
+// Char limits
 export { LIMITS } from "./limits.ts";
-
-// SDK types
-export { RestApiProjectSchema } from "./sdk.ts";
-export type {
-	RestApiProject,
-	RestApiTaskByFilter,
-	ResourceType,
-	ResourceTypes,
-	SyncCommand,
-	SyncFilter,
-	AddItemArgs,
-	UpdateItemArgs,
-} from "./sdk.ts";
 
 // Sync
 export { countSyncData, syncAndPersist, syncAndFetch } from "./sync.ts";
@@ -123,61 +91,11 @@ export type { TodoistClient, AllData } from "./todoist.ts";
 // Repo-aware project selection
 export { applyRepoMarker, selectRepoProject } from "./repo-project.ts";
 
-// SDK types (including Note types)
-export type {
-	SyncNote,
-	AddNoteArgs,
-	UpdateNoteArgs,
-	DeleteNoteArgs,
-	NoteAddCommand,
-	NoteUpdateCommand,
-	NoteDeleteCommand,
-} from "./sdk.ts";
-export {
-	AddNoteArgsSchema,
-	UpdateNoteArgsSchema,
-	DeleteNoteArgsSchema,
-	createNoteAddCommand,
-	createNoteUpdateCommand,
-	createNoteDeleteCommand,
-} from "./sdk.ts";
-
 // Telemetry
 export { recordException, tracer, trackOperation } from "./telemetry.ts";
 
 // Logger
 export { logger } from "./logger.ts";
-
-// Semantic conventions
-export {
-	ATTR_EXITCODE,
-	ATTR_COMMAND,
-	ATTR_ARGUMENTS,
-	ATTR_COMMANDLINE,
-	ATTR_PROJECTID,
-	ATTR_PROJECTNAME,
-	ATTR_SYNCERRORMESSAGE,
-	ATTR_SYNCITEMS,
-	ATTR_SYNCLATENCY,
-	ATTR_TASKID,
-	ATTR_TASKPROJECTID,
-	ATTR_OPERATION,
-	SPAN_EVENT_SYNC_COMPLETED,
-	SPAN_EVENT_SYNC_FAILED,
-	SPAN_EVENT_TASK_CREATED,
-	SPAN_NAME_SYNC,
-	SPAN_NAME_DB_QUERY,
-	SPAN_NAME_DB_TRANSACTION,
-} from "./semconv.ts";
-
-// Analysis
-export {
-	findDuplicateCandidates,
-	findMissingEnergyMetadata,
-	findStaleCandidates,
-	filterByEnergy,
-	groupStaleByProject,
-} from "./analysis/index.ts";
 
 // Session summary
 export { TRIAGE_THRESHOLD } from "./session-summary.ts";

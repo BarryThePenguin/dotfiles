@@ -1,11 +1,11 @@
 import { defineCommand } from "citty";
 import {
 	countSyncData,
-	filterByEnergy,
 	TRIAGE_THRESHOLD,
 	type OperationalContainer,
 	type SyncResult,
 } from "doist-core";
+import { filterByEnergy } from "doist-core/analysis";
 import { out } from "../output.ts";
 
 export function buildCommands(container: OperationalContainer) {

@@ -1,6 +1,7 @@
 import * as v from "valibot";
-import type { AppProject, Database, OperationalContainer } from "doist-core";
+import type { AppProject, OperationalContainer } from "doist-core";
 import { countSyncData } from "doist-core";
+import type { Database } from "doist-core/db";
 
 export const EmptyInput = v.object({ sync: v.optional(v.boolean(), false) });
 export const SyncInput = v.object({ sync: v.optional(v.boolean(), false) });

@@ -21,6 +21,7 @@ import {
 	createTrackerSession,
 	detectTrackerSelection,
 	localTrackerRoot,
+	setupTodoistTracker,
 	toolCatalog,
 	type SessionStateStore,
 	type TrackerMode,
@@ -207,48 +208,42 @@ async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 		return;
 	}
 
-	const container = createContainer();
-	const projects = container.listProjects();
-	if (projects.length === 0) {
-		ctx.ui.notify(
-			"No projects in .doistrc. Add one with `doist projects add` first, then re-run /setup-issue-tracker.",
-			"error",
-		);
-		return;
-	}
+	const container = createContainer(ctx.cwd);
+	const result = await setupTodoistTracker(container, {
+		selectProject: async (projects) => {
+			if (projects.length === 1 || !ctx.hasUI) {
+				return projects[0]?.id;
+			}
+			const labels = projects.map((p) => {
+				const tag = p.repo === true ? " (repo)" : "";
+				return `${p.id} — ${p.label}${tag}`;
+			});
+			const choice = await ctx.ui.select(
+				"Select the repo's Todoist project (this becomes the repo Issues home)",
+				labels,
+			);
+			if (!choice) {
+				return undefined;
+			}
+			const idx = labels.indexOf(choice);
+			return idx >= 0 ? projects[idx]?.id : undefined;
+		},
+	});
 
-	let selectedId: string | undefined;
-	if (projects.length === 1) {
-		selectedId = projects[0]?.id;
-	} else if (ctx.hasUI) {
-		const labels = projects.map((project) => {
-			const tag = project.repo === true ? " (repo)" : "";
-			return `${project.id} — ${project.label}${tag}`;
-		});
-		const choice = await ctx.ui.select(
-			"Select the repo's Todoist project (this becomes the repo Issues home)",
-			labels,
-		);
-		if (!choice) {
+	if (!result.ok) {
+		if (result.reason === "no-projects") {
+			ctx.ui.notify(
+				"No projects in .doistrc. Add one with `doist projects add` first, then re-run /setup-issue-tracker.",
+				"error",
+			);
+		} else {
 			ctx.ui.notify("Setup cancelled.", "info");
-			return;
 		}
-		selectedId = projects.find((project) => {
-			const tag = project.repo === true ? " (repo)" : "";
-			return `${project.id} — ${project.label}${tag}` === choice;
-		})?.id;
-	} else {
-		selectedId = projects[0]?.id;
-	}
-
-	if (!selectedId) {
-		ctx.ui.notify("Setup cancelled.", "info");
 		return;
 	}
 
-	container.setRepoProject(selectedId);
 	ctx.ui.notify(
-		`Marked ${selectedId} as the repo project (repo: true).\n\nRun /setup-matt-pocock-skills to complete the docs.`,
+		`Marked ${result.projectId} as the repo project (repo: true).\n\nRun /setup-matt-pocock-skills to complete the docs.`,
 		"info",
 	);
 }
