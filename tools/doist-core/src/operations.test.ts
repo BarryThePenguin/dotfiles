@@ -13,7 +13,7 @@ import {
 	uncompleteTasks,
 	updateTask,
 } from "./operations.ts";
-import { SyncCommandError } from "./sdk.ts";
+import { SyncCommandError } from "./sync-commands.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
 import {
 	createMockApiNote,

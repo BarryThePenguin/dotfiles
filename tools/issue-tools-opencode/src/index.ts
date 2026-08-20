@@ -19,7 +19,7 @@ import { createContainer } from "doist-core";
 import { Effect, Schema } from "effect";
 import {
 	detectTrackerSelection,
-	setupTodoistTracker,
+	runTodoistSetup,
 	toolCatalog,
 	type ActionMap,
 	type ToolCatalogEntry,
@@ -67,13 +67,13 @@ async function runSetup(
 		};
 	}
 
-	const container = createContainer(worktree);
 	const note =
 		selection === "both"
 			? " Both .scratch and .doistrc are present; re-run with tracker: 'local' to force local mode."
 			: "";
-
-	const result = await setupTodoistTracker(container, {
+	const container = createContainer(worktree);
+	const outcome = await runTodoistSetup({
+		container,
 		selectProject: (projects) => {
 			if (args.project_id) {
 				return args.project_id;
@@ -82,32 +82,30 @@ async function runSetup(
 		},
 	});
 
-	if (!result.ok) {
-		if (result.reason === "no-projects") {
+	switch (outcome.status) {
+		case "success":
+			session.setTrackerMode("todoist");
+			return {
+				output: `Marked ${outcome.projectId} as the repo project. Todoist tracker active.${note}`,
+				metadata: { tracker: "todoist", projectId: outcome.projectId },
+			};
+		case "no-projects":
 			return {
 				output:
 					"No projects in .doistrc. Add one with `doist projects add`, then re-run this tool.",
 				metadata: { tracker: "todoist", projects: [] },
 			};
-		}
-		if (result.reason === "not-found") {
-			const allProjects = container.listProjects();
+		case "not-found":
 			return {
-				output: `Project ${args.project_id} not found in .doistrc. Available: ${allProjects.map((p) => p.id).join(", ")}`,
+				output: `Project ${args.project_id} not found in .doistrc. Available: ${outcome.available.join(", ")}`,
 				metadata: { tracker: "todoist" },
 			};
-		}
-		return {
-			output: "Setup cancelled.",
-			metadata: { tracker: "todoist" },
-		};
+		case "cancelled":
+			return {
+				output: "Setup cancelled.",
+				metadata: { tracker: "todoist" },
+			};
 	}
-
-	session.setTrackerMode("todoist");
-	return {
-		output: `Marked ${result.projectId} as the repo project. Todoist tracker active.${note}`,
-		metadata: { tracker: "todoist", projectId: result.projectId },
-	};
 }
 
 /** Map a thrown Promise/sync failure onto the tool failure channel. */

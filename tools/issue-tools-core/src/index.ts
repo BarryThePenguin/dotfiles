@@ -97,8 +97,8 @@ export type {
 
 export { detectTrackerSelection } from "./setup-issue-tracker.ts";
 export type { TrackerSelection } from "./setup-issue-tracker.ts";
-export { setupTodoistTracker } from "./todoist-setup.ts";
-export type { SetupResult, TodoistSetupContainer } from "./todoist-setup.ts";
+export { runTodoistSetup } from "./setup-workflow.ts";
+export type { SetupOutcome } from "./setup-workflow.ts";
 
 // -- Action handlers (framework-agnostic) ---------------------------------
 

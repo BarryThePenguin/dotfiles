@@ -21,7 +21,7 @@ import {
 	createTrackerSession,
 	detectTrackerSelection,
 	localTrackerRoot,
-	setupTodoistTracker,
+	runTodoistSetup,
 	toolCatalog,
 	type SessionStateStore,
 	type TrackerMode,
@@ -209,7 +209,8 @@ async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 	}
 
 	const container = createContainer(ctx.cwd);
-	const result = await setupTodoistTracker(container, {
+	const outcome = await runTodoistSetup({
+		container,
 		selectProject: async (projects) => {
 			if (projects.length === 1 || !ctx.hasUI) {
 				return projects[0]?.id;
@@ -230,20 +231,27 @@ async function runSetupIssueTracker(ctx: ExtensionCommandContext) {
 		},
 	});
 
-	if (!result.ok) {
-		if (result.reason === "no-projects") {
+	switch (outcome.status) {
+		case "success":
+			ctx.ui.notify(
+				`Marked ${outcome.projectId} as the repo project (repo: true).\n\nRun /setup-matt-pocock-skills to complete the docs.`,
+				"info",
+			);
+			break;
+		case "no-projects":
 			ctx.ui.notify(
 				"No projects in .doistrc. Add one with `doist projects add` first, then re-run /setup-issue-tracker.",
 				"error",
 			);
-		} else {
+			break;
+		case "not-found":
+			ctx.ui.notify(
+				`Project not found in .doistrc. Available: ${outcome.available.join(", ")}`,
+				"error",
+			);
+			break;
+		case "cancelled":
 			ctx.ui.notify("Setup cancelled.", "info");
-		}
-		return;
+			break;
 	}
-
-	ctx.ui.notify(
-		`Marked ${result.projectId} as the repo project (repo: true).\n\nRun /setup-matt-pocock-skills to complete the docs.`,
-		"info",
-	);
 }

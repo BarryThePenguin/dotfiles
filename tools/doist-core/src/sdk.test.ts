@@ -9,8 +9,8 @@ import {
 	createItemUpdateCommand,
 	createNoteAddCommand,
 	SyncCommandError,
-	syncRequest,
-} from "./sdk.ts";
+} from "./sync-commands.ts";
+import { syncRequest } from "./sdk.ts";
 import {
 	createMockApiFilter,
 	createMockSyncResponse,

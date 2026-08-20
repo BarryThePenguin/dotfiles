@@ -14,9 +14,9 @@ import {
 	type ResourceTypes,
 	type RestApiProject,
 	type RestApiTaskByFilter,
-	type SyncCommand,
 	type SyncNote,
 } from "./sdk.ts";
+import type { SyncCommand } from "./sync-commands.ts";
 
 export type AllData = {
 	projects: DbProject[];

@@ -1,6 +1,6 @@
 import * as undici from "undici";
 import { afterEach, describe, expect, it } from "vitest";
-import { SyncCommandError } from "./sdk.ts";
+import { SyncCommandError } from "./sync-commands.ts";
 import {
 	createMockApiFilter,
 	createMockApiLabel,

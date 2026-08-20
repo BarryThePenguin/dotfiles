@@ -26,7 +26,7 @@ import {
 	createNoteAddCommand,
 	createUpdateCommand,
 	type SyncCommand,
-} from "./sdk.ts";
+} from "./sync-commands.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
 import { mergeLabels } from "./labels.ts";
 import {
