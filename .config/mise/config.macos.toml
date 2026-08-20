@@ -37,7 +37,7 @@ usage = "5.1.0"
 uv = "0.12.5"
 workmux = "0.1.242"
 yq = "4.53.6"
-zellij = "0.44.3"
+zellij = "0.45.0"
 
 [task_config]
 includes = [".config/mise/tasks/dotfiles.toml"]
