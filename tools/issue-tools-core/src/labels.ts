@@ -28,3 +28,25 @@ export function todoistLabelToTicketType(
 	}
 	return undefined;
 }
+
+/**
+ * Returns `(current ∪ add) − remove`, preserving first-occurrence order.
+ * Remove wins on tie. `undefined` for add/remove is a no-op.
+ */
+export function mergeLabels(
+	current: readonly string[],
+	add: readonly string[] | undefined,
+	remove: readonly string[] | undefined,
+): string[] {
+	const removeSet = new Set(remove);
+	const seen = new Set<string>();
+	const result: string[] = [];
+	for (const label of [...current, ...(add ?? [])]) {
+		if (removeSet.has(label) || seen.has(label)) {
+			continue;
+		}
+		seen.add(label);
+		result.push(label);
+	}
+	return result;
+}

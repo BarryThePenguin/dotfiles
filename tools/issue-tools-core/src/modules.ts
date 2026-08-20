@@ -22,7 +22,7 @@ import {
 	type ResolveTicketInput,
 	type ResolveTicketResult,
 } from "./tracker.ts";
-import { mergeLabels } from "doist-core";
+import { mergeLabels } from "./labels.ts";
 import { filterIssues } from "./issue-filter.ts";
 import type { MapSectionKey } from "./schema.ts";
 import { partitionOpenTickets } from "./tracker-operations.ts";
