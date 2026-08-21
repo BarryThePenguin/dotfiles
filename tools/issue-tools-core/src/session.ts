@@ -82,7 +82,9 @@ export function createTrackerSession({
 				const pending = (async () => {
 					mode = await selectMode();
 					const built =
-						mode === "local" ? buildLocalModules() : await buildTodoistModules();
+						mode === "local"
+							? buildLocalModules()
+							: await buildTodoistModules();
 					return { modules: built, mode };
 				})();
 				const cached = pending.catch((error: unknown) => {

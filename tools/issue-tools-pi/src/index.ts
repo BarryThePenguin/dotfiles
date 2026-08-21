@@ -91,9 +91,7 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 			STATUS_KEY,
 			ctx.ui.theme.fg(
 				"accent",
-				mode === "local"
-					? `${label} (${localTrackerRoot(state.cwd)})`
-					: label,
+				mode === "local" ? `${label} (${localTrackerRoot(state.cwd)})` : label,
 			),
 		);
 	};

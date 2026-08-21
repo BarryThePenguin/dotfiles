@@ -6,13 +6,18 @@
  */
 
 import {
+	createSessionRuntime,
 	handleAction as coreHandleAction,
 	type ActionMap,
 } from "issue-tools-core";
-import { createActionRuntime, type ActionResult } from "./action-runtime.ts";
 import type { OpenCodeSession } from "./tracker.ts";
 
 export type { ActionMap };
+
+export type ActionResult = {
+	output: string;
+	metadata: Record<string, unknown>;
+};
 
 export interface ToolContext {
 	session: OpenCodeSession;
@@ -23,7 +28,11 @@ export function handleAction<K extends keyof ActionMap>(
 	params: ActionMap[K],
 	ctx: ToolContext,
 ): Promise<ActionResult> {
-	return createActionRuntime(ctx).then((runtime) =>
-		coreHandleAction(action, params, runtime),
-	);
+	return createSessionRuntime(ctx.session, {
+		success: (text, metadata): ActionResult => ({ output: text, metadata }),
+		error: (message): ActionResult => ({
+			output: `Error: ${message}`,
+			metadata: {},
+		}),
+	}).then((runtime) => coreHandleAction(action, params, runtime));
 }

@@ -152,7 +152,9 @@ describe("createTrackerSession", () => {
 		});
 
 		await expect(session.getModules()).rejects.toThrow(error);
-		await expect(session.getModules()).resolves.toMatchObject({ modules: built });
+		await expect(session.getModules()).resolves.toMatchObject({
+			modules: built,
+		});
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildLocalModules).toHaveBeenCalledTimes(2);
 	});

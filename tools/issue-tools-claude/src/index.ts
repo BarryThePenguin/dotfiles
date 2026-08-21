@@ -12,7 +12,7 @@ import {
 	toolCatalog,
 	type ActionMap,
 } from "issue-tools-core";
-import { createActionRuntime } from "./action-runtime.ts";
+import { createSessionRuntime } from "issue-tools-core";
 import { createClaudeSession } from "./session.ts";
 
 const session = createClaudeSession(process.cwd());
@@ -26,7 +26,12 @@ for (const tool of toolCatalog) {
 			inputSchema: fromJsonSchema(tool.params as JsonSchemaType),
 		},
 		async (args) => {
-			const runtime = await createActionRuntime({ trackerSession: session });
+			const runtime = await createSessionRuntime(session, {
+				success: (text) => ({ content: [{ type: "text" as const, text }] }),
+				error: (message) => ({
+					content: [{ type: "text" as const, text: `Error: ${message}` }],
+				}),
+			});
 			return handleAction(
 				tool.action,
 				args as ActionMap[keyof ActionMap],

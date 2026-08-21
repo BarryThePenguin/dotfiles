@@ -1,4 +1,4 @@
-import type { TrackerMode } from "./session.ts";
+import { localTrackerRoot, type TrackerMode } from "./session.ts";
 import type { TrackerModules } from "./modules.ts";
 import type { ActionRuntime } from "./actions.ts";
 
@@ -11,6 +11,41 @@ export interface ActionRuntimeOptions<R> {
 	trackerDetails(mode: TrackerMode): Record<string, unknown>;
 	success(text: string, details: Record<string, unknown>): R;
 	error(message: string): R;
+}
+
+type SessionLike = {
+	getModules(): Promise<{ modules: TrackerModules; mode: TrackerMode }>;
+	getClaimant(): Promise<string>;
+	getActiveMap(): string | null;
+	setActiveMap(mapId: string): void;
+	getCwd(): string;
+};
+
+export interface SessionRuntimeFormat<R> {
+	success: (text: string, details: Record<string, unknown>) => R;
+	error: (message: string) => R;
+}
+
+/** Wires a TrackerSession into an ActionRuntime for any host output format. */
+export function createSessionRuntime<R>(
+	session: SessionLike,
+	format: SessionRuntimeFormat<R>,
+): Promise<ActionRuntime<R>> {
+	return createActionRuntime({
+		loadModules: () => session.getModules(),
+		loadClaimant: () => session.getClaimant(),
+		requireMapId: (params) => params.map_id ?? session.getActiveMap(),
+		getActiveMap: () => session.getActiveMap(),
+		setActiveMap: (mapId) => {
+			session.setActiveMap(mapId);
+		},
+		trackerDetails: (mode) => ({
+			tracker: mode,
+			...(mode === "local" ? { root: localTrackerRoot(session.getCwd()) } : {}),
+		}),
+		success: format.success,
+		error: format.error,
+	});
 }
 
 /** Builds the host-independent runtime used by the action handlers. */

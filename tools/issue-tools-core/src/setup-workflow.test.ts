@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { runTodoistSetup, type TodoistSetupContainer } from "./setup-workflow.ts";
+import {
+	runTodoistSetup,
+	type TodoistSetupContainer,
+} from "./setup-workflow.ts";
 
 type FakeContainer = TodoistSetupContainer & { markedRepo: string | null };
 
