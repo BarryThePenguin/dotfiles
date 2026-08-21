@@ -11,6 +11,7 @@
 		{ "path": "./tools/doist-core/tsconfig.json" },
 		{ "path": "./tools/doist-mcp/tsconfig.json" },
 		{ "path": "./tools/issue-tools-core/tsconfig.json" },
+		{ "path": "./tools/issue-tools-claude/tsconfig.json" },
 		{ "path": "./tools/issue-tools-opencode/tsconfig.json" },
 		{ "path": "./tools/opencode-go-usage/tsconfig.json" },
 		{ "path": "./tools/sqlite-kysely/tsconfig.json" },

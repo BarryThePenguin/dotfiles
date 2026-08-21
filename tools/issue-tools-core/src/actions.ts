@@ -137,7 +137,7 @@ async function listMaps(
 		runtime.setActiveMap(maps[0].id);
 	}
 	return runtime.success(
-		`${maps.length} open map(s):\n\n${maps.map((map) => `${stripPrefix(map.title)} (${map.id})\n  URL: ${map.url}`).join("\n\n")}`,
+		`${maps.length} open map(s):\n\n${maps.map((map) => `- [${stripPrefix(map.title)}](${map.url})`).join("\n")}`,
 		{
 			maps: maps.map((map) => ({
 				id: map.id,

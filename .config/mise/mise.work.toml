@@ -25,6 +25,7 @@ FNOX_PROFILE = "work"
 "~/CLAUDE.md" = { mode = "symlink" }
 "~/.claude" = { mode = "symlink-each" }
 "~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
+"~/.mcp.json" = { mode = "symlink" }
 
 [tools]
 "core:dotnet" = "10.0.102"

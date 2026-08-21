@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"outDir": "./dist",
+		"types": ["node"]
+	},
+	"references": [
+		{
+			"path": "../issue-tools-core/tsconfig.build.json"
+		}
+	]
+}

@@ -1,0 +1,16 @@
+{
+	"mcpServers": {
+		"doist": {
+			"type": "stdio",
+			"command": "doist-mcp",
+			"args": [],
+			"env": {}
+		},
+		"issue-tools": {
+			"type": "stdio",
+			"command": "issue-tools-claude",
+			"args": [],
+			"env": {}
+		}
+	}
+}

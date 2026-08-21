@@ -1,0 +1,23 @@
+{
+	"name": "issue-tools-claude",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"bin": {
+		"issue-tools-claude": "src/index.ts"
+	},
+	"scripts": {
+		"build": "tsc --build",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/server": "^2.0.0",
+		"issue-tools-core": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "24.13.3"
+	},
+	"engines": {
+		"node": ">=24"
+	}
+}

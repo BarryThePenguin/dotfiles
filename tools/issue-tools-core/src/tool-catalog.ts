@@ -113,7 +113,7 @@ export const wayfinderListMaps = {
 	name: "wayfinder_list_maps",
 	action: "list_maps",
 	title: "Wayfinder: List Maps",
-	description: "List all open wayfinder maps.",
+	description: "List all open wayfinder maps with clickable links.",
 	promptSnippet: "List all open wayfinder maps",
 	params: {
 		type: "object",
@@ -307,8 +307,7 @@ export const issueLabel = {
 	name: "issue_label",
 	action: "issue_label",
 	title: "Issue: Label",
-	description:
-		"Add or remove triage labels on a repository Issue/spec identified by ID or URL.",
+	description: "Add or remove triage labels on a repository Issue/spec.",
 	promptSnippet: "Add or remove triage labels on a repository Issue/spec",
 	params: {
 		type: "object",
@@ -334,8 +333,7 @@ export const issueComment = {
 	name: "issue_comment",
 	action: "issue_comment",
 	title: "Issue: Comment",
-	description:
-		"Post a comment on a repository Issue/spec identified by ID or URL.",
+	description: "Post a comment on a repository Issue/spec.",
 	promptSnippet: "Post a comment on a repository Issue/spec",
 	params: {
 		type: "object",
@@ -352,8 +350,7 @@ export const issueClose = {
 	name: "issue_close",
 	action: "issue_close",
 	title: "Issue: Close",
-	description:
-		"Close a repository Issue/spec identified by ID or URL, optionally with a closing note.",
+	description: "Close a repository Issue/spec, optionally with a closing note.",
 	promptSnippet:
 		"Close a repository Issue/spec, optionally with a closing note",
 	params: {
@@ -371,8 +368,7 @@ export const issueList = {
 	name: "issue_list",
 	action: "issue_list",
 	title: "Issue: List",
-	description:
-		"List repository Issues/specs, optionally filtered by state, labels, or unlabeled status. Results are oldest first.",
+	description: "List repository Issues/specs. Results are oldest first.",
 	promptSnippet:
 		"List repository Issues/specs (filter by state, labels, or unlabeled)",
 	params: {
