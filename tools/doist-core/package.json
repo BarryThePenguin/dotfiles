@@ -45,6 +45,6 @@
 	"devDependencies": {
 		"@types/node": "24.13.3",
 		"undici": "8.10.0",
-		"vitest": "4.1.10"
+		"vitest": "4.1.11"
 	}
 }
