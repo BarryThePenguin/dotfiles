@@ -9,6 +9,7 @@
  */
 
 import {
+	createFileStateStore,
 	createLocalTrackerModules,
 	createTodoistTrackerModules,
 	createTrackerSession,
@@ -18,7 +19,8 @@ import {
 	type TrackerMode,
 	type TrackerSession,
 } from "issue-tools-core";
-import { createStateStore, type StateStore } from "./state.ts";
+
+type LocalSessionState = { mode?: TrackerMode; activeMap: string | null };
 
 export type OpenCodeSession = Pick<
 	TrackerSession,
@@ -44,7 +46,9 @@ export function resolveMode(
 }
 
 export function createOpenCodeSession(worktree: string): OpenCodeSession {
-	const state: StateStore = createStateStore(worktree);
+	const state = createFileStateStore<LocalSessionState>(worktree, "opencode", {
+		activeMap: null,
+	});
 
 	const coreStore: SessionStateStore = {
 		read: () => ({ activeMap: state.read().activeMap }),

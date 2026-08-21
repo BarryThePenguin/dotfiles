@@ -69,6 +69,8 @@ export {
 
 // -- Session lifecycle ----------------------------------------------------
 
+export { createFileStateStore } from "./state.ts";
+export type { StateStore } from "./state.ts";
 export { resolveClaimant } from "./claimant.ts";
 export {
 	createInMemorySessionStateStore,

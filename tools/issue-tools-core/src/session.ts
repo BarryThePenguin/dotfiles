@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import type { TrackerModules } from "./modules.ts";
 import { resolveClaimant } from "./claimant.ts";
+import type { StateStore } from "./state.ts";
 
 export type TrackerMode = "local" | "todoist";
 
@@ -10,10 +11,7 @@ export function localTrackerRoot(cwd: string): string {
 
 export type SessionState = { activeMap: string | null };
 
-export interface SessionStateStore {
-	read(): SessionState;
-	write(state: SessionState): void;
-}
+export type SessionStateStore = StateStore<SessionState>;
 
 export function createInMemorySessionStateStore(
 	initial?: SessionState,

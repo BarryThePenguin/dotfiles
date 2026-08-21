@@ -42,7 +42,7 @@ describe("Wayfinder actions", () => {
 
 		const listResult = await handleAction("list_maps", {}, toolContext);
 		expect(listResult.content[0]?.text).toContain("1 open map(s)");
-		expect(listResult.content[0]?.text).toContain(`${map.title} (${map.id})`);
+		expect(listResult.content[0]?.text).toContain(`[${map.title}](${map.url})`);
 		expect(toolContext.trackerSession.getActiveMap()).toBe(map.id);
 		expect(store.read().activeMap).toBe(map.id);
 		expect(updateStatus).toHaveBeenCalledWith({

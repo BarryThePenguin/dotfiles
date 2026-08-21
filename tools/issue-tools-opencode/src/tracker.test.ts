@@ -7,8 +7,15 @@ import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createStateStore } from "./state.ts";
+import { createFileStateStore, type TrackerMode } from "issue-tools-core";
 import { createOpenCodeSession, resolveMode } from "./tracker.ts";
+
+type SessionState = { mode?: TrackerMode; activeMap: string | null };
+function storeFor(worktree: string) {
+	return createFileStateStore<SessionState>(worktree, "opencode", {
+		activeMap: null,
+	});
+}
 
 function tempDir() {
 	return mkdtempDisposableSync(join(tmpdir(), "issue-tools-tracker-"));
@@ -75,7 +82,7 @@ describe("resolveMode", () => {
 describe("state store", () => {
 	it("round-trips mode and activeMap through the cache file", () => {
 		using dir = tempDir();
-		const store = createStateStore(dir.path);
+		const store = storeFor(dir.path);
 		expect(store.read()).toEqual({ activeMap: null });
 
 		store.write({ mode: "todoist", activeMap: "map-1" });
@@ -88,8 +95,8 @@ describe("state store", () => {
 	it("keys separate worktrees to separate state files", () => {
 		using dirA = tempDir();
 		using dirB = tempDir();
-		createStateStore(dirA.path).write({ mode: "local", activeMap: "map-a" });
-		expect(createStateStore(dirB.path).read()).toEqual({ activeMap: null });
+		storeFor(dirA.path).write({ mode: "local", activeMap: "map-a" });
+		expect(storeFor(dirB.path).read()).toEqual({ activeMap: null });
 	});
 });
 
@@ -109,7 +116,7 @@ describe("session lifecycle", () => {
 		mkdirSync(join(dir.path, ".scratch"));
 		const session = createOpenCodeSession(dir.path);
 		session.setActiveMap("map-1");
-		expect(createStateStore(dir.path).read().activeMap).toBe("map-1");
+		expect(storeFor(dir.path).read().activeMap).toBe("map-1");
 
 		const restored = createOpenCodeSession(dir.path);
 		expect(restored.getActiveMap()).toBe("map-1");
@@ -119,11 +126,11 @@ describe("session lifecycle", () => {
 		using dir = tempDir();
 		const session = createOpenCodeSession(dir.path);
 		session.setTrackerMode("todoist");
-		expect(createStateStore(dir.path).read().mode).toBe("todoist");
+		expect(storeFor(dir.path).read().mode).toBe("todoist");
 
 		const fresh = createOpenCodeSession(dir.path);
 		expect(fresh.getActiveMap()).toBeNull();
-		expect(createStateStore(dir.path).read().mode).toBe("todoist");
+		expect(storeFor(dir.path).read().mode).toBe("todoist");
 	});
 
 	it("clearing to auto drops the override and re-detects local", async () => {
@@ -132,7 +139,7 @@ describe("session lifecycle", () => {
 		const session = createOpenCodeSession(dir.path);
 		session.setTrackerMode("todoist");
 		session.setTrackerMode("auto");
-		expect(createStateStore(dir.path).read().mode).toBeUndefined();
+		expect(storeFor(dir.path).read().mode).toBeUndefined();
 
 		const { modules, mode } = await session.getModules();
 		expect(mode).toBe("local");

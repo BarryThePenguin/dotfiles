@@ -69,8 +69,8 @@ describe("list_maps", () => {
 		});
 		const rt = makeRuntime({ wayfinder });
 		const result = await act("list_maps", {}, rt);
-		expect(result.text).toContain("Alpha (m1)");
-		expect(result.text).toContain("Beta (m2)");
+		expect(result.text).toContain("[Alpha](https://x/m1)");
+		expect(result.text).toContain("[Beta](https://x/m2)");
 		expect(result.details).toMatchObject({
 			maps: [{ id: "m1" }, { id: "m2" }],
 		});

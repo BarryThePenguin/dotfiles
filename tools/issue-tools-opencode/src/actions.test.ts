@@ -36,7 +36,7 @@ describe("Wayfinder actions", () => {
 
 		const listResult = await handleAction("list_maps", {}, ctx);
 		expect(listResult.output).toContain("1 open map(s)");
-		expect(listResult.output).toContain(`${map.title} (${map.id})`);
+		expect(listResult.output).toContain(`[${map.title}](${map.url})`);
 		expect(ctx.session.getActiveMap()).toBe(map.id);
 
 		const getResult = await handleAction("get_map", {}, ctx);

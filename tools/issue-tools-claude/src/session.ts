@@ -1,4 +1,5 @@
 import {
+	createFileStateStore,
 	createLocalTrackerModules,
 	createTodoistTrackerModules,
 	createTrackerSession,
@@ -8,14 +9,17 @@ import {
 	type TrackerMode,
 	type TrackerSession,
 } from "issue-tools-core";
-import { createStateStore } from "./state.ts";
+
+type LocalSessionState = { mode?: TrackerMode; activeMap: string | null };
 
 export type ClaudeSession = TrackerSession & {
 	setTrackerMode(mode: TrackerMode | "auto"): void;
 };
 
 export function createClaudeSession(cwd: string): ClaudeSession {
-	const state = createStateStore(cwd);
+	const state = createFileStateStore<LocalSessionState>(cwd, "claude", {
+		activeMap: null,
+	});
 
 	const store: SessionStateStore = {
 		read: () => ({ activeMap: state.read().activeMap }),
