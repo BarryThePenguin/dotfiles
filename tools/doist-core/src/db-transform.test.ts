@@ -19,7 +19,7 @@ import {
 	prepareProjectForDB,
 	prepareSectionForDB,
 	prepareTaskForDB,
-} from "./schema.ts";
+} from "./db-transform.ts";
 import type {
 	SyncFilter,
 	SyncItem,

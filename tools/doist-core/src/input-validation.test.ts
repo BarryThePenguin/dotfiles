@@ -20,7 +20,7 @@ import {
 	TasksUpdateInputSchema,
 	UpdateFilterFieldsSchema,
 	UpdateTaskFieldsSchema,
-} from "./schemas.ts";
+} from "./input-validation.ts";
 
 const overByOne = (n: number) => "x".repeat(n + 1);
 const atCap = (n: number) => "x".repeat(n);

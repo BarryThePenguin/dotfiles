@@ -23,7 +23,7 @@ import {
 	type AppProject,
 	type AppSection,
 	type AppTask,
-} from "./schema.ts";
+} from "./db-transform.ts";
 
 /**
  * Opens a SQLite database against a host runtime's native module.

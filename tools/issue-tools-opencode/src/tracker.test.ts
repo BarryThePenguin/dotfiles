@@ -98,10 +98,10 @@ describe("session lifecycle", () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));
 		const session = createOpenCodeSession(dir.path);
-		const modules = await session.get();
+		const { modules, mode } = await session.getModules();
 		expect(modules.issues).toBeDefined();
 		expect(modules.wayfinder).toBeDefined();
-		expect(session.getMode()).toBe("local");
+		expect(mode).toBe("local");
 	});
 
 	it("persists the active map and restores it on a fresh session", () => {
@@ -119,11 +119,10 @@ describe("session lifecycle", () => {
 		using dir = tempDir();
 		const session = createOpenCodeSession(dir.path);
 		session.setTrackerMode("todoist");
-		expect(session.getMode()).toBeNull();
 		expect(createStateStore(dir.path).read().mode).toBe("todoist");
 
 		const fresh = createOpenCodeSession(dir.path);
-		expect(fresh.getMode()).toBeNull();
+		expect(fresh.getActiveMap()).toBeNull();
 		expect(createStateStore(dir.path).read().mode).toBe("todoist");
 	});
 
@@ -135,8 +134,8 @@ describe("session lifecycle", () => {
 		session.setTrackerMode("auto");
 		expect(createStateStore(dir.path).read().mode).toBeUndefined();
 
-		const modules = await session.get();
-		expect(session.getMode()).toBe("local");
+		const { modules, mode } = await session.getModules();
+		expect(mode).toBe("local");
 		expect(modules.wayfinder).toBeDefined();
 	});
 
@@ -146,7 +145,7 @@ describe("session lifecycle", () => {
 		vi.stubEnv("TODOIST_RC_DIR", join(dir.path, "does-not-exist"));
 		const session = createOpenCodeSession(dir.path);
 		session.setTrackerMode("todoist");
-		await expect(session.get()).rejects.toThrow(
+		await expect(session.getModules()).rejects.toThrow(
 			"Could not create Todoist tracker: no-config",
 		);
 	});

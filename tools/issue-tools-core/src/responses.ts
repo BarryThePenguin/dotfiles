@@ -1,8 +1,9 @@
+// Internal — used by actions.ts only, not part of the public surface.
+
 /**
- * Tool-response renderers: turn domain records into the markdown text the Pi
- * tools return. This is the only module allowed to reach for the raw markdown
- * builders — the format modules own section shapes, and the Pi adapter owns
- * session plumbing, so the response shape has one home in between.
+ * Tool-response renderers: turn domain records into the markdown text that
+ * action handlers pass to runtime.success(). Adapters control the result
+ * shape; this module controls only the text content.
  */
 
 import type { ListItem, RootContent } from "mdast";

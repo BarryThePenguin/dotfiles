@@ -18,10 +18,9 @@ export async function createActionRuntime(
 	ctx: RuntimeContext,
 ): Promise<ActionRuntime<ActionResult>> {
 	return createCoreActionRuntime({
-		loadModules: () => ctx.trackerSession.get(),
+		loadModules: () => ctx.trackerSession.getModules(),
 		loadClaimant: () => ctx.trackerSession.getClaimant(),
-		getMode: () => ctx.trackerSession.getMode(),
-		requireMapId: (params) => ctx.trackerSession.resolveMapId(params.map_id),
+		requireMapId: (params) => params.map_id ?? ctx.trackerSession.getActiveMap(),
 		getActiveMap: () => ctx.trackerSession.getActiveMap(),
 		setActiveMap: (mapId) => {
 			ctx.trackerSession.setActiveMap(mapId);

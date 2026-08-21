@@ -70,13 +70,13 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 	const updateStatus = (state: {
 		mode: TrackerMode | null;
 		activeMap: string | null;
+		cwd: string;
 	}) => {
 		const ctx = latestCtx;
 		if (!ctx) {
 			return;
 		}
-		const cwd = trackerSession.getCwd();
-		const mode = state.mode ?? detectTrackerSelection(cwd);
+		const mode = state.mode ?? detectTrackerSelection(state.cwd);
 		if (mode === "both" || mode === "neither") {
 			ctx.ui.setStatus(
 				STATUS_KEY,
@@ -91,7 +91,9 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 			STATUS_KEY,
 			ctx.ui.theme.fg(
 				"accent",
-				mode === "local" ? `${label} (${localTrackerRoot(cwd)})` : label,
+				mode === "local"
+					? `${label} (${localTrackerRoot(state.cwd)})`
+					: label,
 			),
 		);
 	};
@@ -123,9 +125,8 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 			}
 		}
 		const store = createPiSessionStore(pi, recoveredActiveMap);
-		trackerSession = createSession(ctx.cwd, store);
 		latestCtx = ctx;
-		trackerSession.refresh();
+		trackerSession = createSession(ctx.cwd, store);
 	});
 
 	// -- Tools ---------------------------------------------------------------

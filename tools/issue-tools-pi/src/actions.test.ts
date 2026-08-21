@@ -48,6 +48,7 @@ describe("Wayfinder actions", () => {
 		expect(updateStatus).toHaveBeenCalledWith({
 			mode: "local",
 			activeMap: map.id,
+			cwd: dir.path,
 		});
 
 		const getResult = await handleAction("get_map", {}, toolContext);

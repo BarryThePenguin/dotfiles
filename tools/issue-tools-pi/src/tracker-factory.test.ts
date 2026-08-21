@@ -65,17 +65,17 @@ describe("createTrackerSession", () => {
 		});
 
 		const [first, concurrent, subsequent] = await Promise.all([
-			session.get(),
-			session.get(),
-			session.get(),
+			session.getModules(),
+			session.getModules(),
+			session.getModules(),
 		]);
 
 		expect(selectMode).toHaveBeenCalledOnce();
 		expect(buildLocalModules).toHaveBeenCalledOnce();
 		expect(buildTodoistModules).not.toHaveBeenCalled();
-		expect(first).toBe(built);
-		expect(concurrent).toBe(built);
-		expect(subsequent).toBe(built);
+		expect(first.modules).toBe(built);
+		expect(concurrent.modules).toBe(built);
+		expect(subsequent.modules).toBe(built);
 	});
 
 	it("caches the dev identity for the lifetime of the session", async () => {
@@ -92,13 +92,14 @@ describe("createTrackerSession", () => {
 		try {
 			expect(await session.getClaimant()).toBe("First dev");
 			vi.stubEnv("PI_ISSUE_TOOLS_CLAIMANT", "Second dev");
+			// claimant is cached after first resolution
 			expect(await session.getClaimant()).toBe("First dev");
 		} finally {
 			vi.unstubAllEnvs();
 		}
 	});
 
-	it("starts fresh selection and construction after reset", async () => {
+	it("starts fresh selection and construction after invalidate", async () => {
 		const firstModules = modules();
 		const secondModules = modules();
 		const selectMode = vi
@@ -119,9 +120,9 @@ describe("createTrackerSession", () => {
 			updateStatus: vi.fn(),
 		});
 
-		const first = await session.get();
-		session.reset();
-		const second = await session.get();
+		const { modules: first } = await session.getModules();
+		session.invalidate();
+		const { modules: second } = await session.getModules();
 
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildLocalModules).toHaveBeenCalledOnce();
@@ -150,8 +151,8 @@ describe("createTrackerSession", () => {
 			updateStatus: vi.fn(),
 		});
 
-		await expect(session.get()).rejects.toThrow(error);
-		await expect(session.get()).resolves.toBe(built);
+		await expect(session.getModules()).rejects.toThrow(error);
+		await expect(session.getModules()).resolves.toMatchObject({ modules: built });
 		expect(selectMode).toHaveBeenCalledTimes(2);
 		expect(buildLocalModules).toHaveBeenCalledTimes(2);
 	});

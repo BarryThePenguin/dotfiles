@@ -16,18 +16,14 @@ import {
 	localTrackerRoot,
 	type SessionStateStore,
 	type TrackerMode,
-	type TrackerModules,
+	type TrackerSession,
 } from "issue-tools-core";
 import { createStateStore, type StateStore } from "./state.ts";
 
-export type OpenCodeSession = {
-	get(): Promise<TrackerModules>;
-	getCwd(): string;
-	getClaimant(): Promise<string>;
-	getActiveMap(): string | null;
-	getMode(): TrackerMode | null;
-	resolveMapId(explicitMapId: string | undefined): string | null;
-	setActiveMap(mapId: string): void;
+export type OpenCodeSession = Pick<
+	TrackerSession,
+	"getModules" | "getCwd" | "getClaimant" | "getActiveMap" | "setActiveMap"
+> & {
 	setTrackerMode(mode: TrackerMode | "auto"): void;
 };
 
@@ -69,12 +65,10 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 	});
 
 	return {
-		get: () => session.get(),
+		getModules: () => session.getModules(),
 		getCwd: () => session.getCwd(),
 		getClaimant: session.getClaimant,
 		getActiveMap: session.getActiveMap,
-		getMode: session.getMode,
-		resolveMapId: session.resolveMapId,
 		setActiveMap: (mapId) => {
 			session.setActiveMap(mapId);
 		},
@@ -83,7 +77,7 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 				...(mode !== "auto" && { mode }),
 				activeMap: session.getActiveMap(),
 			});
-			session.reset();
+			session.invalidate();
 		},
 	};
 }

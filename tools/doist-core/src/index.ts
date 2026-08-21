@@ -15,7 +15,7 @@ export type {
 	AppLabel,
 	AppFilter,
 	AppNote,
-} from "./schema.ts";
+} from "./db-transform.ts";
 
 // Operations
 export {
@@ -56,7 +56,7 @@ export {
 	parseUpdateFilterFields,
 	parseFilterQueryInput,
 	parseAddCommentFields,
-} from "./schemas.ts";
+} from "./input-validation.ts";
 export type {
 	AddTaskFields,
 	UpdateTaskFields,
@@ -66,7 +66,7 @@ export type {
 	UpdateFilterFields,
 	FilterQueryInput,
 	AddCommentFields,
-} from "./schemas.ts";
+} from "./input-validation.ts";
 
 // Char limits
 export { LIMITS } from "./limits.ts";

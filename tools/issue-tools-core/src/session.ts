@@ -38,23 +38,21 @@ export type TrackerSessionOptions = {
 	buildTodoistModules: () => Promise<TrackerModules>;
 	/** Persists the session's active map across calls. */
 	store: SessionStateStore;
-	/** Called after any state change so the host can refresh its status display. */
+	/** Called on construction and after any state change so the host can refresh its status display. */
 	updateStatus: (state: {
 		mode: TrackerMode | null;
 		activeMap: string | null;
+		cwd: string;
 	}) => void;
 };
 
 export type TrackerSession = {
-	get: () => Promise<TrackerModules>;
+	getModules: () => Promise<{ modules: TrackerModules; mode: TrackerMode }>;
 	getCwd: () => string;
 	getClaimant: () => Promise<string>;
 	getActiveMap: () => string | null;
-	getMode: () => TrackerMode | null;
-	resolveMapId: (explicitMapId: string | undefined) => string | null;
 	setActiveMap: (mapId: string) => void;
-	refresh: () => void;
-	reset: () => void;
+	invalidate: () => void;
 };
 
 /**
@@ -72,19 +70,22 @@ export function createTrackerSession({
 	store,
 	updateStatus,
 }: TrackerSessionOptions): TrackerSession {
-	let modules: Promise<TrackerModules> | null = null;
+	let modules: Promise<{ modules: TrackerModules; mode: TrackerMode }> | null =
+		null;
 	let claimant: Promise<string> | null = null;
 	let mode: TrackerMode | null = null;
 	let activeMap: string | null = store.read().activeMap;
 
-	const sessionState = () => ({ mode, activeMap });
+	const sessionState = () => ({ mode, activeMap, cwd });
 
-	return {
-		async get() {
+	const session: TrackerSession = {
+		async getModules() {
 			if (!modules) {
 				const pending = (async () => {
 					mode = await selectMode();
-					return mode === "local" ? buildLocalModules() : buildTodoistModules();
+					const built =
+						mode === "local" ? buildLocalModules() : await buildTodoistModules();
+					return { modules: built, mode };
 				})();
 				const cached = pending.catch((error: unknown) => {
 					if (modules === cached) {
@@ -116,22 +117,16 @@ export function createTrackerSession({
 		getActiveMap() {
 			return activeMap;
 		},
-		getMode() {
-			return mode;
-		},
-		resolveMapId(explicitMapId) {
-			return explicitMapId ?? activeMap;
-		},
 		setActiveMap(mapId) {
 			activeMap = mapId;
 			store.write({ activeMap });
 			updateStatus(sessionState());
 		},
-		refresh() {
-			updateStatus(sessionState());
-		},
-		reset() {
+		invalidate() {
 			modules = null;
 		},
 	};
+
+	updateStatus(sessionState());
+	return session;
 }

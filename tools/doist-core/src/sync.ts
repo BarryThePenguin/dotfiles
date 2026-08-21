@@ -2,7 +2,7 @@ import type { Database } from "./db.ts";
 import { filterToAllowedProjects } from "./filtering.ts";
 import { logger } from "./logger.ts";
 import { markDeleted, reconcileCompleted } from "./reconciliation.ts";
-import { prepareNoteForDB } from "./schema.ts";
+import { prepareNoteForDB } from "./db-transform.ts";
 import { getToken, persistSync, resetToken } from "./sync-lifecycle.ts";
 import type { AllData, TodoistClient } from "./todoist.ts";
 

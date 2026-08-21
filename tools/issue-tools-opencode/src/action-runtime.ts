@@ -22,10 +22,9 @@ export async function createActionRuntime(
 	ctx: RuntimeContext,
 ): Promise<ActionRuntime<ActionResult>> {
 	return createCoreActionRuntime({
-		loadModules: () => ctx.session.get(),
+		loadModules: () => ctx.session.getModules(),
 		loadClaimant: () => ctx.session.getClaimant(),
-		getMode: () => ctx.session.getMode(),
-		requireMapId: (params) => ctx.session.resolveMapId(params.map_id),
+		requireMapId: (params) => params.map_id ?? ctx.session.getActiveMap(),
 		getActiveMap: () => ctx.session.getActiveMap(),
 		setActiveMap: (mapId) => {
 			ctx.session.setActiveMap(mapId);

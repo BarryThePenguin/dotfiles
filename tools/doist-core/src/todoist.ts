@@ -5,7 +5,7 @@ import {
 	prepareProjectForDB,
 	prepareSectionForDB,
 	prepareTaskForDB,
-} from "./schema.ts";
+} from "./db-transform.ts";
 import {
 	fetchProjectsFromApi,
 	fetchTasksByFilter,

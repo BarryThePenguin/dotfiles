@@ -7,7 +7,7 @@
  * package boundary. The mdast builders, the markdown document, the format
  * render/parse functions, the doist-core passthroughs, and the persistence
  * capability interfaces are internal to this package — consumers reach the
- * domain through the modules, records, and renderers below.
+ * domain through the modules, records, and actions below.
  */
 
 // -- Issue domain --------------------------------------------------------
@@ -66,16 +66,6 @@ export {
 	createTodoistTrackerModules,
 	selectTodoistRepoProjectId,
 } from "./todoist-tracker-factory.ts";
-
-// -- Response renderers ---------------------------------------------------
-
-export {
-	renderIssueDetails,
-	renderMapSummary,
-	renderResolution,
-	renderTicketDetails,
-	stripPrefix,
-} from "./responses.ts";
 
 // -- Session lifecycle ----------------------------------------------------
 

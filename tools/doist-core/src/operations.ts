@@ -8,13 +8,13 @@ import {
 	type AppFilter,
 	type AppNote,
 	type AppTask,
-} from "./schema.ts";
+} from "./db-transform.ts";
 import {
 	type AddFilterFields,
 	type AddTaskFields,
 	type UpdateFilterFields,
 	type UpdateTaskFields,
-} from "./schemas.ts";
+} from "./input-validation.ts";
 import {
 	createAddCommand,
 	createFilterAddCommand,
