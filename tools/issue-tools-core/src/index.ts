@@ -76,6 +76,7 @@ export {
 	createInMemorySessionStateStore,
 	createTrackerSession,
 	localTrackerRoot,
+	resolveTrackerMode,
 } from "./session.ts";
 export type {
 	SessionState,

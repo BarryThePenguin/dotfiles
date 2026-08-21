@@ -13,8 +13,8 @@ import {
 	createLocalTrackerModules,
 	createTodoistTrackerModules,
 	createTrackerSession,
-	detectTrackerSelection,
 	localTrackerRoot,
+	resolveTrackerMode,
 	type SessionStateStore,
 	type TrackerMode,
 	type TrackerSession,
@@ -28,22 +28,6 @@ export type OpenCodeSession = Pick<
 > & {
 	setTrackerMode(mode: TrackerMode | "auto"): void;
 };
-
-/**
- * Deterministic mode selection: an explicit override wins, otherwise the
- * markers decide. `both` and `neither` fall back to local, matching the Pi
- * extension's no-UI default; callers can force Todoist via setTrackerMode.
- */
-export function resolveMode(
-	worktree: string,
-	override: TrackerMode | undefined,
-): TrackerMode {
-	if (override) {
-		return override;
-	}
-	const selection = detectTrackerSelection(worktree);
-	return selection === "todoist" ? "todoist" : "local";
-}
 
 export function createOpenCodeSession(worktree: string): OpenCodeSession {
 	const state = createFileStateStore<LocalSessionState>(worktree, "opencode", {
@@ -60,7 +44,7 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 
 	const session = createTrackerSession({
 		cwd: worktree,
-		selectMode: () => Promise.resolve(resolveMode(worktree, state.read().mode)),
+		selectMode: () => Promise.resolve(resolveTrackerMode(worktree, state.read().mode)),
 		buildLocalModules: () =>
 			createLocalTrackerModules(localTrackerRoot(worktree)),
 		buildTodoistModules: () => createTodoistTrackerModules(worktree),

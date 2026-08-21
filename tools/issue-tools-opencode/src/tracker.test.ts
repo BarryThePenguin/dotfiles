@@ -7,8 +7,12 @@ import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createFileStateStore, type TrackerMode } from "issue-tools-core";
-import { createOpenCodeSession, resolveMode } from "./tracker.ts";
+import {
+	createFileStateStore,
+	resolveTrackerMode,
+	type TrackerMode,
+} from "issue-tools-core";
+import { createOpenCodeSession } from "./tracker.ts";
 
 type SessionState = { mode?: TrackerMode; activeMap: string | null };
 function storeFor(worktree: string) {
@@ -34,11 +38,11 @@ afterEach(() => {
 	vi.unstubAllEnvs();
 });
 
-describe("resolveMode", () => {
+describe("resolveTrackerMode", () => {
 	it("returns local when only .scratch exists", () => {
 		using dir = tempDir();
 		mkdirSync(join(dir.path, ".scratch"));
-		expect(resolveMode(dir.path, undefined)).toBe("local");
+		expect(resolveTrackerMode(dir.path, undefined)).toBe("local");
 	});
 
 	it("returns todoist when only a configured .doistrc exists", async () => {
@@ -49,7 +53,7 @@ describe("resolveMode", () => {
 		);
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
-		expect(resolveMode(dir.path, undefined)).toBe("todoist");
+		expect(resolveTrackerMode(dir.path, undefined)).toBe("todoist");
 	});
 
 	it("returns local when both markers are present (no UI to prompt)", async () => {
@@ -61,12 +65,12 @@ describe("resolveMode", () => {
 		);
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
-		expect(resolveMode(dir.path, undefined)).toBe("local");
+		expect(resolveTrackerMode(dir.path, undefined)).toBe("local");
 	});
 
 	it("returns local when neither marker is present", () => {
 		using dir = tempDir();
-		expect(resolveMode(dir.path, undefined)).toBe("local");
+		expect(resolveTrackerMode(dir.path, undefined)).toBe("local");
 	});
 
 	it("lets an explicit override win over the markers", () => {
@@ -74,8 +78,8 @@ describe("resolveMode", () => {
 		mkdirSync(join(dir.path, ".scratch"));
 		vi.stubEnv("TODOIST_RC_DIR", dir.path);
 		vi.stubEnv("TODOIST_API_TOKEN", "test");
-		expect(resolveMode(dir.path, "todoist")).toBe("todoist");
-		expect(resolveMode(dir.path, "local")).toBe("local");
+		expect(resolveTrackerMode(dir.path, "todoist")).toBe("todoist");
+		expect(resolveTrackerMode(dir.path, "local")).toBe("local");
 	});
 });
 

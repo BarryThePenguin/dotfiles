@@ -2,11 +2,27 @@ import { resolve } from "node:path";
 import type { TrackerModules } from "./modules.ts";
 import { resolveClaimant } from "./claimant.ts";
 import type { StateStore } from "./state.ts";
+import { detectTrackerSelection } from "./setup-issue-tracker.ts";
 
 export type TrackerMode = "local" | "todoist";
 
 export function localTrackerRoot(cwd: string): string {
 	return resolve(cwd, ".scratch");
+}
+
+/**
+ * Resolves the effective tracker mode for a worktree.
+ * An explicit override wins; otherwise the presence markers decide,
+ * defaulting to local for `both` and `neither`.
+ */
+export function resolveTrackerMode(
+	cwd: string,
+	override?: TrackerMode,
+): TrackerMode {
+	if (override) {
+		return override;
+	}
+	return detectTrackerSelection(cwd) === "todoist" ? "todoist" : "local";
 }
 
 export type SessionState = { activeMap: string | null };

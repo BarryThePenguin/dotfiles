@@ -3,8 +3,8 @@ import {
 	createLocalTrackerModules,
 	createTodoistTrackerModules,
 	createTrackerSession,
-	detectTrackerSelection,
 	localTrackerRoot,
+	resolveTrackerMode,
 	type SessionStateStore,
 	type TrackerMode,
 	type TrackerSession,
@@ -30,11 +30,7 @@ export function createClaudeSession(cwd: string): ClaudeSession {
 
 	const session = createTrackerSession({
 		cwd,
-		selectMode: () =>
-			Promise.resolve(
-				state.read().mode ??
-					(detectTrackerSelection(cwd) === "todoist" ? "todoist" : "local"),
-			),
+		selectMode: () => Promise.resolve(resolveTrackerMode(cwd, state.read().mode)),
 		buildLocalModules: () => createLocalTrackerModules(localTrackerRoot(cwd)),
 		buildTodoistModules: () => createTodoistTrackerModules(cwd),
 		store,
