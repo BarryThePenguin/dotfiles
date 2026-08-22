@@ -1,5 +1,4 @@
 import type { Database } from "./db.ts";
-import { filterToAllowedProjects } from "./filtering.ts";
 import { logger } from "./logger.ts";
 import { markDeleted, reconcileCompleted } from "./reconciliation.ts";
 import { prepareNoteForDB } from "./db-transform.ts";
@@ -73,6 +72,10 @@ function createSyncHelper(
 			);
 		}
 
+		// The local store mirrors the entire account; project scoping is a
+		// read-time concern (the project lens), never a write-time filter.
+		// Persist the raw response unchanged so the sync token honestly
+		// corresponds to everything that was stored.
 		const raw = await client.sync(token);
 		if (log) {
 			logger.info(
@@ -88,32 +91,24 @@ function createSyncHelper(
 				"syncAndFetch: received sync response",
 			);
 		}
-
-		const filtered = filterToAllowedProjects(raw, allowedProjects);
-		if (log) {
-			logger.info(
-				{
-					filtered_tasks: filtered.tasks.length,
-					task_ids_after_filter: filtered.tasks.map((t) => t.id),
-				},
-				"syncAndFetch: after filtering to allowed projects",
-			);
-		}
-		return { raw, filtered, isFullSync };
+		return { raw, isFullSync };
 	};
 }
 
 /**
- * Fetch and filter sync response without persisting.
+ * Fetch the sync response without persisting.
  *
- * Returns the raw sync data (filtered to allowed projects) for inspection.
- * Does NOT update the sync token; the next sync will include the same data.
+ * The local store mirrors the entire account, so the response is returned
+ * unfiltered — what you see here is exactly what a subsequent persist would
+ * write. Project scoping is applied at read time via the project lens, not
+ * here. Does NOT update the sync token; the next sync will include the same
+ * data.
  *
  * @param db Database instance
  * @param client TodoistClient for API calls
- * @param allowedProjects Project IDs/names to keep (empty = all)
+ * @param allowedProjects Project IDs/names used for logging/diagnostics
  * @param full Force a full sync (reset token before fetching)
- * @returns Filtered sync response with updated data
+ * @returns Raw sync response with updated data
  */
 export async function syncAndFetch(
 	db: Database,
@@ -121,29 +116,30 @@ export async function syncAndFetch(
 	allowedProjects: string[] = [],
 	full = false,
 ): Promise<AllData> {
-	const { filtered } = await createSyncHelper(
+	const { raw } = await createSyncHelper(
 		db,
 		client,
 		allowedProjects,
 		full,
 	)(true);
-	return filtered;
+	return raw;
 }
 
 /**
  * Sync, reconcile, and persist atomically.
  *
- * Fetches changes from Todoist, filters to allowed projects,
- * removes remotely-deleted tasks, marks remotely-completed tasks as completed,
- * and persists all changes
- * (including sync token) in a single atomic transaction.
- * On full sync, reconciles completed tasks.
+ * Fetches changes from Todoist and persists the response unchanged — the local
+ * store mirrors the entire account; project scoping happens at read time via
+ * the project lens, never here. Remotely-deleted tasks are removed,
+ * remotely-completed tasks are marked completed, and all changes (including
+ * the sync token) are written in a single atomic transaction. On full sync,
+ * reconciles tasks that vanished from the server.
  *
  * @param db Database instance
  * @param client TodoistClient for API calls
- * @param allowedProjects Project IDs/names to keep (empty = all)
+ * @param allowedProjects Project IDs/names used for the scope fingerprint
  * @param full Force a full sync (reset token before fetching)
- * @returns Persist result with filtered sync response and reconciliation count
+ * @returns Persist result with the raw sync response and reconciliation count
  */
 export async function syncAndPersist(
 	db: Database,
@@ -165,7 +161,9 @@ export async function syncAndPersist(
 	// token was issued under.
 	const { fingerprint } = resolveSyncScope(db, allowedProjects, fullSync);
 
-	const { raw, filtered, isFullSync } = await createSyncHelper(
+	// Persist the raw response verbatim. The store is a full mirror of
+	// Todoist; scoping is a read-time concern handled by the project lens.
+	const { raw, isFullSync } = await createSyncHelper(
 		db,
 		client,
 		allowedProjects,
@@ -182,7 +180,7 @@ export async function syncAndPersist(
 		deletedTaskIds,
 		deletedNoteIds,
 		completedTaskIds,
-	} = filtered;
+	} = raw;
 
 	const reconciled = persistSync(
 		db,
@@ -215,6 +213,11 @@ export async function syncAndPersist(
 			db.updateTasksAsCompleted(completedTaskIds);
 			markDeleted(db, deletedTaskIds);
 			db.deleteNotesByIds(deletedNoteIds);
+			// On full sync, reconcile against the full mirror: only tasks that are
+			// absent from the response entirely (genuinely completed/deleted on the
+			// server) are marked completed. A task that merely moved — present in
+			// the response under a different project — is re-scoped by the upsert
+			// above and must never be marked completed.
 			return isFullSync
 				? reconcileCompleted(
 						db,
@@ -234,5 +237,5 @@ export async function syncAndPersist(
 		);
 	}
 
-	return { data: filtered, reconciled };
+	return { data: raw, reconciled };
 }

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { filterToAllowedProjects } from "./filtering.ts";
 import { countSyncData, syncAndPersist } from "./sync.ts";
 import { createTestContainer } from "./test-helpers/container.ts";
 import {
@@ -8,6 +7,7 @@ import {
 	getSyncFingerprint,
 	getToken,
 	setLastFullSyncAt,
+	setSyncFingerprint,
 	setToken,
 } from "./sync-lifecycle.ts";
 import {
@@ -18,98 +18,139 @@ import {
 	NOW,
 } from "./test-helpers/fixtures.ts";
 
-describe("filterToAllowedProjects", () => {
-	it("keeps only projects matching by name", () => {
-		const data = makeData({
-			projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
-		});
-		const result = filterToAllowedProjects(data, ["Work"]);
-		expect(result.projects.map((p) => p.id)).toEqual(["p1"]);
+describe("persist-everything contract", () => {
+	it("persists the full response, not just the allowed scope", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValue(
+			makeData({
+				projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
+				sections: [makeSection("s1", "p1"), makeSection("s2", "p2")],
+				tasks: [makeTask("t1", "p1"), makeTask("t2", "p2")],
+				syncToken: "tok1",
+			}),
+		);
+
+		const result = await syncAndPersist(db, client, ["Work"]);
+
+		// The returned data mirrors everything (the DB is a full mirror).
+		expect(result.data.projects).toHaveLength(2);
+		expect(result.data.tasks).toHaveLength(2);
+
+		// And the DB actually stored every project and task.
+		expect(
+			db
+				.selectProjects()
+				.map((p) => p.id)
+				.sort(),
+		).toEqual(["p1", "p2"]);
+		expect(
+			db
+				.selectTasks({ completed: "any" })
+				.map((t) => t.id)
+				.sort(),
+		).toEqual(["t1", "t2"]);
+
+		// Reads are scoped by the project lens, not the write path: a lens
+		// restricted to "Work" sees only t1.
+		expect(
+			db
+				.selectTasks({ completed: "any", projectScope: ["Work"] })
+				.map((t) => t.id),
+		).toEqual(["t1"]);
 	});
 
-	it("keeps only projects matching by id", () => {
-		const data = makeData({
-			projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
+	it("re-scopes a task that moved out of the lens on its incremental delta", async () => {
+		const { db, client } = createTestContainer();
+		// First sync: task lives in the allowed project.
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				tasks: [makeTask("t1", "p1")],
+				syncToken: "tok1",
+			}),
+		);
+		await syncAndPersist(db, client, ["Work"]);
+		expect(db.getTaskById("t1")?.projectId).toBe("p1");
+
+		// Incremental sync reports the same task now living in another project.
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
+				tasks: [makeTask("t1", "p2")],
+				syncToken: "tok2",
+			}),
+		);
+		await syncAndPersist(db, client, ["Work"]);
+
+		// The row is re-scoped rather than dropped — no ghost lingers as active.
+		const row = db.getTaskById("t1");
+		expect(row?.projectId).toBe("p2");
+		expect(row?.isCompleted).toBe(false);
+
+		// The lens no longer shows it as active in the repo's scope.
+		const lensTasks = db.selectTasks({
+			completed: "incomplete",
+			projectScope: ["Work"],
 		});
-		const result = filterToAllowedProjects(data, ["p2"]);
-		expect(result.projects.map((p) => p.id)).toEqual(["p2"]);
+		expect(lensTasks.map((t) => t.id)).toEqual([]);
 	});
 
-	it("filters sections to allowed project ids", () => {
-		const data = makeData({
-			projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
-			sections: [makeSection("s1", "p1"), makeSection("s2", "p2")],
+	it("heals a move-out-of-scope via a full re-sync without marking it completed", async () => {
+		const { db, client } = createTestContainer();
+		// Seed a task in the allowed project (simulating a pre-existing ghost
+		// whose move delta was previously dropped before persist).
+		db.upsertProject(makeProject("p1", "Work"));
+		db.upsertProject(makeProject("p2", "Personal"));
+		db.upsertTask(makeTask("t1", "p1"));
+
+		// A full sync returns the task — but under its new project.
+		client.sync.mockResolvedValue(
+			makeData({
+				projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
+				tasks: [makeTask("t1", "p2")],
+				syncToken: "tok-full",
+			}),
+		);
+
+		const result = await syncAndPersist(db, client, ["Work"], true);
+
+		// It is present in the response, so reconciliation must not complete it.
+		expect(result.reconciled).toBe(0);
+		const row = db.getTaskById("t1");
+		expect(row?.projectId).toBe("p2");
+		expect(row?.isCompleted).toBe(false);
+
+		// And the allowed-scope read is clean (no ghost active row).
+		const lensTasks = db.selectTasks({
+			completed: "incomplete",
+			projectScope: ["Work"],
 		});
-		const result = filterToAllowedProjects(data, ["Work"]);
-		expect(result.sections.map((s) => s.id)).toEqual(["s1"]);
+		expect(lensTasks.map((t) => t.id)).toEqual([]);
 	});
 
-	it("filters tasks to allowed project ids", () => {
-		const data = makeData({
-			projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
-			tasks: [makeTask("t1", "p1"), makeTask("t2", "p2")],
-		});
-		const result = filterToAllowedProjects(data, ["Work"]);
-		expect(result.tasks.map((t) => t.id)).toEqual(["t1"]);
-	});
+	it("full-sync reconciliation marks only genuinely-absent tasks completed", async () => {
+		const { db, client } = createTestContainer();
+		// t-kept stays in the response (still active, just re-scoped).
+		// t-gone is absent entirely → genuinely completed/deleted remotely.
+		db.upsertProject(makeProject("p1", "Work"));
+		db.upsertProject(makeProject("p2", "Personal"));
+		db.upsertTask(makeTask("t-kept", "p1"));
+		db.upsertTask(makeTask("t-gone", "p1"));
 
-	it("keeps labels unfiltered (labels are global)", () => {
-		const label = { id: "l1", name: "urgent", color: null, synced_at: NOW };
-		const data = makeData({
-			projects: [makeProject("p1", "Work")],
-			labels: [label],
-		});
-		const result = filterToAllowedProjects(data, ["Work"]);
-		expect(result.labels).toHaveLength(1);
-	});
+		client.sync.mockResolvedValue(
+			makeData({
+				projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
+				tasks: [makeTask("t-kept", "p2")],
+				syncToken: "tok-full",
+			}),
+		);
 
-	it("returns all data when no projects are configured", () => {
-		const data = makeData({
-			projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
-			sections: [makeSection("s1", "p1")],
-			tasks: [makeTask("t1", "p1")],
-		});
-		const result = filterToAllowedProjects(data, []);
-		expect(result.projects).toHaveLength(2);
-		expect(result.sections).toHaveLength(1);
-		expect(result.tasks).toHaveLength(1);
-	});
+		const result = await syncAndPersist(db, client, ["Work"], true);
 
-	it("passes deletedTaskIds through unchanged", () => {
-		const data = makeData({
-			projects: [makeProject("p1", "Work")],
-			deletedTaskIds: ["old1", "old2"],
-		});
-		const result = filterToAllowedProjects(data, ["Work"]);
-		expect(result.deletedTaskIds).toEqual(["old1", "old2"]);
-	});
-
-	it("passes completedTaskIds through unchanged", () => {
-		const data = makeData({
-			projects: [makeProject("p1", "Work")],
-			completedTaskIds: ["completed1", "completed2"],
-		});
-		const result = filterToAllowedProjects(data, ["Work"]);
-		expect(result.completedTaskIds).toEqual(["completed1", "completed2"]);
-	});
-
-	it("passes filters through unchanged (filters are global)", () => {
-		const filter = {
-			id: "f1",
-			name: "Today",
-			query: "today",
-			color: "blue",
-			item_order: 1,
-			is_favorite: 0,
-			synced_at: NOW,
-		};
-		const data = makeData({
-			projects: [makeProject("p1", "Work")],
-			filters: [filter],
-		});
-		const result = filterToAllowedProjects(data, ["Work"]);
-		expect(result.filters).toHaveLength(1);
-		expect(result.filters[0]?.id).toBe("f1");
+		expect(result.reconciled).toBe(1);
+		expect(db.getTaskById("t-kept")?.isCompleted).toBe(false);
+		expect(db.getTaskById("t-kept")?.projectId).toBe("p2");
+		expect(db.getTaskById("t-gone")?.isCompleted).toBe(true);
 	});
 });
 
@@ -223,7 +264,7 @@ describe("sync", () => {
 		expect(row?.isCompleted).toBe(false);
 	});
 
-	it("filters to allowed projects before upserting", async () => {
+	it("persists every project without dropping the out-of-scope ones", async () => {
 		const { db, client } = createTestContainer();
 		client.sync.mockResolvedValue(
 			makeData({
@@ -234,11 +275,13 @@ describe("sync", () => {
 		);
 
 		const result = await syncAndPersist(db, client, ["Work"]);
-		expect(result.data.projects).toHaveLength(1);
-		expect(result.data.tasks).toHaveLength(1);
+		// The whole response is returned, not just the allowed slice.
+		expect(result.data.projects).toHaveLength(2);
+		expect(result.data.tasks).toHaveLength(2);
 
-		const allTasks = db.selectTasks();
-		expect(allTasks.map((t) => t.id)).toEqual(["t1"]);
+		// Both tasks are stored; scoping is a read-time concern.
+		const allTasks = db.selectTasks({ completed: "any" });
+		expect(allTasks.map((t) => t.id).sort()).toEqual(["t1", "t2"]);
 	});
 
 	it("smoke test: separates completed tasks from deleted tasks", async () => {
@@ -448,6 +491,32 @@ describe("sync", () => {
 		await syncAndPersist(db, client, ["p1"]);
 		// A full sync is forced because the token's scope cannot be trusted.
 		expect(client.sync).toHaveBeenCalledWith("*");
+	});
+
+	it("forces exactly one full re-sync after a transform/version bump", async () => {
+		const { db, client } = createTestContainer();
+		// Simulate a database written under the previous transform version: a
+		// token is present with a fingerprint computed at the old version. Bumping
+		// SYNC_SCOPE_VERSION changes the current fingerprint, so the stored token
+		// is no longer trusted and a full sync must re-fetch everything once.
+		setToken(db, "tok-old");
+		setSyncFingerprint(db, computeSyncFingerprint(["p1"], "1"));
+
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				syncToken: "tok-new",
+			}),
+		);
+		await syncAndPersist(db, client, ["p1"]);
+		// The version drift forces a full re-sync to backfill dropped data.
+		expect(client.sync).toHaveBeenCalledWith("*");
+		expect(getSyncFingerprint(db)).toBe(computeSyncFingerprint(["p1"]));
+
+		// The next sync is incremental again: the backfill happened exactly once.
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok-incr" }));
+		await syncAndPersist(db, client, ["p1"]);
+		expect(client.sync).toHaveBeenLastCalledWith("tok-new");
 	});
 });
 

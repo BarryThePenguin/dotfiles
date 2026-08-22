@@ -6,28 +6,33 @@ import type { Database } from "./db.ts";
  * Handles marking tasks as completed when they are deleted remotely
  * or become stale (not returned in a full sync response).
  *
- * Filtering of allowed projects is handled separately in filtering.ts
- * for better separation of concerns.
+ * The local store mirrors the entire account; project scoping is a read-time
+ * concern handled by the query layer's project lens, not here.
  */
 
 /**
- * Reconcile completed tasks.
+ * Reconcile completed tasks against the full mirror.
  *
- * If we're doing a full sync, mark all tasks in allowed projects that aren't
- * in the sync response as completed (they were deleted remotely).
+ * On a full sync the local store mirrors the entire account, so `projectIds`
+ * is the complete set of project IDs returned by the sync (not a scoped
+ * subset). Any stored task whose project is in that set but whose ID is absent
+ * from the response was genuinely completed or deleted on the server and is
+ * marked completed locally. A task that merely moved — present in the response
+ * under a different project — is re-scoped by the upsert upstream and is never
+ * marked completed here.
  *
  * @returns Number of tasks marked as completed
  */
 export function reconcileCompleted(
 	db: Database,
-	projectId: string[],
+	projectIds: string[],
 	returnedTaskIds: Set<string>,
 ): number {
-	if (projectId.length === 0) {
+	if (projectIds.length === 0) {
 		return 0;
 	}
 
-	const stale = db.selectTasks({ projectId });
+	const stale = db.selectTasks({ projectId: projectIds });
 	const missing = stale.filter((r) => !returnedTaskIds.has(r.id));
 	if (missing.length === 0) {
 		return 0;

@@ -27,7 +27,13 @@ import type {
  * this version in so an incremental sync is never trusted across a
  * schema/transform change.
  */
-export const SYNC_SCOPE_VERSION = "1";
+// Bumped from "1" → "2" when the write path stopped filtering sync responses
+// to the allowed projects and began mirroring the entire account. The version
+// folds into the scope fingerprint, so every existing database is forced into
+// exactly one full re-sync on next run to backfill the tasks/projects it was
+// previously dropping before persist. See the "Persist everything, filter at
+// read time" contract.
+export const SYNC_SCOPE_VERSION = "2";
 
 /**
  * Compute the scope fingerprint for a sync.
