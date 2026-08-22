@@ -76,6 +76,90 @@ export function resetSyncFingerprint(db: Database): void {
 }
 
 /**
+ * Default staleness budget for auto full-sync escalation.
+ *
+ * When the last *full* sync is older than this, the next incremental sync
+ * escalates to a full sync so the store self-heals against any delta that
+ * slipped through unnoticed (e.g. a task moved out of the synced scope, whose
+ * payload was then dropped from the incremental response).
+ *
+ * ~24h: long enough that normal incremental syncs are never disturbed, short
+ * enough that a missed-delta bug is corrected within a day without anyone
+ * remembering to run a full sync by hand.
+ */
+export const STALENESS_BUDGET_MS = 24 * 60 * 60 * 1000;
+
+/** Meta key holding the ISO timestamp of the last full sync. */
+const LAST_FULL_SYNC_AT_KEY = "last_full_sync_at";
+
+/**
+ * Get the timestamp of the last full sync.
+ *
+ * Returns null when no full sync has been recorded yet (first run or a DB
+ * that predates this feature). A null value is treated as maximally stale by
+ * {@link resolveStalenessBudget}, so the next sync escalates to full and
+ * re-covers the whole scope exactly once.
+ */
+export function getLastFullSyncAt(db: Database): string | null {
+	return db.getMeta(LAST_FULL_SYNC_AT_KEY);
+}
+
+/**
+ * Record the timestamp of a full sync.
+ *
+ * Only full syncs advance this clock. Incremental syncs deliberately leave it
+ * untouched, so it always reflects when the local store was last guaranteed
+ * to mirror the server's full state for the current scope.
+ */
+export function setLastFullSyncAt(db: Database, timestamp: string): void {
+	db.setMeta(LAST_FULL_SYNC_AT_KEY, timestamp);
+}
+
+/**
+ * Clear the last-full-sync timestamp (test utility).
+ */
+export function resetLastFullSyncAt(db: Database): void {
+	db.deleteMeta(LAST_FULL_SYNC_AT_KEY);
+}
+
+export interface StalenessResolution {
+	/** True when the store must escalate to a full sync on the next fetch. */
+	needsFullSync: boolean;
+}
+
+/**
+ * Resolve the staleness budget and escalate to a full sync when overdue.
+ *
+ * Reads {@link getLastFullSyncAt}. When it is missing (never fully synced) or
+ * older than `budgetMs`, the local store may have missed a delta, so the
+ * existing sync token is discarded — the downstream fetch will then use `*`
+ * and perform a full sync. Within budget, the incremental token is kept.
+ *
+ * This layer is deliberately independent of the scope-fingerprint invariant in
+ * {@link resolveSyncScope}: both can force a full sync, and either one firing
+ * is sufficient. It lives in the same token/sync lifecycle layer as a
+ * second, orthogonal line of defense-in-depth.
+ *
+ * @param db Database instance
+ * @param now Current epoch ms (injectable for tests; defaults to Date.now())
+ * @param budgetMs Staleness budget in ms (defaults to {@link STALENESS_BUDGET_MS})
+ * @returns Whether the next fetch must be a full sync
+ */
+export function resolveStalenessBudget(
+	db: Database,
+	now: number = Date.now(),
+	budgetMs: number = STALENESS_BUDGET_MS,
+): StalenessResolution {
+	const lastFull = getLastFullSyncAt(db);
+	const isStale = lastFull === null || now - Date.parse(lastFull) > budgetMs;
+	if (isStale) {
+		// Discard the incremental token so the fetch below uses "*".
+		resetToken(db);
+	}
+	return { needsFullSync: isStale };
+}
+
+/**
  * Get the current sync token.
  *
  * Returns null if no sync has happened yet (forces full sync on next call).
@@ -232,6 +316,12 @@ export function persistMutations(
  * @param operations Callback to perform data upserts, marking, reconciliation, etc.
  *                   Should return the reconciliation count (0 if none).
  * @param fingerprint Scope fingerprint to persist alongside the token
+ * @param isFullSync True when this sync was a full sync (`*` token); records the
+ *                   last-full-sync timestamp so the staleness budget can later
+ *                   decide whether an incremental sync must escalate to full.
+ *                   Required (no default): a missing value must not silently
+ *                   record an incremental sync as full and reset the staleness
+ *                   clock, which would defeat the self-healing defense.
  * @returns Reconciliation count from the operations callback
  */
 export function persistSync(
@@ -239,6 +329,7 @@ export function persistSync(
 	token: string,
 	operations: () => number,
 	fingerprint: string,
+	isFullSync: boolean,
 ): number {
 	return db.transaction(() => {
 		const reconciled = operations();
@@ -246,6 +337,11 @@ export function persistSync(
 		db.setSyncToken(token);
 		db.setLastSyncedAt(new Date().toISOString());
 		setSyncFingerprint(db, fingerprint);
+		// Only full syncs advance the staleness clock: an incremental sync that
+		// slipped a delta would otherwise reset how long we can trust the store.
+		if (isFullSync) {
+			setLastFullSyncAt(db, new Date().toISOString());
+		}
 		return reconciled;
 	});
 }

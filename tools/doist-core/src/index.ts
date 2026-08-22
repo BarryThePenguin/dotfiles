@@ -86,11 +86,17 @@ export {
 	getSyncFingerprint,
 	setSyncFingerprint,
 	resetSyncFingerprint,
+	getLastFullSyncAt,
+	setLastFullSyncAt,
+	resetLastFullSyncAt,
+	resolveStalenessBudget,
 	SYNC_SCOPE_VERSION,
+	STALENESS_BUDGET_MS,
 } from "./sync-lifecycle.ts";
 export type {
 	MutationPersistOptions,
 	SyncScopeResolution,
+	StalenessResolution,
 } from "./sync-lifecycle.ts";
 export * as SyncState from "./sync-lifecycle.ts";
 

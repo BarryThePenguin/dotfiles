@@ -7,7 +7,9 @@ import {
 	getToken,
 	persistSync,
 	resetToken,
+	resolveStalenessBudget,
 	resolveSyncScope,
+	STALENESS_BUDGET_MS,
 } from "./sync-lifecycle.ts";
 import type { AllData, TodoistClient } from "./todoist.ts";
 
@@ -148,18 +150,26 @@ export async function syncAndPersist(
 	client: TodoistClient,
 	allowedProjects: string[] = [],
 	full = false,
+	stalenessBudgetMs: number = STALENESS_BUDGET_MS,
 ): Promise<SyncAndPersistResult> {
+	// Self-healing escalation: when the last full sync is older than the
+	// staleness budget, the incremental token is no longer trustworthy enough
+	// and the next fetch escalates to a full sync. This is orthogonal to the
+	// scope-fingerprint check below — either one firing forces a full sync.
+	const staleness = resolveStalenessBudget(db, Date.now(), stalenessBudgetMs);
+	const fullSync = full || staleness.needsFullSync;
+
 	// Enforce the fingerprint invariant before fetching: discard the stored
 	// token (forcing a full sync) when the current scope — allowed-project IDs
 	// plus the schema/transform version — differs from the scope the stored
 	// token was issued under.
-	const { fingerprint } = resolveSyncScope(db, allowedProjects, full);
+	const { fingerprint } = resolveSyncScope(db, allowedProjects, fullSync);
 
 	const { raw, filtered, isFullSync } = await createSyncHelper(
 		db,
 		client,
 		allowedProjects,
-		full,
+		fullSync,
 	)();
 
 	const {
@@ -214,6 +224,7 @@ export async function syncAndPersist(
 				: 0;
 		},
 		fingerprint,
+		isFullSync,
 	);
 
 	if (reconciled > 0) {

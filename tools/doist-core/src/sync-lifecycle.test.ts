@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createTestContainer } from "./test-helpers/container.ts";
 import {
 	computeSyncFingerprint,
+	getLastFullSyncAt,
 	getSyncFingerprint,
 	getToken,
+	resolveStalenessBudget,
 	resolveSyncScope,
+	setLastFullSyncAt,
 	setSyncFingerprint,
 	setToken,
+	STALENESS_BUDGET_MS,
 } from "./sync-lifecycle.ts";
 
 describe("computeSyncFingerprint", () => {
@@ -113,5 +117,78 @@ describe("fingerprint persistence", () => {
 	it("getSyncFingerprint returns null before any sync", () => {
 		const { db } = createTestContainer();
 		expect(getSyncFingerprint(db)).toBeNull();
+	});
+});
+
+describe("resolveStalenessBudget", () => {
+	const NOW = Date.parse("2026-08-22T12:00:00.000Z");
+
+	it("records and reads the last full sync timestamp", () => {
+		const { db } = createTestContainer();
+		expect(getLastFullSyncAt(db)).toBeNull();
+
+		setLastFullSyncAt(db, "2026-08-22T00:00:00.000Z");
+		expect(getLastFullSyncAt(db)).toBe("2026-08-22T00:00:00.000Z");
+	});
+
+	it("does not escalate when the last full sync is within budget", () => {
+		const { db } = createTestContainer();
+		setLastFullSyncAt(
+			db,
+			new Date(NOW - STALENESS_BUDGET_MS + 1000).toISOString(),
+		);
+		setToken(db, "tok-keep");
+
+		const res = resolveStalenessBudget(db, NOW);
+
+		expect(res.needsFullSync).toBe(false);
+		expect(getToken(db)).toBe("tok-keep");
+	});
+
+	it("does not escalate exactly at the budget boundary", () => {
+		const { db } = createTestContainer();
+		setLastFullSyncAt(db, new Date(NOW - STALENESS_BUDGET_MS).toISOString());
+		setToken(db, "tok-keep");
+
+		const res = resolveStalenessBudget(db, NOW);
+
+		expect(res.needsFullSync).toBe(false);
+		expect(getToken(db)).toBe("tok-keep");
+	});
+
+	it("escalates when the last full sync is older than the budget", () => {
+		const { db } = createTestContainer();
+		setLastFullSyncAt(
+			db,
+			new Date(NOW - STALENESS_BUDGET_MS - 1000).toISOString(),
+		);
+		setToken(db, "tok-old");
+
+		const res = resolveStalenessBudget(db, NOW);
+
+		expect(res.needsFullSync).toBe(true);
+		expect(getToken(db)).toBeNull();
+	});
+
+	it("escalates when no full sync has been recorded yet", () => {
+		const { db } = createTestContainer();
+		setToken(db, "tok-legacy");
+
+		const res = resolveStalenessBudget(db, NOW);
+
+		expect(res.needsFullSync).toBe(true);
+		expect(getToken(db)).toBeNull();
+	});
+
+	it("honors an injected budget", () => {
+		const { db } = createTestContainer();
+		// 2h old, but budget is only 1h → stale.
+		setLastFullSyncAt(db, new Date(NOW - 2 * 60 * 60 * 1000).toISOString());
+		setToken(db, "tok-keep");
+
+		const res = resolveStalenessBudget(db, NOW, 60 * 60 * 1000);
+
+		expect(res.needsFullSync).toBe(true);
+		expect(getToken(db)).toBeNull();
 	});
 });

@@ -4,8 +4,10 @@ import { countSyncData, syncAndPersist } from "./sync.ts";
 import { createTestContainer } from "./test-helpers/container.ts";
 import {
 	computeSyncFingerprint,
+	getLastFullSyncAt,
 	getSyncFingerprint,
 	getToken,
+	setLastFullSyncAt,
 	setToken,
 } from "./sync-lifecycle.ts";
 import {
@@ -446,6 +448,73 @@ describe("sync", () => {
 		await syncAndPersist(db, client, ["p1"]);
 		// A full sync is forced because the token's scope cannot be trusted.
 		expect(client.sync).toHaveBeenCalledWith("*");
+	});
+});
+
+describe("staleness-budget auto full sync", () => {
+	it("records last_full_sync_at on a full sync", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValue(makeData({ syncToken: "tok1" }));
+
+		await syncAndPersist(db, client);
+
+		expect(getLastFullSyncAt(db)).not.toBeNull();
+	});
+
+	it("keeps a fresh incremental sync incremental (no escalation)", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok1" }));
+		await syncAndPersist(db, client);
+		expect(client.sync).toHaveBeenNthCalledWith(1, "*");
+
+		const before = getLastFullSyncAt(db);
+
+		// Immediately after a full sync: well within the 24h budget.
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok2" }));
+		await syncAndPersist(db, client);
+
+		// Incremental token reused; staleness clock untouched.
+		expect(client.sync).toHaveBeenNthCalledWith(2, "tok1");
+		expect(getLastFullSyncAt(db)).toBe(before);
+	});
+
+	it("escalates a stale incremental sync to a full sync", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok1" }));
+		await syncAndPersist(db, client);
+		expect(client.sync).toHaveBeenNthCalledWith(1, "*");
+
+		// Simulate the last full sync having happened >24h ago.
+		setLastFullSyncAt(
+			db,
+			new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+		);
+		const before = getLastFullSyncAt(db);
+
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok2" }));
+		await syncAndPersist(db, client);
+
+		// Budget elapsed → full sync re-fetch.
+		expect(client.sync).toHaveBeenNthCalledWith(2, "*");
+		const after = getLastFullSyncAt(db);
+		expect(after).not.toBe(before);
+		expect(Date.parse(after ?? "")).toBeGreaterThan(Date.now() - 5000);
+	});
+
+	it("honors an injected staleness budget", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok1" }));
+		await syncAndPersist(db, client);
+
+		// Only 2h old, but a 1h budget makes it stale.
+		setLastFullSyncAt(
+			db,
+			new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+		);
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok2" }));
+		await syncAndPersist(db, client, [], false, 60 * 60 * 1000);
+
+		expect(client.sync).toHaveBeenNthCalledWith(2, "*");
 	});
 });
 
