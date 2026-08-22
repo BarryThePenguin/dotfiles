@@ -3,6 +3,12 @@ import { filterToAllowedProjects } from "./filtering.ts";
 import { countSyncData, syncAndPersist } from "./sync.ts";
 import { createTestContainer } from "./test-helpers/container.ts";
 import {
+	computeSyncFingerprint,
+	getSyncFingerprint,
+	getToken,
+	setToken,
+} from "./sync-lifecycle.ts";
+import {
 	makeData,
 	makeProject,
 	makeSection,
@@ -345,6 +351,101 @@ describe("sync", () => {
 		const filters = db.selectFilters();
 		expect(filters).toHaveLength(1);
 		expect(filters[0]?.name).toBe("V2");
+	});
+
+	it("persists the scope fingerprint alongside the token", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValue(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				syncToken: "tok1",
+			}),
+		);
+
+		await syncAndPersist(db, client, ["p1"]);
+
+		expect(getToken(db)).toBe("tok1");
+		expect(getSyncFingerprint(db)).toBe(computeSyncFingerprint(["p1"]));
+	});
+
+	it("continues incremental syncs when the allowlist is unchanged", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				syncToken: "tok1",
+			}),
+		);
+		await syncAndPersist(db, client, ["p1"]);
+		expect(client.sync).toHaveBeenNthCalledWith(1, "*");
+
+		// Allowlist unchanged → existing token reused (incremental).
+		client.sync.mockResolvedValueOnce(makeData({ syncToken: "tok2" }));
+		await syncAndPersist(db, client, ["p1"]);
+		expect(client.sync).toHaveBeenNthCalledWith(2, "tok1");
+	});
+
+	it("forces a full sync after a project is added to the allowlist", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				syncToken: "tok1",
+			}),
+		);
+		await syncAndPersist(db, client, ["p1"]);
+		expect(client.sync).toHaveBeenNthCalledWith(1, "*");
+
+		// Allowlist grew → stored token is no longer honest; force full sync.
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
+				syncToken: "tok2",
+			}),
+		);
+		await syncAndPersist(db, client, ["p1", "p2"]);
+		expect(client.sync).toHaveBeenNthCalledWith(2, "*");
+		expect(getSyncFingerprint(db)).toBe(computeSyncFingerprint(["p1", "p2"]));
+	});
+
+	it("forces a full sync after a project is removed from the allowlist", async () => {
+		const { db, client } = createTestContainer();
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work"), makeProject("p2", "Personal")],
+				syncToken: "tok1",
+			}),
+		);
+		await syncAndPersist(db, client, ["p1", "p2"]);
+		expect(client.sync).toHaveBeenNthCalledWith(1, "*");
+
+		// Allowlist shrank → stored token is no longer honest; force full sync.
+		client.sync.mockResolvedValueOnce(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				syncToken: "tok2",
+			}),
+		);
+		await syncAndPersist(db, client, ["p1"]);
+		expect(client.sync).toHaveBeenNthCalledWith(2, "*");
+		expect(getSyncFingerprint(db)).toBe(computeSyncFingerprint(["p1"]));
+	});
+
+	it("forces a full sync when the scope fingerprint is missing (legacy DB)", async () => {
+		const { db, client } = createTestContainer();
+		// Simulate a pre-fingerprint database that already holds a token.
+		setToken(db, "tok-legacy");
+		expect(getSyncFingerprint(db)).toBeNull();
+
+		client.sync.mockResolvedValue(
+			makeData({
+				projects: [makeProject("p1", "Work")],
+				syncToken: "tok1",
+			}),
+		);
+		await syncAndPersist(db, client, ["p1"]);
+		// A full sync is forced because the token's scope cannot be trusted.
+		expect(client.sync).toHaveBeenCalledWith("*");
 	});
 });
 

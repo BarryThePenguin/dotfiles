@@ -1,4 +1,4 @@
-import type { AppTask } from "../schema.ts";
+import type { AppTask } from "../db-transform.ts";
 
 const ENERGY_LABELS = new Set([
 	"low-energy",

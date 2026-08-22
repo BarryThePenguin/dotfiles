@@ -81,8 +81,17 @@ export {
 	resetToken,
 	persistMutations,
 	persistSync,
+	computeSyncFingerprint,
+	resolveSyncScope,
+	getSyncFingerprint,
+	setSyncFingerprint,
+	resetSyncFingerprint,
+	SYNC_SCOPE_VERSION,
 } from "./sync-lifecycle.ts";
-export type { MutationPersistOptions } from "./sync-lifecycle.ts";
+export type {
+	MutationPersistOptions,
+	SyncScopeResolution,
+} from "./sync-lifecycle.ts";
 export * as SyncState from "./sync-lifecycle.ts";
 
 // Todoist client

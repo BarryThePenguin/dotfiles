@@ -3,7 +3,12 @@ import { filterToAllowedProjects } from "./filtering.ts";
 import { logger } from "./logger.ts";
 import { markDeleted, reconcileCompleted } from "./reconciliation.ts";
 import { prepareNoteForDB } from "./db-transform.ts";
-import { getToken, persistSync, resetToken } from "./sync-lifecycle.ts";
+import {
+	getToken,
+	persistSync,
+	resetToken,
+	resolveSyncScope,
+} from "./sync-lifecycle.ts";
 import type { AllData, TodoistClient } from "./todoist.ts";
 
 export type SyncResult = {
@@ -144,6 +149,12 @@ export async function syncAndPersist(
 	allowedProjects: string[] = [],
 	full = false,
 ): Promise<SyncAndPersistResult> {
+	// Enforce the fingerprint invariant before fetching: discard the stored
+	// token (forcing a full sync) when the current scope — allowed-project IDs
+	// plus the schema/transform version — differs from the scope the stored
+	// token was issued under.
+	const { fingerprint } = resolveSyncScope(db, allowedProjects, full);
+
 	const { raw, filtered, isFullSync } = await createSyncHelper(
 		db,
 		client,
@@ -163,42 +174,47 @@ export async function syncAndPersist(
 		completedTaskIds,
 	} = filtered;
 
-	const reconciled = persistSync(db, raw.syncToken, () => {
-		for (const p of projects) {
-			db.upsertProject(p);
-		}
-		for (const s of sections) {
-			db.upsertSection(s);
-		}
-		for (const l of labels) {
-			db.upsertLabel(l);
-		}
-		for (const f of filters) {
-			db.upsertFilter(f);
-		}
-		for (const t of tasks) {
-			db.upsertTask(t);
-		}
-		for (const n of notes) {
-			const prepared = prepareNoteForDB(n);
-			if (prepared) {
-				db.upsertNote(prepared);
+	const reconciled = persistSync(
+		db,
+		raw.syncToken,
+		() => {
+			for (const p of projects) {
+				db.upsertProject(p);
 			}
-		}
+			for (const s of sections) {
+				db.upsertSection(s);
+			}
+			for (const l of labels) {
+				db.upsertLabel(l);
+			}
+			for (const f of filters) {
+				db.upsertFilter(f);
+			}
+			for (const t of tasks) {
+				db.upsertTask(t);
+			}
+			for (const n of notes) {
+				const prepared = prepareNoteForDB(n);
+				if (prepared) {
+					db.upsertNote(prepared);
+				}
+			}
 
-		// Some incremental sync responses report closures via completedTaskIds
-		// without returning full item payloads.
-		db.updateTasksAsCompleted(completedTaskIds);
-		markDeleted(db, deletedTaskIds);
-		db.deleteNotesByIds(deletedNoteIds);
-		return isFullSync
-			? reconcileCompleted(
-					db,
-					projects.map((p) => p.id),
-					new Set(tasks.map((t) => t.id)),
-				)
-			: 0;
-	});
+			// Some incremental sync responses report closures via completedTaskIds
+			// without returning full item payloads.
+			db.updateTasksAsCompleted(completedTaskIds);
+			markDeleted(db, deletedTaskIds);
+			db.deleteNotesByIds(deletedNoteIds);
+			return isFullSync
+				? reconcileCompleted(
+						db,
+						projects.map((p) => p.id),
+						new Set(tasks.map((t) => t.id)),
+					)
+				: 0;
+		},
+		fingerprint,
+	);
 
 	if (reconciled > 0) {
 		logger.info(

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type {
 	Database,
 	DbFilter,
@@ -14,6 +15,65 @@ import type {
  * All token reads and atomic writes happen through this module.
  * This ensures the invariant is enforced in exactly one place.
  */
+
+/**
+ * Version of the DB schema + transform layer that produced the stored rows.
+ *
+ * The local sync token only guarantees "I have seen every change under the
+ * scope it was issued for." That scope is (1) the allowlisted project IDs and
+ * (2) the schema/transform version below. Bump this string whenever
+ * `SCHEMA_SQL` (db.ts) or the transforms in db-transform.ts change in a way
+ * that affects how stored rows are interpreted. The sync fingerprint folds
+ * this version in so an incremental sync is never trusted across a
+ * schema/transform change.
+ */
+export const SYNC_SCOPE_VERSION = "1";
+
+/**
+ * Compute the scope fingerprint for a sync.
+ *
+ * A hash of the sorted allowed-project IDs plus the schema/transform version.
+ * The `version` parameter defaults to {@link SYNC_SCOPE_VERSION} but is
+ * injectable so tests can exercise version-drift detection without editing
+ * the shipped constant.
+ *
+ * @param allowedProjects Project IDs the local DB is scoped to
+ * @param version Schema/transform version (defaults to the shipped constant)
+ * @returns Hex SHA-256 fingerprint
+ */
+export function computeSyncFingerprint(
+	allowedProjects: string[],
+	version: string = SYNC_SCOPE_VERSION,
+): string {
+	const canonical = JSON.stringify({
+		v: version,
+		p: [...allowedProjects].sort(),
+	});
+	return createHash("sha256").update(canonical).digest("hex");
+}
+
+/**
+ * Get the stored sync-scope fingerprint (test utility / inspection).
+ *
+ * Returns null when no sync has happened yet or the DB predates fingerprinting.
+ */
+export function getSyncFingerprint(db: Database): string | null {
+	return db.getMeta("sync_token_fingerprint");
+}
+
+/**
+ * Persist the sync-scope fingerprint alongside the token.
+ */
+export function setSyncFingerprint(db: Database, fingerprint: string): void {
+	db.setMeta("sync_token_fingerprint", fingerprint);
+}
+
+/**
+ * Clear the sync-scope fingerprint (test utility).
+ */
+export function resetSyncFingerprint(db: Database): void {
+	db.deleteMeta("sync_token_fingerprint");
+}
 
 /**
  * Get the current sync token.
@@ -50,6 +110,44 @@ export function setToken(db: Database, token: string): boolean {
  */
 export function resetToken(db: Database): void {
 	db.resetSyncToken();
+}
+
+export interface SyncScopeResolution {
+	/** Fingerprint of the current scope; persist it with the resulting token. */
+	fingerprint: string;
+	/** True when the next fetch must be a full sync (`*` token). */
+	isFullSync: boolean;
+}
+
+/**
+ * Resolve the sync scope and enforce the fingerprint invariant.
+ *
+ * Compares the stored sync-token fingerprint against the fingerprint of the
+ * *current* scope (allowed-project IDs + schema/transform version). The stored
+ * token is only honest about the scope it was issued under; if the allowlist
+ * or transform version has drifted since the token was written, the token is
+ * discarded so the next fetch is a full sync and re-covers the new scope.
+ *
+ * On a mismatch (config drift, transform bump, or first run) the stored token
+ * is cleared. When the scopes match, the existing incremental token is kept.
+ *
+ * @param db Database instance
+ * @param allowedProjects Project IDs the local DB is scoped to
+ * @param forceFull Force a full sync regardless of fingerprint match
+ * @returns The current fingerprint to persist with the resulting token
+ */
+export function resolveSyncScope(
+	db: Database,
+	allowedProjects: string[],
+	forceFull: boolean,
+): SyncScopeResolution {
+	const fingerprint = computeSyncFingerprint(allowedProjects);
+	const scopeDrifted = getSyncFingerprint(db) !== fingerprint;
+	const needsFull = forceFull || scopeDrifted;
+	if (needsFull) {
+		resetToken(db);
+	}
+	return { fingerprint, isFullSync: needsFull };
 }
 
 export interface MutationPersistOptions {
@@ -125,24 +223,29 @@ export function persistMutations(
  *
  * Used by the periodic sync workflow. Wraps the transaction boundary
  * and ensures the sync token is updated last, maintaining the invariant
- * that token and data stay synchronized.
+ * that token and data stay synchronized. The {@link computeSyncFingerprint |
+ * scope fingerprint} is written in the same transaction as the token so the
+ * two stay honest about the scope the token was issued under.
  *
  * @param db Database instance
  * @param token New sync token from API
  * @param operations Callback to perform data upserts, marking, reconciliation, etc.
  *                   Should return the reconciliation count (0 if none).
+ * @param fingerprint Scope fingerprint to persist alongside the token
  * @returns Reconciliation count from the operations callback
  */
 export function persistSync(
 	db: Database,
 	token: string,
 	operations: () => number,
+	fingerprint: string,
 ): number {
 	return db.transaction(() => {
 		const reconciled = operations();
 		// Token update is last in the transaction; ensures atomicity
 		db.setSyncToken(token);
 		db.setLastSyncedAt(new Date().toISOString());
+		setSyncFingerprint(db, fingerprint);
 		return reconciled;
 	});
 }

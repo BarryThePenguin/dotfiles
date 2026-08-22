@@ -1,4 +1,4 @@
-import type { AppProject, AppTask } from "../schema.ts";
+import type { AppProject, AppTask } from "../db-transform.ts";
 import { dueAgeDays, isVagueTask, taskAgeDays } from "./shared.ts";
 
 export type StaleRecommendationCode =

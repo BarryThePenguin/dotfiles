@@ -24,8 +24,7 @@ import {
 	type ActionMap,
 	type ToolCatalogEntry,
 } from "issue-tools-core";
-import { handleAction } from "./actions.ts";
-import type { ActionResult } from "./action-runtime.ts";
+import { handleAction, type ActionResult } from "./actions.ts";
 import { createSessionRegistry, type SessionRegistry } from "./tracker.ts";
 
 const registry = createSessionRegistry();

@@ -1,4 +1,4 @@
-import type { AppTask } from "../schema.ts";
+import type { AppTask } from "../db-transform.ts";
 import { chooseCanonical, normalizeTitle, similarity } from "./shared.ts";
 
 export type DuplicateMatchType = "exact" | "fuzzy";
