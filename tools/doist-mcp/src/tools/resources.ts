@@ -41,7 +41,7 @@ export function registerResources(
 		},
 		(uri) => {
 			const { db } = container;
-			const projects = db.selectProjects();
+			const projects = db.selectProjects(undefined, container.listProjectIds());
 			return {
 				contents: [
 					{

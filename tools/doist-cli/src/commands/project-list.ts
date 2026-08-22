@@ -20,7 +20,7 @@ export function buildCommand(container: OperationalContainer) {
 				);
 				out({
 					synced: countSyncData(syncResult),
-					projects: db.selectProjects(),
+					projects: db.selectProjects(undefined, container.listProjectIds()),
 				});
 			} else {
 				out(container.listProjects());

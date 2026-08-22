@@ -69,6 +69,7 @@ export function registerTaskTools(
 								...filters,
 								...(priority !== undefined ? { priority } : {}),
 								...(projectId ? { projectId } : {}),
+								projectScope: container.listProjectIds(),
 							})
 							.map((task) =>
 								details ? task : { id: task.id, content: task.content },
@@ -266,6 +267,7 @@ export function registerTaskTools(
 				content: query,
 				completed: "incomplete",
 				orderBy: { field: "priority", direction: "desc" },
+				projectScope: container.listProjectIds(),
 			});
 			return {
 				data: { tasks },

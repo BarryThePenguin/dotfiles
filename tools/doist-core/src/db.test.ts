@@ -26,6 +26,7 @@ import {
 	NOTE_BETA,
 	NOTE_IDS,
 	NOW,
+	makeTask,
 } from "./test-helpers/fixtures.ts";
 
 // ── Token persistence tests ────────────────────────────────────────────────
@@ -673,5 +674,92 @@ describe("filter operations", () => {
 
 	it("selectFilters returns empty array when no filters exist", () => {
 		expect(db.selectFilters()).toEqual([]);
+	});
+});
+
+// ── Read-time project lens tests ────────────────────────────────────────────
+// The write path still filters to allowed projects; these tests only exercise
+// the read-side scope that will keep reads correct once writes stop filtering.
+
+describe("read-time project lens", () => {
+	let db: Database;
+
+	beforeEach(() => {
+		db = openDb();
+		db.upsertProject(PROJECT_WORK);
+		db.upsertProject(PROJECT_PERSONAL);
+		db.upsertSection(SECTION_BACKLOG); // work
+		db.upsertSection(SECTION_SOMEDAY); // personal
+		db.upsertTask(TASK_ALPHA); // work
+		db.upsertTask(TASK_BETA); // work
+		db.upsertTask({ ...makeTask("t-personal-1", PROJECT_IDS.personal) });
+		db.upsertTask({ ...makeTask("t-personal-2", PROJECT_IDS.personal) });
+	});
+
+	afterEach(() => {
+		db.close();
+	});
+
+	it("returns all stored tasks when no scope is set", () => {
+		const results = db.selectTasks();
+		expect(results.map((t) => t.id)).toEqual(
+			expect.arrayContaining([
+				TASK_IDS.alpha,
+				TASK_IDS.beta,
+				"t-personal-1",
+				"t-personal-2",
+			]),
+		);
+	});
+
+	it("scopes tasks to a single project by id", () => {
+		const results = db.selectTasks({ projectScope: [PROJECT_IDS.work] });
+		expect(results.map((t) => t.id).sort()).toEqual(
+			[TASK_IDS.alpha, TASK_IDS.beta].sort(),
+		);
+	});
+
+	it("scopes tasks to a single project by name", () => {
+		const results = db.selectTasks({ projectScope: ["Personal"] });
+		expect(results.map((t) => t.id).sort()).toEqual(
+			["t-personal-1", "t-personal-2"].sort(),
+		);
+	});
+
+	it("scopes tasks to multiple projects", () => {
+		const results = db.selectTasks({
+			projectScope: [PROJECT_IDS.work, PROJECT_IDS.personal],
+		});
+		expect(results).toHaveLength(4);
+	});
+
+	it("returns no tasks for a scope with no stored match", () => {
+		const results = db.selectTasks({ projectScope: ["nonexistent"] });
+		expect(results).toEqual([]);
+	});
+
+	it("combines the scope with other filters", () => {
+		const results = db.selectTasks({
+			projectScope: [PROJECT_IDS.work],
+			priority: 4,
+		});
+		expect(results.map((t) => t.id)).toEqual([TASK_IDS.beta]);
+	});
+
+	it("scopes projects to the lens", () => {
+		const results = db.selectProjects(undefined, [PROJECT_IDS.personal]);
+		expect(results.map((p) => p.id)).toEqual([PROJECT_IDS.personal]);
+	});
+
+	it("scopes sections to the lens", () => {
+		const results = db.selectSections(undefined, [PROJECT_IDS.personal]);
+		expect(results.map((s) => s.id)).toEqual([SECTION_IDS.someday]);
+	});
+
+	it("leaves unscoped project reads unchanged", () => {
+		const results = db.selectProjects();
+		expect(results.map((p) => p.id).sort()).toEqual(
+			[PROJECT_IDS.work, PROJECT_IDS.personal].sort(),
+		);
 	});
 });

@@ -18,6 +18,7 @@ export function buildCommand(container: OperationalContainer) {
 				content: args.query,
 				completed: "incomplete",
 				orderBy: { field: "priority", direction: "desc" },
+				projectScope: container.listProjectIds(),
 			});
 			out({ tasks });
 		},

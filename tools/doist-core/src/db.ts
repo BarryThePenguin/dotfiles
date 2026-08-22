@@ -204,7 +204,41 @@ export type TaskCriteria = {
 		field: "created_at" | "updated_at" | "due_date" | "priority";
 		direction: "asc" | "desc";
 	};
+	/**
+	 * Read-time project lens. When set, results are restricted to the given
+	 * project IDs/names regardless of what is stored. Empty/undefined leaves
+	 * the read unscoped (all stored data visible). This is the read side of
+	 * "persist everything, filter at read time"; the write path still filters
+	 * until that follow-up lands.
+	 */
+	projectScope?: string[];
 };
+
+/**
+ * Resolve a project-scope list (IDs or names) to a set of project IDs.
+ *
+ * Names are matched exactly against stored project names. Returns null when
+ * the scope is empty or unset so callers can skip the filter entirely.
+ */
+function resolveScopeIds(
+	db: Database,
+	scope: string[] | undefined,
+): Set<string> | null {
+	if (!scope || scope.length === 0) {
+		return null;
+	}
+	const ids = new Set<string>();
+	for (const entry of scope) {
+		if (db.getProjectById(entry)) {
+			ids.add(entry);
+			continue;
+		}
+		for (const project of db.selectProjects({ name: entry })) {
+			ids.add(project.id);
+		}
+	}
+	return ids;
+}
 
 // Expression builder helpers for the shared task-read criteria.
 function buildProjectIdFilter(
@@ -370,9 +404,13 @@ export class Database {
 	}
 
 	selectTasks(criteria?: TaskCriteria): AppTask[] {
+		const scope = resolveScopeIds(this, criteria?.projectScope);
 		let query = this.tasks();
 		query = query.where((eb) => {
 			const filters = buildTaskFilters(eb, criteria);
+			if (scope) {
+				filters.push(eb("project_id", "in", [...scope]));
+			}
 			return filters.length > 0 ? eb.and(filters) : eb.lit(true);
 		});
 
@@ -401,11 +439,15 @@ export class Database {
 		return project ? normalizeProject(project) : null;
 	}
 
-	selectProjects(criteria?: {
-		id?: string;
-		isInbox?: boolean;
-		name?: string | { value: string; match: "exact" | "like" };
-	}): AppProject[] {
+	selectProjects(
+		criteria?: {
+			id?: string;
+			isInbox?: boolean;
+			name?: string | { value: string; match: "exact" | "like" };
+		},
+		projectScope?: string[],
+	): AppProject[] {
+		const scope = resolveScopeIds(this, projectScope);
 		let query = this.projects();
 
 		query = query.where((eb) => {
@@ -432,11 +474,16 @@ export class Database {
 
 		query = query.orderBy("name");
 
+		if (scope) {
+			query = query.where("id", "in", [...scope]);
+		}
+
 		return this.#sync.all(query.compile()).map(normalizeProject);
 	}
 
 	// Section queries
-	selectSections(projectId?: string): AppSection[] {
+	selectSections(projectId?: string, projectScope?: string[]): AppSection[] {
+		const scope = resolveScopeIds(this, projectScope);
 		let query = this.#query.selectFrom("sections").selectAll();
 
 		if (projectId) {
@@ -445,6 +492,10 @@ export class Database {
 		} else {
 			query = query.orderBy("project_id");
 			query = query.orderBy("section_order");
+		}
+
+		if (scope) {
+			query = query.where("project_id", "in", [...scope]);
 		}
 
 		return this.#sync.all(query.compile()).map(normalizeSection);
@@ -474,6 +525,7 @@ export class Database {
 	 * one task query plus one notes query per read.
 	 */
 	selectTasksWithNotes(criteria?: TaskCriteria): AppTaskWithNotes[] {
+		const scope = resolveScopeIds(this, criteria?.projectScope);
 		let query = this.#query
 			.selectFrom("tasks")
 			.selectAll("tasks")
@@ -490,6 +542,9 @@ export class Database {
 
 		query = query.where((eb) => {
 			const filters = buildTaskFilters(eb, criteria);
+			if (scope) {
+				filters.push(eb("project_id", "in", [...scope]));
+			}
 			return filters.length > 0 ? eb.and(filters) : eb.lit(true);
 		});
 		if (criteria?.limit !== undefined) {

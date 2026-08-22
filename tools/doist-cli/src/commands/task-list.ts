@@ -66,6 +66,7 @@ export function buildCommand(
 					: db.selectTasks({
 							...fields,
 							...(projectId ? { projectId } : {}),
+							projectScope: container.listProjectIds(),
 						});
 			if (args.sync) {
 				const syncResult = await container.sync(
