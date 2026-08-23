@@ -115,7 +115,7 @@ describe("createContainer", () => {
 	});
 
 	it("sees projects added by another container instance in the same process", () => {
-		using tempDir = setupContainer();
+		using _tempDir = setupContainer();
 		const writer = createContainer();
 		const reader = createContainer();
 		onTestFinished(() => {
@@ -212,6 +212,45 @@ describe("createContainer", () => {
 		expect(containerB.db.getProjectById("p1")?.name).toBe("A");
 		expect(existsSync(join(repoA, "todoist.db"))).toBe(false);
 		expect(existsSync(join(repoB, "todoist.db"))).toBe(false);
+	});
+
+	it("ignores a stale per-repo todoist.db left over from before the central store", () => {
+		using tempDir = mkdtempDisposableSync(join(tmpdir(), "doist-legacy-db-"));
+		const cacheHome = join(tempDir.path, "central");
+		vi.stubEnv("XDG_CACHE_HOME", cacheHome);
+
+		const repo = join(tempDir.path, "repo");
+		mkdirSync(join(repo, ".git"), { recursive: true });
+		writeFileSync(
+			join(repo, ".doistrc"),
+			JSON.stringify({ projects: [{ id: "p1", label: "A" }] }),
+			"utf8",
+		);
+
+		// A leftover database from the per-repo era, holding a row the central
+		// store has never seen.
+		writeFileSync(join(repo, "todoist.db"), "not even sqlite", "utf8");
+
+		const container = createContainer(repo);
+		onTestFinished(() => {
+			container.close();
+		});
+
+		container.db.upsertProject({
+			id: "p1",
+			name: "A",
+			color: null,
+			is_favorite: 0,
+			is_inbox: 0,
+			synced_at: NOW,
+		});
+
+		// The legacy file is neither read (the bogus content never breaks the
+		// container) nor written to — it is dead weight the user can delete.
+		expect(readFileSync(join(repo, "todoist.db"), "utf8")).toBe(
+			"not even sqlite",
+		);
+		expect(existsSync(centralDbPath())).toBe(true);
 	});
 
 	it("setRepoProject marks the given project, removing the marker from any other", () => {

@@ -15,7 +15,14 @@ import {
 
 export type { ActionMap };
 
-export type ActionResult = { content: { type: "text"; text: string }[] };
+/**
+ * Matches pi's AgentToolResult shape, which requires a `details` field for
+ * UI rendering. The action surface carries no structured details today.
+ */
+export type ActionResult = {
+	content: { type: "text"; text: string }[];
+	details: undefined;
+};
 
 export interface ToolContext {
 	trackerSession: TrackerSession;
@@ -27,9 +34,13 @@ export function handleAction<K extends keyof ActionMap>(
 	ctx: ToolContext,
 ): Promise<ActionResult> {
 	return createSessionRuntime(ctx.trackerSession, {
-		success: (text): ActionResult => ({ content: [{ type: "text", text }] }),
+		success: (text): ActionResult => ({
+			content: [{ type: "text", text }],
+			details: undefined,
+		}),
 		error: (message): ActionResult => ({
 			content: [{ type: "text", text: `Error: ${message}` }],
+			details: undefined,
 		}),
 	}).then((runtime) => coreHandleAction(action, params, runtime));
 }
