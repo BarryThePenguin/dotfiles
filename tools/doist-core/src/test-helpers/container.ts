@@ -10,9 +10,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { vi, type Mocked } from "vitest";
 import { driverFactory } from "sqlite-runtime";
-import type { OperationalContainer, ProjectRef } from "../container.ts";
+import type {
+	OperationalContainer,
+	ProjectRef,
+	ConfigPaths,
+} from "../container.ts";
 import { Database } from "../db.ts";
-import { type ConfigPaths } from "../paths.ts";
 import { createClient, type TodoistClient } from "../todoist.ts";
 
 /** OperationalContainer with narrowed mock types for test code. */
@@ -57,7 +60,7 @@ export function createTestContainer(overrides?: {
 	);
 	const rcPath = join(testDir.path, ".doistrc");
 	const dbPath = ":memory:";
-	const paths = { rcPath, dbPath };
+	const paths = { rcPath };
 
 	// Use provided database or create in-memory one
 	const db =

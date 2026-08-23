@@ -5,7 +5,6 @@ export type {
 	OperationalContainer,
 	ProjectRef,
 } from "./container.ts";
-export type { ConfigPaths } from "./paths.ts";
 
 // Domain types
 export type {
@@ -74,7 +73,6 @@ export { LIMITS } from "./limits.ts";
 // Sync
 export { countSyncData, syncAndPersist, syncAndFetch } from "./sync.ts";
 export type { SyncResult, SyncAndPersistResult } from "./sync.ts";
-
 export {
 	getToken,
 	setToken,

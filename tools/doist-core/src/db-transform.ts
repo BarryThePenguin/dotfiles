@@ -70,7 +70,7 @@ export type AppFilter = {
 	name: string;
 	query: string;
 	color: string | null;
-	itemOrder: number | null;
+	itemOrder: number;
 	isFavorite: boolean;
 };
 

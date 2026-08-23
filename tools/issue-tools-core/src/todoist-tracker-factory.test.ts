@@ -25,7 +25,7 @@ describe("createTodoistTrackerModules", () => {
 		process.env["TODOIST_RC_DIR"] = dir.path;
 
 		await expect(createTodoistTrackerModules()).rejects.toThrow(
-			/Expected "TODOIST_API_TOKEN" but received undefined/,
+			/TODOIST_API_TOKEN is not set/,
 		);
 	});
 

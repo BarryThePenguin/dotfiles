@@ -620,3 +620,4 @@ describe("countSyncData", () => {
 		expect(result.filters).toBe(0);
 	});
 });
+

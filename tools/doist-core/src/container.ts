@@ -5,17 +5,49 @@
  * centralizing bootstrap logic and enabling testable entry points.
  */
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	renameSync,
+	writeFileSync,
+} from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import { cwd } from "node:process";
-import * as v from "valibot";
 import { driverFactory } from "sqlite-runtime";
+import * as v from "valibot";
 import { Database } from "./db.ts";
-import type { ConfigPaths } from "./paths.ts";
-import { findPaths } from "./paths.ts";
 import { applyRepoMarker } from "./repo-project.ts";
 import { syncAndPersist, type SyncAndPersistResult } from "./sync.ts";
 import { createClient, type TodoistClient } from "./todoist.ts";
+
+export interface ConfigPaths {
+	rcPath: string;
+}
+
+/**
+ * Well-known user-level database location shared by every repo.
+ *
+ * The store lives under `$XDG_CACHE_HOME/doist/todoist.db` (defaulting to
+ * `~/.cache/doist/todoist.db`) because it is a rebuildable mirror of Todoist
+ * server state — a full sync can regenerate it from scratch. All consumers
+ * open this single store; repo `.doistrc` files remain read-time lenses over
+ * it. Tests redirect it by pointing `XDG_CACHE_HOME` at a scratch directory.
+ */
+export function centralDbPath(
+	options: { env?: NodeJS.ProcessEnv; home?: string } = {},
+): string {
+	const env = options.env ?? process.env;
+	const home = options.home ?? homedir();
+	const xdgCacheHome = env["XDG_CACHE_HOME"];
+	// XDG spec: non-absolute values must be ignored.
+	const cacheHome =
+		xdgCacheHome && xdgCacheHome.startsWith("/")
+			? xdgCacheHome
+			: join(home, ".cache");
+	return join(cacheHome, "doist", "todoist.db");
+}
 
 export const ProjectRefSchema = v.object({
 	id: v.string(),
@@ -35,19 +67,48 @@ const parseConfigSchema = v.parser(
 	v.pipe(v.string(), v.parseJson(), ConfigSchema),
 );
 
+/**
+ * Every environment variable doist-core reads, declared in one place.
+ *
+ * All fields are optional here so configuration-only entry points like
+ * `hasProjects()` work without an API token; `getClient()` enforces the
+ * token itself. Defaults are deliberately absent — path fallbacks live in
+ * the functions that consume these values (`centralDbPath`, rc-dir
+ * resolution), not in the schema.
+ */
 const EnvSchema = v.object({
-	TODOIST_API_TOKEN: v.string(),
-	TODOIST_RC_DIR: v.optional(v.string(), cwd()),
+	TODOIST_API_TOKEN: v.optional(v.string()),
+	TODOIST_RC_DIR: v.optional(v.string()),
+	XDG_CACHE_HOME: v.optional(v.string()),
 });
 
-const parseEnv = v.safeParser(EnvSchema);
+const parseEnv = v.parser(EnvSchema);
 
-function resolveRcDir(rcDir?: string): string {
-	return rcDir ?? process.env["TODOIST_RC_DIR"] ?? cwd();
+type Env = v.InferOutput<typeof EnvSchema>;
+
+function resolveRcDir(rcDir: string | undefined, env: Env): string {
+	return rcDir ?? env.TODOIST_RC_DIR ?? cwd();
 }
 
-function findRcPaths(dir: string) {
-	return findPaths(dir, { exists: existsSync });
+/**
+ * Locate the `.doistrc` for the repo containing `dir`, walking up until a
+ * `.git` directory stops the search.
+ */
+function findRcPaths(dir: string): ConfigPaths | null {
+	let current = dir;
+	for (;;) {
+		if (existsSync(join(current, ".doistrc"))) {
+			return { rcPath: join(current, ".doistrc") };
+		}
+		if (existsSync(join(current, ".git"))) {
+			return null;
+		}
+		const parent = dirname(current);
+		if (parent === current) {
+			return null;
+		}
+		current = parent;
+	}
 }
 
 /**
@@ -114,15 +175,14 @@ export type OperationalContainer = Container & PersistenceLayer;
  */
 export function createContainer(rcDir?: string): OperationalContainer {
 	const env = parseEnv(process.env);
-	const dir = resolveRcDir(rcDir);
-	let paths = findRcPaths(dir);
+	const dir = resolveRcDir(rcDir, env);
+	let paths: ConfigPaths | null = findRcPaths(dir);
 	let client: TodoistClient | null = null;
 	let db: Database | null = null;
+	let dbPath: string | null = null;
 
-	// Create projects namespace with in-memory caching.
-	// Cache is invalidated only on add/remove (mutations we control).
-	let cachedProjects: ProjectRef[] | null = null;
-
+	// Resolved lazily so that flows which create `.doistrc` after container
+	// creation (e.g. `projects add` in a fresh repo) are still picked up.
 	function getPaths(): ConfigPaths | null {
 		return (paths ??= findRcPaths(dir));
 	}
@@ -131,14 +191,21 @@ export function createContainer(rcDir?: string): OperationalContainer {
 		return getPaths()?.rcPath ?? join(dir, ".doistrc");
 	}
 
+	function resolveDbPath(): string {
+		return (dbPath ??= centralDbPath({ env }));
+	}
+
 	function getDb() {
-		const paths = getPaths();
-		if (paths) {
-			db ??= new Database({ driver: driverFactory(paths.dbPath) });
+		if (!getPaths()) {
+			throw new Error("no .doistrc found in this git repository");
 		}
 
+		// The database is a single user-level store shared by every repo; the
+		// repo `.doistrc` is only a read-time lens over it.
 		if (!db) {
-			throw new Error("no .doistrc found in this git repository");
+			dbPath = resolveDbPath();
+			mkdirSync(dirname(dbPath), { recursive: true });
+			db = new Database({ driver: driverFactory(dbPath) });
 		}
 
 		return db;
@@ -153,14 +220,18 @@ export function createContainer(rcDir?: string): OperationalContainer {
 	}
 
 	function writeConfig(config: Config): void {
-		writeFileSync(getRcPath(), JSON.stringify(config, null, 2), "utf-8");
+		// Write-then-rename so a crash mid-write cannot leave a truncated
+		// .doistrc behind.
+		const rcPath = getRcPath();
+		const tmpPath = `${rcPath}.tmp`;
+		writeFileSync(tmpPath, JSON.stringify(config, null, 2), "utf-8");
+		renameSync(tmpPath, rcPath);
 	}
 
 	function addProject(ref: ProjectRef) {
 		const current = listProjects();
 		if (!current.some((p) => p.id === ref.id)) {
-			cachedProjects = [...current, ref];
-			writeConfig({ projects: cachedProjects });
+			writeConfig({ projects: [...current, ref] });
 		}
 	}
 
@@ -168,7 +239,6 @@ export function createContainer(rcDir?: string): OperationalContainer {
 		const current = listProjects();
 		const filtered = current.filter((p) => p.id !== id);
 		if (filtered.length !== current.length) {
-			cachedProjects = filtered;
 			writeConfig({ projects: filtered });
 		}
 	}
@@ -177,17 +247,12 @@ export function createContainer(rcDir?: string): OperationalContainer {
 		const current = listProjects();
 		const next = applyRepoMarker(current, id);
 		if (next.some((project, index) => project !== current[index])) {
-			cachedProjects = next;
 			writeConfig({ projects: next });
 		}
 	}
 
 	function listProjects(): ProjectRef[] {
-		if (cachedProjects === null) {
-			const { projects } = readConfig();
-			cachedProjects = projects;
-		}
-		return cachedProjects;
+		return readConfig().projects;
 	}
 
 	function listProjectIds(): string[] {
@@ -199,11 +264,14 @@ export function createContainer(rcDir?: string): OperationalContainer {
 	}
 
 	function getClient(): TodoistClient {
-		if (!env.success) {
-			throw new v.ValiError(env.issues);
+		if (env.TODOIST_API_TOKEN === undefined) {
+			throw new Error(
+				"Cannot create Todoist client: TODOIST_API_TOKEN is not set",
+			);
 		}
+
 		if (client === null) {
-			client = createClient(env.output.TODOIST_API_TOKEN);
+			client = createClient(env.TODOIST_API_TOKEN);
 		}
 		return client;
 	}
@@ -248,7 +316,8 @@ export function createContainer(rcDir?: string): OperationalContainer {
  */
 export function hasProjects(rcDir?: string): boolean {
 	try {
-		const dir = resolveRcDir(rcDir);
+		const env = parseEnv(process.env);
+		const dir = resolveRcDir(rcDir, env);
 		const paths = findRcPaths(dir);
 		if (!paths) {
 			return false;

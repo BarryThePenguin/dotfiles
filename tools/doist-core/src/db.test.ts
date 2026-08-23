@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Database } from "./db.ts";
+import { mkdtempDisposableSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Database } from "./db.ts";
+import { driverFactory } from "sqlite-runtime";
 import { listSections } from "./operations.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
 import { openDb } from "./test-helpers/database.ts";
@@ -79,6 +83,62 @@ describe("database initialization", () => {
 		expect(projects).toEqual([]);
 		expect(sections).toEqual([]);
 		expect(labels).toEqual([]);
+	});
+});
+
+// ── Shared-store pragmas tests ───────────────────────────────────────────
+
+describe("shared-store pragmas", () => {
+	it("opens file-backed databases in WAL mode", () => {
+		using dir = mkdtempDisposableSync(join(tmpdir(), "doist-db-wal-"));
+		const dbPath = join(dir.path, "wal.db");
+		const db = new Database({ driver: driverFactory(dbPath) });
+		db.close();
+
+		// journal_mode=WAL persists in the file header, so a fresh connection
+		// (as another repo's consumer would open) observes it.
+		const probe = driverFactory(dbPath);
+		try {
+			const mode = probe.prepare("PRAGMA journal_mode").get() as {
+				journal_mode: string;
+			};
+			expect(mode.journal_mode).toBe("wal");
+		} finally {
+			probe.close();
+		}
+	});
+
+	it("a reader on a second connection is not blocked by an open write", () => {
+		using dir = mkdtempDisposableSync(join(tmpdir(), "doist-db-wal-"));
+		const dbPath = join(dir.path, "concurrent.db");
+
+		// First connection creates the schema (and WAL mode).
+		const setup = new Database({ driver: driverFactory(dbPath) });
+		setup.setMeta("probe", "visible");
+		setup.close();
+
+		const writer = driverFactory(dbPath);
+		const reader = driverFactory(dbPath);
+		try {
+			writer.exec("BEGIN IMMEDIATE;");
+			writer
+				.prepare(
+					"INSERT INTO meta (key, value) VALUES ('pending', 'write') ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+				)
+				.run();
+
+			// In WAL mode this read succeeds while the write transaction above
+			// is still uncommitted; in rollback-journal mode it would fail with
+			// SQLITE_BUSY.
+			const row = reader
+				.prepare("SELECT value FROM meta WHERE key = 'probe'")
+				.get() as { value: string } | undefined;
+			expect(row?.value).toBe("visible");
+		} finally {
+			writer.exec("ROLLBACK;");
+			writer.close();
+			reader.close();
+		}
 	});
 });
 

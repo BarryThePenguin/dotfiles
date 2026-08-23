@@ -152,7 +152,7 @@ const SCHEMA_SQL = `
 	name        TEXT NOT NULL,
 	query       TEXT NOT NULL,
 	color       TEXT,
-	item_order  INTEGER DEFAULT 0,
+	item_order  INTEGER NOT NULL DEFAULT 0,
 	is_favorite INTEGER DEFAULT 0,
 	synced_at   TEXT NOT NULL
   );
@@ -372,6 +372,13 @@ export class Database {
 	constructor({ driver }: DatabaseOptions) {
 		this.#raw = driver;
 
+		// Shared-store pragmas: WAL lets concurrent readers proceed while a
+		// writer commits (readers never block on the sync write path), and a
+		// busy timeout keeps cross-process access graceful under contention.
+		// Both are no-ops for in-memory test databases.
+		this.#raw.exec("PRAGMA journal_mode = WAL;");
+		this.#raw.exec("PRAGMA busy_timeout = 5000;");
+
 		this.#raw.exec(SCHEMA_SQL);
 
 		this.#sync = new SyncSqliteDatabase({ driver: this.#raw });
@@ -562,6 +569,10 @@ export class Database {
 	}
 
 	// Note queries
+	selectAllNotes(): AppNote[] {
+		return this.#sync.all(this.notes().compile()).map(normalizeNote);
+	}
+
 	selectNotesByTask(itemId: string): AppNote[] {
 		return this.#sync
 			.all(
