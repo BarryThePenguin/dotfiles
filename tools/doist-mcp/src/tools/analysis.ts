@@ -4,10 +4,10 @@ import * as v from "valibot";
 import type { OperationalContainer } from "doist-core";
 import {
 	findDuplicateCandidates,
-	findMissingEnergyMetadata,
 	findStaleCandidates,
 	groupStaleByProject,
 } from "doist-core/analysis";
+import { findMissingEnergyMetadata } from "doist-personal";
 import {
 	EmptyInput,
 	FormattedTaskSchema,
@@ -108,7 +108,10 @@ const TriageAnalysisOutputSchema = toStandardJsonSchema(
 );
 
 type TriageCategory =
-	"duplicates" | "stale" | "unroutedInbox" | "missingEnergyMetadata";
+	| "duplicates"
+	| "stale"
+	| "unroutedInbox"
+	| "missingEnergyMetadata";
 
 function pickBestTriageCategory(
 	duplicates: number,

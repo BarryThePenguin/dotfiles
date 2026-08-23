@@ -1,0 +1,25 @@
+{
+	"name": "doist-personal",
+	"version": "0.1.0",
+	"description": "Personal workflow heuristics layered on Todoist data — energy label conventions shared between CLI and MCP",
+	"type": "module",
+	"main": "src/index.ts",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"build": "tsc --build",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"dependencies": {
+		"doist-core": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "24.13.3",
+		"vitest": "4.1.11"
+	}
+}

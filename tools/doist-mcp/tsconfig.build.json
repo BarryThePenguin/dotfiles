@@ -7,6 +7,9 @@
 		{
 			"path": "../doist-core/tsconfig.build.json"
 		},
+		{
+			"path": "../doist-personal/tsconfig.build.json"
+		},
 		{ "path": "../sqlite-runtime/tsconfig.build.json" }
 	]
 }

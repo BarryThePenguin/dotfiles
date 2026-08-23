@@ -1,4 +1,4 @@
-import type { AppTask } from "../db-transform.ts";
+import type { AppTask } from "doist-core";
 
 const ENERGY_LABELS = new Set([
 	"low-energy",
@@ -17,6 +17,10 @@ export function findMissingEnergyMetadata(tasks: AppTask[]): AppTask[] {
 	);
 }
 
+/**
+ * Suggest up to 2 tasks matching an energy level. "high" is a no-op (returns []);
+ * falls back to the 2 lowest-priority tasks when no labels match.
+ */
 export function filterByEnergy(
 	tasks: AppTask[],
 	energy: "low" | "medium" | "high",

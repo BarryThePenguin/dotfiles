@@ -4,7 +4,7 @@ import {
 	type OperationalContainer,
 	type SyncResult,
 } from "doist-core";
-import { findMissingEnergyMetadata } from "doist-core/analysis";
+import { findMissingEnergyMetadata } from "doist-personal";
 import { out } from "../output.ts";
 
 export function buildCommand(container: OperationalContainer) {

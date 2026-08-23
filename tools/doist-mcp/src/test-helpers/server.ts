@@ -236,11 +236,18 @@ export async function createDefaultHarness(): Promise<{
 				if (q === "@thoughts") {
 					return t.labels.includes("thoughts");
 				}
-				if (q.includes("@low-energy") || q.includes("@quick")) {
+				if (
+					q.includes("@low-energy") ||
+					q.includes("@medium-energy") ||
+					q.includes("@high-energy") ||
+					q.includes("@quick")
+				) {
 					return (
-						t.labels.includes("low-energy") ||
-						t.labels.includes("quick") ||
-						(q.includes("@medium-energy") && t.labels.includes("medium-energy"))
+						(q.includes("@low-energy") && t.labels.includes("low-energy")) ||
+						(q.includes("@medium-energy") &&
+							t.labels.includes("medium-energy")) ||
+						(q.includes("@high-energy") && t.labels.includes("high-energy")) ||
+						(q.includes("@quick") && t.labels.includes("quick"))
 					);
 				}
 				return true;

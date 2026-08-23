@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AppTask } from "../db-transform.ts";
+import type { AppTask } from "doist-core";
 import { filterByEnergy, findMissingEnergyMetadata } from "./energy.ts";
 
 function makeTask(

@@ -12,11 +12,23 @@ import {
 } from "./shared.ts";
 import { registerTool } from "./traced-tool.ts";
 
-const ENERGY_FILTERS: Record<string, string> = {
-	low: "@low-energy | @quick",
-	medium: "@low-energy | @medium-energy | @quick",
-	high: "invalid-no-high-energy-tasks",
+const ENERGY_SAVED_FILTER = "Energy level";
+
+/**
+ * Label convention per energy level, applied on top of the saved
+ * filter's results (which cover all levels at once).
+ *
+ * Deliberately narrower than doist-personal's filterByEnergy, which
+ * also lets medium match low-energy/quick — the saved-filter lookup
+ * replaces those heuristic queries.
+ */
+const ENERGY_LABELS: Record<"low" | "medium" | "high", readonly string[]> = {
+	low: ["low-energy", "quick"],
+	medium: ["medium-energy"],
+	high: ["high-energy"],
 };
+
+const SUGGESTED_LIMIT = 2;
 
 const SessionSummaryInputSchema = toStandardJsonSchema(
 	v.object({
@@ -112,12 +124,21 @@ export function registerSessionTools(
 			const requiresTriage = overdue.length > TRIAGE_THRESHOLD;
 
 			let suggested: ReturnType<typeof toFormatted>[] = [];
-			if (energy && energy !== "high") {
-				const filter = ENERGY_FILTERS[energy];
-				if (filter) {
-					const energyResult = await client.fetchTasksByFilter(filter, 2);
+			let warning = "";
+			if (energy) {
+				const savedFilter = db.getFilterByName(ENERGY_SAVED_FILTER);
+				if (!savedFilter) {
+					warning = ` — saved filter "${ENERGY_SAVED_FILTER}" not found; sync and create it in Todoist to get suggestions`;
+				} else {
+					const levelLabels = ENERGY_LABELS[energy];
+					const energyResult = await client.fetchTasksByFilter(
+						savedFilter.query,
+						200,
+					);
 					suggested = energyResult.tasks
 						.filter((t) => !t.is_deleted)
+						.filter((t) => t.labels.some((l) => levelLabels.includes(l)))
+						.slice(0, SUGGESTED_LIMIT)
 						.map((t) => toFormatted(t, projectMap));
 				}
 			}
@@ -134,7 +155,7 @@ export function registerSessionTools(
 					suggested,
 					syncedAt,
 				},
-				text: `${overdue.length} overdue, ${today.length} today, ${thoughtsCount} thoughts${requiresTriage ? " — triage needed" : ""}`,
+				text: `${overdue.length} overdue, ${today.length} today, ${thoughtsCount} thoughts${requiresTriage ? " — triage needed" : ""}${warning}`,
 				track: {
 					"overdue.count": overdue.length,
 					"today.count": today.length,

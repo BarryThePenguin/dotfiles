@@ -18,6 +18,7 @@
 		"@opentelemetry/semantic-conventions": "^1.40.0",
 		"citty": "^0.2.2",
 		"doist-core": "workspace:*",
+		"doist-personal": "workspace:*",
 		"sqlite-runtime": "workspace:*",
 		"valibot": "^1.4.0"
 	},

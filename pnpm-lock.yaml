@@ -89,6 +89,9 @@ importers:
       doist-core:
         specifier: workspace:*
         version: link:../doist-core
+      doist-personal:
+        specifier: workspace:*
+        version: link:../doist-personal
       sqlite-runtime:
         specifier: workspace:*
         version: link:../sqlite-runtime
@@ -181,6 +184,9 @@ importers:
       doist-core:
         specifier: workspace:*
         version: link:../doist-core
+      doist-personal:
+        specifier: workspace:*
+        version: link:../doist-personal
       pino:
         specifier: ^10.0.0
         version: 10.3.1
@@ -194,6 +200,19 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 2.0.0
         version: 2.0.0
+      '@types/node':
+        specifier: 24.13.3
+        version: 24.13.3
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(vite@8.2.1(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
+
+  tools/doist-personal:
+    dependencies:
+      doist-core:
+        specifier: workspace:*
+        version: link:../doist-core
+    devDependencies:
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3

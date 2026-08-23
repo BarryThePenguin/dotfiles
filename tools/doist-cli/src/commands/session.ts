@@ -5,7 +5,7 @@ import {
 	type OperationalContainer,
 	type SyncResult,
 } from "doist-core";
-import { filterByEnergy } from "doist-core/analysis";
+import { filterByEnergy } from "doist-personal";
 import { out } from "../output.ts";
 
 export function buildCommands(container: OperationalContainer) {
