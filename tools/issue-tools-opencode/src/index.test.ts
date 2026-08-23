@@ -1,5 +1,5 @@
 import type { Plugin } from "@opencode-ai/plugin/effect";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { mkdirSync, mkdtempDisposableSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -89,6 +89,33 @@ describe("plugin surface", () => {
 			expect(def["description"]).toBeTruthy();
 			expect(def["input"]).toBeDefined();
 			expect(typeof def["execute"]).toBe("function");
+		}
+	});
+
+	// Regression: opencode has rejected both `Schema.String` and a
+	// Tool.Result-shaped struct as the declared output schema (different
+	// validation layers disagree on whether the schema applies to the
+	// markdown string or the whole result wrapper). The declaration must be
+	// tolerant enough to accept every shape that has appeared in practice.
+	it("declares an output schema that accepts every observed result shape", async () => {
+		const { tools } = await setupPlugin();
+		const shapes: unknown[] = [
+			"# 3 issue(s)\n\nid — title [open] (label)",
+			{ output: "ok", metadata: { count: 1, issues: [] } },
+			{ output: "ok", content: [{ type: "text", text: "ok" }], metadata: {} },
+		];
+		for (const def of tools.values()) {
+			const output = def["output"];
+			expect(output, `${def.name} is missing an output schema`).toBeDefined();
+			const decode = Schema.decodeUnknownSync(
+				output as Schema.Schema<unknown, unknown>,
+			);
+			for (const shape of shapes) {
+				expect(decode(shape)).toEqual(
+					shape,
+					`${def.name} rejected a result shape`,
+				);
+			}
 		}
 	});
 });

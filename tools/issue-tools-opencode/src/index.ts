@@ -29,6 +29,18 @@ import { createSessionRegistry, type SessionRegistry } from "./tracker.ts";
 
 const registry = createSessionRegistry();
 
+/**
+ * Output schema for every action tool.
+ *
+ * Empirically, opencode has rejected both a plain string declaration and a
+ * Tool.Result-shaped struct depending on which layer validates the result,
+ * so declare the most tolerant schema possible: `Schema.Unknown` encodes
+ * identity and accepts anything any layer might feed it (the handlers'
+ * markdown string, the `{ output, metadata }` wrapper, or future shapes).
+ * The readable text still reaches the model via the encoded output/content.
+ */
+const ToolResultOutput = Schema.Unknown;
+
 type SetupArgs = {
 	tracker?: "local" | "todoist" | "auto" | undefined;
 	project_id?: string | undefined;
@@ -160,7 +172,7 @@ function actionTool(session: SessionDomain, spec: ToolCatalogEntry): Tool.Info {
 		name: spec.name,
 		description: spec.description,
 		input: spec.params as Tool.ValueSchema,
-		output: Schema.String,
+		output: ToolResultOutput,
 		options: { codemode: false },
 		execute: (args, ctx) =>
 			runTool(ctx, session, spec.title, (worktree) =>
@@ -200,7 +212,7 @@ export default Plugin.define({
 								"Todoist project ID to mark as the repo project when .doistrc has several",
 						}),
 					}),
-					output: Schema.String,
+					output: ToolResultOutput,
 					options: { codemode: false },
 					execute: (args, ctx) =>
 						runTool(ctx, session, "Issue Tracker Setup", (worktree) =>
