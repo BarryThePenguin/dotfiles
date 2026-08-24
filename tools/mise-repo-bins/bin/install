@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Install = write launchers into $ASDF_INSTALL_PATH/bin, one per bin entry of
+# every package in packages.txt. Launchers run the TypeScript source straight
+# from the working tree, so code edits need no reinstall; rerun `mise reshim`
+# only when a bin *name* is added or removed.
+set -euo pipefail
+
+plugin_real="$(cd "$(dirname "$0")/.." && pwd -P)"
+repo="$(dirname "$(dirname "$plugin_real")")"
+
+while IFS= read -r pkg; do
+	[[ -z "${pkg//[[:space:]]/}" || "$pkg" == \#* ]] && continue
+	node - "$repo" "$pkg" "$ASDF_INSTALL_PATH/bin" <<'NODE'
+const fs = require("node:fs");
+const path = require("node:path");
+const [repo, pkg, binDir] = process.argv.slice(2);
+const pkgDir = path.join(repo, "tools", pkg);
+const { bin } = JSON.parse(fs.readFileSync(path.join(pkgDir, "package.json"), "utf8"));
+if (!bin || Object.keys(bin).length === 0) throw new Error(`${pkg}: no bin entries`);
+fs.mkdirSync(binDir, { recursive: true });
+for (const [name, rel] of Object.entries(bin)) {
+	const target = path.join(pkgDir, rel);
+	fs.writeFileSync(launcher = path.join(binDir, name),
+		`#!/usr/bin/env bash\nexec node '${target}' "$@"\n`, { mode: 0o755 });
+	console.error(`installed ${name} -> ${target}`);
+}
+NODE
+done <"$plugin_real/packages.txt"

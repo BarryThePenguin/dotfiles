@@ -4,7 +4,9 @@ add_newline = true
 
 command_timeout = 2000
 
-mise = { disabled = false }
+# mise is already reflected by the individual tool modules; its health check
+# can block prompt rendering when mise is initializing.
+mise = { disabled = true }
 
 # Nerd Font Symbols
 

@@ -1,0 +1,6 @@
+# Workspace packages whose bin entries become global mise tools.
+# One package name per line; blank lines and #-comments are ignored.
+opencode-go-usage
+doist-cli
+doist-mcp
+issue-tools-claude

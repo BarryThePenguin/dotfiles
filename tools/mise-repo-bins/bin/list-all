@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# mise asdf-style backend plugin for the in-repo opencode-go-usage CLI.
+# The only "version" is the working tree itself ("local").
+echo "local"

@@ -3,6 +3,12 @@ _.file = "~/.config/mise/.env"
 DOTFILES = { required = true }
 EDITOR = "code"
 
+[plugins]
+repo-bins = "~/src/btp/dotfiles/tools/mise-repo-bins"
+
+[tools]
+repo-bins = "local"
+
 [settings]
 dotfiles.root = "~/src/btp/dotfiles"
 env_shell_expand = true
