@@ -345,3 +345,62 @@ export async function fetchTasksByFilter(
 		nextCursor: data.next_cursor ?? null,
 	};
 }
+
+// ============================================================================
+// REST API - Single Task
+// ============================================================================
+
+const RestApiTaskSchema = v.object({
+	id: v.string(),
+	content: v.string(),
+	description: v.string(),
+	priority: v.number(),
+	due: DueSchema,
+	labels: v.array(v.string()),
+	checked: v.boolean(),
+	completed_at: v.optional(v.nullable(v.string())),
+	added_at: v.optional(v.nullable(v.string())),
+	updated_at: v.optional(v.nullable(v.string())),
+	parent_id: v.optional(v.nullable(v.string())),
+	project_id: v.nullable(v.string()),
+	section_id: v.optional(v.nullable(v.string())),
+	child_order: v.optional(v.nullable(v.number())),
+	note_count: v.optional(v.nullable(v.number())),
+});
+
+export type RestApiTask = v.InferOutput<typeof RestApiTaskSchema>;
+
+/**
+ * Fetch a single task by id from the Todoist REST API.
+ *
+ * Used to resolve tasks the local sync database has never seen. A full sync
+ * never returns closed tasks at all — only tasks that are currently open, or
+ * that were open and then closed while already tracked locally. A task
+ * closed before this machine ever synced it will never arrive through sync,
+ * on any future sync, no matter how many times it runs.
+ *
+ * @returns the task, or null when the API reports 404 (genuinely unknown/deleted).
+ */
+export async function fetchTaskFromApi(
+	token: string,
+	id: string,
+): Promise<RestApiTask | null> {
+	const url = new URL(`tasks/${id}`, TODOIST_API_BASE_URL);
+
+	const res = await fetch(url, {
+		method: "GET",
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	});
+
+	if (res.status === 404) {
+		return null;
+	}
+
+	if (!res.ok) {
+		throw new Error(`Todoist API failed: ${res.status} ${res.statusText}`);
+	}
+
+	return v.parse(RestApiTaskSchema, await res.json());
+}

@@ -23,6 +23,7 @@ export type Issue = {
 	comments: IssueComment[];
 	createdAt?: string;
 	updatedAt?: string;
+	completedAt?: string;
 };
 
 export type CreateIssueInput = {

@@ -32,6 +32,7 @@ function syncItem(overrides: Partial<DbTask> = {}): DbTask {
 		is_recurring: 0,
 		labels: "[]",
 		is_completed: 0,
+		completed_at: null,
 		created_at: new Date().toISOString(),
 		synced_at: new Date().toISOString(),
 		...overrides,
@@ -164,6 +165,37 @@ class FakeTodoistClient implements TodoistClient {
 	async fetchTasksByFilter() {
 		await Promise.resolve();
 		return { tasks: [], nextCursor: null };
+	}
+
+	async fetchTaskById(id: string) {
+		await Promise.resolve();
+		const task = this.#tasks.get(id);
+		if (!task) {
+			return null;
+		}
+		return {
+			id: task.id,
+			content: task.content,
+			description: task.description ?? "",
+			priority: task.priority ?? 1,
+			due: task.due_date
+				? {
+						date: task.due_date,
+						string: task.due_string ?? "",
+						is_recurring: task.is_recurring === 1,
+					}
+				: null,
+			labels: task.labels ? (JSON.parse(task.labels) as string[]) : [],
+			checked: task.is_completed === 1,
+			completed_at: task.is_completed === 1 ? task.updated_at : null,
+			added_at: task.created_at,
+			updated_at: task.updated_at,
+			parent_id: task.parent_id,
+			project_id: task.project_id,
+			section_id: task.section_id,
+			child_order: task.child_order,
+			note_count: task.note_count,
+		};
 	}
 }
 

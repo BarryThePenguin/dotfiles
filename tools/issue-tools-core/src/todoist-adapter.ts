@@ -1,4 +1,9 @@
-import { type AppTask, createTodoistOperations } from "doist-core";
+import {
+	type AppTask,
+	createTodoistOperations,
+	prepareApiTaskForDB,
+	type TodoistClient,
+} from "doist-core";
 import type { Database, PersistenceLayer } from "doist-core/db";
 import {
 	WAYFINDER_MAP_LABEL,
@@ -119,6 +124,7 @@ function toIssue(task: TodoistTaskRead): Issue {
 		})),
 		...(task.createdAt ? { createdAt: task.createdAt } : {}),
 		...(task.updatedAt ? { updatedAt: task.updatedAt } : {}),
+		...(task.completedAt ? { completedAt: task.completedAt } : {}),
 	};
 }
 
@@ -135,6 +141,7 @@ function sortById<T extends { id: string }>(records: T[]): T[] {
  */
 export class TodoistAdapter {
 	readonly #db: Database;
+	readonly #client: TodoistClient;
 	readonly #operations: ReturnType<typeof createTodoistOperations>;
 	readonly #projectId: string | undefined;
 
@@ -143,6 +150,7 @@ export class TodoistAdapter {
 		options: TodoistAdapterOptions,
 	) {
 		this.#db = db;
+		this.#client = client;
 		this.#operations = createTodoistOperations({ db, client });
 		this.#projectId = options.projectId;
 	}
@@ -375,8 +383,22 @@ export class TodoistAdapter {
 		return toIssue(this.#withoutComments(result));
 	}
 
-	readIssueRecord(id: string): Promise<Issue> {
-		return Promise.resolve(toIssue(this.#readTask(extractTodoistTaskId(id))));
+	async readIssueRecord(id: string): Promise<Issue> {
+		const taskId = extractTodoistTaskId(id);
+		const task = this.#db.getTaskWithNotes(taskId);
+		if (task) {
+			return toIssue(withComments(task));
+		}
+
+		const apiTask = await this.#client.fetchTaskById(taskId);
+		if (!apiTask) {
+			throw new Error(`Todoist task not found: ${taskId}`);
+		}
+		// A closed task the local sync DB never saw will never arrive through
+		// sync either — a full sync never returns closed tasks. Cache it now so
+		// this is the last time this task ever needs an API call.
+		this.#db.upsertTask(prepareApiTaskForDB(apiTask));
+		return toIssue(this.#readTask(taskId));
 	}
 
 	async writeIssueLabels(

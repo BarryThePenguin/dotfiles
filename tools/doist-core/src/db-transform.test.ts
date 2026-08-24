@@ -67,6 +67,7 @@ function dbTask(overrides: Partial<DbTask> = {}): DbTask {
 		labels: JSON.stringify(["urgent", "work"]),
 		is_completed: 0,
 		is_recurring: 0,
+		completed_at: null,
 		created_at: "2026-05-23T10:00:00Z",
 		synced_at: "2026-05-23T12:00:00Z",
 		...overrides,

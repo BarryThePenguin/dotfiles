@@ -17,6 +17,7 @@ import type {
 	DbNote,
 } from "./db.ts";
 import type {
+	RestApiTask,
 	SyncFilter,
 	SyncItem,
 	SyncLabel,
@@ -42,6 +43,7 @@ export type AppTask = {
 	labels: string[];
 	isCompleted: boolean;
 	createdAt: string | null;
+	completedAt: string | null;
 };
 
 export type AppProject = {
@@ -88,6 +90,42 @@ function now(): string {
 	return new Date().toISOString();
 }
 
+/** The canonical Todoist web URL for a task, given its id. */
+export function taskUrl(id: string): string {
+	return `https://app.todoist.com/app/task/${id}`;
+}
+
+/**
+ * Prepare a task fetched from the REST single-task endpoint for database
+ * storage, so a task the sync API will never return (a task closed before
+ * this machine synced it) still only costs one API call, ever.
+ */
+export function prepareApiTaskForDB(
+	t: RestApiTask,
+	syncedAt: string = now(),
+): DbTask {
+	return {
+		id: t.id,
+		project_id: t.project_id,
+		section_id: t.section_id ?? null,
+		parent_id: t.parent_id ?? null,
+		child_order: t.child_order ?? null,
+		note_count: t.note_count ?? null,
+		updated_at: t.updated_at ?? null,
+		content: t.content,
+		description: t.description,
+		priority: t.priority,
+		due_date: t.due?.date ?? null,
+		due_string: t.due?.string ?? null,
+		is_recurring: t.due?.is_recurring ? 1 : 0,
+		labels: JSON.stringify(t.labels),
+		is_completed: t.checked ? 1 : 0,
+		completed_at: t.completed_at ?? null,
+		created_at: t.added_at ?? null,
+		synced_at: syncedAt,
+	};
+}
+
 /**
  * Prepare a Todoist sync item for database storage.
  *
@@ -117,6 +155,7 @@ export function prepareTaskForDB(
 		is_recurring: t.due?.is_recurring ? 1 : 0,
 		labels: JSON.stringify(t.labels),
 		is_completed: t.checked ? 1 : 0,
+		completed_at: null,
 		created_at: t.added_at ?? null,
 		synced_at: syncedAt,
 	};
@@ -146,7 +185,7 @@ export function normalizeTask(t: DbTask): AppTask {
 
 	return {
 		id: t.id,
-		url: `https://app.todoist.com/app/task/${t.id}`,
+		url: taskUrl(t.id),
 		projectId: t.project_id,
 		sectionId: t.section_id,
 		parentId: t.parent_id,
@@ -160,6 +199,7 @@ export function normalizeTask(t: DbTask): AppTask {
 		labels: t.labels ? (JSON.parse(t.labels) as string[]) : [],
 		isCompleted: t.is_completed === 1,
 		createdAt: t.created_at,
+		completedAt: t.completed_at,
 	};
 }
 

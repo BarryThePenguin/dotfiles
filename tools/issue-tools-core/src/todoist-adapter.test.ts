@@ -299,6 +299,65 @@ describe("TodoistAdapter", () => {
 		expect(read.id).toBe(created.id);
 	});
 
+	// -- issue_read Todoist API fallback for completed-but-unsynced tasks --
+
+	it("falls back to the Todoist API and maps a completed task the local sync DB missed", async () => {
+		const created = await modules.issues.createIssue({
+			title: "Completed before last sync",
+			body: "Body.",
+			labels: ["bug"],
+		});
+		await modules.issues.closeIssue(created.id);
+		fixture.db.deleteTasksByIds([created.id]);
+
+		const read = await modules.issues.readIssue(created.id);
+
+		expect(read).toMatchObject({
+			id: created.id,
+			title: "Completed before last sync",
+			body: "Body.",
+			labels: ["bug"],
+			status: "closed",
+			comments: [],
+		});
+		expect(read.completedAt).toBeDefined();
+	});
+
+	it("caches an API-fallback task locally so it never needs a second API call", async () => {
+		const created = await modules.issues.createIssue({
+			title: "Closed on another machine",
+			body: "Body.",
+		});
+		await modules.issues.closeIssue(created.id);
+		fixture.db.deleteTasksByIds([created.id]);
+
+		await modules.issues.readIssue(created.id);
+
+		const apiSpy = vi.spyOn(fixture.client, "fetchTaskById");
+		const read = await modules.issues.readIssue(created.id);
+
+		expect(apiSpy).not.toHaveBeenCalled();
+		expect(read).toMatchObject({ id: created.id, status: "closed" });
+	});
+
+	it("still reports not-found for a genuinely unknown task id", async () => {
+		await expect(modules.issues.readIssue("nonexistent-id")).rejects.toThrow(
+			"Todoist task not found: nonexistent-id",
+		);
+	});
+
+	it("does not call the Todoist API when the task resolves locally", async () => {
+		const created = await modules.issues.createIssue({
+			title: "Resolved locally",
+			body: "Body.",
+		});
+		const apiSpy = vi.spyOn(fixture.client, "fetchTaskById");
+
+		await modules.issues.readIssue(created.id);
+
+		expect(apiSpy).not.toHaveBeenCalled();
+	});
+
 	// -- Label delta contract (issue_label) -------------------------------
 
 	it("updateIssueLabels applies delta addLabels in one round trip with the set-merged result on the wire", async () => {

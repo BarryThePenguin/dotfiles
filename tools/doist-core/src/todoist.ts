@@ -8,11 +8,13 @@ import {
 } from "./db-transform.ts";
 import {
 	fetchProjectsFromApi,
+	fetchTaskFromApi,
 	fetchTasksByFilter,
 	syncRequest,
 	type ResourceType,
 	type ResourceTypes,
 	type RestApiProject,
+	type RestApiTask,
 	type RestApiTaskByFilter,
 	type SyncNote,
 } from "./sdk.ts";
@@ -67,6 +69,7 @@ export interface TodoistClient {
 		limit?: number,
 		cursor?: string | null,
 	): Promise<{ tasks: RestApiTaskByFilter[]; nextCursor: string | null }>;
+	fetchTaskById(id: string): Promise<RestApiTask | null>;
 }
 
 /**
@@ -175,6 +178,10 @@ export function createClient(token: string): TodoistClient {
 
 		fetchTasksByFilter(query, limit, cursor) {
 			return fetchTasksByFilter(token, query, limit, cursor);
+		},
+
+		fetchTaskById(id) {
+			return fetchTaskFromApi(token, id);
 		},
 	};
 }

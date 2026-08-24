@@ -10,7 +10,7 @@ import {
 	createNoteAddCommand,
 	SyncCommandError,
 } from "./sync-commands.ts";
-import { syncRequest } from "./sdk.ts";
+import { fetchTaskFromApi, syncRequest } from "./sdk.ts";
 import {
 	createMockApiFilter,
 	createMockSyncResponse,
@@ -291,5 +291,64 @@ describe("syncRequest with filters", () => {
 		});
 
 		expect(result.filters).toEqual([]);
+	});
+});
+
+describe("fetchTaskFromApi", () => {
+	it("returns the parsed task on a 200 response", async () => {
+		mockAgent
+			.get(TODOIST_ORIGIN)
+			.intercept({ path: "/api/v1/tasks/t1", method: "GET" })
+			.reply(
+				200,
+				JSON.stringify({
+					id: "t1",
+					content: "Write tests",
+					description: "All the tests",
+					priority: 1,
+					due: null,
+					labels: ["bug"],
+					checked: true,
+					completed_at: "2026-01-02T00:00:00.000000Z",
+					added_at: "2026-01-01T00:00:00.000000Z",
+					updated_at: "2026-01-02T00:00:00.000000Z",
+					parent_id: null,
+					project_id: "p1",
+				}),
+				{ headers: { "content-type": "application/json" } },
+			);
+
+		const task = await fetchTaskFromApi("mytoken", "t1");
+
+		expect(task).toMatchObject({
+			id: "t1",
+			content: "Write tests",
+			checked: true,
+			completed_at: "2026-01-02T00:00:00.000000Z",
+		});
+	});
+
+	it("returns null on a 404 response", async () => {
+		mockAgent
+			.get(TODOIST_ORIGIN)
+			.intercept({ path: "/api/v1/tasks/missing", method: "GET" })
+			.reply(404, JSON.stringify({ error: "Task not found" }), {
+				headers: { "content-type": "application/json" },
+			});
+
+		const task = await fetchTaskFromApi("mytoken", "missing");
+
+		expect(task).toBeNull();
+	});
+
+	it("throws on a non-404 error response", async () => {
+		mockAgent
+			.get(TODOIST_ORIGIN)
+			.intercept({ path: "/api/v1/tasks/t1", method: "GET" })
+			.reply(500, JSON.stringify({ error: "Internal Server Error" }));
+
+		await expect(fetchTaskFromApi("mytoken", "t1")).rejects.toThrow(
+			"Todoist API failed: 500",
+		);
 	});
 });

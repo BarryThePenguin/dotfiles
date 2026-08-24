@@ -80,6 +80,7 @@ interface TaskTable {
 	is_recurring: number;
 	labels: string | null;
 	is_completed: number;
+	completed_at: string | null;
 	created_at: string | null;
 	synced_at: string;
 }
@@ -173,6 +174,7 @@ const SCHEMA_SQL = `
 	is_recurring  INTEGER DEFAULT 0,
 	labels        TEXT,
 	is_completed  INTEGER DEFAULT 0,
+	completed_at  TEXT,
 	created_at    TEXT,
 	synced_at     TEXT NOT NULL
   );

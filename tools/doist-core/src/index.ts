@@ -15,6 +15,7 @@ export type {
 	AppFilter,
 	AppNote,
 } from "./db-transform.ts";
+export { taskUrl, prepareApiTaskForDB } from "./db-transform.ts";
 
 // Operations
 export {
@@ -100,6 +101,7 @@ export * as SyncState from "./sync-lifecycle.ts";
 
 // Todoist client
 export type { TodoistClient, AllData } from "./todoist.ts";
+export type { RestApiTask } from "./sdk.ts";
 
 // Repo-aware project selection
 export { applyRepoMarker, selectRepoProject } from "./repo-project.ts";

@@ -19,6 +19,7 @@ function makeTask(
 		due: null,
 		labels: [],
 		isCompleted: false,
+		completedAt: null,
 		...overrides,
 	};
 }

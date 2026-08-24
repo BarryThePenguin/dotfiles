@@ -469,6 +469,7 @@ export async function runFilterQuery(
 				is_recurring: t.due?.is_recurring ? 1 : 0,
 				labels: JSON.stringify(t.labels),
 				is_completed: t.checked ? 1 : 0,
+				completed_at: null,
 				created_at: t.added_at ?? null,
 				synced_at: new Date().toISOString(),
 			}),
