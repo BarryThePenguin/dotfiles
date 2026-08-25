@@ -1,14 +1,15 @@
-import { localTrackerRoot, type TrackerMode } from "./session.ts";
-import type { TrackerModules } from "./modules.ts";
+import { localTrackerRoot, type TrackerSession } from "./session.ts";
 import { handleAction, type ActionMap, type ActionRuntime } from "./actions.ts";
 
-type SessionLike = {
-	getModules(): Promise<{ modules: TrackerModules; mode: TrackerMode }>;
-	getClaimant(): Promise<string>;
-	getActiveMap(): string | null;
-	setActiveMap(mapId: string): void;
-	getCwd(): string;
-};
+/**
+ * The subset of `TrackerSession` `createActionHandler` actually calls — it
+ * never invalidates the session. `Pick` ties this to `TrackerSession` so a
+ * signature change breaks the build here instead of drifting silently.
+ */
+type SessionLike = Pick<
+	TrackerSession,
+	"getModules" | "getClaimant" | "getActiveMap" | "setActiveMap" | "getCwd"
+>;
 
 export interface SessionRuntimeFormat<R> {
 	success: (text: string, details: Record<string, unknown>) => R;

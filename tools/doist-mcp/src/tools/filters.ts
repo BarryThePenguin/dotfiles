@@ -1,7 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import { FilterQueryInputSchema as FilterQueryInputRaw } from "doist-core";
+import {
+	AddFilterFieldsSchema,
+	UpdateFilterFieldsSchema,
+	FilterQueryInputSchema as FilterQueryInputRaw,
+} from "doist-core";
 import type { OperationalContainer, TodoistOperations } from "doist-core";
 import {
 	FormattedTaskSchema,
@@ -28,31 +32,23 @@ const FilterListOutputSchema = toStandardJsonSchema(
 
 const FilterAddInputSchema = toStandardJsonSchema(
 	v.object({
-		name: v.string(),
-		query: v.string(),
-		color: v.optional(v.nullable(v.string())),
-		itemOrder: v.optional(v.number()),
-		isFavorite: v.optional(v.boolean()),
-		...v.object({ sync: v.optional(v.boolean(), false) }).entries,
+		...AddFilterFieldsSchema.entries,
+		sync: v.optional(v.boolean(), false),
 	}),
 );
 
 const FilterUpdateInputSchema = toStandardJsonSchema(
 	v.object({
 		id: v.string(),
-		name: v.optional(v.string()),
-		query: v.optional(v.string()),
-		color: v.optional(v.nullable(v.string())),
-		itemOrder: v.optional(v.number()),
-		isFavorite: v.optional(v.boolean()),
-		...v.object({ sync: v.optional(v.boolean(), false) }).entries,
+		...UpdateFilterFieldsSchema.entries,
+		sync: v.optional(v.boolean(), false),
 	}),
 );
 
 const FilterDeleteInputSchema = toStandardJsonSchema(
 	v.object({
 		id: v.string(),
-		...v.object({ sync: v.optional(v.boolean(), false) }).entries,
+		sync: v.optional(v.boolean(), false),
 	}),
 );
 

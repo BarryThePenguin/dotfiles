@@ -30,3 +30,31 @@ describe("filters_query", () => {
 		expect(result.isError).toBe(true);
 	});
 });
+
+describe("filters_add", () => {
+	it("rejects a name over the cap", async () => {
+		const result = await harness.client.callTool({
+			name: "todoist_filters_add",
+			arguments: { name: "x".repeat(LIMITS.filterName + 1), query: "today" },
+		});
+		expect(result.isError).toBe(true);
+	});
+
+	it("rejects a query over the cap", async () => {
+		const result = await harness.client.callTool({
+			name: "todoist_filters_add",
+			arguments: { name: "test", query: "x".repeat(LIMITS.filterQuery + 1) },
+		});
+		expect(result.isError).toBe(true);
+	});
+});
+
+describe("filters_update", () => {
+	it("rejects a name over the cap", async () => {
+		const result = await harness.client.callTool({
+			name: "todoist_filters_update",
+			arguments: { id: "1", name: "x".repeat(LIMITS.filterName + 1) },
+		});
+		expect(result.isError).toBe(true);
+	});
+});

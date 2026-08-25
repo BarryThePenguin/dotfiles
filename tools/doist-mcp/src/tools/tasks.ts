@@ -59,15 +59,13 @@ export function registerTaskTools(
 			const projectId = project
 				? operations.resolveProject(project)
 				: undefined;
-			const { priority, ...filters } = rest;
 			const tasks: ListTaskItem[] =
 				project && !projectId
 					? []
 					: queries
 							.selectTasks({
 								kind: "browse",
-								...filters,
-								...(priority !== undefined ? { priority } : {}),
+								...rest,
 								...(projectId ? { projectId } : {}),
 							})
 							.map((task) =>

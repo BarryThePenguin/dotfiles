@@ -67,6 +67,13 @@ export {
 	parseUpdateFilterFields,
 	parseFilterQueryInput,
 	parseAddCommentFields,
+	AddTaskCliFields,
+	UpdateTaskCliFields,
+	ListTaskCliFields,
+	AddFilterCliFields,
+	UpdateFilterCliFields,
+	FilterQueryCliFields,
+	AddCommentCliFields,
 } from "./input-validation.ts";
 export type {
 	AddTaskFields,
@@ -78,6 +85,10 @@ export type {
 	FilterQueryInput,
 	AddCommentFields,
 } from "./input-validation.ts";
+
+// CLI field bindings
+export { defineCliFields } from "./cli-fields.ts";
+export type { CliCoercion, CliFieldSpec, CliArgDef, CliFieldSet } from "./cli-fields.ts";
 
 // Char limits
 export { LIMITS } from "./limits.ts";
