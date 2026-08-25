@@ -6,11 +6,14 @@ import {
 	type JsonSchemaType,
 } from "@modelcontextprotocol/server";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
-import { detectTrackerSelection, toolCatalog } from "issue-tools-core";
+import {
+	createFileBackedTrackerSession,
+	detectTrackerSelection,
+	toolCatalog,
+} from "issue-tools-core";
 import { handleAction, type ActionMap } from "./actions.ts";
-import { createClaudeSession } from "./session.ts";
 
-const session = createClaudeSession(process.cwd());
+const session = createFileBackedTrackerSession(process.cwd(), "claude");
 const mcp = new McpServer({ name: "issue-tools", version: "0.1.0" });
 
 for (const tool of toolCatalog) {

@@ -5,8 +5,11 @@
  * context into an ActionRuntime<ActionResult> and delegates to handleAction.
  */
 
-import { createActionHandler, type ActionMap } from "issue-tools-core";
-import type { OpenCodeSession } from "./tracker.ts";
+import {
+	createActionHandler,
+	type ActionMap,
+	type FileBackedTrackerSession,
+} from "issue-tools-core";
 
 export type { ActionMap };
 
@@ -18,7 +21,7 @@ export type ActionResult = {
 export function handleAction<K extends keyof ActionMap>(
 	action: K,
 	params: ActionMap[K],
-	session: OpenCodeSession,
+	session: FileBackedTrackerSession,
 ): Promise<ActionResult> {
 	const handler = createActionHandler<ActionResult>(session, {
 		success: (text, metadata) => ({ output: text, metadata }),

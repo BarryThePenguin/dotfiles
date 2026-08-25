@@ -1,85 +1,28 @@
 /**
  * opencode tracker session.
  *
- * Selects the Issue tracker for a worktree, builds the domain modules, and
- * persists mode + active map through the shared issue-tools-core session
- * lifecycle. Unlike the Pi extension (which asks via the TUI and stores state
- * in the session), opencode resolves the mode deterministically and keeps a
- * durable per-worktree state file.
+ * Delegates mode selection, module building, and file-backed state to the
+ * shared issue-tools-core session lifecycle. Unlike the Pi extension (which
+ * asks via the TUI and stores state in the session), opencode keeps a
+ * durable per-worktree session, cached in a registry keyed by worktree.
  */
 
 import {
-	createFileStateStore,
-	createLocalTrackerModules,
-	createTodoistTrackerModules,
-	createTrackerSession,
-	localTrackerRoot,
-	resolveTrackerMode,
-	type SessionStateStore,
-	type TrackerMode,
-	type TrackerSession,
+	createFileBackedTrackerSession,
+	type FileBackedTrackerSession,
 } from "issue-tools-core";
 
-type LocalSessionState = { mode?: TrackerMode; activeMap: string | null };
-
-export type OpenCodeSession = Pick<
-	TrackerSession,
-	"getModules" | "getCwd" | "getClaimant" | "getActiveMap" | "setActiveMap"
-> & {
-	setTrackerMode(mode: TrackerMode | "auto"): void;
+export type SessionRegistry = {
+	get(worktree: string): FileBackedTrackerSession;
 };
 
-export function createOpenCodeSession(worktree: string): OpenCodeSession {
-	const state = createFileStateStore<LocalSessionState>(worktree, "opencode", {
-		activeMap: null,
-	});
-
-	const coreStore: SessionStateStore = {
-		read: () => ({ activeMap: state.read().activeMap }),
-		write: ({ activeMap }) => {
-			const full = state.read();
-			state.write({ ...full, activeMap });
-		},
-	};
-
-	const session = createTrackerSession({
-		cwd: worktree,
-		selectMode: () =>
-			Promise.resolve(resolveTrackerMode(worktree, state.read().mode)),
-		buildLocalModules: () =>
-			createLocalTrackerModules(localTrackerRoot(worktree)),
-		buildTodoistModules: () => createTodoistTrackerModules(worktree),
-		store: coreStore,
-		updateStatus: () => {},
-	});
-
-	return {
-		getModules: () => session.getModules(),
-		getCwd: () => session.getCwd(),
-		getClaimant: session.getClaimant,
-		getActiveMap: session.getActiveMap,
-		setActiveMap: (mapId) => {
-			session.setActiveMap(mapId);
-		},
-		setTrackerMode(mode) {
-			state.write({
-				...(mode !== "auto" && { mode }),
-				activeMap: session.getActiveMap(),
-			});
-			session.invalidate();
-		},
-	};
-}
-
-export type SessionRegistry = { get(worktree: string): OpenCodeSession };
-
 export function createSessionRegistry(): SessionRegistry {
-	const sessions = new Map<string, OpenCodeSession>();
+	const sessions = new Map<string, FileBackedTrackerSession>();
 	return {
-		get(worktree: string): OpenCodeSession {
+		get(worktree: string): FileBackedTrackerSession {
 			let session = sessions.get(worktree);
 			if (!session) {
-				session = createOpenCodeSession(worktree);
+				session = createFileBackedTrackerSession(worktree, "opencode");
 				sessions.set(worktree, session);
 			}
 			return session;

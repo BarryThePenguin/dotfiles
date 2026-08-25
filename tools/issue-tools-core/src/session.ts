@@ -1,8 +1,10 @@
 import { resolve } from "node:path";
 import type { TrackerModules } from "./modules.ts";
 import { resolveClaimant } from "./claimant.ts";
-import type { StateStore } from "./state.ts";
+import { createFileStateStore, type StateStore } from "./state.ts";
 import { detectTrackerSelection } from "./setup-issue-tracker.ts";
+import { createLocalTrackerModules } from "./local-tracker-factory.ts";
+import { createTodoistTrackerModules } from "./todoist-tracker-factory.ts";
 
 export type TrackerMode = "local" | "todoist";
 
@@ -145,4 +147,53 @@ export function createTrackerSession({
 
 	updateStatus(sessionState());
 	return session;
+}
+
+export type FileBackedTrackerSession = TrackerSession & {
+	setTrackerMode(mode: TrackerMode | "auto"): void;
+};
+
+type FileBackedSessionState = { mode?: TrackerMode; activeMap: string | null };
+
+/**
+ * A durable, per-worktree tracker session for hosts with no live status
+ * display (mode and active map persist to a JSON file keyed by `host`).
+ * Unlike the Pi extension (which asks via the TUI and reflects state live),
+ * these hosts resolve mode deterministically and update on next read.
+ */
+export function createFileBackedTrackerSession(
+	cwd: string,
+	host: string,
+): FileBackedTrackerSession {
+	const state = createFileStateStore<FileBackedSessionState>(cwd, host, {
+		activeMap: null,
+	});
+
+	const store: SessionStateStore = {
+		read: () => ({ activeMap: state.read().activeMap }),
+		write: ({ activeMap }) => {
+			state.write({ ...state.read(), activeMap });
+		},
+	};
+
+	const session = createTrackerSession({
+		cwd,
+		selectMode: () =>
+			Promise.resolve(resolveTrackerMode(cwd, state.read().mode)),
+		buildLocalModules: () => createLocalTrackerModules(localTrackerRoot(cwd)),
+		buildTodoistModules: () => createTodoistTrackerModules(cwd),
+		store,
+		updateStatus: () => {},
+	});
+
+	return {
+		...session,
+		setTrackerMode(mode) {
+			state.write({
+				...(mode !== "auto" && { mode }),
+				activeMap: session.getActiveMap(),
+			});
+			session.invalidate();
+		},
+	};
 }

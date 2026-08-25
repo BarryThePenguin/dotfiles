@@ -2,9 +2,12 @@ import { mkdtempDisposableSync, type DisposableTempDir } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createLocalTrackerModules, localTrackerRoot } from "issue-tools-core";
+import {
+	createFileBackedTrackerSession,
+	createLocalTrackerModules,
+	localTrackerRoot,
+} from "issue-tools-core";
 import { handleAction } from "./actions.ts";
-import { createOpenCodeSession } from "./tracker.ts";
 
 function tempDir() {
 	return mkdtempDisposableSync(join(tmpdir(), "issue-tools-opencode-"));
@@ -29,7 +32,7 @@ afterEach(() => {
 describe("OpenCode action wiring", () => {
 	it("shapes a successful result as { output, metadata }", async () => {
 		using dir = tempDir();
-		const session = createOpenCodeSession(dir.path);
+		const session = createFileBackedTrackerSession(dir.path, "opencode");
 
 		const result = await handleAction("list_maps", {}, session);
 
@@ -41,7 +44,7 @@ describe("OpenCode action wiring", () => {
 
 	it("shapes an error result as Error: <message> with empty metadata", async () => {
 		using dir = tempDir();
-		const session = createOpenCodeSession(dir.path);
+		const session = createFileBackedTrackerSession(dir.path, "opencode");
 
 		const result = await handleAction("get_map", {}, session);
 
@@ -56,7 +59,7 @@ describe("OpenCode action wiring", () => {
 			title: "GENIE 2780",
 			destination: "A clear handoff exists.",
 		});
-		const session = createOpenCodeSession(dir.path);
+		const session = createFileBackedTrackerSession(dir.path, "opencode");
 
 		await handleAction("list_maps", {}, session);
 

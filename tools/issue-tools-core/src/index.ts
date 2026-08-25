@@ -73,12 +73,14 @@ export { createFileStateStore } from "./state.ts";
 export type { StateStore } from "./state.ts";
 export { resolveClaimant } from "./claimant.ts";
 export {
+	createFileBackedTrackerSession,
 	createInMemorySessionStateStore,
 	createTrackerSession,
 	localTrackerRoot,
 	resolveTrackerMode,
 } from "./session.ts";
 export type {
+	FileBackedTrackerSession,
 	SessionState,
 	SessionStateStore,
 	TrackerMode,
