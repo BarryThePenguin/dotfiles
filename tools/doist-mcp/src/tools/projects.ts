@@ -1,8 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import type { OperationalContainer } from "doist-core";
-import { createTodoistOperations } from "doist-core";
+import type { OperationalContainer, TodoistOperations } from "doist-core";
 import { RestApiProjectSchema } from "doist-core/sdk";
 import {
 	EmptyInput,
@@ -19,8 +18,8 @@ const MAX_AUTO_PAGES = 10;
 export function registerProjectTools(
 	mcp: McpServer,
 	container: OperationalContainer,
+	operations: TodoistOperations,
 ): void {
-	const operations = createTodoistOperations(container);
 	registerTool({
 		mcp,
 		name: "todoist_projects_fetch",
@@ -163,9 +162,11 @@ export function registerProjectTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db } = container;
+			const { queries } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const labels = db.selectAllLabels().map(({ id, name }) => ({ id, name }));
+			const labels = queries
+				.selectAllLabels()
+				.map(({ id, name }) => ({ id, name }));
 			return {
 				data: { sync: syncResult, labels },
 				text: "Labels",

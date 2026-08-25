@@ -55,7 +55,7 @@ export function buildCommand(
 			},
 		},
 		async run({ args }) {
-			const { db } = container;
+			const { queries } = container;
 			const { project, ...fields } = parseListTask(args);
 			const projectId = project
 				? operations.resolveProject(project)
@@ -63,10 +63,10 @@ export function buildCommand(
 			const tasks =
 				project && !projectId
 					? []
-					: db.selectTasks({
+					: queries.selectTasks({
+							kind: "browse",
 							...fields,
 							...(projectId ? { projectId } : {}),
-							projectScope: container.listProjectIds(),
 						});
 			if (args.sync) {
 				const syncResult = await container.sync(

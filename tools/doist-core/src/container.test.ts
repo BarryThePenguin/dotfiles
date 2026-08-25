@@ -39,14 +39,14 @@ describe("createContainer", () => {
 			container.close();
 		});
 
-		expect(() => container.db).toThrow(
+		expect(() => container.queries).toThrow(
 			"no .doistrc found in this git repository",
 		);
 		expect(container.paths).toBeNull();
 		expect(existsSync(join(tempDir.path, "todoist.db"))).toBe(false);
 	});
 
-	it("does not create the db file until db is first accessed", () => {
+	it("does not create the db file until queries is first accessed", () => {
 		using tempDir = setupContainer();
 		const cacheHome = join(tempDir.path, "shared");
 		const dbFile = join(cacheHome, "doist", "todoist.db");
@@ -60,7 +60,7 @@ describe("createContainer", () => {
 
 		expect(existsSync(dbFile)).toBe(false);
 		expect(container.paths?.rcPath).toBe(rcPath);
-		expect(container.db).not.toBeNull();
+		expect(container.queries).not.toBeNull();
 		expect(existsSync(dbFile)).toBe(true);
 	});
 
@@ -99,7 +99,7 @@ describe("createContainer", () => {
 			'"p1"',
 		);
 		expect(existsSync(dbFile)).toBe(false);
-		expect(container.db).not.toBeNull();
+		expect(container.queries).not.toBeNull();
 		expect(existsSync(dbFile)).toBe(true);
 	});
 

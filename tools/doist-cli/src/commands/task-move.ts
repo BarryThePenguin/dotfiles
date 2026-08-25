@@ -17,8 +17,8 @@ export function buildCommand(
 			},
 		},
 		async run({ args }) {
-			const { db } = container;
-			if (!db.getTaskById(args.id)) {
+			const { queries } = container;
+			if (!queries.getTaskById(args.id)) {
 				throw new Error(`task not found: ${args.id}`);
 			}
 			out(await operations.moveTask(args.id, args.project));

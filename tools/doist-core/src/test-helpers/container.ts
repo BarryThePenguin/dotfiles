@@ -16,9 +16,17 @@ import type {
 	ConfigPaths,
 } from "../container.ts";
 import { Database } from "../db.ts";
+import { createQueries } from "../queries.ts";
 import { createClient, type TodoistClient } from "../todoist.ts";
 
-/** OperationalContainer with narrowed mock types for test code. */
+/**
+ * OperationalContainer with narrowed mock types for test code, plus the raw
+ * `db` that production code never sees. Tests use `db` to arrange fixtures
+ * directly (bypassing `operations`'s write pipeline, which may carry side
+ * effects like sync-token bookkeeping that fixture setup shouldn't need) and
+ * `queries`/`operations` to exercise the code under test the same way
+ * production callers do.
+ */
 export interface TestContainer extends OperationalContainer {
 	readonly paths: ConfigPaths;
 	readonly db: Mocked<Database>;
@@ -117,10 +125,11 @@ export function createTestContainer(overrides?: {
 		}),
 		paths,
 		db: vi.mocked(db),
+		queries: createQueries(db, () => Array.from(projects.keys())),
 		client,
 		close() {
 			testDir.remove();
 			db.close();
 		},
-	} satisfies OperationalContainer;
+	};
 }

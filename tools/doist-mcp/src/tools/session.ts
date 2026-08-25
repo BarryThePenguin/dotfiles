@@ -101,10 +101,10 @@ export function registerSessionTools(
 			attributes: { energy: args.energy ?? "none" },
 		}),
 		callback: async ({ energy, sync: shouldSync }) => {
-			const { db, client } = container;
+			const { queries, client } = container;
 			const sync = await maybeSyncSummary(container, shouldSync);
 
-			const projectMap = buildProjectMap(db.selectProjects());
+			const projectMap = buildProjectMap(queries.selectProjects());
 
 			const [overdueResult, todayResult, thoughtsResult] = await Promise.all([
 				client.fetchTasksByFilter("overdue", 200),
@@ -126,7 +126,7 @@ export function registerSessionTools(
 			let suggested: ReturnType<typeof toFormatted>[] = [];
 			let warning = "";
 			if (energy) {
-				const savedFilter = db.getFilterByName(ENERGY_SAVED_FILTER);
+				const savedFilter = queries.getFilterByName(ENERGY_SAVED_FILTER);
 				if (!savedFilter) {
 					warning = ` — saved filter "${ENERGY_SAVED_FILTER}" not found; sync and create it in Todoist to get suggestions`;
 				} else {
@@ -143,7 +143,7 @@ export function registerSessionTools(
 				}
 			}
 
-			const syncedAt = db.getLastSyncedAt();
+			const syncedAt = queries.getLastSyncedAt();
 
 			return {
 				data: {

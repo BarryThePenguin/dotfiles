@@ -1,9 +1,16 @@
 // Container
-export { createContainer, hasProjects, ProjectRefSchema } from "./container.ts";
+export {
+	createContainer,
+	hasProjects,
+	ProjectRefSchema,
+	toOperationalContainer,
+} from "./container.ts";
 export type {
 	Container,
 	OperationalContainer,
 	ProjectRef,
+	QueryLayer,
+	RootContainer,
 } from "./container.ts";
 
 // Domain types
@@ -16,6 +23,10 @@ export type {
 	AppNote,
 } from "./db-transform.ts";
 export { taskUrl, prepareApiTaskForDB } from "./db-transform.ts";
+
+// Queries
+export { createQueries } from "./queries.ts";
+export type { Queries, TaskQuery } from "./queries.ts";
 
 // Operations
 export {

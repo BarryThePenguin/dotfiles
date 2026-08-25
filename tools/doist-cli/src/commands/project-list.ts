@@ -13,14 +13,14 @@ export function buildCommand(container: OperationalContainer) {
 		},
 		async run({ args }) {
 			if (args.sync) {
-				const { db } = container;
+				const { queries } = container;
 				const syncResult = await container.sync(
 					container.listProjectIds(),
 					false,
 				);
 				out({
 					synced: countSyncData(syncResult),
-					projects: db.selectProjects(undefined, container.listProjectIds()),
+					projects: queries.selectProjects(),
 				});
 			} else {
 				out(container.listProjects());

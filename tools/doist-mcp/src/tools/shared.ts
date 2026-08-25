@@ -1,7 +1,6 @@
 import * as v from "valibot";
-import type { AppProject, OperationalContainer } from "doist-core";
+import type { AppProject, OperationalContainer, Queries } from "doist-core";
 import { countSyncData } from "doist-core";
-import type { Database } from "doist-core/db";
 
 export const EmptyInput = v.object({ sync: v.optional(v.boolean(), false) });
 export const SyncInput = v.object({ sync: v.optional(v.boolean(), false) });
@@ -68,8 +67,8 @@ export function buildProjectMap(projects: AppProject[]): Map<string, string> {
 	return new Map(projects.map((p) => [p.id, p.name]));
 }
 
-export function createEnricher(db: Database) {
-	const projectMap = buildProjectMap(db.selectProjects());
+export function createEnricher(queries: Queries) {
+	const projectMap = buildProjectMap(queries.selectProjects());
 	return <T extends { projectId: string | null }>(t: T) => ({
 		...t,
 		projectName: t.projectId ? (projectMap.get(t.projectId) ?? null) : null,

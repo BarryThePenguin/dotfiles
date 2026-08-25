@@ -1,9 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import type { OperationalContainer } from "doist-core";
+import type { OperationalContainer, TodoistOperations } from "doist-core";
 import {
-	createTodoistOperations,
 	AddCommentFieldsSchema,
 	AddTaskFieldsSchema,
 	ListTaskSchema,
@@ -21,8 +20,8 @@ import { registerTool } from "./traced-tool.ts";
 export function registerTaskTools(
 	mcp: McpServer,
 	container: OperationalContainer,
+	operations: TodoistOperations,
 ): void {
-	const operations = createTodoistOperations(container);
 	registerTool({
 		mcp,
 		name: "todoist_tasks_list",
@@ -54,7 +53,7 @@ export function registerTaskTools(
 			attributes: { project: args.project },
 		}),
 		callback: async ({ project, details, sync: shouldSync, ...rest }) => {
-			const { db } = container;
+			const { queries } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
 
 			const projectId = project
@@ -64,18 +63,18 @@ export function registerTaskTools(
 			const tasks: ListTaskItem[] =
 				project && !projectId
 					? []
-					: db
+					: queries
 							.selectTasks({
+								kind: "browse",
 								...filters,
 								...(priority !== undefined ? { priority } : {}),
 								...(projectId ? { projectId } : {}),
-								projectScope: container.listProjectIds(),
 							})
 							.map((task) =>
 								details ? task : { id: task.id, content: task.content },
 							);
 
-			const syncedAt = db.getLastSyncedAt();
+			const syncedAt = queries.getLastSyncedAt();
 			return {
 				data: { sync: syncResult, tasks, syncedAt },
 				text: `Last synced at ${syncedAt}`,
@@ -170,11 +169,11 @@ export function registerTaskTools(
 			attributes: { id: args.id },
 		}),
 		callback: async ({ id, ...fields }) => {
-			const { db } = container;
+			const { queries } = container;
 			if (Object.values(fields).every((v) => v === undefined)) {
 				throw new Error("at least one field must be provided");
 			}
-			if (!db.getTaskById(id)) {
+			if (!queries.getTaskById(id)) {
 				throw new Error(`task not found: ${id}`);
 			}
 			const result = await operations.updateTask(id, fields);
@@ -211,8 +210,8 @@ export function registerTaskTools(
 			attributes: { id: args.id, project: args.project },
 		}),
 		callback: async ({ id, project }) => {
-			const { db } = container;
-			if (!db.getTaskById(id)) {
+			const { queries } = container;
+			if (!queries.getTaskById(id)) {
 				throw new Error(`task not found: ${id}`);
 			}
 			const result = await operations.moveTask(id, project);
@@ -262,13 +261,8 @@ export function registerTaskTools(
 			attributes: { query: args.query },
 		}),
 		callback: ({ query }) => {
-			const { db } = container;
-			const tasks = db.selectTasks({
-				content: query,
-				completed: "incomplete",
-				orderBy: { field: "priority", direction: "desc" },
-				projectScope: container.listProjectIds(),
-			});
+			const { queries } = container;
+			const tasks = queries.selectTasks({ kind: "search", text: query });
 			return {
 				data: { tasks },
 				text: `Search results for "${query}"`,

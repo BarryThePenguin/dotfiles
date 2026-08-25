@@ -17,15 +17,17 @@ export function buildCommand(container: OperationalContainer) {
 			},
 		},
 		async run({ args }) {
-			const { db } = container;
+			const { queries } = container;
 			let sync: SyncResult | undefined;
 			if (args.sync) {
 				sync = countSyncData(
 					await container.sync(container.listProjectIds(), false),
 				);
 			}
-			const analysis = findDuplicateCandidates(db.selectTasks());
-			out({ sync, ...analysis, syncedAt: db.getLastSyncedAt() });
+			const analysis = findDuplicateCandidates(
+				queries.selectTasks({ kind: "browse" }),
+			);
+			out({ sync, ...analysis, syncedAt: queries.getLastSyncedAt() });
 		},
 	});
 }

@@ -108,10 +108,7 @@ const TriageAnalysisOutputSchema = toStandardJsonSchema(
 );
 
 type TriageCategory =
-	| "duplicates"
-	| "stale"
-	| "unroutedInbox"
-	| "missingEnergyMetadata";
+	"duplicates" | "stale" | "unroutedInbox" | "missingEnergyMetadata";
 
 function pickBestTriageCategory(
 	duplicates: number,
@@ -148,13 +145,13 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db } = container;
+			const { queries } = container;
 			const sync = await maybeSyncSummary(container, shouldSync);
 
-			const allTasks = db.selectTasks();
+			const allTasks = queries.selectTasks({ kind: "browse" });
 			const duplicates = findDuplicateCandidates(allTasks);
-			const projects = db.selectProjects();
-			const enrich = createEnricher(db);
+			const projects = queries.selectProjects();
+			const enrich = createEnricher(queries);
 
 			const [inboxProject] = projects.filter((p) => p.isInbox);
 			const inboxId = inboxProject?.id ?? null;
@@ -176,8 +173,8 @@ export function registerAnalysisTools(
 				})),
 			};
 			const unroutedInbox = inboxId
-				? db
-						.selectTasks({ projectId: inboxId })
+				? queries
+						.selectTasks({ kind: "browse", projectId: inboxId })
 						.filter((t) => !t.labels.includes("thoughts"))
 						.map(enrich)
 				: [];
@@ -194,7 +191,7 @@ export function registerAnalysisTools(
 				unroutedInbox.length,
 				missingEnergyMetadata.length,
 			);
-			const syncedAt = db.getLastSyncedAt();
+			const syncedAt = queries.getLastSyncedAt();
 
 			return {
 				data: {
@@ -236,10 +233,12 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db } = container;
+			const { queries } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const enrich = createEnricher(db);
-			const analysis = findDuplicateCandidates(db.selectTasks());
+			const enrich = createEnricher(queries);
+			const analysis = findDuplicateCandidates(
+				queries.selectTasks({ kind: "browse" }),
+			);
 			const enrichedGroups = analysis.groups.map((g) => ({
 				...g,
 				canonicalTask: enrich(g.canonicalTask),
@@ -275,13 +274,14 @@ export function registerAnalysisTools(
 		},
 		spanOptions: {},
 		callback: async ({ sync: shouldSync }) => {
-			const { db } = container;
+			const { queries } = container;
 			const syncResult = await maybeSyncSummary(container, shouldSync);
-			const tasks = db.selectTasks({
+			const tasks = queries.selectTasks({
+				kind: "browse",
 				orderBy: { field: "updated_at", direction: "asc" },
 			});
-			const projects = db.selectProjects();
-			const enrich = createEnricher(db);
+			const projects = queries.selectProjects();
+			const enrich = createEnricher(queries);
 			const [inboxProject] = projects.filter((p) => p.isInbox);
 			const analysis = findStaleCandidates(tasks, inboxProject?.id ?? null);
 			const enrichedCandidates = analysis.candidates.map((c) => ({

@@ -13,13 +13,8 @@ export function buildCommand(container: OperationalContainer) {
 			},
 		},
 		run({ args }) {
-			const { db } = container;
-			const tasks = db.selectTasks({
-				content: args.query,
-				completed: "incomplete",
-				orderBy: { field: "priority", direction: "desc" },
-				projectScope: container.listProjectIds(),
-			});
+			const { queries } = container;
+			const tasks = queries.selectTasks({ kind: "search", text: args.query });
 			out({ tasks });
 		},
 	});

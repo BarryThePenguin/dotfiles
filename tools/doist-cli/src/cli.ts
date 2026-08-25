@@ -2,7 +2,12 @@
 
 import { ATTR_ERROR_TYPE } from "@opentelemetry/semantic-conventions";
 import { defineCommand, runMain } from "citty";
-import { createContainer, createTodoistOperations, tracer } from "doist-core";
+import {
+	createContainer,
+	createTodoistOperations,
+	toOperationalContainer,
+	tracer,
+} from "doist-core";
 import { ATTR_EXITCODE } from "doist-core/semconv";
 import { basename } from "node:path";
 import { shutdown } from "./instrumentation.ts";
@@ -16,8 +21,9 @@ import * as sections from "./commands/sections.ts";
 import * as session from "./commands/session.ts";
 import * as tasks from "./commands/tasks.ts";
 
-const container = createContainer();
-const operations = createTodoistOperations(container);
+const root = createContainer();
+const operations = createTodoistOperations(root);
+const container = toOperationalContainer(root);
 
 const main = defineCommand({
 	meta: {

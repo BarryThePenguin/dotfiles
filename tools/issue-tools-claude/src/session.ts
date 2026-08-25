@@ -30,7 +30,8 @@ export function createClaudeSession(cwd: string): ClaudeSession {
 
 	const session = createTrackerSession({
 		cwd,
-		selectMode: () => Promise.resolve(resolveTrackerMode(cwd, state.read().mode)),
+		selectMode: () =>
+			Promise.resolve(resolveTrackerMode(cwd, state.read().mode)),
 		buildLocalModules: () => createLocalTrackerModules(localTrackerRoot(cwd)),
 		buildTodoistModules: () => createTodoistTrackerModules(cwd),
 		store,

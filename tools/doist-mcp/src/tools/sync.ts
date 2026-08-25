@@ -25,7 +25,7 @@ export function registerSyncTools(
 			const counts = countSyncData(result);
 			return {
 				data: counts,
-				text: `Last synced at ${container.db.getLastSyncedAt()}`,
+				text: `Last synced at ${container.queries.getLastSyncedAt()}`,
 				track: {
 					"sync.full": full,
 					"sync.projects": counts.projects,

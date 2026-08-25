@@ -28,7 +28,7 @@ export function buildCommands(container: OperationalContainer) {
 					},
 				},
 				async run({ args }) {
-					const { db } = container;
+					const { queries } = container;
 					let sync: SyncResult | undefined;
 					if (args.sync) {
 						sync = countSyncData(
@@ -36,14 +36,20 @@ export function buildCommands(container: OperationalContainer) {
 						);
 					}
 
-					const overdue = db.selectTasks({ due: "overdue" });
-					const today = db.selectTasks({ due: "today" });
-					const thoughts = db.selectTasks({ label: "thoughts" });
+					const overdue = queries.selectTasks({
+						kind: "browse",
+						due: "overdue",
+					});
+					const today = queries.selectTasks({ kind: "browse", due: "today" });
+					const thoughts = queries.selectTasks({
+						kind: "browse",
+						label: "thoughts",
+					});
 					const requiresTriage = overdue.length > TRIAGE_THRESHOLD;
 					const suggested =
 						args.energy && ["low", "medium", "high"].includes(args.energy)
 							? filterByEnergy(
-									db.selectTasks(),
+									queries.selectTasks({ kind: "browse" }),
 									args.energy as "low" | "medium" | "high",
 								)
 							: [];
@@ -55,7 +61,7 @@ export function buildCommands(container: OperationalContainer) {
 						thoughtsCount: thoughts.length,
 						requiresTriage,
 						suggested,
-						syncedAt: db.getLastSyncedAt(),
+						syncedAt: queries.getLastSyncedAt(),
 					});
 				},
 			}),

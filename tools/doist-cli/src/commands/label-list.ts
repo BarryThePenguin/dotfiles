@@ -12,7 +12,7 @@ export function buildCommand(container: OperationalContainer) {
 			},
 		},
 		async run({ args }) {
-			const { db } = container;
+			const { queries } = container;
 			if (args.sync) {
 				const syncResult = await container.sync(
 					container.listProjectIds(),
@@ -20,10 +20,10 @@ export function buildCommand(container: OperationalContainer) {
 				);
 				out({
 					synced: countSyncData(syncResult),
-					labels: db.selectAllLabels(),
+					labels: queries.selectAllLabels(),
 				});
 			} else {
-				out(db.selectAllLabels());
+				out(queries.selectAllLabels());
 			}
 		},
 	});

@@ -44,7 +44,8 @@ export function createOpenCodeSession(worktree: string): OpenCodeSession {
 
 	const session = createTrackerSession({
 		cwd: worktree,
-		selectMode: () => Promise.resolve(resolveTrackerMode(worktree, state.read().mode)),
+		selectMode: () =>
+			Promise.resolve(resolveTrackerMode(worktree, state.read().mode)),
 		buildLocalModules: () =>
 			createLocalTrackerModules(localTrackerRoot(worktree)),
 		buildTodoistModules: () => createTodoistTrackerModules(worktree),

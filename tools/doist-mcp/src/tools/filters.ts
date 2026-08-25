@@ -1,11 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { toStandardJsonSchema } from "@valibot/to-json-schema";
 import * as v from "valibot";
-import {
-	createTodoistOperations,
-	FilterQueryInputSchema as FilterQueryInputRaw,
-} from "doist-core";
-import type { OperationalContainer } from "doist-core";
+import { FilterQueryInputSchema as FilterQueryInputRaw } from "doist-core";
+import type { OperationalContainer, TodoistOperations } from "doist-core";
 import {
 	FormattedTaskSchema,
 	maybeSyncSummary,
@@ -74,8 +71,8 @@ const FilterQueryOutputSchema = toStandardJsonSchema(
 export function registerFilterTools(
 	mcp: McpServer,
 	container: OperationalContainer,
+	operations: TodoistOperations,
 ): void {
-	const operations = createTodoistOperations(container);
 	registerTool({
 		mcp,
 		name: "todoist_filters_list",

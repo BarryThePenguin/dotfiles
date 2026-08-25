@@ -17,17 +17,18 @@ export function buildCommand(container: OperationalContainer) {
 			},
 		},
 		async run({ args }) {
-			const { db } = container;
+			const { queries } = container;
 			let sync: SyncResult | undefined;
 			if (args.sync) {
 				sync = countSyncData(
 					await container.sync(container.listProjectIds(), false),
 				);
 			}
-			const projects = db.selectProjects();
+			const projects = queries.selectProjects();
 			const inboxId = projects.find((p) => p.isInbox)?.id ?? null;
 			const analysis = findStaleCandidates(
-				db.selectTasks({
+				queries.selectTasks({
+					kind: "browse",
 					orderBy: { field: "updated_at", direction: "asc" },
 				}),
 				inboxId,
@@ -37,7 +38,7 @@ export function buildCommand(container: OperationalContainer) {
 				sync,
 				...analysis,
 				byProject,
-				syncedAt: db.getLastSyncedAt(),
+				syncedAt: queries.getLastSyncedAt(),
 			});
 		},
 	});

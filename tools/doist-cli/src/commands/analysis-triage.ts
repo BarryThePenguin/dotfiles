@@ -25,7 +25,7 @@ export function buildCommand(container: OperationalContainer) {
 			},
 		},
 		async run({ args }) {
-			const { db } = container;
+			const { queries } = container;
 			let sync: SyncResult | undefined;
 			if (args.sync) {
 				sync = countSyncData(
@@ -33,8 +33,8 @@ export function buildCommand(container: OperationalContainer) {
 				);
 			}
 
-			const allTasks = db.selectTasks();
-			const projects = db.selectProjects();
+			const allTasks = queries.selectTasks({ kind: "browse" });
+			const projects = queries.selectProjects();
 			const duplicates = findDuplicateCandidates(allTasks);
 			const stale = findStaleCandidates(
 				allTasks,
@@ -42,8 +42,8 @@ export function buildCommand(container: OperationalContainer) {
 			);
 			const inboxId = projects.find((p) => p.isInbox)?.id ?? null;
 			const unroutedInbox = inboxId
-				? db
-						.selectTasks({ projectId: inboxId })
+				? queries
+						.selectTasks({ kind: "browse", projectId: inboxId })
 						.filter((t) => !t.labels.includes("thoughts"))
 				: [];
 			const missingEnergy = findMissingEnergyMetadata(allTasks);
@@ -68,7 +68,7 @@ export function buildCommand(container: OperationalContainer) {
 				unroutedInbox: unroutedInbox.length,
 				missingEnergyMetadata: missingEnergy.length,
 				requiresAttention,
-				syncedAt: db.getLastSyncedAt(),
+				syncedAt: queries.getLastSyncedAt(),
 			});
 		},
 	});

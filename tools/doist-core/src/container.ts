@@ -18,6 +18,7 @@ import { cwd } from "node:process";
 import { driverFactory } from "sqlite-runtime";
 import * as v from "valibot";
 import { Database } from "./db.ts";
+import { createQueries, type Queries } from "./queries.ts";
 import { applyRepoMarker } from "./repo-project.ts";
 import { syncAndPersist, type SyncAndPersistResult } from "./sync.ts";
 import { createClient, type TodoistClient } from "./todoist.ts";
@@ -114,14 +115,26 @@ function findRcPaths(dir: string): ConfigPaths | null {
 /**
  * Raw persistence access: the database and the Todoist API client.
  *
- * Kept separate from Container so that code which only needs configuration
- * (project list, paths) does not incidentally gain access to the database or
- * the API token. Callers that genuinely need both surfaces use
- * `OperationalContainer`.
+ * This is the escape hatch for code that needs full `Database` CRUD —
+ * `operations.ts` (writes) and `issue-tools-core`'s Wayfinder Todoist
+ * adapter (task+notes reads and writes `Queries` doesn't cover), both via
+ * the dedicated `doist-core/db` subpath. `RootContainer` (below)
+ * structurally satisfies this; nothing built from `toOperationalContainer`
+ * does.
  */
 export interface PersistenceLayer {
 	readonly db: Database;
 	readonly client: TodoistClient;
+}
+
+/**
+ * The read seam into doist-core's shared store — see `Queries` in
+ * `queries.ts`. What CLI/MCP command files actually use to read
+ * tasks/projects/labels/sync state; they never need the full
+ * `PersistenceLayer`.
+ */
+export interface QueryLayer {
+	readonly queries: Queries;
 }
 
 /**
@@ -147,12 +160,38 @@ export interface Container {
 }
 
 /**
- * The full operational type: config + lifecycle + persistence access.
- *
- * Use this type at call sites that need to read from the database or write via
- * the Todoist API. `createContainer()` always returns this type.
+ * Config + lifecycle + the read seam + the Todoist API client — everything
+ * downstream of a composition root needs, and no more. `client` stays here
+ * (rather than being narrowed away too) because it has real direct
+ * consumers below construction time: `doist-mcp`'s `projects.ts` and
+ * `session.ts` fetch live Todoist data the local mirror doesn't serve.
+ * `db` does not: every CLI/MCP read call site goes through `queries`.
  */
-export type OperationalContainer = Container & PersistenceLayer;
+export type OperationalContainer = Container & QueryLayer & {
+	readonly client: TodoistClient;
+};
+
+/**
+ * The full type `createContainer()` returns: everything in
+ * `OperationalContainer` plus the raw `db`.
+ *
+ * Only the handful of composition roots (`doist-cli/cli.ts`,
+ * `doist-mcp/server.ts`, `issue-tools-core/todoist-tracker-factory.ts`) hold
+ * this type — just long enough to build `operations`/`TodoistAdapter`, which
+ * need `db`. Everything else is handed the narrower `OperationalContainer`
+ * via `toOperationalContainer`.
+ */
+export type RootContainer = OperationalContainer & { readonly db: Database };
+
+/**
+ * Narrow a `RootContainer` to the `OperationalContainer` shape for handing
+ * downstream, so `db` cannot follow it by accident.
+ */
+export function toOperationalContainer(
+	container: RootContainer,
+): OperationalContainer {
+	return container;
+}
 
 /**
  * Create a production container with real dependencies.
@@ -173,13 +212,14 @@ export type OperationalContainer = Container & PersistenceLayer;
  * }
  * ```
  */
-export function createContainer(rcDir?: string): OperationalContainer {
+export function createContainer(rcDir?: string): RootContainer {
 	const env = parseEnv(process.env);
 	const dir = resolveRcDir(rcDir, env);
 	let paths: ConfigPaths | null = findRcPaths(dir);
 	let client: TodoistClient | null = null;
 	let db: Database | null = null;
 	let dbPath: string | null = null;
+	let queries: Queries | null = null;
 
 	// Resolved lazily so that flows which create `.doistrc` after container
 	// creation (e.g. `projects add` in a fresh repo) are still picked up.
@@ -288,6 +328,9 @@ export function createContainer(rcDir?: string): OperationalContainer {
 		},
 		get db() {
 			return getDb();
+		},
+		get queries(): Queries {
+			return (queries ??= createQueries(getDb(), listProjectIds));
 		},
 		get client(): TodoistClient {
 			return getClient();

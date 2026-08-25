@@ -9,8 +9,8 @@ export function buildCommand(container: OperationalContainer) {
 			id: { type: "positional", description: "task id", required: true },
 		},
 		run({ args }) {
-			const { db } = container;
-			const task = db.getTaskById(args.id);
+			const { queries } = container;
+			const task = queries.getTaskById(args.id);
 			if (!task) {
 				throw new Error("task not found");
 			}

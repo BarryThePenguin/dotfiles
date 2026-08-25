@@ -19,15 +19,17 @@ export function buildCommand(container: OperationalContainer) {
 			},
 		},
 		async run({ args }) {
-			const { db } = container;
+			const { queries } = container;
 			let sync: SyncResult | undefined;
 			if (args.sync) {
 				sync = countSyncData(
 					await container.sync(container.listProjectIds(), false),
 				);
 			}
-			const tasks = findMissingEnergyMetadata(db.selectTasks());
-			out({ sync, tasks, syncedAt: db.getLastSyncedAt() });
+			const tasks = findMissingEnergyMetadata(
+				queries.selectTasks({ kind: "browse" }),
+			);
+			out({ sync, tasks, syncedAt: queries.getLastSyncedAt() });
 		},
 	});
 }

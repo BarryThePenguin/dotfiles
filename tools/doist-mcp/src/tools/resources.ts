@@ -40,8 +40,8 @@ export function registerResources(
 			mimeType: "application/json",
 		},
 		(uri) => {
-			const { db } = container;
-			const projects = db.selectProjects(undefined, container.listProjectIds());
+			const { queries } = container;
+			const projects = queries.selectProjects();
 			return {
 				contents: [
 					{
@@ -62,8 +62,10 @@ export function registerResources(
 			mimeType: "application/json",
 		},
 		(uri) => {
-			const { db } = container;
-			const labels = db.selectAllLabels().map(({ id, name }) => ({ id, name }));
+			const { queries } = container;
+			const labels = queries
+				.selectAllLabels()
+				.map(({ id, name }) => ({ id, name }));
 			return {
 				contents: [
 					{
@@ -84,9 +86,9 @@ export function registerResources(
 			mimeType: "application/json",
 		},
 		(uri, variables) => {
-			const { db } = container;
+			const { queries } = container;
 			const id = String(variables["id"]);
-			const task = db.getTaskById(id);
+			const task = queries.getTaskById(id);
 			if (!task) {
 				throw new Error(`task not found: ${id}`);
 			}
