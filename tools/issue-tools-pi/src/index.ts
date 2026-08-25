@@ -26,7 +26,7 @@ import {
 	type SessionStateStore,
 	type TrackerMode,
 } from "issue-tools-core";
-import { handleAction, type ActionMap, type ToolContext } from "./actions.ts";
+import { handleAction, type ActionMap } from "./actions.ts";
 import { renderCall, renderResult, type RenderCallArgs } from "./render.ts";
 
 const STATUS_KEY = "issue-tools";
@@ -96,8 +96,6 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 		);
 	};
 
-	const getState = (): ToolContext => ({ trackerSession });
-
 	// -- Session lifecycle ---------------------------------------------------
 
 	const createSession = (cwd: string, store: SessionStateStore) =>
@@ -141,7 +139,7 @@ export default function issueToolsExtension(pi: ExtensionAPI) {
 				return handleAction(
 					tool.action,
 					params as ActionMap[keyof ActionMap],
-					getState(),
+					trackerSession,
 				);
 			},
 			renderCall: (args, theme) =>

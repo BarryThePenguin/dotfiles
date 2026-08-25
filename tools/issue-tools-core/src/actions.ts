@@ -1,9 +1,9 @@
 /**
  * Framework-agnostic action handlers for the Wayfinder and Issue tool surface.
  *
- * Adapters (Pi, OpenCode) produce an ActionRuntime<R> for their host and call
- * handleAction — they never see the handler bodies. Two adapters justify the
- * seam: both are real, not hypothetical.
+ * Adapters (Claude, Pi, OpenCode) bind their host session via
+ * createActionHandler and call handleAction — they never see the handler
+ * bodies. Three adapters justify the seam: all real, not hypothetical.
  */
 
 import type { IssueTracker } from "./issue.ts";

@@ -7,8 +7,7 @@
  */
 
 import {
-	createSessionRuntime,
-	handleAction as coreHandleAction,
+	createActionHandler,
 	type ActionMap,
 	type TrackerSession,
 } from "issue-tools-core";
@@ -24,23 +23,21 @@ export type ActionResult = {
 	details: undefined;
 };
 
-export interface ToolContext {
-	trackerSession: TrackerSession;
-}
-
 export function handleAction<K extends keyof ActionMap>(
 	action: K,
 	params: ActionMap[K],
-	ctx: ToolContext,
+	trackerSession: TrackerSession,
 ): Promise<ActionResult> {
-	return createSessionRuntime(ctx.trackerSession, {
-		success: (text): ActionResult => ({
+	const handler = createActionHandler<ActionResult>(trackerSession, {
+		success: (text) => ({
 			content: [{ type: "text", text }],
 			details: undefined,
 		}),
-		error: (message): ActionResult => ({
+		error: (message) => ({
 			content: [{ type: "text", text: `Error: ${message}` }],
 			details: undefined,
 		}),
-	}).then((runtime) => coreHandleAction(action, params, runtime));
+	});
+
+	return handler(action, params);
 }

@@ -97,11 +97,8 @@ export type { SetupOutcome } from "./setup-workflow.ts";
 
 export { handleAction } from "./actions.ts";
 export type { ActionMap, ActionRuntime } from "./actions.ts";
-export { createActionRuntime, createSessionRuntime } from "./action-runtime.ts";
-export type {
-	ActionRuntimeOptions,
-	SessionRuntimeFormat,
-} from "./action-runtime.ts";
+export { createActionHandler } from "./action-runtime.ts";
+export type { SessionRuntimeFormat } from "./action-runtime.ts";
 
 // -- Tool catalog (registered surface) -------------------------------------
 

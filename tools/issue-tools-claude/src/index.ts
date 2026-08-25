@@ -6,13 +6,8 @@ import {
 	type JsonSchemaType,
 } from "@modelcontextprotocol/server";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
-import {
-	detectTrackerSelection,
-	handleAction,
-	toolCatalog,
-	type ActionMap,
-} from "issue-tools-core";
-import { createSessionRuntime } from "issue-tools-core";
+import { detectTrackerSelection, toolCatalog } from "issue-tools-core";
+import { handleAction, type ActionMap } from "./actions.ts";
 import { createClaudeSession } from "./session.ts";
 
 const session = createClaudeSession(process.cwd());
@@ -25,19 +20,8 @@ for (const tool of toolCatalog) {
 			description: tool.description,
 			inputSchema: fromJsonSchema(tool.params as JsonSchemaType),
 		},
-		async (args) => {
-			const runtime = await createSessionRuntime(session, {
-				success: (text) => ({ content: [{ type: "text" as const, text }] }),
-				error: (message) => ({
-					content: [{ type: "text" as const, text: `Error: ${message}` }],
-				}),
-			});
-			return handleAction(
-				tool.action,
-				args as ActionMap[keyof ActionMap],
-				runtime,
-			);
-		},
+		async (args) =>
+			handleAction(tool.action, args as ActionMap[keyof ActionMap], session),
 	);
 }
 

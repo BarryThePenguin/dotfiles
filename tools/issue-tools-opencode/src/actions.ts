@@ -5,11 +5,7 @@
  * context into an ActionRuntime<ActionResult> and delegates to handleAction.
  */
 
-import {
-	createSessionRuntime,
-	handleAction as coreHandleAction,
-	type ActionMap,
-} from "issue-tools-core";
+import { createActionHandler, type ActionMap } from "issue-tools-core";
 import type { OpenCodeSession } from "./tracker.ts";
 
 export type { ActionMap };
@@ -19,20 +15,15 @@ export type ActionResult = {
 	metadata: Record<string, unknown>;
 };
 
-export interface ToolContext {
-	session: OpenCodeSession;
-}
-
 export function handleAction<K extends keyof ActionMap>(
 	action: K,
 	params: ActionMap[K],
-	ctx: ToolContext,
+	session: OpenCodeSession,
 ): Promise<ActionResult> {
-	return createSessionRuntime(ctx.session, {
-		success: (text, metadata): ActionResult => ({ output: text, metadata }),
-		error: (message): ActionResult => ({
-			output: `Error: ${message}`,
-			metadata: {},
-		}),
-	}).then((runtime) => coreHandleAction(action, params, runtime));
+	const handler = createActionHandler<ActionResult>(session, {
+		success: (text, metadata) => ({ output: text, metadata }),
+		error: (message) => ({ output: `Error: ${message}`, metadata: {} }),
+	});
+
+	return handler(action, params);
 }

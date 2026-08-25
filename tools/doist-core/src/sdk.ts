@@ -1,10 +1,6 @@
 import { fetch } from "undici";
 import * as v from "valibot";
-import {
-	CommandError,
-	type CommandFailure,
-	type Command,
-} from "./commands.ts";
+import { CommandError, type CommandFailure, type Command } from "./commands.ts";
 
 const TODOIST_API_BASE_URL = "https://api.todoist.com/api/v1/";
 

@@ -178,9 +178,11 @@ function actionTool(session: SessionDomain, spec: ToolCatalogEntry): Tool.Info {
 			runTool(ctx, session, spec.title, (worktree) =>
 				Effect.tryPromise({
 					try: () =>
-						handleAction(spec.action, args as ActionMap[keyof ActionMap], {
-							session: registry.get(worktree),
-						}),
+						handleAction(
+							spec.action,
+							args as ActionMap[keyof ActionMap],
+							registry.get(worktree),
+						),
 					catch: toToolError,
 				}),
 			),

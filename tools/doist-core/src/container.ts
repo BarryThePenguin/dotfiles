@@ -167,9 +167,10 @@ export interface Container {
  * `session.ts` fetch live Todoist data the local mirror doesn't serve.
  * `db` does not: every CLI/MCP read call site goes through `queries`.
  */
-export type OperationalContainer = Container & QueryLayer & {
-	readonly client: TodoistClient;
-};
+export type OperationalContainer = Container &
+	QueryLayer & {
+		readonly client: TodoistClient;
+	};
 
 /**
  * The full type `createContainer()` returns: everything in
