@@ -106,6 +106,13 @@ export function registerSessionTools(
 
 			const projectMap = buildProjectMap(queries.selectProjects());
 
+			// The saved-filter queries run against the Todoist API, which
+			// knows nothing about the repo's `.doistrc` lens — apply it here
+			// so the summary stays scoped like every local read.
+			const scope = new Set(container.listProjectIds());
+			const inScope = (task: RestApiTaskByFilter) =>
+				task.project_id && scope.has(task.project_id);
+
 			const [overdueResult, todayResult, thoughtsResult] = await Promise.all([
 				client.fetchTasksByFilter("overdue", 200),
 				client.fetchTasksByFilter("today", 200),
@@ -113,13 +120,13 @@ export function registerSessionTools(
 			]);
 
 			const overdue = overdueResult.tasks
-				.filter((t) => !t.is_deleted)
+				.filter((t) => !t.is_deleted && inScope(t))
 				.map((t) => toFormatted(t, projectMap));
 			const today = todayResult.tasks
-				.filter((t) => !t.is_deleted)
+				.filter((t) => !t.is_deleted && inScope(t))
 				.map((t) => toFormatted(t, projectMap));
 			const thoughtsCount = thoughtsResult.tasks.filter(
-				(t) => !t.is_deleted,
+				(t) => !t.is_deleted && inScope(t),
 			).length;
 			const requiresTriage = overdue.length > TRIAGE_THRESHOLD;
 
@@ -136,7 +143,7 @@ export function registerSessionTools(
 						200,
 					);
 					suggested = energyResult.tasks
-						.filter((t) => !t.is_deleted)
+						.filter((t) => !t.is_deleted && inScope(t))
 						.filter((t) => t.labels.some((l) => levelLabels.includes(l)))
 						.slice(0, SUGGESTED_LIMIT)
 						.map((t) => toFormatted(t, projectMap));

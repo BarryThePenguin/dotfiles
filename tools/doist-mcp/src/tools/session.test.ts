@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	createDefaultHarness,
 	NOW,
+	PROJECT,
+	TASK_A,
 	TASK_B,
 	TODAY,
 } from "../test-helpers/server.ts";
@@ -128,6 +130,26 @@ describe("todoist_session_summary", () => {
 			"suggested",
 			expect.arrayContaining([]),
 		);
+	});
+
+	it("excludes tasks outside the .doistrc project scope", async () => {
+		harness.container.db.upsertProject({
+			...PROJECT,
+			id: "p-out",
+			name: "Out of scope",
+		});
+		harness.container.db.upsertTask({
+			...TASK_A,
+			id: "t-out",
+			project_id: "p-out",
+			content: "Out of scope task",
+		});
+		const { structuredContent } = await harness.client.callTool({
+			name: "todoist_session_summary",
+		});
+		expect(structuredContent).toHaveProperty("today", [
+			expect.objectContaining({ id: "t1" }),
+		]);
 	});
 
 	it("can sync first when requested", async () => {

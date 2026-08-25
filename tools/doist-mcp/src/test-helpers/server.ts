@@ -88,7 +88,9 @@ export async function createDefaultHarness(): Promise<{
 }> {
 	process.env["TODOIST_API_TOKEN"] = "test-token";
 
-	const container = createTestContainer();
+	const container = createTestContainer({
+		projects: ["p1", "p2"],
+	});
 
 	writeFileSync(
 		container.paths.rcPath,
