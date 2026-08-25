@@ -27,7 +27,7 @@ import type {
 	SyncProject,
 	SyncSection,
 } from "./sdk.ts";
-import { encodeAddFields, encodeUpdateFields } from "./sync-commands.ts";
+import { encodeAddFields, encodeUpdateFields } from "./commands.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

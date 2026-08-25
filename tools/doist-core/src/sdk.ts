@@ -1,10 +1,10 @@
 import { fetch } from "undici";
 import * as v from "valibot";
 import {
-	SyncCommandError,
+	CommandError,
 	type CommandFailure,
-	type SyncCommand,
-} from "./sync-commands.ts";
+	type Command,
+} from "./commands.ts";
 
 const TODOIST_API_BASE_URL = "https://api.todoist.com/api/v1/";
 
@@ -142,7 +142,7 @@ export type SyncNote = v.InferOutput<typeof NoteSchema>;
 // Sync Request
 // ============================================================================
 
-function serializeCommand(cmd: SyncCommand): Record<string, unknown> {
+function serializeCommand(cmd: Command): Record<string, unknown> {
 	const { type, uuid, args } = cmd;
 	const serialized: Record<string, unknown> = {
 		type,
@@ -170,7 +170,7 @@ export async function syncRequest(
 	params: {
 		sync_token: string;
 		resource_types: ResourceTypes;
-		commands?: SyncCommand[];
+		commands?: Command[];
 	},
 ): Promise<SyncResponse> {
 	const url = new URL("sync", TODOIST_API_BASE_URL);
@@ -206,7 +206,7 @@ export async function syncRequest(
 		}
 	}
 	if (failures.length > 0) {
-		throw new SyncCommandError(failures);
+		throw new CommandError(failures);
 	}
 
 	return data;

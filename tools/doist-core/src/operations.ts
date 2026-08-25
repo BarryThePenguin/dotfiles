@@ -25,8 +25,8 @@ import {
 	createItemUncompleteCommand,
 	createNoteAddCommand,
 	createUpdateCommand,
-	type SyncCommand,
-} from "./sync-commands.ts";
+	type Command,
+} from "./commands.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
 import { mergeLabels } from "./labels.ts";
 import {
@@ -142,7 +142,7 @@ export async function updateTask(
 		throw new Error(`project not found in .doistrc: ${project}`);
 	}
 
-	const commands: SyncCommand[] = [];
+	const commands: Command[] = [];
 	if (projectId !== undefined) {
 		commands.push(createItemMoveCommand({ id, project_id: projectId }));
 	}
@@ -316,7 +316,7 @@ export async function completeTask(
 	id: string,
 	comment?: string,
 ): Promise<OperationResult<string>> {
-	const commands: SyncCommand[] = [createItemCloseCommand({ id })];
+	const commands: Command[] = [createItemCloseCommand({ id })];
 	let noteTempId: string | undefined;
 	if (comment !== undefined) {
 		noteTempId = crypto.randomUUID();

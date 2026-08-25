@@ -108,7 +108,7 @@ export const DeleteNoteArgsSchema = v.object({
 export type DeleteNoteArgs = v.InferOutput<typeof DeleteNoteArgsSchema>;
 
 // ============================================================================
-// Discriminated Union: SyncCommand
+// Discriminated Union: Command
 // ============================================================================
 
 export type ItemAddCommand = {
@@ -205,7 +205,7 @@ export type NoteDeleteCommand = {
 	suggestedResourceTypes: readonly ["notes"];
 };
 
-export type SyncCommand =
+export type Command =
 	| ItemAddCommand
 	| ItemUpdateCommand
 	| ItemMoveCommand
@@ -230,14 +230,14 @@ export type CommandFailure = {
 	error_code?: number | undefined;
 };
 
-export class SyncCommandError extends Error {
+export class CommandError extends Error {
 	readonly failures: CommandFailure[];
 
 	constructor(failures: CommandFailure[]) {
 		super(
 			`Todoist command failed: ${failures.map((f) => `${f.uuid}: ${f.error}`).join(", ")}`,
 		);
-		this.name = "SyncCommandError";
+		this.name = "CommandError";
 		this.failures = failures;
 	}
 }

@@ -11,7 +11,7 @@
 		"./instrumentation": "./src/instrumentation.ts",
 		"./loader": "./src/loader.js",
 		"./sdk": "./src/sdk.ts",
-		"./sync-commands": "./src/sync-commands.ts",
+		"./commands": "./src/commands.ts",
 		"./semconv": "./src/semconv.ts",
 		"./test-helpers": "./src/test-helpers/index.ts"
 	},

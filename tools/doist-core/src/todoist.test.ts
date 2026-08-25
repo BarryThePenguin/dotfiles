@@ -1,6 +1,6 @@
 import * as undici from "undici";
 import { afterEach, describe, expect, it } from "vitest";
-import { SyncCommandError } from "./sync-commands.ts";
+import { CommandError } from "./commands.ts";
 import {
 	createMockApiFilter,
 	createMockApiLabel,
@@ -217,7 +217,7 @@ describe("createClient.sync", () => {
 		expect(data.tasks.map((t) => t.id)).toEqual([TASK_IDS.alpha]);
 	});
 
-	it("throws SyncCommandError when sync_status has an error for a command", async () => {
+	it("throws CommandError when sync_status has an error for a command", async () => {
 		interceptSync(
 			mockAgent,
 			createMockSyncResponse({
@@ -229,10 +229,10 @@ describe("createClient.sync", () => {
 		);
 
 		const client = createClient("mytoken");
-		await expect(client.sync()).rejects.toBeInstanceOf(SyncCommandError);
+		await expect(client.sync()).rejects.toBeInstanceOf(CommandError);
 	});
 
-	it("throws SyncCommandError listing every failure when sync_status is mixed", async () => {
+	it("throws CommandError listing every failure when sync_status is mixed", async () => {
 		interceptSync(
 			mockAgent,
 			createMockSyncResponse({
@@ -248,8 +248,8 @@ describe("createClient.sync", () => {
 		const client = createClient("mytoken");
 		const caught = await client.sync().catch((e: unknown) => e);
 
-		expect(caught).toBeInstanceOf(SyncCommandError);
-		const err = caught as SyncCommandError;
+		expect(caught).toBeInstanceOf(CommandError);
+		const err = caught as CommandError;
 		expect(err.failures).toHaveLength(2);
 		const uuids = err.failures.map((f) => f.uuid).sort();
 		expect(uuids).toEqual(["cmd-uuid-bad-1", "cmd-uuid-bad-2"]);

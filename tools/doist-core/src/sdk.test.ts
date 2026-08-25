@@ -8,8 +8,8 @@ import {
 	createItemCompleteCommand,
 	createItemUpdateCommand,
 	createNoteAddCommand,
-	SyncCommandError,
-} from "./sync-commands.ts";
+	CommandError,
+} from "./commands.ts";
 import { fetchTaskFromApi, syncRequest } from "./sdk.ts";
 import {
 	createMockApiFilter,
@@ -85,22 +85,22 @@ describe("createItemAddCommand", () => {
 	});
 });
 
-// ── SyncCommandError ──────────────────────────────────────────────────────────
+// ── CommandError ──────────────────────────────────────────────────────────
 
-describe("SyncCommandError", () => {
+describe("CommandError", () => {
 	it("formats the message from failures", () => {
-		const err = new SyncCommandError([
+		const err = new CommandError([
 			{ uuid: "u1", error: "invalid id" },
 			{ uuid: "u2", error: "not found" },
 		]);
 		expect(err.message).toContain("u1");
 		expect(err.message).toContain("invalid id");
-		expect(err.name).toBe("SyncCommandError");
+		expect(err.name).toBe("CommandError");
 	});
 
 	it("exposes the failures array", () => {
 		const failures = [{ uuid: "u1", error: "bad", errorCode: 400 }];
-		const err = new SyncCommandError(failures);
+		const err = new CommandError(failures);
 		expect(err.failures).toEqual(failures);
 	});
 });
@@ -135,7 +135,7 @@ describe("syncRequest", () => {
 		).rejects.toThrow("Todoist sync failed: 401");
 	});
 
-	it("throws SyncCommandError when sync_status contains a failure", async () => {
+	it("throws CommandError when sync_status contains a failure", async () => {
 		interceptSync(
 			mockAgent,
 			createMockSyncResponse({
@@ -152,7 +152,7 @@ describe("syncRequest", () => {
 				resource_types: ["items"],
 				commands: [createItemCompleteCommand({ id: "t1" })],
 			}),
-		).rejects.toBeInstanceOf(SyncCommandError);
+		).rejects.toBeInstanceOf(CommandError);
 	});
 
 	it("does not throw when all sync_status entries are ok", async () => {

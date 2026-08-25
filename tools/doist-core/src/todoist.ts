@@ -18,7 +18,7 @@ import {
 	type RestApiTaskByFilter,
 	type SyncNote,
 } from "./sdk.ts";
-import type { SyncCommand } from "./sync-commands.ts";
+import type { Command } from "./commands.ts";
 
 export type AllData = {
 	projects: DbProject[];
@@ -34,7 +34,7 @@ export type AllData = {
 	tempIdMapping?: Record<string, string>;
 };
 
-function getResourceTypesForSync(commands?: SyncCommand[]): ResourceTypes {
+function getResourceTypesForSync(commands?: Command[]): ResourceTypes {
 	const coreTypes: ResourceType[] = [
 		"projects",
 		"sections",
@@ -59,7 +59,7 @@ function getResourceTypesForSync(commands?: SyncCommand[]): ResourceTypes {
 }
 
 export interface TodoistClient {
-	sync(syncToken?: string | null, ...commands: SyncCommand[]): Promise<AllData>;
+	sync(syncToken?: string | null, ...commands: Command[]): Promise<AllData>;
 	fetchProjects(
 		limit?: number,
 		cursor?: string | null,
@@ -110,7 +110,7 @@ export function resolveCreatedNote(data: AllData, tempId: string): SyncNote {
 export function createClient(token: string): TodoistClient {
 	async function sync(
 		syncToken?: string | null,
-		...commands: SyncCommand[]
+		...commands: Command[]
 	): Promise<AllData> {
 		const response = await syncRequest(token, {
 			sync_token: syncToken ?? "*",

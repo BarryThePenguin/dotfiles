@@ -13,7 +13,7 @@ import {
 	uncompleteTasks,
 	updateTask,
 } from "./operations.ts";
-import { SyncCommandError } from "./sync-commands.ts";
+import { CommandError } from "./commands.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
 import {
 	createMockApiNote,
@@ -932,7 +932,7 @@ describe("mock HTTP client", () => {
 			container.db.close();
 		});
 
-		it("throws SyncCommandError and does NOT clear the local row when the server rejects the delete", async () => {
+		it("throws CommandError and does NOT clear the local row when the server rejects the delete", async () => {
 			// Pre-populate the local DB with a filter that doesn't exist on the server.
 			container.db.upsertFilter({
 				id: "f-ghost",
@@ -958,7 +958,7 @@ describe("mock HTTP client", () => {
 			const client = createClient("test-token");
 			await expect(
 				deleteFilter({ db: container.db, client }, "f-ghost"),
-			).rejects.toBeInstanceOf(SyncCommandError);
+			).rejects.toBeInstanceOf(CommandError);
 
 			// The local row must still be there — persistMutations never ran.
 			const stillThere = container.db.getFilterById("f-ghost");

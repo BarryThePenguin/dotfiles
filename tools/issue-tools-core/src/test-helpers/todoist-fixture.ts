@@ -12,7 +12,7 @@
 import { driverFactory } from "sqlite-runtime";
 import { type AllData, type TodoistClient } from "doist-core";
 import { Database, type DbTask } from "doist-core/db";
-import type { SyncCommand } from "doist-core/sync-commands";
+import type { Command } from "doist-core/commands";
 import { TodoistAdapter } from "../todoist-adapter.ts";
 
 function syncItem(overrides: Partial<DbTask> = {}): DbTask {
@@ -44,8 +44,8 @@ function syncItem(overrides: Partial<DbTask> = {}): DbTask {
  * assigns real ids — the same engine the production adapter runs on.
  */
 class FakeTodoistClient implements TodoistClient {
-	commands: SyncCommand[] = [];
-	syncCalls: SyncCommand[][] = [];
+	commands: Command[] = [];
+	syncCalls: Command[][] = [];
 	#nextTaskId = 1;
 	#nextNoteId = 1;
 	readonly #tasks = new Map<string, DbTask>();
@@ -75,7 +75,7 @@ class FakeTodoistClient implements TodoistClient {
 
 	async sync(
 		_syncToken?: string | null,
-		...commands: SyncCommand[]
+		...commands: Command[]
 	): Promise<AllData> {
 		await Promise.resolve();
 		this.commands.push(...commands);

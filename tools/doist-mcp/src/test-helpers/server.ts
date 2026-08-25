@@ -3,7 +3,7 @@ import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { setToken, syncAndPersist } from "doist-core";
 import type { DbTask } from "doist-core/db";
-import type { SyncCommand } from "doist-core/sync-commands";
+import type { Command } from "doist-core/commands";
 import type { TestContainer } from "doist-core/test-helpers";
 import { createTestContainer } from "doist-core/test-helpers";
 import { writeFileSync } from "node:fs";
@@ -119,7 +119,7 @@ export async function createDefaultHarness(): Promise<{
 	);
 
 	container.client.sync.mockImplementation(
-		(_syncToken, ...commands: SyncCommand[]) => {
+		(_syncToken, ...commands: Command[]) => {
 			let tasks: DbTask[] = [TASK_A, TASK_B];
 			const tempIdMapping: Record<string, string> = {};
 
