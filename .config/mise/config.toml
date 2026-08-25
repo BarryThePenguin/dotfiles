@@ -10,6 +10,7 @@ repo-bins = "~/src/btp/dotfiles/tools/mise-repo-bins"
 repo-bins = "local"
 
 [settings]
+auto_update = true
 dotfiles.root = "~/src/btp/dotfiles"
 env_shell_expand = true
 node.corepack = true
