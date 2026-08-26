@@ -1,7 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { EventEmitter } from "node:events";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import type { Message } from "@earendil-works/pi-ai";
-import { createAgentEventProcessor, getFinalOutput } from "./run.ts";
-import type { SingleResult } from "./types.ts";
+import {
+	createAgentEventProcessor,
+	getFinalOutput,
+	runSingleAgent,
+} from "./run.ts";
+import type { SingleResult, SpawnContext } from "./types.ts";
+
+vi.mock("node:child_process", () => ({
+	spawn: vi.fn(),
+}));
 
 function result(): SingleResult {
 	return {
@@ -106,5 +122,106 @@ describe("agent event processing", () => {
 		processor.flush();
 
 		expect(current.messages).toHaveLength(0);
+	});
+});
+
+class FakeChildProcess extends EventEmitter {
+	readonly stdout = new EventEmitter();
+	readonly stderr = new EventEmitter();
+	readonly kill = vi.fn((_signal?: string) => true);
+}
+
+function buildContext(): SpawnContext {
+	return {
+		agent: {
+			name: "general",
+			description: "test agent",
+			systemPrompt: "You are a test agent",
+			source: "user",
+			filePath: "/tmp/agent.md",
+		},
+		task: "do the thing",
+		cwd: "/tmp",
+		effective: {},
+	};
+}
+
+describe("runSingleAgent cancellation", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	it("sends SIGTERM immediately and SIGKILL after the grace period if the process has not exited", async () => {
+		const { spawn } = await import("node:child_process");
+		const proc = new FakeChildProcess();
+		vi.mocked(spawn).mockReturnValue(proc as never);
+
+		const controller = new AbortController();
+		const run = runSingleAgent({
+			context: buildContext(),
+			signal: controller.signal,
+			onUpdate: () => {},
+		});
+		run.catch(() => {});
+
+		controller.abort();
+		expect(proc.kill).toHaveBeenNthCalledWith(1, "SIGTERM");
+
+		await vi.advanceTimersByTimeAsync(5000);
+		expect(proc.kill).toHaveBeenNthCalledWith(2, "SIGKILL");
+
+		proc.emit("close", null);
+		await expect(run).rejects.toThrow("Subagent was aborted");
+	});
+
+	it("does not send SIGKILL when the process exits before the grace period elapses", async () => {
+		const { spawn } = await import("node:child_process");
+		const proc = new FakeChildProcess();
+		vi.mocked(spawn).mockReturnValue(proc as never);
+
+		const controller = new AbortController();
+		const run = runSingleAgent({
+			context: buildContext(),
+			signal: controller.signal,
+			onUpdate: () => {},
+		});
+		run.catch(() => {});
+
+		controller.abort();
+		expect(proc.kill).toHaveBeenCalledTimes(1);
+
+		proc.emit("close", 0);
+		await vi.advanceTimersByTimeAsync(5000);
+
+		expect(proc.kill).toHaveBeenCalledTimes(1);
+		await expect(run).rejects.toThrow("Subagent was aborted");
+	});
+
+	it("does not send SIGKILL when the process errors out before the grace period elapses", async () => {
+		const { spawn } = await import("node:child_process");
+		const proc = new FakeChildProcess();
+		vi.mocked(spawn).mockReturnValue(proc as never);
+
+		const controller = new AbortController();
+		const run = runSingleAgent({
+			context: buildContext(),
+			signal: controller.signal,
+			onUpdate: () => {},
+		});
+		run.catch(() => {});
+
+		controller.abort();
+		expect(proc.kill).toHaveBeenCalledTimes(1);
+
+		proc.emit("error", new Error("spawn failed"));
+		await vi.advanceTimersByTimeAsync(5000);
+
+		expect(proc.kill).toHaveBeenCalledTimes(1);
+		await expect(run).rejects.toThrow("Subagent was aborted");
 	});
 });

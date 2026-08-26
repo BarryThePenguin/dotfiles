@@ -169,6 +169,128 @@ describe("parallel run", () => {
 		]);
 	});
 
+	it("discards a successful result that settles after cancellation was requested", async () => {
+		const input = tasks(1);
+		const controller = new AbortController();
+		let resolveTask: (() => void) | undefined;
+		const snapshotPromise = runParallelRun({
+			tasks: input,
+			signal: controller.signal,
+			runTask: (task) =>
+				new Promise<SingleResult>((resolve) => {
+					resolveTask = () => {
+						resolve(result(task));
+					};
+				}),
+		});
+
+		await waitFor(() => resolveTask !== undefined);
+		controller.abort();
+		resolveTask?.();
+		const snapshot = await snapshotPromise;
+
+		expect(snapshot.entries[0]?.status).toBe("cancelled");
+	});
+
+	it("discards a runner failure that settles after cancellation was requested, ignoring the signal entirely", async () => {
+		const input = tasks(1);
+		const controller = new AbortController();
+		let rejectTask: ((error: Error) => void) | undefined;
+		const snapshotPromise = runParallelRun({
+			tasks: input,
+			signal: controller.signal,
+			runTask: () =>
+				new Promise<SingleResult>((_resolve, reject) => {
+					rejectTask = reject;
+				}),
+		});
+
+		await waitFor(() => rejectTask !== undefined);
+		controller.abort();
+		rejectTask?.(new Error("runner exploded after cancellation"));
+		const snapshot = await snapshotPromise;
+
+		expect(snapshot.entries[0]?.status).toBe("cancelled");
+		expect(snapshot.counts).toEqual({
+			queued: 0,
+			running: 0,
+			completed: 0,
+			failed: 0,
+			cancelled: 1,
+		});
+	});
+
+	it("keeps a task's terminal status when cancellation is requested after it already settled", async () => {
+		const input = tasks(2);
+		const controller = new AbortController();
+		const snapshots: Awaited<ReturnType<typeof runParallelRun>>[] = [];
+		let resolveSecond: (() => void) | undefined;
+		const snapshotPromise = runParallelRun({
+			tasks: input,
+			signal: controller.signal,
+			concurrency: 2,
+			onUpdate: (snapshot) => {
+				snapshots.push(snapshot);
+			},
+			runTask: (task) => {
+				if (task.agent === "agent-0") {
+					return Promise.resolve(result(task));
+				}
+				return new Promise<SingleResult>((resolve) => {
+					resolveSecond = () => {
+						resolve(result(task));
+					};
+				});
+			},
+		});
+
+		await waitFor(
+			() => snapshots.some((s) => s.entries[0]?.status === "completed"),
+		);
+		controller.abort();
+		resolveSecond?.();
+		const snapshot = await snapshotPromise;
+
+		expect(snapshot.entries[0]?.status).toBe("completed");
+		expect(snapshot.entries[1]?.status).toBe("cancelled");
+	});
+
+	it("leaves a task running (never force-settling it) when its runner ignores the abort signal entirely", async () => {
+		const input = tasks(1);
+		const controller = new AbortController();
+		let resolveTask: (() => void) | undefined;
+		const snapshots: Awaited<ReturnType<typeof runParallelRun>>[] = [];
+		const snapshotPromise = runParallelRun({
+			tasks: input,
+			signal: controller.signal,
+			onUpdate: (snapshot) => {
+				snapshots.push(snapshot);
+			},
+			runTask: (task) =>
+				new Promise<SingleResult>((resolve) => {
+					resolveTask = () => {
+						resolve(result(task));
+					};
+				}),
+		});
+
+		await waitFor(() => resolveTask !== undefined);
+		controller.abort();
+
+		// The engine offers no engine-level watchdog: an uncooperative runner
+		// keeps the task "running" indefinitely, past the point cancellation
+		// was requested, until it settles on its own.
+		await new Promise((r) => setTimeout(r, 10));
+		expect(snapshots[snapshots.length - 1]?.entries[0]?.status).toBe(
+			"running",
+		);
+
+		resolveTask?.();
+		const snapshot = await snapshotPromise;
+
+		expect(snapshot.entries[0]?.status).toBe("cancelled");
+	});
+
 	it("ignores a partial update after a task has settled", async () => {
 		const input = tasks(1);
 		let lateUpdate: ((partial: SingleResult) => void) | undefined;

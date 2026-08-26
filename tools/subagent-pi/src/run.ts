@@ -292,6 +292,7 @@ export async function runSingleAgent(
 
 	try {
 		let wasAborted = false;
+		let exited = false;
 
 		const exitCode = await new Promise<number>((resolve) => {
 			const invocation = getPiInvocation(args);
@@ -309,11 +310,13 @@ export async function runSingleAgent(
 			});
 
 			proc.on("close", (code) => {
+				exited = true;
 				events.flush();
 				resolve(code ?? 0);
 			});
 
 			proc.on("error", () => {
+				exited = true;
 				resolve(1);
 			});
 
@@ -322,7 +325,7 @@ export async function runSingleAgent(
 					wasAborted = true;
 					proc.kill("SIGTERM");
 					setTimeout(() => {
-						if (!proc.killed) {
+						if (!exited) {
 							proc.kill("SIGKILL");
 						}
 					}, 5000);
