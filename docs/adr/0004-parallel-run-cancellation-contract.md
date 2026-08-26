@@ -119,3 +119,20 @@ duration post-abort, independent of the runner)**
   point the caller reads the result rather than at settlement time.
 - Rejected: a single unambiguous meaning for `cancelled` (requested, outcome
   not authoritative) is simpler to reason about and test.
+
+## Update (2026-08-27)
+
+The per-task watchdog ticket named in the Decision and Alternatives sections
+above has landed: `runSingleAgent` now accepts an optional `timeoutMs` and
+kills a stalled child via the same `SIGTERM` → `SIGKILL` (5s) path used for
+`AbortSignal` cancellation, but tracks the timeout separately so a timed-out
+task reports as `failed` (via `failedResult`), never `cancelled`.
+`runParallelRun` resolves an effective timeout per task
+(`task.timeoutMs ?? taskTimeoutMs ?? DEFAULT_TASK_TIMEOUT_MS`, default 10
+minutes) and passes it to the runner. This closes the "runner that never
+settles" gap in point 3 of the Decision for `runSingleAgent`; the contract
+itself is unchanged, and a custom `ParallelTaskRunner` that ignores both the
+signal and any timeout it's given can still hang a batch — the watchdog is a
+property of `runSingleAgent`, not an engine-level guarantee. `/subagent-bg`'s
+detached path was deliberately left out of scope, matching this ADR's framing
+of forced enforcement as runner-owned.
