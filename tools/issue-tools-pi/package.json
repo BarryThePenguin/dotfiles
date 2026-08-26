@@ -22,7 +22,7 @@
 		"doist-core": "workspace:*",
 		"issue-tools-core": "workspace:*",
 		"sqlite-runtime": "workspace:*",
-		"typebox": "1.3.16"
+		"typebox": "1.3.17"
 	},
 	"devDependencies": {
 		"@types/bun": "1.4.0"
