@@ -28,6 +28,7 @@ export interface AgentRunner {
 		onUpdate: (partial: SingleResult) => void,
 		cwd?: string,
 		allowFallback?: boolean,
+		timeoutMs?: number,
 	): Promise<SingleResult>;
 }
 
@@ -48,7 +49,14 @@ export function createAgentRunner(deps: AgentRunnerDeps): AgentRunner {
 	const { launcher, signal, usageClient, metrics } = deps;
 
 	return {
-		async run(agentName, task, onUpdate, cwd, allowFallback = false) {
+		async run(
+			agentName,
+			task,
+			onUpdate,
+			cwd,
+			allowFallback = false,
+			timeoutMs,
+		) {
 			const resolution = launcher.resolve(agentName, task, cwd);
 			if ("result" in resolution) {
 				return resolution.result;
@@ -77,6 +85,7 @@ export function createAgentRunner(deps: AgentRunnerDeps): AgentRunner {
 							onUpdate(result);
 						}
 					},
+					timeoutMs,
 				});
 				metrics?.record({
 					occurredAt: new Date().toISOString(),

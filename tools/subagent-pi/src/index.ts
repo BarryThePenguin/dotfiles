@@ -67,6 +67,7 @@ export default function (pi: ExtensionAPI) {
 		description: [
 			"Delegate tasks to specialized user-level subagents with isolated context windows (each runs in a separate pi process).",
 			"Supported modes: single (agent + task) and parallel (tasks array, max 8, 4 concurrent).",
+			"Parallel tasks carry a per-task watchdog (default 10 minutes, override via taskTimeoutMs or a task's own timeoutMs); a stalled task is killed and reported as failed so the rest of the batch still settles.",
 			`Agents are discovered only from ${path.join(getAgentDir(), "agents")}.`,
 			`Per-project persona overrides come from .pi/personas.json ({ provider?, model?, thinkingLevel?, quotaFallback? } keyed by agent name). Quota fallbacks are opt-in for low-stakes parallel/background work.`,
 			`Agents: ${rosterLine}`,

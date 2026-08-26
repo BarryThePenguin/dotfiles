@@ -24,9 +24,15 @@ export interface SubagentExecuteParams {
 	agent?: string | undefined;
 	task?: string | undefined;
 	tasks?:
-		| Array<{ agent: string; task: string; cwd?: string | undefined }>
+		| Array<{
+				agent: string;
+				task: string;
+				cwd?: string | undefined;
+				timeoutMs?: number | undefined;
+		  }>
 		| undefined;
 	cwd?: string | undefined;
+	taskTimeoutMs?: number | undefined;
 }
 
 interface ExecuteContext {
@@ -105,6 +111,7 @@ export async function executeSubagent(
 			agent: task.agent,
 			task: task.task,
 			...(task.cwd ? { cwd: task.cwd } : {}),
+			...(task.timeoutMs !== undefined ? { timeoutMs: task.timeoutMs } : {}),
 		}));
 		let snapshot: ParallelRunSnapshot;
 		try {
@@ -113,8 +120,18 @@ export async function executeSubagent(
 				maxTasks: MAX_PARALLEL_TASKS,
 				concurrency: PARALLEL_CONCURRENCY,
 				...(signal ? { signal } : {}),
-				runTask: (task, onTaskUpdate) =>
-					runner.run(task.agent, task.task, onTaskUpdate, task.cwd, true),
+				...(params.taskTimeoutMs !== undefined
+					? { taskTimeoutMs: params.taskTimeoutMs }
+					: {}),
+				runTask: (task, onTaskUpdate, timeoutMs) =>
+					runner.run(
+						task.agent,
+						task.task,
+						onTaskUpdate,
+						task.cwd,
+						true,
+						timeoutMs,
+					),
 				onUpdate: (nextSnapshot) => {
 					onUpdate?.({
 						content: [

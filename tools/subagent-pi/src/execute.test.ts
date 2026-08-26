@@ -13,6 +13,7 @@ const testState = vi.hoisted(() => ({
 		task: string;
 		cwd: string | undefined;
 		allowFallback: boolean | undefined;
+		timeoutMs: number | undefined;
 	}>,
 }));
 
@@ -36,8 +37,15 @@ vi.mock("./agent-runner.ts", () => ({
 			onUpdate: (partial: SingleResult) => void,
 			cwd?: string,
 			allowFallback?: boolean,
+			timeoutMs?: number,
 		) {
-			testState.runCalls.push({ agent: agentName, task, cwd, allowFallback });
+			testState.runCalls.push({
+				agent: agentName,
+				task,
+				cwd,
+				allowFallback,
+				timeoutMs,
+			});
 			const outcome = testState.runResults.get(`${agentName}:${task}`);
 			if (!outcome) {
 				throw new Error(`no stubbed outcome for ${agentName}:${task}`);
@@ -139,6 +147,7 @@ describe("executeSubagent single mode", () => {
 				task: "say hi",
 				cwd: undefined,
 				allowFallback: undefined,
+				timeoutMs: undefined,
 			},
 		]);
 	});
@@ -217,6 +226,72 @@ describe("executeSubagent parallel mode", () => {
 		expect(outcome.content[0]?.text).toContain("1 failed");
 		expect(outcome.content[0]?.text).toContain("all good");
 		expect(outcome.content[0]?.text).toContain("exploded");
+	});
+
+	it("applies the default per-task timeout to parallel tasks that don't override it", async () => {
+		testState.runResults.set(
+			"general:ok",
+			successResult("general", "ok", "all good"),
+		);
+
+		await executeSubagent(
+			"call-timeout-default",
+			{ tasks: [{ agent: "general", task: "ok" }] },
+			undefined,
+			undefined,
+			ctx,
+		);
+
+		expect(testState.runCalls[0]?.timeoutMs).toBe(10 * 60 * 1000);
+	});
+
+	it("forwards a per-call taskTimeoutMs override to every task", async () => {
+		testState.runResults.set(
+			"general:ok",
+			successResult("general", "ok", "all good"),
+		);
+		testState.runResults.set(
+			"explore:bad",
+			failedResult("explore", "bad", "exploded"),
+		);
+
+		await executeSubagent(
+			"call-timeout-override",
+			{
+				tasks: [
+					{ agent: "general", task: "ok" },
+					{ agent: "explore", task: "bad" },
+				],
+				taskTimeoutMs: 5000,
+			},
+			undefined,
+			undefined,
+			ctx,
+		);
+
+		expect(testState.runCalls.map((call) => call.timeoutMs)).toEqual([
+			5000, 5000,
+		]);
+	});
+
+	it("lets a per-task timeoutMs override the per-call default", async () => {
+		testState.runResults.set(
+			"general:ok",
+			successResult("general", "ok", "all good"),
+		);
+
+		await executeSubagent(
+			"call-timeout-per-task",
+			{
+				tasks: [{ agent: "general", task: "ok", timeoutMs: 1234 }],
+				taskTimeoutMs: 5000,
+			},
+			undefined,
+			undefined,
+			ctx,
+		);
+
+		expect(testState.runCalls[0]?.timeoutMs).toBe(1234);
 	});
 
 	it("publishes progress snapshots through onUpdate while running", async () => {

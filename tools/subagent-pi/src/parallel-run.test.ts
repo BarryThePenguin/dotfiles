@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	DEFAULT_TASK_TIMEOUT_MS,
 	MAX_PARALLEL_TASKS,
 	ParallelRunLimitError,
 	runParallelRun,
@@ -347,5 +348,75 @@ describe("parallel run", () => {
 			failed: 0,
 			cancelled: 0,
 		});
+	});
+
+	it("passes the default per-task timeout to each task's runner when nothing overrides it", async () => {
+		const input = tasks(1);
+		const seenTimeouts: number[] = [];
+
+		await runParallelRun({
+			tasks: input,
+			runTask: (task, _onUpdate, timeoutMs) => {
+				seenTimeouts.push(timeoutMs);
+				return Promise.resolve(result(task));
+			},
+		});
+
+		expect(seenTimeouts).toEqual([DEFAULT_TASK_TIMEOUT_MS]);
+	});
+
+	it("lets a per-call taskTimeoutMs override the default for every task", async () => {
+		const input = tasks(2);
+		const seenTimeouts: number[] = [];
+
+		await runParallelRun({
+			tasks: input,
+			taskTimeoutMs: 5000,
+			runTask: (task, _onUpdate, timeoutMs) => {
+				seenTimeouts.push(timeoutMs);
+				return Promise.resolve(result(task));
+			},
+		});
+
+		expect(seenTimeouts).toEqual([5000, 5000]);
+	});
+
+	it("lets a per-task timeoutMs override both the default and the per-call value", async () => {
+		const input = tasks(2).map((task, index) =>
+			index === 0 ? { ...task, timeoutMs: 1234 } : task,
+		);
+		const seenTimeouts: number[] = [];
+
+		await runParallelRun({
+			tasks: input,
+			taskTimeoutMs: 5000,
+			runTask: (task, _onUpdate, timeoutMs) => {
+				seenTimeouts.push(timeoutMs);
+				return Promise.resolve(result(task));
+			},
+		});
+
+		expect(seenTimeouts).toEqual([1234, 5000]);
+	});
+
+	it("marks a timed-out task as failed (not cancelled) and keeps the rest of the batch settling", async () => {
+		const input = tasks(2);
+
+		const snapshot = await runParallelRun({
+			tasks: input,
+			concurrency: 2,
+			runTask: (task) => {
+				if (task.agent === "agent-0") {
+					return Promise.reject(new Error("Subagent timed out after 10ms"));
+				}
+				return Promise.resolve(result(task));
+			},
+		});
+
+		expect(snapshot.entries[0]?.status).toBe("failed");
+		expect(snapshot.entries[0]?.result?.errorMessage).toBe(
+			"Subagent timed out after 10ms",
+		);
+		expect(snapshot.entries[1]?.status).toBe("completed");
 	});
 });

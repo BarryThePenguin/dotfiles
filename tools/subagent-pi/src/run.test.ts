@@ -225,3 +225,75 @@ describe("runSingleAgent cancellation", () => {
 		await expect(run).rejects.toThrow("Subagent was aborted");
 	});
 });
+
+describe("runSingleAgent per-task timeout", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	it("kills a stalled child once the timeout elapses and reports it as timed out, not aborted", async () => {
+		const { spawn } = await import("node:child_process");
+		const proc = new FakeChildProcess();
+		vi.mocked(spawn).mockReturnValue(proc as never);
+
+		const run = runSingleAgent({
+			context: buildContext(),
+			onUpdate: () => {},
+			timeoutMs: 1000,
+		});
+		run.catch(() => {});
+
+		await vi.advanceTimersByTimeAsync(1000);
+		expect(proc.kill).toHaveBeenNthCalledWith(1, "SIGTERM");
+
+		await vi.advanceTimersByTimeAsync(5000);
+		expect(proc.kill).toHaveBeenNthCalledWith(2, "SIGKILL");
+
+		proc.emit("close", null);
+		await expect(run).rejects.toThrow(/timed out/i);
+		await expect(run).rejects.not.toThrow("Subagent was aborted");
+	});
+
+	it("does not fire the timeout if the process finishes first", async () => {
+		const { spawn } = await import("node:child_process");
+		const proc = new FakeChildProcess();
+		vi.mocked(spawn).mockReturnValue(proc as never);
+
+		const run = runSingleAgent({
+			context: buildContext(),
+			onUpdate: () => {},
+			timeoutMs: 1000,
+		});
+
+		proc.emit("close", 0);
+		await vi.advanceTimersByTimeAsync(1000);
+
+		expect(proc.kill).not.toHaveBeenCalled();
+		await expect(run).resolves.toMatchObject({ exitCode: 0 });
+	});
+
+	it("reports a user abort as aborted (not timed out) when both a signal and a timeout are present", async () => {
+		const { spawn } = await import("node:child_process");
+		const proc = new FakeChildProcess();
+		vi.mocked(spawn).mockReturnValue(proc as never);
+
+		const controller = new AbortController();
+		const run = runSingleAgent({
+			context: buildContext(),
+			signal: controller.signal,
+			onUpdate: () => {},
+			timeoutMs: 60_000,
+		});
+		run.catch(() => {});
+
+		controller.abort();
+		proc.emit("close", null);
+
+		await expect(run).rejects.toThrow("Subagent was aborted");
+	});
+});

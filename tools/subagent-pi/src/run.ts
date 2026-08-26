@@ -108,6 +108,8 @@ export interface RunSingleAgentOptions {
 	context: SpawnContext;
 	signal?: AbortSignal | undefined;
 	onUpdate: OnUpdate;
+	/** Per-task watchdog: abort the child if it hasn't settled within this many ms. */
+	timeoutMs?: number | undefined;
 }
 
 /** Build child CLI args from the complete spawn context. */
@@ -282,16 +284,25 @@ export function createAgentEventProcessor(
 	};
 }
 
+/** Distinguishes a per-task watchdog timeout from a user/caller-initiated abort. */
+export class SubagentTimeoutError extends Error {
+	constructor(timeoutMs: number) {
+		super(`Subagent timed out after ${timeoutMs}ms`);
+		this.name = "SubagentTimeoutError";
+	}
+}
+
 export async function runSingleAgent(
 	options: RunSingleAgentOptions,
 ): Promise<SingleResult> {
-	const { context, signal, onUpdate } = options;
+	const { context, signal, onUpdate, timeoutMs } = options;
 	const { args, tmpDir, tmpFilePath } = buildChildArgs(context, true);
 	const result = createInitialResult(context);
 	const events = createAgentEventProcessor(result, onUpdate);
 
 	try {
 		let wasAborted = false;
+		let timedOutAfterMs: number | undefined;
 		let exited = false;
 
 		const exitCode = await new Promise<number>((resolve) => {
@@ -309,36 +320,56 @@ export async function runSingleAgent(
 				result.stderr += String(data);
 			});
 
+			const killProc = (timedOutMs?: number) => {
+				if (wasAborted) {
+					return;
+				}
+				wasAborted = true;
+				timedOutAfterMs = timedOutMs;
+				proc.kill("SIGTERM");
+				setTimeout(() => {
+					if (!exited) {
+						proc.kill("SIGKILL");
+					}
+				}, 5000);
+			};
+
+			let watchdog: ReturnType<typeof setTimeout> | undefined;
 			proc.on("close", (code) => {
 				exited = true;
+				if (watchdog) {
+					clearTimeout(watchdog);
+				}
 				events.flush();
 				resolve(code ?? 0);
 			});
 
 			proc.on("error", () => {
 				exited = true;
+				if (watchdog) {
+					clearTimeout(watchdog);
+				}
 				resolve(1);
 			});
 
 			if (signal) {
-				const killProc = () => {
-					wasAborted = true;
-					proc.kill("SIGTERM");
-					setTimeout(() => {
-						if (!exited) {
-							proc.kill("SIGKILL");
-						}
-					}, 5000);
-				};
+				const onAbort = () => killProc();
 				if (signal.aborted) {
 					killProc();
 				} else {
-					signal.addEventListener("abort", killProc, { once: true });
+					signal.addEventListener("abort", onAbort, { once: true });
 				}
+			}
+
+			if (timeoutMs !== undefined) {
+				watchdog = setTimeout(() => killProc(timeoutMs), timeoutMs);
 			}
 		});
 
 		result.exitCode = exitCode;
+		if (timedOutAfterMs !== undefined) {
+			throw new SubagentTimeoutError(timedOutAfterMs);
+		}
 		if (wasAborted) {
 			throw new Error("Subagent was aborted");
 		}

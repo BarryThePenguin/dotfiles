@@ -3,6 +3,8 @@ import { emptyUsage, type SingleResult } from "./types.ts";
 
 export const MAX_PARALLEL_TASKS = 8;
 export const PARALLEL_CONCURRENCY = 4;
+/** Default watchdog bound for a single task in a parallel batch: 10 minutes. */
+export const DEFAULT_TASK_TIMEOUT_MS = 10 * 60 * 1000;
 
 export type ParallelTaskStatus =
 	"queued" | "running" | "completed" | "failed" | "cancelled";
@@ -11,6 +13,8 @@ export interface ParallelRunTask {
 	agent: string;
 	task: string;
 	cwd?: string;
+	/** Per-task watchdog override; takes precedence over taskTimeoutMs and the default. */
+	timeoutMs?: number;
 }
 
 export interface ParallelTaskEntry {
@@ -35,6 +39,7 @@ export interface ParallelRunSnapshot {
 export type ParallelTaskRunner = (
 	task: ParallelRunTask,
 	onUpdate: (result: SingleResult) => void,
+	timeoutMs: number,
 ) => Promise<SingleResult>;
 
 export class ParallelRunLimitError extends Error {
@@ -56,6 +61,8 @@ export interface RunParallelOptions {
 	onUpdate?: (snapshot: ParallelRunSnapshot) => void;
 	maxTasks?: number;
 	concurrency?: number;
+	/** Per-call default watchdog for every task that doesn't set its own timeoutMs. */
+	taskTimeoutMs?: number;
 }
 
 interface MutableParallelTaskEntry {
@@ -206,8 +213,13 @@ export async function runParallelRun(
 				emit();
 			};
 
+			const timeoutMs =
+				entry.task.timeoutMs ??
+				options.taskTimeoutMs ??
+				DEFAULT_TASK_TIMEOUT_MS;
+
 			try {
-				const result = await options.runTask(entry.task, update);
+				const result = await options.runTask(entry.task, update, timeoutMs);
 				if (!isRunningEntry(entry)) {
 					continue;
 				}
