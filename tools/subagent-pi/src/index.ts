@@ -21,48 +21,13 @@ import {
 	type ExtensionContext,
 	getAgentDir,
 } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
 import { discoverAgents } from "./agents.ts";
 import { OpenCodeGoUsageClient, RoutingMetrics } from "opencode-go-usage";
-import { createBackgroundCommandHandler, executeSubagent } from "./execute.ts";
+import { createBackgroundCommandHandler } from "./background.ts";
+import { executeSubagent } from "./execute.ts";
 import { renderCall, renderResult } from "./render.ts";
+import { SubagentParams } from "./schema.ts";
 import { formatGoUsageStatus, GO_USAGE_STATUS_KEY } from "./go-usage-status.ts";
-
-// ────────────────────────────────────────────────────────────────────────────
-// Tool schema
-// ────────────────────────────────────────────────────────────────────────────
-
-const TaskItem = Type.Object({
-	agent: Type.String({
-		description:
-			"Name of the agent to invoke (general, explore; aliases general-purpose, Explore)",
-	}),
-	task: Type.String({ description: "Task to delegate to the agent" }),
-	cwd: Type.Optional(
-		Type.String({ description: "Working directory for the agent process" }),
-	),
-});
-
-const SubagentParams = Type.Object({
-	agent: Type.Optional(
-		Type.String({
-			description: "Name of the agent to invoke (for single mode)",
-		}),
-	),
-	task: Type.Optional(
-		Type.String({ description: "Task to delegate (for single mode)" }),
-	),
-	tasks: Type.Optional(
-		Type.Array(TaskItem, {
-			description: "Array of {agent, task} for parallel execution",
-		}),
-	),
-	cwd: Type.Optional(
-		Type.String({
-			description: "Working directory for the agent process (single mode)",
-		}),
-	),
-});
 
 // ────────────────────────────────────────────────────────────────────────────
 // Extension
