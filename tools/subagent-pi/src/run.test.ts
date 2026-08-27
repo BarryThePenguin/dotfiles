@@ -123,6 +123,41 @@ describe("agent event processing", () => {
 
 		expect(current.messages).toHaveLength(0);
 	});
+
+	it("clears a stale errorMessage once a later assistant turn completes without one", () => {
+		const current = result();
+		const processor = createAgentEventProcessor(current);
+
+		const erroredTurn = {
+			...assistantMessage,
+			errorMessage: "transient tool failure",
+		} as unknown as Message;
+		processor.processLine(
+			JSON.stringify({ type: "message_end", message: erroredTurn }),
+		);
+		expect(current.errorMessage).toBe("transient tool failure");
+
+		processor.processLine(
+			JSON.stringify({ type: "message_end", message: assistantMessage }),
+		);
+
+		expect(current.errorMessage).toBeUndefined();
+	});
+
+	it("keeps processing events when the onUpdate callback throws", () => {
+		const current = result();
+		const processor = createAgentEventProcessor(current, () => {
+			throw new Error("progress callback boom");
+		});
+
+		expect(() => {
+			processor.processLine(
+				JSON.stringify({ type: "message_end", message: assistantMessage }),
+			);
+		}).not.toThrow();
+
+		expect(current.messages).toEqual([assistantMessage]);
+	});
 });
 
 class FakeChildProcess extends EventEmitter {
@@ -222,6 +257,47 @@ describe("runSingleAgent cancellation", () => {
 		await vi.advanceTimersByTimeAsync(5000);
 
 		expect(proc.kill).toHaveBeenCalledTimes(1);
+		await expect(run).rejects.toThrow("Subagent was aborted");
+	});
+});
+
+describe("runSingleAgent onUpdate failures", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	it("still kills the child on abort when the onUpdate callback throws on every event", async () => {
+		const { spawn } = await import("node:child_process");
+		const proc = new FakeChildProcess();
+		vi.mocked(spawn).mockReturnValue(proc as never);
+
+		const controller = new AbortController();
+		const run = runSingleAgent({
+			context: buildContext(),
+			signal: controller.signal,
+			onUpdate: () => {
+				throw new Error("progress callback boom");
+			},
+		});
+		run.catch(() => {});
+
+		proc.stdout.emit(
+			"data",
+			`${JSON.stringify({ type: "message_end", message: assistantMessage })}\n`,
+		);
+
+		controller.abort();
+		expect(proc.kill).toHaveBeenNthCalledWith(1, "SIGTERM");
+
+		await vi.advanceTimersByTimeAsync(5000);
+		expect(proc.kill).toHaveBeenNthCalledWith(2, "SIGKILL");
+
+		proc.emit("close", null);
 		await expect(run).rejects.toThrow("Subagent was aborted");
 	});
 });

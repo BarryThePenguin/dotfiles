@@ -399,6 +399,84 @@ describe("parallel run", () => {
 		expect(seenTimeouts).toEqual([1234, 5000]);
 	});
 
+	it("classifies a resolved result carrying an errorMessage as failed, even with exitCode 0 and no stopReason", async () => {
+		const input = tasks(1);
+
+		const snapshot = await runParallelRun({
+			tasks: input,
+			runTask: (task) => {
+				const r = result(task);
+				r.errorMessage = "agent reported an internal error";
+				return Promise.resolve(r);
+			},
+		});
+
+		expect(snapshot.entries[0]?.status).toBe("failed");
+		expect(snapshot.counts).toEqual({
+			queued: 0,
+			running: 0,
+			completed: 0,
+			failed: 1,
+			cancelled: 0,
+		});
+	});
+
+	it("isolates published snapshot messages from later mutation of the source result's nested values", async () => {
+		const input = tasks(1);
+		const sharedMessage = {
+			role: "assistant",
+			content: [{ type: "text", text: "hello" }],
+		};
+		const snapshots: Awaited<ReturnType<typeof runParallelRun>>[] = [];
+
+		await runParallelRun({
+			tasks: input,
+			onUpdate: (snapshot) => snapshots.push(snapshot),
+			runTask: (task, onUpdate) => {
+				const r = result(task, "partial");
+				r.messages.push(sharedMessage as unknown as SingleResult["messages"][number]);
+				onUpdate(r);
+				// Mutate the shared object after it has been published in a snapshot.
+				sharedMessage.content[0].text = "mutated";
+				sharedMessage.role = "mutated-role";
+				return Promise.resolve(r);
+			},
+		});
+
+		const published = snapshots.find(
+			(s) => (s.entries[0]?.result?.messages.length ?? 0) > 0,
+		);
+		const publishedMessage = published?.entries[0]?.result?.messages[0] as
+			| { role: string; content: { text: string }[] }
+			| undefined;
+
+		expect(publishedMessage?.role).toBe("assistant");
+		expect(publishedMessage?.content[0]?.text).toBe("hello");
+		expect(Object.isFrozen(publishedMessage)).toBe(true);
+		expect(Object.isFrozen(publishedMessage?.content[0])).toBe(true);
+	});
+
+	it("keeps the batch running to completion when the onUpdate progress callback throws", async () => {
+		const input = tasks(2);
+		const started: string[] = [];
+
+		const snapshot = await runParallelRun({
+			tasks: input,
+			onUpdate: () => {
+				throw new Error("progress callback boom");
+			},
+			runTask: async (task) => {
+				started.push(task.agent);
+				return result(task);
+			},
+		});
+
+		expect(started).toEqual(["agent-0", "agent-1"]);
+		expect(
+			snapshot.entries.every((entry) => entry.status === "completed"),
+		).toBe(true);
+	});
+
 	it("marks a timed-out task as failed (not cancelled) and keeps the rest of the batch settling", async () => {
 		const input = tasks(2);
 

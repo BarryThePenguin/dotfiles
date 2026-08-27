@@ -71,11 +71,28 @@ interface MutableParallelTaskEntry {
 	result?: SingleResult;
 }
 
+/** Recursively clones and freezes so a snapshot can never be mutated through nested references. */
+function deepFreezeValue(value: unknown): unknown {
+	if (Array.isArray(value)) {
+		return Object.freeze(value.map((item) => deepFreezeValue(item)));
+	}
+	if (value !== null && typeof value === "object") {
+		const clone: Record<string, unknown> = {};
+		for (const [key, item] of Object.entries(value)) {
+			clone[key] = deepFreezeValue(item);
+		}
+		return Object.freeze(clone);
+	}
+	return value;
+}
+
+function deepFreezeClone<T>(value: T): T {
+	return deepFreezeValue(value) as T;
+}
+
 function cloneResult(result: SingleResult): SingleResult {
-	const messages = Object.freeze([
-		...result.messages,
-	]) as unknown as SingleResult["messages"];
-	const usage = Object.freeze({ ...result.usage });
+	const messages = deepFreezeClone(result.messages);
+	const usage = deepFreezeClone(result.usage);
 	return Object.freeze({
 		...result,
 		messages,
@@ -164,7 +181,12 @@ export async function runParallelRun(
 	const emit = () => {
 		const snapshot = snapshotResult(entries);
 		if (options.onUpdate) {
-			options.onUpdate(snapshot);
+			try {
+				options.onUpdate(snapshot);
+			} catch {
+				// A misbehaving progress callback must never abort the run loop or
+				// leave already-scheduled tasks/child processes unawaited.
+			}
 		}
 	};
 

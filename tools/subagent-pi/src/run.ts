@@ -53,7 +53,8 @@ export function isFailedResult(result: SingleResult): boolean {
 	return (
 		result.exitCode !== 0 ||
 		result.stopReason === "error" ||
-		result.stopReason === "aborted"
+		result.stopReason === "aborted" ||
+		Boolean(result.errorMessage)
 	);
 }
 
@@ -237,9 +238,10 @@ export function createAgentEventProcessor(
 				if (message.stopReason) {
 					result.stopReason = message.stopReason;
 				}
-				if (message.errorMessage) {
-					result.errorMessage = message.errorMessage;
-				}
+				// Reflects only the latest turn's error state (mirrors stopReason
+				// below) so a recovered agent isn't misclassified as failed by a
+				// stale errorMessage from an earlier, non-terminal turn.
+				result.errorMessage = message.errorMessage;
 			}
 			emitUpdate();
 		}
