@@ -465,7 +465,7 @@ export class LocalMarkdownAdapter {
 		});
 	}
 
-	async listIssueRecords(): Promise<Issue[]> {
+	async listIssueRecords(_projectId?: string): Promise<Issue[]> {
 		await this.#ensureLayout();
 		const entries = await readdir(this.#rootDir, { withFileTypes: true });
 		const slugs = entries

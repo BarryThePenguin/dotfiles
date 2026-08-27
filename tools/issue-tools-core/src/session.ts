@@ -51,7 +51,10 @@ export type TrackerSessionOptions = {
 	/** Builds the domain modules for the local tracker. */
 	buildLocalModules: () => TrackerModules;
 	/** Builds the domain modules for the Todoist tracker. */
-	buildTodoistModules: () => Promise<TrackerModules>;
+	buildTodoistModules: () => Promise<{
+		modules: TrackerModules;
+		projects: readonly { id: string; label: string }[];
+	}>;
 	/** Persists the session's active map across calls. */
 	store: SessionStateStore;
 	/** Called on construction and after any state change so the host can refresh its status display. */
@@ -64,6 +67,7 @@ export type TrackerSessionOptions = {
 
 export type TrackerSession = {
 	getModules: () => Promise<{ modules: TrackerModules; mode: TrackerMode }>;
+	getProjects: () => readonly { id: string; label: string }[];
 	getCwd: () => string;
 	getClaimant: () => Promise<string>;
 	getActiveMap: () => string | null;
@@ -91,6 +95,7 @@ export function createTrackerSession({
 	let claimant: Promise<string> | null = null;
 	let mode: TrackerMode | null = null;
 	let activeMap: string | null = store.read().activeMap;
+	let projects: readonly { id: string; label: string }[] = [];
 
 	const sessionState = () => ({ mode, activeMap, cwd });
 
@@ -101,9 +106,10 @@ export function createTrackerSession({
 					mode = await selectMode();
 					const built =
 						mode === "local"
-							? buildLocalModules()
+							? { modules: buildLocalModules(), projects: [] as const }
 							: await buildTodoistModules();
-					return { modules: built, mode };
+					projects = built.projects;
+					return { modules: built.modules, mode };
 				})();
 				const cached = pending.catch((error: unknown) => {
 					if (modules === cached) {
@@ -116,6 +122,9 @@ export function createTrackerSession({
 			const result = await modules;
 			updateStatus(sessionState());
 			return result;
+		},
+		getProjects() {
+			return projects;
 		},
 		getCwd() {
 			return cwd;

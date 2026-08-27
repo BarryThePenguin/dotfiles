@@ -22,7 +22,7 @@ export interface SingleResult {
 	usage: UsageStats;
 	model?: string;
 	stopReason?: string;
-	errorMessage?: string;
+	errorMessage?: string | undefined;
 }
 
 /** Everything needed to launch one child process. */

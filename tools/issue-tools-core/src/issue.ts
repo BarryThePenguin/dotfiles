@@ -53,4 +53,6 @@ export type ListIssuesFilter = {
 	state?: IssueStatus | "any";
 	labels?: string[];
 	unlabeled?: boolean;
+	projectId?: string;
+	projectName?: string;
 };

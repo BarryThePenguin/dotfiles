@@ -25,7 +25,7 @@ export interface IssuePersistence {
 		id: string,
 		options: { comment?: string } | undefined,
 	): Promise<{ status: "open" | "closed" }>;
-	listIssueRecords(): Promise<Issue[]>;
+	listIssueRecords(projectId?: string): Promise<Issue[]>;
 }
 
 /** Persistence capability needed by the Wayfinder module. */

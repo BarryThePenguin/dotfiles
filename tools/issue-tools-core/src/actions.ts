@@ -475,6 +475,8 @@ async function listIssues(
 		...(params.state ? { state: params.state } : {}),
 		...(params.labels ? { labels: [...params.labels] } : {}),
 		...(params.unlabeled ? { unlabeled: params.unlabeled } : {}),
+		...(params.project ? { projectId: params.project } : {}),
+		...(params.projectName ? { projectName: params.projectName } : {}),
 	});
 	if (issues.length === 0) {
 		return runtime.success("No issues matched.", { count: 0, issues: [] });

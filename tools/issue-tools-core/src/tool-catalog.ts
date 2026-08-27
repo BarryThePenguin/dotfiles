@@ -387,6 +387,14 @@ export const issueList = {
 				type: "boolean",
 				description: "Only issues with no labels",
 			},
+			project: {
+				type: "string",
+				description: "Project ID to query (overrides repo default)",
+			},
+			projectName: {
+				type: "string",
+				description: "Project label from .doistrc (e.g. \"Doist\")",
+			},
 		},
 	},
 	group: "issue",

@@ -355,7 +355,9 @@ export async function runSingleAgent(
 			});
 
 			if (signal) {
-				const onAbort = () => killProc();
+				const onAbort = () => {
+					killProc();
+				};
 				if (signal.aborted) {
 					killProc();
 				} else {
@@ -364,7 +366,9 @@ export async function runSingleAgent(
 			}
 
 			if (timeoutMs !== undefined) {
-				watchdog = setTimeout(() => killProc(timeoutMs), timeoutMs);
+				watchdog = setTimeout(() => {
+					killProc(timeoutMs);
+				}, timeoutMs);
 			}
 		});
 

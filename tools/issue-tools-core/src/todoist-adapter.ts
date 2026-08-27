@@ -450,10 +450,11 @@ export class TodoistAdapter {
 		return { status: "closed" as const };
 	}
 
-	listIssueRecords(): Promise<Issue[]> {
+	listIssueRecords(projectId?: string): Promise<Issue[]> {
+		const resolvedProjectId = projectId ?? this.#projectId;
 		const tasks = this.#db.selectTasksWithNotes({
 			completed: "any",
-			...(this.#projectId ? { projectId: this.#projectId } : {}),
+			...(resolvedProjectId ? { projectId: resolvedProjectId } : {}),
 		});
 		return Promise.resolve(tasks.map(withComments).map(toIssue));
 	}

@@ -1,10 +1,21 @@
-import { createContainer, selectRepoProject, type Container } from "doist-core";
+import {
+	createContainer,
+	selectRepoProject,
+	type Container,
+	type ProjectRef,
+} from "doist-core";
 import { createTrackerModulesFromBackend } from "./modules.ts";
 import type { TrackerModules } from "./modules.ts";
 import { TodoistAdapter } from "./todoist-adapter.ts";
 
 type TodoistTrackerContext = {
 	readonly persistence: TodoistAdapter;
+	readonly projects: ProjectRef[];
+};
+
+export type TodoistModulesResult = {
+	modules: TrackerModules;
+	projects: readonly ProjectRef[];
 };
 
 function repoProjectId(container: Container): string | undefined {
@@ -30,6 +41,7 @@ async function createTodoistTrackerContext(
 	const projectId = repoProjectId(container);
 	return {
 		persistence: new TodoistAdapter(container, projectId ? { projectId } : {}),
+		projects: container.listProjects(),
 	};
 }
 
@@ -41,9 +53,15 @@ async function createTodoistTrackerContext(
  */
 export async function createTodoistTrackerModules(
 	rcDir?: string,
-): Promise<TrackerModules> {
+): Promise<TodoistModulesResult> {
 	const context = await createTodoistTrackerContext(rcDir);
-	return createTrackerModulesFromBackend(context.persistence);
+	return {
+		modules: createTrackerModulesFromBackend(
+			context.persistence,
+			context.projects,
+		),
+		projects: context.projects,
+	};
 }
 
 /** Select the configured repository project for callers that need to inspect it. */

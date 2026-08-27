@@ -110,7 +110,9 @@ describe("createTrackerSession", () => {
 			.fn()
 			.mockReturnValueOnce(firstModules)
 			.mockReturnValueOnce(modules());
-		const buildTodoistModules = vi.fn().mockResolvedValueOnce(secondModules);
+		const buildTodoistModules = vi
+			.fn()
+			.mockResolvedValueOnce({ modules: secondModules, projects: [] });
 		const session = createTrackerSession({
 			cwd,
 			selectMode,

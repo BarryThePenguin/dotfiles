@@ -41,9 +41,10 @@ export type TrackerModules = {
 /** Assemble both domain modules from one private backend implementation. */
 export function createTrackerModulesFromBackend(
 	backend: IssuePersistence & WayfinderPersistence & ResolutionPersistence,
+	projects: readonly { id: string; label: string }[] = [],
 ): TrackerModules {
 	return {
-		issues: new IssueModule(backend),
+		issues: new IssueModule(backend, projects),
 		wayfinder: new WayfinderModule({
 			persistence: backend,
 			resolutionPersistence: backend,
@@ -53,9 +54,14 @@ export function createTrackerModulesFromBackend(
 
 export class IssueModule implements IssueTracker {
 	readonly #storage: IssuePersistence;
+	readonly #projects: readonly { id: string; label: string }[];
 
-	constructor(storage: IssuePersistence) {
+	constructor(
+		storage: IssuePersistence,
+		projects: readonly { id: string; label: string }[] = [],
+	) {
 		this.#storage = storage;
+		this.#projects = projects;
 	}
 
 	createIssue(input: CreateIssueInput): Promise<Issue> {
@@ -90,7 +96,22 @@ export class IssueModule implements IssueTracker {
 	}
 
 	async listIssues(filter: ListIssuesFilter): Promise<Issue[]> {
-		return filterIssues(await this.#storage.listIssueRecords(), filter);
+		let projectId = filter.projectId;
+		if (!projectId && filter.projectName) {
+			const match = this.#projects.find(
+				(p) => p.label.toLowerCase() === filter.projectName?.toLowerCase(),
+			);
+			if (!match) {
+				throw new Error(
+					`No project named "${filter.projectName}" found in .doistrc`,
+				);
+			}
+			projectId = match.id;
+		}
+		return filterIssues(
+			await this.#storage.listIssueRecords(projectId),
+			filter,
+		);
 	}
 }
 
