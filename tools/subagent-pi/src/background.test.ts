@@ -17,10 +17,15 @@ function makeAgent(name: string): AgentConfig {
 
 const testState = vi.hoisted(() => ({
 	spawnCalls: [] as Array<{ context: SpawnContext }>,
-	spawnBehavior: "settle" as "settle" | "error" | "silent",
+	spawnBehavior: "settle" as "settle" | "error" | "silent" | "manual",
 	settledOutput: "task complete",
 	settledSessionDir: "/tmp/pi-subagent-bg-xyz",
 	errorMessage: "child crashed",
+	pendingSettlers: [] as Array<{
+		agent: string;
+		settle: () => void;
+		fail: () => void;
+	}>,
 }));
 
 vi.mock("./launcher.ts", () => ({
@@ -93,6 +98,18 @@ vi.mock("./run.ts", () => ({
 			});
 		} else if (testState.spawnBehavior === "error") {
 			options.onError(testState.errorMessage);
+		} else if (testState.spawnBehavior === "manual") {
+			testState.pendingSettlers.push({
+				agent: options.context.agent.name,
+				settle: () =>
+					options.onSettled({
+						finalOutput: testState.settledOutput,
+						sessionDir: testState.settledSessionDir,
+						agent: options.context.agent.name,
+						task: options.context.task,
+					}),
+				fail: () => options.onError(testState.errorMessage),
+			});
 		}
 		return {
 			agent: options.context.agent.name,
@@ -122,6 +139,7 @@ beforeEach(() => {
 	testState.settledOutput = "task complete";
 	testState.settledSessionDir = "/tmp/pi-subagent-bg-xyz";
 	testState.errorMessage = "child crashed";
+	testState.pendingSettlers.length = 0;
 });
 
 describe("/subagent-bg RPC settlement and result propagation", () => {
@@ -225,5 +243,96 @@ describe("/subagent-bg RPC settlement and result propagation", () => {
 			expect.stringContaining("/subagent-bg needs a brief"),
 			"error",
 		);
+	});
+});
+
+describe("/subagent-bg parallel/multi-task mode", () => {
+	it("spawns one background agent per non-empty line", async () => {
+		const pi = makePi();
+		const ctx = makeCtx();
+		const handler = createBackgroundCommandHandler(pi as unknown as ExtensionAPI);
+
+		await handler("agent:general do a\nagent:explore do b", ctx);
+
+		expect(testState.spawnCalls).toHaveLength(2);
+		expect(testState.spawnCalls[0]?.context.agent.name).toBe("general");
+		expect(testState.spawnCalls[0]?.context.task).toBe("do a");
+		expect(testState.spawnCalls[1]?.context.agent.name).toBe("explore");
+		expect(testState.spawnCalls[1]?.context.task).toBe("do b");
+	});
+
+	it("injects each task's settled result independently", async () => {
+		const pi = makePi();
+		const ctx = makeCtx();
+		const handler = createBackgroundCommandHandler(pi as unknown as ExtensionAPI);
+
+		await handler("agent:general do a\nagent:explore do b", ctx);
+
+		expect(pi.sendUserMessage).toHaveBeenCalledTimes(2);
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining('"general"'),
+			"info",
+		);
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining('"explore"'),
+			"info",
+		);
+	});
+
+	it("rejects a batch larger than the parallel task limit without spawning anything", async () => {
+		const pi = makePi();
+		const ctx = makeCtx();
+		const handler = createBackgroundCommandHandler(pi as unknown as ExtensionAPI);
+		const lines = Array.from({ length: 9 }, (_, i) => `agent:general task ${i}`);
+
+		await handler(lines.join("\n"), ctx);
+
+		expect(testState.spawnCalls).toHaveLength(0);
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining("Too many background tasks"),
+			"error",
+		);
+	});
+
+	it("skips unknown agents in a batch but still spawns the valid ones", async () => {
+		const pi = makePi();
+		const ctx = makeCtx();
+		const handler = createBackgroundCommandHandler(pi as unknown as ExtensionAPI);
+
+		await handler("agent:nonexistent bad\nagent:general good", ctx);
+
+		expect(testState.spawnCalls).toHaveLength(1);
+		expect(testState.spawnCalls[0]?.context.agent.name).toBe("general");
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining("Unknown agent"),
+			"error",
+		);
+	});
+
+	it("queues tasks beyond the concurrency cap and starts the next one as each settles", async () => {
+		testState.spawnBehavior = "manual";
+		const pi = makePi();
+		const ctx = makeCtx();
+		const handler = createBackgroundCommandHandler(pi as unknown as ExtensionAPI);
+		const lines = Array.from({ length: 6 }, (_, i) => `agent:general task ${i}`);
+
+		const done = handler(lines.join("\n"), ctx);
+
+		// Only the concurrency cap (4) should be spawned up front.
+		await Promise.resolve();
+		expect(testState.spawnCalls).toHaveLength(4);
+
+		testState.pendingSettlers[0]?.settle();
+		await Promise.resolve();
+		expect(testState.spawnCalls).toHaveLength(5);
+
+		testState.pendingSettlers[1]?.fail();
+		await Promise.resolve();
+		expect(testState.spawnCalls).toHaveLength(6);
+
+		for (const settler of testState.pendingSettlers.slice(2)) {
+			settler.settle();
+		}
+		await done;
 	});
 });

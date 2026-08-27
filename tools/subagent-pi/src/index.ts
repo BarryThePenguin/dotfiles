@@ -11,8 +11,10 @@
  *  - Persona override layer: .pi/personas.json (nearest-up from cwd) merges
  *    { provider?, model?, thinkingLevel? } over agents.md frontmatter; the child
  *    spawn passes --provider and --thinking when set.
- *  - Background command: /subagent-bg spawns a detached `pi --mode rpc` child
- *    (session-dir for resumability); results injected via sendUserMessage (gap 1).
+ *  - Background command: /subagent-bg spawns one or more detached `pi --mode rpc`
+ *    children (one per line, up to MAX_PARALLEL_TASKS, PARALLEL_CONCURRENCY at a
+ *    time), each with its own session-dir for resumability; each result is
+ *    injected via sendUserMessage independently as that child settles (gap 1).
  */
 
 import * as path from "node:path";
@@ -97,7 +99,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.registerCommand("subagent-bg", {
 		description:
-			"Spawn a detached background subagent (default agent: general). Usage: /subagent-bg [agent:<name>] <brief>. Results are injected when the subagent settles.",
+			"Spawn detached background subagents (default agent: general). Usage: /subagent-bg [agent:<name>] <brief>, one per line to run several in parallel (max 8, 4 concurrent). Each result is injected independently as that subagent settles.",
 		handler: createBackgroundCommandHandler(pi),
 	});
 }
