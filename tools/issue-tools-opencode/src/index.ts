@@ -202,18 +202,22 @@ export default Plugin.define({
 					name: "issue_tracker_setup",
 					description:
 						"Configure which Issue tracker this repo uses: wire the repo's .doistrc project (Todoist) or confirm local Markdown (.scratch).",
-					input: Schema.Struct({
-						tracker: Schema.optional(
-							Schema.Literals(["local", "todoist", "auto"]),
-						).annotate({
-							description:
-								"Force the tracker mode ('auto' clears a previous override)",
-						}),
-						project_id: Schema.optional(Schema.String).annotate({
-							description:
-								"Todoist project ID to mark as the repo project when .doistrc has several",
-						}),
-					}),
+					input: {
+						type: "object",
+						properties: {
+							tracker: {
+								type: "string",
+								enum: ["local", "todoist", "auto"],
+								description:
+									"Force the tracker mode ('auto' clears a previous override)",
+							},
+							project_id: {
+								type: "string",
+								description:
+									"Todoist project ID to mark as the repo project when .doistrc has several",
+							},
+						},
+					},
 					output: ToolResultOutput,
 					options: { codemode: false },
 					execute: (args, ctx) =>
