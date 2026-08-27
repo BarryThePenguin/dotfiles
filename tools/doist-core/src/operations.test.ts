@@ -17,6 +17,7 @@ import { CommandError } from "./commands.ts";
 import { getToken, setToken } from "./sync-lifecycle.ts";
 import {
 	createMockApiNote,
+	createMockApiProject,
 	createMockApiTask,
 	createMockSyncResponse,
 	interceptSync,
@@ -353,6 +354,59 @@ describe("mock HTTP client", () => {
 			expect(result.ok).toBe(true);
 			expect(result.result.projectId).toBe(PROJECT_IDS.personal);
 		});
+
+		it("auto-syncs once when the target project isn't cached yet, then retries", async () => {
+			// First sync call: triggered by the failed local lookup, discovers "Work".
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-auto",
+					projects: [createMockApiProject({ id: PROJECT_IDS.work, name: "Work" })],
+				}),
+			);
+
+			// Second sync call: the actual move command, now that "Work" resolves.
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				const commands = JSON.parse(
+					params.get("commands") ?? "[]",
+				) as Array<{ type?: string; args?: { project_id?: string } }>;
+				expect(commands[0]?.type).toBe("item_move");
+				expect(commands[0]?.args?.project_id).toBe(PROJECT_IDS.work);
+				return {
+					sync_token: "tok-1",
+					items: [
+						createMockApiTask({
+							id: TASK_IDS.alpha,
+							project_id: PROJECT_IDS.work,
+						}),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await moveTask(
+				{ db: container.db, client },
+				TASK_IDS.alpha,
+				"Work",
+			);
+
+			expect(result.ok).toBe(true);
+			expect(result.result.projectId).toBe(PROJECT_IDS.work);
+			expect(container.db.getProjectById(PROJECT_IDS.work)?.name).toBe("Work");
+		});
+
+		it("still throws when the project remains unknown after the auto-sync retry", async () => {
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({ sync_token: "tok-auto" }),
+			);
+
+			const client = createClient("test-token");
+			await expect(
+				moveTask({ db: container.db, client }, TASK_IDS.alpha, "Ghost"),
+			).rejects.toThrow("project not found in .doistrc: Ghost");
+		});
 	});
 
 	// ── addTask tests ──────────────────────────────────────────────────────
@@ -451,6 +505,46 @@ describe("mock HTTP client", () => {
 			expect(result.ok).toBe(true);
 			expect(result.result.id).toBe("t-new");
 			expect(result.result.projectId).toBe(PROJECT_IDS.inbox);
+		});
+
+		it("auto-syncs and resolves the project when not yet cached, instead of falling back to the raw name", async () => {
+			interceptSync(
+				mockAgent,
+				createMockSyncResponse({
+					sync_token: "tok-auto",
+					projects: [createMockApiProject({ id: PROJECT_IDS.work, name: "Work" })],
+				}),
+			);
+
+			interceptSyncDynamic(mockAgent, (reqBody) => {
+				const params = new URLSearchParams(reqBody);
+				const commands = JSON.parse(params.get("commands") ?? "[]") as Array<{
+					temp_id?: string;
+					args?: { project_id?: string };
+				}>;
+				const tempId = commands[0]?.temp_id ?? "temp-work";
+				expect(commands[0]?.args?.project_id).toBe(PROJECT_IDS.work);
+				return {
+					sync_token: "tok-1",
+					temp_id_mapping: { [tempId]: "t-new" },
+					items: [
+						createMockApiTask({
+							id: "t-new",
+							project_id: PROJECT_IDS.work,
+							content: "Task in Work",
+						}),
+					],
+				};
+			});
+
+			const client = createClient("test-token");
+			const result = await addTask(
+				{ db: container.db, client },
+				{ title: "Task in Work", project: "Work" },
+			);
+
+			expect(result.ok).toBe(true);
+			expect(result.result.projectId).toBe(PROJECT_IDS.work);
 		});
 
 		it("includes optional fields when provided", async () => {

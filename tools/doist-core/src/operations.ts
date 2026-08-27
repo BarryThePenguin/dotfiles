@@ -29,6 +29,7 @@ import {
 } from "./commands.ts";
 import { getToken, persistMutations } from "./sync-lifecycle.ts";
 import { mergeLabels } from "./labels.ts";
+import { syncAndPersist } from "./sync.ts";
 import {
 	resolveCreated,
 	resolveCreatedNote,
@@ -56,6 +57,26 @@ export function resolveProject(
 	return undefined;
 }
 
+/**
+ * Resolve a project name or ID, syncing once and retrying on a lookup miss.
+ *
+ * Covers the common case where the user just created the project (or ran the
+ * mutation before their first sync) and the local mirror hasn't caught up yet.
+ */
+async function resolveProjectOrSync(
+	db: Database,
+	client: TodoistClient,
+	nameOrId: string,
+	allowedProjects: string[],
+): Promise<string | undefined> {
+	const resolved = resolveProject(db, nameOrId);
+	if (resolved !== undefined) {
+		return resolved;
+	}
+	await syncAndPersist(db, client, allowedProjects);
+	return resolveProject(db, nameOrId);
+}
+
 export function listSections(db: Database, project?: string) {
 	if (!project) {
 		return db.selectAllSections();
@@ -81,16 +102,20 @@ export interface OperationResult<T> {
  * to thread the same pair through every operation while retaining the
  * standalone functions below for consumers that need them.
  */
-export function createTodoistOperations(persistence: PersistenceLayer) {
+export function createTodoistOperations(
+	persistence: PersistenceLayer & { listProjectIds?: () => string[] },
+) {
+	const allowedProjects = () => persistence.listProjectIds?.() ?? [];
 	return {
 		resolveProject: (nameOrId: string) =>
 			resolveProject(persistence.db, nameOrId),
 		listSections: (project?: string) => listSections(persistence.db, project),
 		updateTask: (id: string, fields: UpdateTaskFields) =>
-			updateTask(persistence, id, fields),
+			updateTask(persistence, id, fields, allowedProjects()),
 		moveTask: (id: string, project: string) =>
-			moveTask(persistence, id, project),
-		addTask: (fields: AddTaskFields) => addTask(persistence, fields),
+			moveTask(persistence, id, project, allowedProjects()),
+		addTask: (fields: AddTaskFields) =>
+			addTask(persistence, fields, allowedProjects()),
 		completeTasks: (ids: string[]) => completeTasks(persistence, ids),
 		uncompleteTasks: (ids: string[]) => uncompleteTasks(persistence, ids),
 		completeTask: (id: string, comment?: string) =>
@@ -129,6 +154,7 @@ export async function updateTask(
 		description,
 		section,
 	}: UpdateTaskFields,
+	allowedProjects: string[] = [],
 ): Promise<OperationResult<AppTask>> {
 	// Compute merged labels
 	let labels: string[] | undefined;
@@ -137,7 +163,9 @@ export async function updateTask(
 		labels = mergeLabels(existing?.labels ?? [], addLabels, removeLabels);
 	}
 
-	const projectId = project ? resolveProject(db, project) : undefined;
+	const projectId = project
+		? await resolveProjectOrSync(db, client, project, allowedProjects)
+		: undefined;
 	if (project && projectId === undefined) {
 		throw new Error(`project not found in .doistrc: ${project}`);
 	}
@@ -184,8 +212,14 @@ export async function moveTask(
 	{ db, client }: PersistenceLayer,
 	id: string,
 	project: string,
+	allowedProjects: string[] = [],
 ): Promise<OperationResult<AppTask>> {
-	const projectId = resolveProject(db, project);
+	const projectId = await resolveProjectOrSync(
+		db,
+		client,
+		project,
+		allowedProjects,
+	);
 	if (!projectId) {
 		throw new Error(`project not found in .doistrc: ${project}`);
 	}
@@ -221,9 +255,11 @@ export async function addTask(
 		priority,
 		labels,
 	}: AddTaskFields,
+	allowedProjects: string[] = [],
 ): Promise<OperationResult<AppTask>> {
 	const projectId = project
-		? (resolveProject(db, project) ?? project)
+		? ((await resolveProjectOrSync(db, client, project, allowedProjects)) ??
+			project)
 		: undefined;
 	const tempId = crypto.randomUUID();
 	const allData = await client.sync(
