@@ -8,7 +8,9 @@ import {
 	vi,
 } from "vitest";
 import type { Message } from "@earendil-works/pi-ai";
+import * as fs from "node:fs";
 import {
+	buildCommonChildArgs,
 	createAgentEventProcessor,
 	getFinalOutput,
 	runSingleAgent,
@@ -180,6 +182,62 @@ function buildContext(): SpawnContext {
 		effective: {},
 	};
 }
+
+describe("buildCommonChildArgs", () => {
+	it("includes no mode-specific flags, only provider/model/tools/thinking", () => {
+		const { args, tmpDir } = buildCommonChildArgs({
+			...buildContext(),
+			agent: { ...buildContext().agent, systemPrompt: "", tools: ["read", "grep"] },
+			effective: { provider: "anthropic", model: "sonnet", thinking: "high" },
+		});
+
+		expect(args).toEqual([
+			"--provider",
+			"anthropic",
+			"--model",
+			"sonnet",
+			"--tools",
+			"read,grep",
+			"--thinking",
+			"high",
+		]);
+		expect(args).not.toContain("--mode");
+		expect(args).not.toContain("-p");
+		expect(args).not.toContain("--no-session");
+		expect(tmpDir).toBeNull();
+	});
+
+	it("omits optional flags entirely when unset", () => {
+		const { args, tmpDir, tmpFilePath } = buildCommonChildArgs({
+			...buildContext(),
+			agent: { ...buildContext().agent, systemPrompt: "" },
+			effective: {},
+		});
+
+		expect(args).toEqual([]);
+		expect(tmpDir).toBeNull();
+		expect(tmpFilePath).toBeNull();
+	});
+
+	it("writes the system prompt to a tmp file and appends --append-system-prompt", () => {
+		const { args, tmpDir, tmpFilePath } = buildCommonChildArgs(buildContext());
+
+		try {
+			expect(args).toEqual(["--append-system-prompt", tmpFilePath]);
+			expect(tmpDir).not.toBeNull();
+			expect(fs.readFileSync(tmpFilePath as string, "utf-8")).toBe(
+				"You are a test agent",
+			);
+		} finally {
+			if (tmpFilePath) {
+				fs.unlinkSync(tmpFilePath);
+			}
+			if (tmpDir) {
+				fs.rmdirSync(tmpDir);
+			}
+		}
+	});
+});
 
 describe("runSingleAgent cancellation", () => {
 	beforeEach(() => {

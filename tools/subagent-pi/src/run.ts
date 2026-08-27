@@ -113,13 +113,18 @@ export interface RunSingleAgentOptions {
 	timeoutMs?: number | undefined;
 }
 
-/** Build child CLI args from the complete spawn context. */
-function buildChildArgs(
+/**
+ * Build the CLI args common to every mode (provider, model, tools, thinking,
+ * system-prompt file). Mode-specific flags (--mode/-p/--no-session for a
+ * single-shot run, --mode rpc/--session-dir/--name for a background run) are
+ * each caller's own concern — appended on top of this result, never stripped
+ * back out of it.
+ */
+export function buildCommonChildArgs(
 	context: SpawnContext,
-	includeTask: boolean,
 ): { args: string[]; tmpDir: string | null; tmpFilePath: string | null } {
 	const { agent, effective } = context;
-	const args: string[] = ["--mode", "json", "-p", "--no-session"];
+	const args: string[] = [];
 	if (effective.provider) {
 		args.push("--provider", effective.provider);
 	}
@@ -146,9 +151,6 @@ function buildChildArgs(
 		args.push("--append-system-prompt", tmpFilePath);
 	}
 
-	if (includeTask) {
-		args.push(`Task: ${context.task}`);
-	}
 	return { args, tmpDir, tmpFilePath };
 }
 
@@ -298,7 +300,15 @@ export async function runSingleAgent(
 	options: RunSingleAgentOptions,
 ): Promise<SingleResult> {
 	const { context, signal, onUpdate, timeoutMs } = options;
-	const { args, tmpDir, tmpFilePath } = buildChildArgs(context, true);
+	const { args: commonArgs, tmpDir, tmpFilePath } = buildCommonChildArgs(context);
+	const args = [
+		"--mode",
+		"json",
+		"-p",
+		"--no-session",
+		...commonArgs,
+		`Task: ${context.task}`,
+	];
 	const result = createInitialResult(context);
 	const events = createAgentEventProcessor(result, onUpdate);
 
@@ -418,22 +428,19 @@ export function spawnBackgroundAgent(
 	const { agent, task, cwd } = context;
 
 	const sessionDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-subagent-bg-"));
-	const { args, tmpDir, tmpFilePath } = buildChildArgs(context, false);
+	const { args: commonArgs, tmpDir, tmpFilePath } = buildCommonChildArgs(context);
 
-	// RPC child: rpc mode + session-dir (resumability); drop the json/-p flags from buildChildArgs
-	const rpcArgs = args
-		.filter(
-			(a) =>
-				a !== "--mode" && a !== "json" && a !== "-p" && a !== "--no-session",
-		)
-		.concat([
-			"--mode",
-			"rpc",
-			"--session-dir",
-			sessionDir,
-			"--name",
-			agent.name,
-		]);
+	// RPC child: rpc mode + session-dir (resumability); the task is delivered
+	// over stdin, not as a CLI arg.
+	const rpcArgs = [
+		...commonArgs,
+		"--mode",
+		"rpc",
+		"--session-dir",
+		sessionDir,
+		"--name",
+		agent.name,
+	];
 
 	const invocation = getPiInvocation(rpcArgs);
 	const proc = spawn(invocation.command, invocation.args, {
