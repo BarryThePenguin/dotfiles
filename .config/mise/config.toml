@@ -4,7 +4,7 @@ DOTFILES = { required = true }
 EDITOR = "code"
 
 [plugins]
-repo-bins = "~/src/btp/dotfiles/tools/mise-repo-bins"
+repo-bins = "~/src/btp/agent-tools/mise-repo-bins"
 
 [tools]
 repo-bins = "local"
@@ -87,17 +87,17 @@ login_shell = "/bin/zsh"
 "~/.config/opencode/cli.json" = { mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
 "~/.config/opencode/plugins/workmux-status.ts" = { mode = "symlink" }
-"~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/dotfiles/tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
+"~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/agent-tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
 "~/.config/opencode/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.config/opencode/tui.json" = { mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }
 "~/.config/zsh" = { mode = "symlink-each" }
-"~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/dotfiles/tools/issue-tools-pi", mode = "symlink" }
-"~/.pi/agent/extensions/subagent-pi" = { source = "~/src/btp/dotfiles/tools/subagent-pi", mode = "symlink" }
-"~/.pi/agent/agents" = { source = "~/src/btp/dotfiles/tools/subagent-pi/agents", mode = "symlink" }
-"~/.pi/agent/prompts" = { source = "~/src/btp/dotfiles/tools/subagent-pi/prompts", mode = "symlink" }
+"~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/agent-tools/issue-tools-pi", mode = "symlink" }
+"~/.pi/agent/extensions/subagent-pi" = { source = "~/src/btp/agent-tools/subagent-pi", mode = "symlink" }
+"~/.pi/agent/agents" = { source = "~/src/btp/agent-tools/subagent-pi/agents", mode = "symlink" }
+"~/.pi/agent/prompts" = { source = "~/src/btp/agent-tools/subagent-pi/prompts", mode = "symlink" }
 "~/.pi/agent/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.zprezto-contrib" = { mode = "symlink" }
 "~/.zshenv" = { mode = "symlink" }

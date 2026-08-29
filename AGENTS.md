@@ -18,14 +18,13 @@ A personal dotfiles monorepo managed with [mise](https://mise.jdx.dev/). Configu
 .zshenv           → Sets ZDOTDIR and MISE_PROFILE; always sourced by zsh
 stow/             → Legacy; now only holds .config/zellij/ (will be migrated)
 scripts/          → Utility scripts for dev workflows
-tools/            → Internal tooling packages (TypeScript monorepo)
 bin/              → Bootstrap entry script
 ```
 
 ## Key Tools
 
 - **mise** — runtime version manager and dotfile manager (`config.toml`)
-- **pnpm** — package manager for the TypeScript monorepo in `tools/`
+- **pnpm** — package manager for the TypeScript tooling monorepo at `~/src/btp/agent-tools`
 - **renovate** — automated dependency updates (`renovate.json`)
 
 ## Dotfiles management
@@ -45,7 +44,7 @@ Supported modes per entry: `symlink`, `symlink-each`, `copy`, `template`.
 - Dotfiles live at the repo root following XDG structure (e.g. `.config/git/config`)
 - Individual file entries in `[dotfiles]` override the mode of a parent `symlink-each` directory entry (used for `git/config` → template, `git/ignore` → copy)
 - Scripts in `scripts/` should be executable and have a shebang
-- TypeScript tooling lives in `tools/` as pnpm workspace packages
+- TypeScript tooling lives in the separate `agent-tools` repo (~/src/btp/agent-tools, https://code.jonno.dev/BarryThePenguin/agent-tools)
 - Agent skills live in `.agents/skills/`
 
 ## Commands
@@ -61,7 +60,7 @@ Supported modes per entry: `symlink`, `symlink-each`, `copy`, `template`.
 
 ### Issue tracker
 
-Issues and specs live in Todoist (project: Dotfiles, id `6h9Wxp68J6HrG99m`). See `docs/agents/issue-tracker.md`. The `issue_*`/`wayfinder_*` tools are exposed by the Pi extension and by the global opencode plugin (`tools/issue-tools-opencode`, loaded via `~/.config/opencode/plugins/issue-tools.ts`).
+Issues and specs live in Todoist (project: Dotfiles, id `6h9Wxp68J6HrG99m`). See `docs/agents/issue-tracker.md`. The `issue_*`/`wayfinder_*` tools are exposed by the Pi extension and by the global opencode plugin (`issue-tools-opencode` in the agent-tools repo, loaded via `~/.config/opencode/plugins/issue-tools.ts`).
 
 ### Triage labels
 

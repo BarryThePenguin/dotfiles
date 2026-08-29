@@ -25,7 +25,6 @@ This repository is currently a single-context domain model:
 /
 ├── CONTEXT.md
 ├── docs/adr/                  ← system-wide architectural decisions
-├── tools/                     ← internal packages and tracker adapters
 └── .agents/skills/            ← engineering skills
 ```
 

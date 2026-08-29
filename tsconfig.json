@@ -4,18 +4,5 @@
 		"tsBuildInfoFile": "${configDir}/dist/tsconfig.tsbuildinfo"
 	},
 	"files": [],
-	"references": [
-		{ "path": "./tools/issue-tools-pi/tsconfig.json" },
-		{ "path": "./tools/subagent-pi/tsconfig.json" },
-		{ "path": "./tools/doist-cli/tsconfig.json" },
-		{ "path": "./tools/doist-core/tsconfig.json" },
-		{ "path": "./tools/doist-mcp/tsconfig.json" },
-		{ "path": "./tools/issue-tools-core/tsconfig.json" },
-		{ "path": "./tools/issue-tools-claude/tsconfig.json" },
-		{ "path": "./tools/issue-tools-opencode/tsconfig.json" },
-		{ "path": "./tools/opencode-go-usage/tsconfig.json" },
-		{ "path": "./tools/sqlite-kysely/tsconfig.json" },
-		{ "path": "./tools/sqlite-runtime/tsconfig.json" },
-		{ "path": "./tsconfig.repo-config-files.json" }
-	]
+	"references": [{ "path": "./tsconfig.repo-config-files.json" }]
 }

@@ -1,12 +1,16 @@
 # Issue tracker
 
 The issue tracker is where this repo's Issues and Specs live. The engineering
-skills use the tracker through the Pi issue-tools extension and do not need to
-know which backend is selected.
+skills use the tracker through the Pi issue-tools extension and the global
+opencode issue-tools plugin (`~/.config/opencode/plugins/issue-tools.ts`,
+backed by `issue-tools-opencode` in the agent-tools repo) and do not need to know which backend
+is selected. Both hosts expose the same `issue_*` and `wayfinder_*` tool
+surface, backed by the shared `issue-tools-core` in the agent-tools repo.
 
 ## Conventions
 
-Use the Pi tools for all tracker operations:
+Use the issue tools for all tracker operations — same names and params in the
+Pi extension and the opencode plugin:
 
 - **Create an Issue**: `issue_create({ title, body?, labels? })` → `{ id, url }`.
 - **Read an Issue**: `issue_read({ id })` → body, labels, status, comments, and timestamps.
@@ -17,6 +21,16 @@ Use the Pi tools for all tracker operations:
 
 Issue references are tracker IDs or URLs. Bare `#42` and `!67` references do
 not resolve through the tools; use the ID or URL present in the reference.
+
+## Selecting the backend (opencode)
+
+In opencode the tracker is selected deterministically per repo: a `.scratch/`
+directory selects Local Markdown, a `.doistrc` with at least one Project
+selects Todoist, and both/neither fall back to local. `issue_tracker_setup`
+(wired by the plugin) marks the repo's Todoist project in `.doistrc` and
+records the choice; pass `tracker: 'local'` to force local mode. The chosen
+mode and active wayfinder map are persisted per-worktree under the user cache
+and survive opencode restarts.
 
 When triaging, every generated comment must start with:
 

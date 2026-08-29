@@ -1,5 +1,0 @@
-{
-	"extends": "../../tsconfig.build.json",
-	"compilerOptions": { "types": ["node", "bun"] },
-	"references": [{ "path": "../sqlite-runtime/tsconfig.build.json" }]
-}
