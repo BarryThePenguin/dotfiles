@@ -36,7 +36,7 @@ sops = "3.13.3"
 starship = "1.26.0"
 usage = "6.4.1"
 uv = "0.12.7"
-workmux = "0.1.242"
+workmux = "0.1.248"
 yq = "4.53.6"
 zellij = "0.45.1"
 
