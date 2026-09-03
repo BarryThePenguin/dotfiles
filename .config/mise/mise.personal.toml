@@ -20,7 +20,7 @@ OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
 "~/.config/opencode/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 
 [tools]
-"github:SigNoz/signoz-mcp-server" = "0.13.0"
+"github:SigNoz/signoz-mcp-server" = "0.14.0"
 "npm:@opencode-ai/cli" = { version = "beta", allow_builds = ["@opencode-ai/cli"] }
 cosign = "3.1.3"
 copilot = "1.0.82"
