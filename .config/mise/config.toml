@@ -90,6 +90,7 @@ login_shell = "/bin/zsh"
 "~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/agent-tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
 "~/.config/opencode/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.config/opencode/tui.json" = { mode = "symlink" }
+"~/.ssh/config" = { source = "~/src/btp/dotfiles/.config/ssh/config", mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }

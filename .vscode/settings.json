@@ -1,4 +1,7 @@
 {
+	"shellcheck.ignorePatterns": {
+		"**/.config/ssh/**": true
+	},
 	"search.exclude": {
 		".config/base16-shell": true,
 		".config/dracula": true,
