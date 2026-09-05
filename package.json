@@ -23,7 +23,7 @@
 		"@vitest/eslint-plugin": "1.6.27",
 		"effect": "4.0.0-beta.101",
 		"eslint": "10.9.1",
-		"globals": "17.11.0",
+		"globals": "17.12.0",
 		"knip": "6.33.0",
 		"prettier": "3.9.6",
 		"typescript": "npm:@typescript/typescript6@6.0.2",
