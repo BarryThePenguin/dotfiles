@@ -23,7 +23,6 @@ FNOX_PROFILE = "work"
 
 [dotfiles]
 "~/CLAUDE.md" = { mode = "symlink" }
-"~/.claude" = { mode = "symlink-each" }
 "~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.mcp.json" = { mode = "symlink" }
 
@@ -34,7 +33,6 @@ FNOX_PROFILE = "work"
 "dotnet:ilspycmd" = "10.1.1.8388"
 "npm:@augmentcode/auggie" = "0.36.0"
 claude-code = "2.1.263"
-docker-cli = "29.7.2"
 git-lfs = "3.8.0"
 glab = "1.105.0"
 viteplus = "0.3.0"

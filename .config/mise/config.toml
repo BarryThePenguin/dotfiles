@@ -26,6 +26,9 @@ node.npm_shim = false
 [bootstrap.hooks.post-repos]
 run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
 
+[bootstrap.services.mise-history]
+builtin = "history-watch"
+
 [bootstrap.user]
 login_shell = "/bin/zsh"
 
@@ -67,12 +70,15 @@ login_shell = "/bin/zsh"
 "mas:497799835" = "latest" # Xcode
 
 [dotfiles]
-"~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
 "~/.agents/skills" = { mode = "symlink" }
+"~/.claude/agents" = { mode = "track" }
+"~/.claude/settings.json" = { mode = "track" }
+"~/.claude/statusline-command.sh" = { mode = "track" }
 "~/.config/1Password" = { mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "symlink" }
-"~/.config/gh" = { mode = "symlink" }
+"~/.config/gh" = { mode = "symlink-each", exclude = ["hosts.yml"] }
+"~/.config/gh/hosts.yml" = { mode = "track" }
 "~/.config/ghostty/config" = { mode = "symlink" }
 "~/.config/git/btp.gitconfig" = { mode = "symlink" }
 "~/.config/git/config" = { mode = "template" }
@@ -82,23 +88,24 @@ login_shell = "/bin/zsh"
 "~/.config/gpg/gpg.conf" = { mode = "symlink" }
 "~/.config/homebrew/Brewfile" = { mode = "symlink" }
 "~/.config/jj/config.toml" = { mode = "symlink" }
-"~/.config/kube/config" = { mode = "symlink" }
+"~/.config/kube/config" = { mode = "track" }
 "~/.config/mise" = { mode = "symlink-each"}
 "~/.config/opencode/cli.json" = { mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
-"~/.config/opencode/plugins/workmux-status.ts" = { mode = "symlink" }
 "~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/agent-tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
+"~/.config/opencode/plugins/workmux-status.ts" = { mode = "symlink" }
 "~/.config/opencode/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.config/opencode/tui.json" = { mode = "symlink" }
-"~/.ssh/config" = { source = "~/src/btp/dotfiles/.config/ssh/config", mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }
 "~/.config/zsh" = { mode = "symlink-each" }
+"~/.pi/agent/agents" = { source = "~/src/btp/agent-tools/subagent-pi/agents", mode = "symlink" }
 "~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/agent-tools/issue-tools-pi", mode = "symlink" }
 "~/.pi/agent/extensions/subagent-pi" = { source = "~/src/btp/agent-tools/subagent-pi", mode = "symlink" }
-"~/.pi/agent/agents" = { source = "~/src/btp/agent-tools/subagent-pi/agents", mode = "symlink" }
 "~/.pi/agent/prompts" = { source = "~/src/btp/agent-tools/subagent-pi/prompts", mode = "symlink" }
 "~/.pi/agent/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
+"~/.ssh/config" = { source = "~/src/btp/dotfiles/.config/ssh/config", mode = "symlink" }
 "~/.zprezto-contrib" = { mode = "symlink" }
 "~/.zshenv" = { mode = "symlink" }
+"~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
