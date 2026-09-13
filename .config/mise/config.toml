@@ -11,6 +11,7 @@ repo-bins = "local"
 
 [settings]
 auto_update = true
+locked = true
 dotfiles.root = "~/src/btp/dotfiles"
 env_shell_expand = true
 node.corepack = true

@@ -32,6 +32,7 @@ FNOX_PROFILE = "work"
 "dotnet:dotnet-ef" = "10.0.2"
 "dotnet:ilspycmd" = "10.1.1.8388"
 "npm:@augmentcode/auggie" = "0.36.0"
+aws-cli = { version = "latest", symlink_bins = "true" }
 claude-code = "2.1.270"
 git-lfs = "3.8.0"
 glab = "1.105.0"
