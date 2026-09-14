@@ -3,27 +3,27 @@
 lockfile_version = 1
 
 [[tools.aws-cli]]
-version = "2.36.44"
+version = "2.36.45"
 backend = "aqua:aws/aws-cli"
 specifiers = ["latest"]
 
 [tools.aws-cli."platforms.linux-arm64"]
-url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.44.zip"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.45.zip"
 
 [tools.aws-cli."platforms.linux-arm64-musl"]
-url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.44.zip"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.45.zip"
 
 [tools.aws-cli."platforms.linux-x64"]
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.44.zip"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.45.zip"
 
 [tools.aws-cli."platforms.linux-x64-musl"]
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.44.zip"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.45.zip"
 
 [tools.aws-cli."platforms.macos-arm64"]
-url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.44.pkg"
+url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.45.pkg"
 
 [tools.aws-cli."platforms.macos-x64"]
-url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.44.pkg"
+url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.45.pkg"
 
 [[tools.claude-code]]
 version = "2.1.270"
