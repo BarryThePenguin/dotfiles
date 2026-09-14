@@ -81,9 +81,9 @@ backend = "dotnet:dotnet-ef"
 specifiers = ["10.0.11"]
 
 [[tools."dotnet:ilspycmd"]]
-version = "10.1.1.8388"
+version = "11.0.0.9375"
 backend = "dotnet:ilspycmd"
-specifiers = ["10.1.1.8388"]
+specifiers = ["11.0.0.9375"]
 
 [[tools.git-lfs]]
 version = "3.8.0"
