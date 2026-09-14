@@ -1,6 +1,5 @@
 [env]
 _.file = "~/.config/mise/.env"
-DOTFILES = { required = true }
 EDITOR = "code"
 
 [plugins]
