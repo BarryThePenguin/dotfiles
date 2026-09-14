@@ -9,7 +9,7 @@ show_pathbar = true
 "com.apple.Finder" = { AppleShowAllFiles = true }
 
 [tools]
-"npm:@typespec/compiler" = "1.15.0"
+"npm:@typespec/compiler" = "1.16.0"
 "npm:corepack" = "0.36.0"
 "npm:typescript-language-server" = "6.0.0"
 "npm:typescript" = "7.0.2"

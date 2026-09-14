@@ -620,9 +620,9 @@ checksum = "sha256:cf02f5d0c06c794b84f277177d5cf3743d0924ca49f6641cd435dd7cb6ee9
 url = "https://nodejs.org/dist/v26.8.2/node-v26.8.2-win-x64.zip"
 
 [[tools."npm:@typespec/compiler"]]
-version = "1.15.0"
+version = "1.16.0"
 backend = "npm:@typespec/compiler"
-specifiers = ["1.15.0"]
+specifiers = ["1.16.0"]
 
 [[tools."npm:corepack"]]
 version = "0.36.0"
