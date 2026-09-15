@@ -15,7 +15,7 @@ A personal dotfiles monorepo managed with [mise](https://mise.jdx.dev/). Configu
 .claude/          → Claude Code settings, plugins, MCP config
 .config/zsh/      → Zsh config (ZDOTDIR=~/.config/zsh)
 .zprezto-contrib/ → Custom prezto modules
-.zshenv           → Sets ZDOTDIR and MISE_PROFILE; always sourced by zsh
+.zshenv           → Sets ZDOTDIR and MISE_ENV; always sourced by zsh
 stow/             → Legacy; now only holds .config/zellij/ (will be migrated)
 scripts/          → Utility scripts for dev workflows
 bin/              → Bootstrap entry script

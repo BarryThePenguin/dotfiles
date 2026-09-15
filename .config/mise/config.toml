@@ -7,6 +7,39 @@ repo-bins = "~/src/btp/agent-tools/mise-repo-bins"
 
 [tools]
 repo-bins = "local"
+"npm:@typespec/compiler" = { version = "1.16.0", os = ["macos"] }
+"npm:corepack" = { version = "0.36.0", os = ["macos"] }
+"npm:typescript-language-server" = { version = "6.0.0", os = ["macos"] }
+"npm:typescript" = { version = "7.0.2", os = ["macos"] }
+"cargo:forgejo-cli" = { version = "0.6.0", os = ["macos"] }
+age = { version = "1.3.2", os = ["macos"] }
+atuin = { version = "18.22.0", os = ["macos"] }
+aube = { version = "2.2.14", os = ["macos"] }
+cloudflared = { version = "2026.9.0", os = ["macos"] }
+flux2 = { version = "2.9.5", os = ["macos"] }
+fnox = { version = "1.35.2", os = ["macos"] }
+gh = { version = "2.100.0", os = ["macos"] }
+go = { version = "1.27.1", os = ["macos"] }
+helm = { version = "4.3.0", os = ["macos"] }
+hk = { version = "1.58.1", os = ["macos"] }
+jq = { version = "1.8.2", os = ["macos"] }
+kind = { version = "0.33.0", os = ["macos"] }
+lima = { version = "2.2.0", os = ["macos"] }
+node = { version = "26", os = ["macos"] }
+mkcert = { version = "1.4.4", os = ["macos"] }
+pi = { version = "0.85.1", os = ["macos"] }
+podman = { version = "6.1.1", os = ["macos"] }
+python = { version = "3.14.7", os = ["macos"] }
+ripgrep = { version = "15.2.0", os = ["macos"] }
+rust = { version = "1.98.1", os = ["macos"] }
+shellcheck = { version = "0.11.0", os = ["macos"] }
+sops = { version = "3.13.3", os = ["macos"] }
+starship = { version = "1.26.0", os = ["macos"] }
+usage = { version = "6.9.0", os = ["macos"] }
+uv = { version = "0.12.13", os = ["macos"] }
+workmux = { version = "v0.1.258", os = ["macos"] }
+yq = { version = "4.53.6", os = ["macos"] }
+zellij = { version = "0.45.1", os = ["macos"] }
 
 [settings]
 auto_update = true
@@ -14,6 +47,19 @@ dotfiles.root = "~/src/btp/dotfiles"
 env_shell_expand = true
 node.corepack = true
 node.npm_shim = false
+
+[task_config]
+includes = [".config/mise/tasks/dotfiles.toml"]
+
+[bootstrap.macos.keyboard]
+key_repeat = 2
+initial_key_repeat = 15
+
+[bootstrap.macos.finder]
+show_pathbar = true
+
+[bootstrap.macos.defaults]
+"com.apple.Finder" = { AppleShowAllFiles = true }
 
 [bootstrap.repos]
 "~/.config/zsh/.zprezto" = { url = "https://github.com/sorin-ionescu/prezto.git", ref = "master" }
@@ -32,6 +78,13 @@ builtin = "history-watch"
 login_shell = "/bin/zsh"
 
 [bootstrap.packages]
+"apt:build-essential" = "latest"
+"apt:git" = "latest"
+"apt:curl" = "latest"
+"apt:ca-certificates" = "latest"
+"apt:gnupg" = "latest"
+"apt:openssh-client" = "latest"
+
 "brew:git" = "latest"
 "brew:jj" = "latest"
 "brew:mas" = "latest"
@@ -70,13 +123,16 @@ login_shell = "/bin/zsh"
 
 [dotfiles]
 "~/.agents/skills" = { mode = "symlink" }
+"~/CLAUDE.md" = { mode = "symlink", variants = [{ profile = "work" }] }
+"~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink", variants = [{ profile = "work" }] }
+"~/.mcp.json" = { mode = "symlink", variants = [{ profile = "work" }] }
 "~/.claude/agents" = { mode = "track" }
 "~/.claude/settings.json" = { mode = "track" }
 "~/.claude/statusline-command.sh" = { mode = "track" }
 "~/.config/1Password" = { mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "symlink" }
-"~/.config/gh" = { mode = "symlink-each", exclude = ["hosts.yml"] }
+"~/.config/gh" = { mode = "symlink-each", manifest = "git" }
 "~/.config/gh/hosts.yml" = { mode = "track" }
 "~/.config/ghostty/config" = { mode = "symlink" }
 "~/.config/git/btp.gitconfig" = { mode = "symlink" }
@@ -88,7 +144,7 @@ login_shell = "/bin/zsh"
 "~/.config/homebrew/Brewfile" = { mode = "symlink" }
 "~/.config/jj/config.toml" = { mode = "symlink" }
 "~/.config/kube/config" = { mode = "track" }
-"~/.config/mise" = { mode = "symlink-each"}
+"~/.config/mise" = { mode = "symlink-each", manifest = "git" }
 "~/.config/opencode/cli.json" = { mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { mode = "symlink" }
 "~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/agent-tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
@@ -98,7 +154,7 @@ login_shell = "/bin/zsh"
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }
-"~/.config/zsh" = { mode = "symlink-each" }
+"~/.config/zsh" = { mode = "symlink-each", manifest = "git" }
 "~/.pi/agent/agents" = { source = "~/src/btp/agent-tools/subagent-pi/agents", mode = "symlink" }
 "~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/agent-tools/issue-tools-pi", mode = "symlink" }
 "~/.pi/agent/extensions/subagent-pi" = { source = "~/src/btp/agent-tools/subagent-pi", mode = "symlink" }

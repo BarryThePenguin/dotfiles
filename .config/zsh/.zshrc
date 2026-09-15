@@ -60,7 +60,7 @@ if [[ "$TERM" == "xterm-ghostty" ]] && [[ -z "$ZELLIJ" ]]; then
     if [[ "$ZELLIJ_AUTO_ATTACH" == "true" ]]; then
         zellij attach -c
     else
-        zellij -l "$MISE_PROFILE"
+        zellij -l "$MISE_ENV"
     fi
 
     if [[ "$ZELLIJ_AUTO_EXIT" == "true" ]]; then

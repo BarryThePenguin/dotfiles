@@ -21,7 +21,7 @@ path=("$HOME/.local/bin" $path)
 if [[ -f "$HOME/.config/mise/.env" ]]; then
   source "$HOME/.config/mise/.env"
 fi
-export MISE_PROFILE="${MISE_PROFILE:-personal}"
+export MISE_ENV="${MISE_ENV:-home}"
 
 # brew shellenv — only on macOS with Homebrew installed
 if type brew &>/dev/null; then

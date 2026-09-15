@@ -11,7 +11,7 @@
 	},
 	"remoteUser": "vscode",
 	"containerEnv": {
-		"MISE_PROFILE": "devcontainer"
+		"MISE_ENV": "devcontainer"
 	},
 	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/barrythepenguin/dotfiles/main/bin/bootstrap | bash"
 }

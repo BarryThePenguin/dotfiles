@@ -21,18 +21,13 @@ CI_JOB_TOKEN = "${GITLAB_TOKEN:-}"
 NPM_TOKEN = "${GITLAB_TOKEN:-}"
 FNOX_PROFILE = "work"
 
-[dotfiles]
-"~/CLAUDE.md" = { mode = "symlink" }
-"~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
-"~/.mcp.json" = { mode = "symlink" }
-
 [tools]
 "core:dotnet" = "10.0.102"
 "dotnet:csharp-ls" = "0.27.0"
 "dotnet:dotnet-ef" = "10.0.11"
 "dotnet:ilspycmd" = "11.0.0.9375"
 "npm:@augmentcode/auggie" = "0.36.0"
-aws-cli = { version = "latest", symlink_bins = "true" }
+aws-cli = { version = "2.36.45", symlink_bins = "true" }
 claude-code = "2.1.270"
 git-lfs = "3.8.0"
 glab = "1.105.0"
