@@ -1,0 +1,40 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@augmentcode/auggie':
+        specifier: 0.36.0
+        version: 0.36.0
+
+packages:
+
+  '@augmentcode/auggie@0.36.0':
+    resolution: {integrity: sha512-jb4kq97pGzG0i5UyISc//LjTVlFzIywwD+VfPemiSIl58KjLfxry3KDgxWYnr1vmV8yUkySVzjLnj4ewUEbT/Q==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
+
+  node-addon-api@7.1.1:
+    resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
+
+  node-pty@1.2.0-beta.14:
+    resolution: {integrity: sha512-XORU9BQgpxVgqr7WivjJ17mLenOHUgKKWzuZZNaw3NDYgHc/wPJQMSaoLDrpEgqV6aU1nNwil1o/OqYj6lWmUA==}
+
+snapshots:
+
+  '@augmentcode/auggie@0.36.0':
+    optionalDependencies:
+      node-pty: 1.2.0-beta.14
+
+  node-addon-api@7.1.1:
+    optional: true
+
+  node-pty@1.2.0-beta.14:
+    dependencies:
+      node-addon-api: 7.1.1
+    optional: true
