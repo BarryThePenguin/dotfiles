@@ -1,0 +1,8 @@
+[env]
+_.path = ['{{config_root}}/node_modules/.bin']
+
+[settings]
+lockfile = true
+
+[tools]
+pnpm = "12.4.1"

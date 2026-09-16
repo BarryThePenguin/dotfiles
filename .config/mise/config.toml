@@ -8,7 +8,6 @@ repo-bins = "~/src/btp/agent-tools/mise-repo-bins"
 [tools]
 repo-bins = "local"
 "npm:@typespec/compiler" = { version = "1.16.0", os = ["macos"] }
-"npm:corepack" = { version = "0.36.0", os = ["macos"] }
 "npm:typescript-language-server" = { version = "6.0.0", os = ["macos"] }
 "npm:typescript" = { version = "7.0.2", os = ["macos"] }
 "cargo:forgejo-cli" = { version = "0.6.0", os = ["macos"] }
@@ -21,7 +20,6 @@ fnox = { version = "1.35.2", os = ["macos"] }
 gh = { version = "2.100.0", os = ["macos"] }
 go = { version = "1.27.1", os = ["macos"] }
 helm = { version = "4.3.0", os = ["macos"] }
-hk = { version = "1.58.1", os = ["macos"] }
 jq = { version = "1.8.2", os = ["macos"] }
 kind = { version = "0.33.0", os = ["macos"] }
 lima = { version = "2.2.0", os = ["macos"] }
@@ -44,9 +42,6 @@ zellij = { version = "0.45.1", os = ["macos"] }
 [settings]
 auto_update = true
 dotfiles.root = "~/src/btp/dotfiles"
-env_shell_expand = true
-node.corepack = true
-node.npm_shim = false
 
 [task_config]
 includes = [".config/mise/tasks/dotfiles.toml"]

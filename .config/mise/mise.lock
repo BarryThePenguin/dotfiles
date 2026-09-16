@@ -625,12 +625,6 @@ aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:afc858683
 backend = "npm:@typespec/compiler"
 specifiers = ["1.16.0"]
 
-[[tools."npm:corepack"]]
-version = "0.36.0"
-aube = { path = "locks/npm-corepack/0.36.0", digest = "sha256:b7719f3fccd66046848de447e50965f46efb2448438d31f113677102c51de6e9" }
-backend = "npm:corepack"
-specifiers = ["0.36.0"]
-
 [[tools."npm:typescript"]]
 version = "7.0.2"
 aube = { path = "locks/npm-typescript/7.0.2", digest = "sha256:3d06b3b23564c68cdad7815c356edb1506fab1c42bfb8c54234134fd9650ec17" }

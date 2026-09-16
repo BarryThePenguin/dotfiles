@@ -42,7 +42,8 @@ Supported modes per entry: `symlink`, `symlink-each`, `copy`, `template`.
 ## Conventions
 
 - Dotfiles live at the repo root following XDG structure (e.g. `.config/git/config`)
-- Individual file entries in `[dotfiles]` override the mode of a parent `symlink-each` directory entry (used for `git/config` → template, `git/ignore` → copy)
+- Individual file entries in `[dotfiles]` override the mode of a parent `symlink-each` directory entry (e.g. `gh/hosts.yml` → track, overriding `gh`'s symlink-each)
+- `symlink-each` entries use `manifest = "git"` (`gh`, `mise`, `zsh`) to only manage git-tracked files, instead of hand-maintained `exclude` lists
 - Scripts in `scripts/` should be executable and have a shebang
 - TypeScript tooling lives in the separate `agent-tools` repo (~/src/btp/agent-tools, https://code.jonno.dev/BarryThePenguin/agent-tools)
 - Agent skills live in `.agents/skills/`

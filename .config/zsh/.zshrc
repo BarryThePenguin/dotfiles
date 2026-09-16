@@ -39,7 +39,6 @@ alias map="xargs -n1"
 ###########################
 
 path+="$DOTFILES/scripts"
-path+="$DOTFILES/node_modules/.bin"
 
 # Tell me how slow my shell is
 function timezsh() {
