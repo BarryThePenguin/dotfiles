@@ -1,12 +1,9 @@
 [alias]
 	root = !pwd
 
-[core]
-	notesRef = refs/notes/changelog
-
 [notes]
-	displayRef = refs/notes/changelog
-	rewriteRef = refs/notes/changelog
+	displayRef = refs/notes/commits
+	rewriteRef = refs/notes/commits
 
 [github]
   	user = barrythepenguin
