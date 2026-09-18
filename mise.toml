@@ -5,4 +5,4 @@ _.path = ['{{config_root}}/node_modules/.bin']
 lockfile = true
 
 [tools]
-pnpm = "12.4.1"
+pnpm = "12.4.2"
