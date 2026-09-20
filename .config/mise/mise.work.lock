@@ -71,9 +71,9 @@ backend = "core:dotnet"
 specifiers = ["10.0.102"]
 
 [[tools."dotnet:csharp-ls"]]
-version = "0.27.0"
+version = "0.28.0"
 backend = "dotnet:csharp-ls"
-specifiers = ["0.27.0"]
+specifiers = ["0.28.0"]
 
 [[tools."dotnet:dotnet-ef"]]
 version = "10.0.12"
