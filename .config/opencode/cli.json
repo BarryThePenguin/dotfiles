@@ -1,6 +1,7 @@
 {
 	"theme": {
-		"name": "dracula"
+		"name": "dracula",
+		"mode": "system"
 	},
 	"diffs": {
 		"wrap": "word"
@@ -8,7 +9,16 @@
 	"session": {
 		"sidebar": "auto",
 		"scrollbar": false,
-		"thinking": "hide"
+		"thinking": "hide",
+		"permissions": "prompt"
 	},
-	"animations": true
+	"animations": true,
+	"tabs": {
+		"scope": "cwd",
+		"layout": "vertical",
+		"indicators": "status"
+	},
+	"prompt": {
+		"paste": "compact"
+	}
 }
