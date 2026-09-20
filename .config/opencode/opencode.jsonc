@@ -1,22 +1,22 @@
 {
 	"$schema": "https://opencode.ai/config.json",
 	"formatter": true,
-	"model": "opencode-go/ox-alpha-free",
+	"model": "opencode/big-pickle",
 	"agents": {
 		"build": {
-			"model": "opencode-go/ox-alpha-free"
+			"model": "opencode/big-pickle",
 		},
 		"general": {
-			"model": "opencode-go/hy3"
+			"model": "opencode/big-pickle",
 		},
 		"plan": {
-			"model": "opencode-go/glm-5.3#max"
+			"model": "opencode-go/glm-5.3#max",
 		},
 		"explore": {
-			"model": "opencode/nemotron-3.5-lightning-free"
+			"model": "opencode/nemotron-3.5-lightning-free",
 		},
 		"title": {
-			"model": "opencode/nemotron-3.5-lightning-free"
-		}
-	}
+			"model": "opencode/nemotron-3.5-lightning-free",
+		},
+	},
 }
