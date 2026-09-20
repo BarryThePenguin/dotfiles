@@ -660,13 +660,10 @@ backend = "npm:@typespec/compiler"
 specifiers = ["1.16.0"]
 
 [[tools."npm:prettier"]]
-version = "3.9.6"
-aube = { path = "locks/npm-prettier/3.9.6", digest = "sha256:2713c3c98701fa080a728710d5ffc1fd688e231373b202ebfedd8997711157e5" }
+version = "3.9.8"
+aube = { path = "locks/npm-prettier/3.9.8", digest = "sha256:5c76115168054cd13c6ad573ac7befc182bce737bc8bca3ed27b8287e2611eeb" }
 backend = "npm:prettier"
-specifiers = [
-    "3.9.6",
-    "3.9.6~aube~de4f77e9115401ed",
-]
+specifiers = ["3.9.8"]
 
 [[tools."npm:typescript"]]
 version = "7.0.2"
