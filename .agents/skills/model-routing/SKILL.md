@@ -36,16 +36,20 @@ Use `webfetch` on each source:
 - Machine-readable JSON — the catalog OpenCode builds its own from (~195 providers)
 - Per-model: `cost.input`/`cost.output`/`cost.cache_read`, `limit.context`/`limit.output`,
   `reasoning_options`, modalities, tool support, `open_weights`
-- Primary source for price, context limits, and variant availability;
-  Artificial Analysis remains the source for intelligence scores
+- Broadest catalog (~195 providers) — use to find candidates outside the
+  project catalog and to cross-check price/context; `/api/model` is
+  authoritative for what this project can route
+- Artificial Analysis remains the source for intelligence scores
 - Large response (~4MB); filter locally by provider
 
-**OpenCode Zen catalogs** (OpenAI-compatible `/models` endpoints):
+**OpenCode Console catalogs** (OpenAI-compatible `/models` endpoints):
 
-- `https://opencode.ai/zen/v1/models` — full Zen lineup
-- `https://opencode.ai/zen/go/v1/models` — Go/open-weight subset, includes `-free` variants
-- Inventory of what is routable through Zen; pair with models.dev for pricing
-- Zen-routed models bill through plan subscriptions and rate-limited
+- `https://opencode.ai/zen/v1/models` — full Console (pay-as-you-go) lineup
+- `https://opencode.ai/zen/go/v1/models` — Go subset, includes `-free` variants
+- Inventory of what is routable; pair with models.dev for pricing and
+  https://opencode.ai/v2/docs/console/models/ for the free-model list, per-token
+  pricing, and privacy caveats
+- Console-routed models bill through plan subscriptions and rate-limited
   `-free` tiers — models.dev per-token prices do not reflect their marginal cost
 
 ### Step 2: Read local state
@@ -64,23 +68,26 @@ Read `~/.config/opencode/opencode.jsonc` (or `.json`). Note the current:
 | Provider         | Billing                     | Position                                    |
 | ---------------- | --------------------------- | ------------------------------------------- |
 | `opencode-go`    | Monthly subscription        | First choice for all roles                  |
-| `opencode`       | Free models (no Zen plan)   | Fallback once Go usage runs out             |
+| `opencode`       | Console free models         | Fallback once Go usage runs out             |
 | `github-copilot` | Free credits, reset monthly | Last resort, after `opencode` free is spent |
 
 Go limits are dollar-denominated against list prices — $12 per 5h, $30
-weekly, $60 monthly — and models carry different usage multipliers: $15-tier
-models (Grok 4.5, Kimi K3, GPT 5.6 Luna, DeepSeek V4 Pro, MiMo-V2.5-Pro)
-burn quota 4× faster than $60-tier models (GLM-5.x, Kimi K2.x Code, MiniMax
+weekly, $60 monthly — and models carry a usage multiplier: $15-usage models
+(e.g. Grok 4.5, Kimi K3, GPT 5.6 Luna, DeepSeek V4 Pro, MiMo-V2.5-Pro) burn
+quota 4× faster than $60-usage models (e.g. GLM-5.x, Kimi K2.x Code, MiniMax
 M3, MiMo-V2.5, Qwen Plus). Per-model tables:
-https://opencode.ai/docs/go/#usage-limits. Falling back to `opencode` free
-models on exhaustion is the designed behavior.
+https://opencode.ai/v2/docs/console/go/#usage-limits. Falling back to the
+`opencode` free models on exhaustion is the designed behavior.
 
 When the fallback reaches `github-copilot`, select from its own catalog — it
 carries models the other two lack.
 
 Privacy: exclude models that train on prompts from every proposal. On Go this
-is currently `muse-spark-1.2-contributor`; recheck the privacy table at
-https://opencode.ai/docs/go/#privacy when the lineup changes.
+is the `muse-spark-*-contributor` models; on `opencode`, every `-free` model
+(`big-pickle`, `deepseek-v4-flash-free`, `nemotron-3-ultra-free`, …) may have
+its prompts used or retained. Recheck
+https://opencode.ai/v2/docs/console/go/#privacy and
+https://opencode.ai/v2/docs/console/models/#privacy when the lineup changes.
 
 Subscription quotas replace token price as the cost currency: compare
 candidates by consumption per billing window (Go dollars via model
@@ -93,7 +100,8 @@ routing events). `/api/session` remains the source for per-session cost detail.
 Model references may carry a variant suffix (`provider/model#variant`), e.g.
 `anthropic/claude-opus-4-6#high` — include it when comparing costs, since
 reasoning variants change token spend per session. Variant availability is
-model-specific; confirm against `reasoning_options` in models.dev. The root
+model-specific; read the resolved `variants` from `/api/model` (fall back to
+`reasoning_options` in models.dev for models outside the catalog). The root
 `model` default keeps `provider/model` only — variant selection sticks at the
 agent, command, or session level.
 
@@ -104,9 +112,10 @@ Then verify against the running service instead of assuming defaults:
 - `opencode2 api get /api/session` — recent sessions, each with `agent`,
   `model`, `cost`, and token breakdowns (`output`, `reasoning`,
   `cache.read`/`cache.write`)
-- `opencode2 api get /api/model` — catalog actually available in the current
-  project; `/api/provider` shows connected providers and `/api/config` the
-  merged effective config
+- `opencode2 api get /api/model` — source of truth for what this project can
+  route: resolved `variants`, `cost` tiers (an array, not an object), `limit`,
+  `enabled`/`status`. `/api/provider` shows connected providers and
+  `/api/config` the merged effective config
 
 Weight personal session data above community aggregates: it shows which agents
 actually spend, on which models, at what cost. Filter recommendations to
@@ -173,7 +182,7 @@ mid-session.
 
 See [REFERENCE.md](REFERENCE.md) for:
 
-- Catalog and pricing APIs (models.dev, Zen)
+- Catalog and pricing APIs (models.dev, Console)
 - Cost and quality levers beyond model swaps
 - Complete benchmark source list and accessibility matrix
 - How to interpret conflicting signals (high momentum but high cost)

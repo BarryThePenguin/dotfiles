@@ -18,18 +18,24 @@
 
 ### Catalog and pricing
 
+- **`/api/model`** (`opencode2 api get /api/model`) — source of truth for what
+  this project can route: resolved `variants`, `cost` tiers (an array),
+  `limit`, `enabled`/`status`. Prefer it over every other source below
+
 - **models.dev**: `https://models.dev/api.json`
-  - Machine-readable JSON catalog OpenCode builds its own model list from (~195 providers)
+  - Broadest catalog (~195 providers) — candidates outside `/api/model` and
+    cross-provider comparison
   - Per-model: `cost.input`/`cost.output`/`cost.cache_read`, `limit.context`/`limit.output`,
     `reasoning_options` (which variants exist), modalities, tool support, `open_weights`
-  - Primary source for price, context limits, and variant availability;
-    pair with Artificial Analysis for intelligence scores
+  - Pair with Artificial Analysis for intelligence scores
   - Large response (~4MB) — filter locally by provider rather than reading whole
 
-- **OpenCode Zen catalogs** (OpenAI-compatible `/models` endpoints):
-  - `https://opencode.ai/zen/v1/models` — full Zen lineup
-  - `https://opencode.ai/zen/go/v1/models` — Go/open-weight subset, includes `-free` variants
-  - Inventory of what is routable through Zen; models.dev carries the pricing
+- **OpenCode Console catalogs** (OpenAI-compatible `/models` endpoints):
+  - `https://opencode.ai/zen/v1/models` — full Console (pay-as-you-go) lineup
+  - `https://opencode.ai/zen/go/v1/models` — Go subset, includes `-free` variants
+  - Upstream inventory (more models than `/api/model` surfaces) plus policy:
+    the console docs (`/v2/docs/console/go/`, `/v2/docs/console/models/`) carry
+    the usage multipliers and privacy tables
 
 ### Secondary (partial Go coverage)
 
