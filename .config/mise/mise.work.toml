@@ -31,4 +31,4 @@ aws-cli = { version = "2.36.45", symlink_bins = "true" }
 claude-code = { version = "2.1.270", minimum_release_age = "1d" }
 git-lfs = "3.8.0"
 glab = "v1.117.0"
-viteplus = "0.3.2"
+viteplus = "0.3.3"
