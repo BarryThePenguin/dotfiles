@@ -8,21 +8,27 @@ backend = "aqua:aws/aws-cli"
 specifiers = ["2.36.45"]
 
 [tools.aws-cli."platforms.linux-arm64"]
+checksum = "sha256:a10b80249b10c8fe9d433a42ee90d34c60cf50089b7e65d45c8d75e782c921ec"
 url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.45.zip"
 
 [tools.aws-cli."platforms.linux-arm64-musl"]
+checksum = "sha256:a10b80249b10c8fe9d433a42ee90d34c60cf50089b7e65d45c8d75e782c921ec"
 url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.45.zip"
 
 [tools.aws-cli."platforms.linux-x64"]
+checksum = "sha256:0f02381483b0a5ca127a4cb379e656a73007b346561a5e41d3249d3bc1861226"
 url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.45.zip"
 
 [tools.aws-cli."platforms.linux-x64-musl"]
+checksum = "sha256:0f02381483b0a5ca127a4cb379e656a73007b346561a5e41d3249d3bc1861226"
 url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.45.zip"
 
 [tools.aws-cli."platforms.macos-arm64"]
+checksum = "sha256:351c45fc36ac36f5af65708625087f27e654bd9319a843dbb9dfeea21c912be3"
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.45.pkg"
 
 [tools.aws-cli."platforms.macos-x64"]
+checksum = "sha256:351c45fc36ac36f5af65708625087f27e654bd9319a843dbb9dfeea21c912be3"
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.45.pkg"
 
 [[tools.claude-code]]
