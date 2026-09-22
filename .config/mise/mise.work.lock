@@ -7,27 +7,11 @@ version = "2.36.45"
 backend = "aqua:aws/aws-cli"
 specifiers = ["2.36.45"]
 
-[tools.aws-cli."platforms.linux-arm64"]
-checksum = "sha256:a10b80249b10c8fe9d433a42ee90d34c60cf50089b7e65d45c8d75e782c921ec"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.45.zip"
-
-[tools.aws-cli."platforms.linux-arm64-musl"]
-checksum = "sha256:a10b80249b10c8fe9d433a42ee90d34c60cf50089b7e65d45c8d75e782c921ec"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.45.zip"
-
 [tools.aws-cli."platforms.linux-x64"]
 checksum = "sha256:0f02381483b0a5ca127a4cb379e656a73007b346561a5e41d3249d3bc1861226"
 url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.45.zip"
 
-[tools.aws-cli."platforms.linux-x64-musl"]
-checksum = "sha256:0f02381483b0a5ca127a4cb379e656a73007b346561a5e41d3249d3bc1861226"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.45.zip"
-
 [tools.aws-cli."platforms.macos-arm64"]
-checksum = "sha256:351c45fc36ac36f5af65708625087f27e654bd9319a843dbb9dfeea21c912be3"
-url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.45.pkg"
-
-[tools.aws-cli."platforms.macos-x64"]
 checksum = "sha256:351c45fc36ac36f5af65708625087f27e654bd9319a843dbb9dfeea21c912be3"
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.45.pkg"
 
@@ -36,40 +20,15 @@ version = "2.1.271"
 backend = "aqua:anthropics/claude-code"
 specifiers = ["2.1.271"]
 
-[tools.claude-code."platforms.linux-arm64"]
-checksum = "sha256:2604a725c66d586584d46971f4feeef3a9a907bbd850912c2353ef2929d556d5"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.271/claude-linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564090608"
-
-[tools.claude-code."platforms.linux-arm64-musl"]
-checksum = "sha256:9cab6eb3b501721abb269f2b1a91df7da36be4d1595fa16a9e65a31da20bccf2"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.271/claude-linux-arm64-musl.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564090605"
-
 [tools.claude-code."platforms.linux-x64"]
 checksum = "sha256:3248fdde90215a0ba3b363515e2bccca2bc912eb01af0c617b6052b7e33ffd73"
 url = "https://github.com/anthropics/claude-code/releases/download/v2.1.271/claude-linux-x64.tar.gz"
 url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564090767"
 
-[tools.claude-code."platforms.linux-x64-musl"]
-checksum = "sha256:c4bc4585c3b979270bcb5942ea5a584a9a733c16ebf58bf3e812fc968d707126"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.271/claude-linux-x64-musl.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564090602"
-
 [tools.claude-code."platforms.macos-arm64"]
 checksum = "sha256:4ab04c3cd0810d258b7cd47b4de542c2b4adfcd4a695a50242d91bba3ea04917"
 url = "https://github.com/anthropics/claude-code/releases/download/v2.1.271/claude-darwin-arm64.tar.gz"
 url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564090606"
-
-[tools.claude-code."platforms.macos-x64"]
-checksum = "sha256:b6f9523260fc936aa5e69ea33054d63c9f4a8d209977ccea05a4aac88d340ad7"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.271/claude-darwin-x64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564090601"
-
-[tools.claude-code."platforms.windows-x64"]
-checksum = "sha256:3a24594391d85fa26dc0984a53ed4cc5f9065e012f9692e7efd3c4cb87c02fd7"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.271/claude-win32-x64.zip"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/564090774"
 
 [[tools.dotnet]]
 version = "10.0.102"
@@ -96,22 +55,7 @@ version = "3.8.0"
 backend = "aqua:git-lfs/git-lfs"
 specifiers = ["3.8.0"]
 
-[tools.git-lfs."platforms.linux-arm64"]
-checksum = "sha256:ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2"
-url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-arm64-v3.8.0.tar.gz"
-url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993825"
-
-[tools.git-lfs."platforms.linux-arm64-musl"]
-checksum = "sha256:ac9c8efac980bb0505ead384d087e2acb6486fd8498691a2165fa174ec6118c2"
-url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-arm64-v3.8.0.tar.gz"
-url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993825"
-
 [tools.git-lfs."platforms.linux-x64"]
-checksum = "sha256:e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d"
-url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-amd64-v3.8.0.tar.gz"
-url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993734"
-
-[tools.git-lfs."platforms.linux-x64-musl"]
 checksum = "sha256:e455e00f15d9b95661b8d53498ffb0c3367962cf1ec73c31ab7369516cd6ab8d"
 url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-linux-amd64-v3.8.0.tar.gz"
 url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993734"
@@ -121,37 +65,12 @@ checksum = "sha256:caff76a7d070d8160c89bc39b6e85d98f24135b6fed038a3b4de2590d2510
 url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-darwin-arm64-v3.8.0.zip"
 url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993595"
 
-[tools.git-lfs."platforms.macos-x64"]
-checksum = "sha256:f1c17aeca0b4eaab9ea606226477dbed3b84b56fe0811a9f967d2ea2b2393c53"
-url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-darwin-amd64-v3.8.0.zip"
-url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993568"
-
-[tools.git-lfs."platforms.windows-x64"]
-checksum = "sha256:b62e7b8ceddee635f691233d77de8eaa4b213e9209e0173811d8cfa77f7882c1"
-url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-windows-amd64-v3.8.0.zip"
-url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993969"
-
 [[tools.glab]]
 version = "1.117.0"
 backend = "gitlab:gitlab-org/cli"
 specifiers = ["v1.117.0"]
 
-[tools.glab."platforms.linux-arm64"]
-checksum = "sha256:ce533c314b69014664020567d006b5c86435f0fa16561aba18929bea26506828"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.117.0/downloads/glab_1.117.0_linux_arm64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E117%2E0/glab_1%2E117%2E0_linux_arm64%2Etar%2Egz"
-
-[tools.glab."platforms.linux-arm64-musl"]
-checksum = "sha256:ce533c314b69014664020567d006b5c86435f0fa16561aba18929bea26506828"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.117.0/downloads/glab_1.117.0_linux_arm64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E117%2E0/glab_1%2E117%2E0_linux_arm64%2Etar%2Egz"
-
 [tools.glab."platforms.linux-x64"]
-checksum = "sha256:1edfd0fba284e93396a9fd8899b9fff10f34f90b733943b1a70e21431a1991ab"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.117.0/downloads/glab_1.117.0_linux_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E117%2E0/glab_1%2E117%2E0_linux_amd64%2Etar%2Egz"
-
-[tools.glab."platforms.linux-x64-musl"]
 checksum = "sha256:1edfd0fba284e93396a9fd8899b9fff10f34f90b733943b1a70e21431a1991ab"
 url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.117.0/downloads/glab_1.117.0_linux_amd64.tar.gz"
 url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E117%2E0/glab_1%2E117%2E0_linux_amd64%2Etar%2Egz"
@@ -160,16 +79,6 @@ url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/
 checksum = "sha256:9fef4b1f302a5eebe615531d0e5e842ba79cb34df41580bdc0f399a465d8ad15"
 url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.117.0/downloads/glab_1.117.0_darwin_arm64.tar.gz"
 url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E117%2E0/glab_1%2E117%2E0_darwin_arm64%2Etar%2Egz"
-
-[tools.glab."platforms.macos-x64"]
-checksum = "sha256:9136d10c7f4399cb9ee206c75dbeddeb83062c7faafd80f4c5ce9afe88c63a31"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.117.0/downloads/glab_1.117.0_darwin_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E117%2E0/glab_1%2E117%2E0_darwin_amd64%2Etar%2Egz"
-
-[tools.glab."platforms.windows-x64"]
-checksum = "sha256:3272ddb8e74f75e4d956b9fd137e7ababf23f3d74441c5ddc7a5ca45bb4eb8a0"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.117.0/downloads/glab_1.117.0_windows_amd64.zip"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E117%2E0/glab_1%2E117%2E0_windows_amd64%2Ezip"
 
 [[tools."npm:@augmentcode/auggie"]]
 version = "0.36.0"

@@ -45,6 +45,8 @@ zellij = { version = "0.45.1", os = ["macos"] }
 [settings]
 auto_update = true
 dotfiles.root = "~/src/btp/dotfiles"
+lockfile_mode = "generate"
+lockfile_platforms = ["macos-arm64", "linux-x64"]
 
 [task_config]
 includes = [".config/mise/tasks/dotfiles.toml"]
