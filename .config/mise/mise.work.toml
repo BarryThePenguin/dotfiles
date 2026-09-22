@@ -28,7 +28,7 @@ FNOX_PROFILE = "work"
 "dotnet:ilspycmd" = "11.0.0.9375"
 "npm:@augmentcode/auggie" = "0.36.0"
 aws-cli = { version = "2.36.46", symlink_bins = "true" }
-claude-code = { version = "2.1.272", minimum_release_age = "1d" }
+claude-code = { version = "2.1.273", minimum_release_age = "1d" }
 git-lfs = "3.8.0"
 glab = "v1.117.0"
 viteplus = "0.3.3"
