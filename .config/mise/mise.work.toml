@@ -15,7 +15,10 @@ trusted_config_paths = ["~/src/btp", "~/src/work"]
 # "showpad/gitlab" = "git@gitlab.com:showpad-code/devops/homebrew.git"
 
 [env]
-OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:47300"
+DOCKER_HOST = "unix:///var/run/docker.sock" # "unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = "/var/run/docker.sock"
+TESTCONTAINERS_RYUK_DISABLED = "true"
+OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4317"
 OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
 CI_JOB_TOKEN = "${GITLAB_TOKEN:-}"
 NPM_TOKEN = "${GITLAB_TOKEN:-}"
@@ -28,7 +31,7 @@ FNOX_PROFILE = "work"
 "dotnet:ilspycmd" = "11.0.0.9375"
 "npm:@augmentcode/auggie" = "0.36.0"
 aws-cli = { version = "2.36.46", symlink_bins = "true" }
-claude-code = { version = "2.1.273", minimum_release_age = "1d" }
+claude-code = { version = "2.1.280", minimum_release_age = "1d" }
 git-lfs = "3.8.0"
 glab = "v1.118.0"
 viteplus = "0.3.3"

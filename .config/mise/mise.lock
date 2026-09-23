@@ -245,6 +245,21 @@ checksum = "sha256:c8af0df44bce04359794dad8ea28d750437411d632748049d08644ffb66a6
 url = "https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-darwin-arm64"
 url_api = "https://api.github.com/repos/FiloSottile/mkcert/releases/assets/63709954"
 
+[[tools.mr-boxington]]
+version = "1.15.0"
+backend = "packslip:github.com/jdx/mr-boxington"
+specifiers = ["1.15.0"]
+
+[tools.mr-boxington."platforms.linux-x64"]
+checksum = "sha256:ee89e29a76849fe6344d81187cdcdb8c7710b96d7a2f54a7f99dc9f49eba114e"
+url = "https://github.com/jdx/mr-boxington/releases/download/v1.15.0/mbx-x86_64-unknown-linux-gnu.tar.gz"
+signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
+
+[tools.mr-boxington."platforms.macos-arm64"]
+checksum = "sha256:291f6b5c6e3faf24497de71291ed56217f7cd685b09e24e574d69ee11b88378d"
+url = "https://github.com/jdx/mr-boxington/releases/download/v1.15.0/mbx-aarch64-apple-darwin.tar.gz"
+signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
+
 [[tools.node]]
 version = "26.9.0"
 backend = "core:node"
@@ -350,7 +365,7 @@ url_api = "https://api.github.com/repos/BurntSushi/ripgrep/releases/assets/47811
 [[tools.rust]]
 version = "1.98.1"
 backend = "core:rust"
-specifiers = ["1.98.1"]
+specifiers = ["latest"]
 
 [[tools.shellcheck]]
 version = "0.11.0"

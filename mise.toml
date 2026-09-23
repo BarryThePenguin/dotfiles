@@ -3,6 +3,8 @@ _.path = ['{{config_root}}/node_modules/.bin']
 
 [settings]
 lockfile = true
+lockfile_mode = "generate"
+lockfile_platforms = ["macos-arm64", "linux-x64"]
 
 [tools]
 pnpm = "12.5.1"
