@@ -35,17 +35,17 @@ url_api = "https://api.github.com/repos/sigstore/cosign/releases/assets/50328620
 provenance = "cosign"
 
 [[tools.deno]]
-version = "2.9.6"
+version = "2.9.7"
 backend = "core:deno"
-specifiers = ["2.9.6"]
+specifiers = ["2.9.7"]
 
 [tools.deno."platforms.linux-x64"]
-checksum = "sha256:394f07f4da2bebe6ce6f1e7ce0fa16429b29b08c35e3fac3fe25972676dff4b2"
-url = "https://dl.deno.land/release/v2.9.6/deno-x86_64-unknown-linux-gnu.zip"
+checksum = "sha256:c6527f24f4b16031d3ae4fa9f658d5f11534c8d84ce7dc8502420280919c3490"
+url = "https://dl.deno.land/release/v2.9.7/deno-x86_64-unknown-linux-gnu.zip"
 
 [tools.deno."platforms.macos-arm64"]
-checksum = "sha256:213a2f304f04d3c9cb5220669afad138f60a5aab1fe80962abdeb8f35807a472"
-url = "https://dl.deno.land/release/v2.9.6/deno-aarch64-apple-darwin.zip"
+checksum = "sha256:5cd46d6268f6f78f5d88bdc7159d20bd44cdaa4b3303474839f87ec6fe7ae25c"
+url = "https://dl.deno.land/release/v2.9.7/deno-aarch64-apple-darwin.zip"
 
 [[tools.flux-operator]]
 version = "0.60.0"
