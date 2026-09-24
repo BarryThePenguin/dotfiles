@@ -6,9 +6,6 @@
 			"args": [],
 			"env": {
 				"TODOIST_RC_DIR": "/Users/jonno/src/btp/dotfiles"
-			},
-			"dev": {
-				"watch": "src/**/*.ts"
 			}
 		},
 		"signoz": {
