@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { Effect, Result, Stream } from "effect";
-import { Plugin } from "@opencode-ai/plugin/effect";
+import { Plugin } from "@opencode/plugin/effect";
 
 class Caffeinate {
 	#proc: ChildProcess | null = null;

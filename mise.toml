@@ -7,4 +7,5 @@ lockfile_mode = "generate"
 lockfile_platforms = ["macos-arm64", "linux-x64"]
 
 [tools]
+hk = "2.0.1"
 pnpm = "12.5.1"

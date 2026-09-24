@@ -1,0 +1,16 @@
+amends "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Builtins.pkl"
+// Using a coding agent? See https://hk.jdx.dev/agents
+
+local linters = new Mapping {
+    ["eslint"] = Builtins.eslint
+    ["knip"] = Builtins.knip
+    ["prettier"] = Builtins.prettier
+    ["tsc"] = Builtins.tsc
+}
+
+// mise's per-tool lockfiles (.config/mise/locks/**) are generated, vendored
+// package.json/lockfile pairs, not project source — exclude them from linting.
+exclude = List(".config/mise/locks/**")
+
+steps = linters
