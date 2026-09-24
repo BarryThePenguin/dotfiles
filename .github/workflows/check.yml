@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  MISE_IGNORED_CONFIG_PATHS: .config/mise/config.toml
+
 jobs:
   check:
     runs-on: ubuntu-latest
