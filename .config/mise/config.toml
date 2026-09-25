@@ -72,6 +72,7 @@ show_pathbar = true
 "~/src/btp/homelab" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/homelab.git", ref = "main" }
 "~/src/btp/renovate-config" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/renovate-config.git", ref = "main" }
 "~/src/btp/woodpecker-plugins" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/woodpecker-plugins.git", ref = "main" }
+"~/src/hono/hono" = { url = "https://github.com/BarryThePenguin/hono.git", ref = "main" }
 "~/src/hono/middleware" = { url = "https://github.com/BarryThePenguin/middleware.git", ref = "main" }
 "~/src/hono/vite-plugins" = { url = "https://github.com/BarryThePenguin/vite-plugins.git", ref = "main" }
 
