@@ -67,7 +67,13 @@ show_pathbar = true
 "~/.config/ghostty/themes" = { url = "https://github.com/dracula/ghostty.git", ref = "main" }
 "~/.config/opencode/themes" = { url = "https://github.com/dracula/opencode.git", ref = "main" }
 "~/.config/base16-shell" = { url = "https://github.com/chriskempson/base16-shell.git", ref = "master" }
-"~/src/btp/dotfiles/.zprezto-contrib/zsh-notify" = { url = "https://github.com/marzocchi/zsh-notify.git", ref = "master" }
+"~/.zprezto-contrib/zsh-notify" = { url = "https://github.com/marzocchi/zsh-notify.git", ref = "master" }
+"~/src/btp/agent-tools" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/agent-tools.git", ref = "main" }
+"~/src/btp/homelab" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/homelab.git", ref = "main" }
+"~/src/btp/renovate-config" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/renovate-config.git", ref = "main" }
+"~/src/btp/woodpecker-plugins" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/woodpecker-plugins.git", ref = "main" }
+"~/src/hono/middleware" = { url = "https://github.com/BarryThePenguin/middleware.git", ref = "main" }
+"~/src/hono/vite-plugins" = { url = "https://github.com/BarryThePenguin/vite-plugins.git", ref = "main" }
 
 [bootstrap.hooks.post-repos]
 run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
@@ -162,7 +168,7 @@ login_shell = "/bin/zsh"
 "~/.pi/agent/prompts" = { source = "~/src/btp/agent-tools/subagent-pi/prompts", mode = "symlink" }
 "~/.pi/agent/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.ssh/config" = { source = "~/src/btp/dotfiles/.config/ssh/config", mode = "symlink" }
-"~/.zprezto-contrib" = { mode = "symlink" }
+"~/.zprezto-contrib" = { mode = "symlink-each", manifest = "git" }
 "~/.zshenv" = { mode = "symlink" }
 "~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
 "~/CLAUDE.md" = { mode = "symlink", variants = [{ profile = "work" }] }
