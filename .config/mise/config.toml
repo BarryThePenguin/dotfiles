@@ -68,9 +68,12 @@ show_pathbar = true
 "~/.config/opencode/themes" = { url = "https://github.com/dracula/opencode.git", ref = "main" }
 "~/.config/base16-shell" = { url = "https://github.com/chriskempson/base16-shell.git", ref = "master" }
 "~/.zprezto-contrib/zsh-notify" = { url = "https://github.com/marzocchi/zsh-notify.git", ref = "master" }
+"~/src/btp/advent-of-code" = { url = "https://github.com/BarryThePenguin/advent-of-code.git", ref = "main" }
 "~/src/btp/agent-tools" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/agent-tools.git", ref = "main" }
+"~/src/btp/gillyreads.com" = { url = "https://github.com/BarryThePenguin/gillyreads.com.git", ref = "main" }
 "~/src/btp/homelab" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/homelab.git", ref = "main" }
 "~/src/btp/renovate-config" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/renovate-config.git", ref = "main" }
+"~/src/btp/simple-desktop-images" = { url = "https://github.com/BarryThePenguin/simple-desktop-images.git", ref = "main" }
 "~/src/btp/woodpecker-plugins" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/woodpecker-plugins.git", ref = "main" }
 "~/src/hono/hono" = { url = "https://github.com/BarryThePenguin/hono.git", ref = "main" }
 "~/src/hono/middleware" = { url = "https://github.com/BarryThePenguin/middleware.git", ref = "main" }
