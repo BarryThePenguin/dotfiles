@@ -38,7 +38,7 @@ shellcheck = { version = "0.11.0", os = ["macos"] }
 sops = { version = "3.13.3", os = ["macos"] }
 starship = { version = "1.26.0", os = ["macos"] }
 usage = { version = "6.9.1", os = ["macos"] }
-uv = { version = "0.12.16", os = ["macos"] }
+uv = { version = "0.12.17", os = ["macos"] }
 workmux = { version = "v0.1.263", os = ["macos"] }
 yq = { version = "4.53.6", os = ["macos"] }
 zellij = { version = "0.45.1", os = ["macos"] }
