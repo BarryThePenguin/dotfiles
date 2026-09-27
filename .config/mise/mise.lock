@@ -292,10 +292,10 @@ backend = "npm:typescript"
 specifiers = ["7.0.2"]
 
 [[tools."npm:typescript-language-server"]]
-version = "6.0.0"
-aube = { path = "locks/npm-typescript-language-server/6.0.0", digest = "sha256:df8016fc179bdf942026d39a79f313ca5bf515e470c5e68d93fe0783d635decf" }
+version = "6.0.1"
+aube = { path = "locks/npm-typescript-language-server/6.0.1", digest = "sha256:cd5db34273d07076d582ba959987cbd36e89c20d479a4671433aca4f6bdc3c7e" }
 backend = "npm:typescript-language-server"
-specifiers = ["6.0.0"]
+specifiers = ["6.0.1"]
 
 [[tools.pi]]
 version = "v0.86.0"
