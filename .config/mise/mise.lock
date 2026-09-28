@@ -261,7 +261,7 @@ url = "https://github.com/jdx/mr-boxington/releases/download/v1.15.0/mbx-aarch64
 signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
 
 [[tools.node]]
-version = "26.9.0"
+version = "26.10.0"
 backend = "core:node"
 specifiers = ["26"]
 
