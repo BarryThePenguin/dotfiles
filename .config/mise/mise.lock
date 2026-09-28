@@ -275,7 +275,7 @@ url = "https://nodejs.org/dist/v26.9.0/node-v26.9.0-darwin-arm64.tar.gz"
 
 [[tools."npm:@typespec/compiler"]]
 version = "1.16.0"
-aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:afc858683f7310189ffbf5499a1ef5459ac5e17471a18e8f9fc61a21138bafc8" }
+aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:ec36afe1dbb6594ca1df5f1166a3faac199650405fe83fd95749d65489decb86" }
 backend = "npm:@typespec/compiler"
 specifiers = ["1.16.0"]
 
@@ -344,7 +344,7 @@ provenance = "github-attestations"
 
 [[tools.repo-bins]]
 version = "local"
-backend = "asdf:/Users/jonno/src/btp/agent-tools/mise-repo-bins"
+backend = "asdf:/home/ubuntu/src/btp/agent-tools/mise-repo-bins"
 specifiers = ["local"]
 
 [[tools.ripgrep]]
