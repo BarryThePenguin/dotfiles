@@ -263,19 +263,19 @@ signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/re
 [[tools.node]]
 version = "26.10.0"
 backend = "core:node"
-specifiers = ["26"]
+specifiers = ["26.10.0"]
 
 [tools.node."platforms.linux-x64"]
 checksum = "sha256:03d9104fc4f19652e74480fed11c023d75981464b7292f21a601c3f95ce7d90d"
 url = "https://nodejs.org/dist/v26.9.0/node-v26.9.0-linux-x64.tar.gz"
 
 [tools.node."platforms.macos-arm64"]
-checksum = "sha256:6f3de7ed853ee283b4bf24b6e426618f1d357401ce5815db1866eb85eb4b05d9"
-url = "https://nodejs.org/dist/v26.9.0/node-v26.9.0-darwin-arm64.tar.gz"
+checksum = "sha256:751fdf7439f115d87ee2a8f3f18c065b6151852068e3e666ac60ac2996f75ac9"
+url = "https://nodejs.org/dist/v26.10.0/node-v26.10.0-darwin-arm64.tar.gz"
 
 [[tools."npm:@typespec/compiler"]]
 version = "1.16.0"
-aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:ec36afe1dbb6594ca1df5f1166a3faac199650405fe83fd95749d65489decb86" }
+aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:afc858683f7310189ffbf5499a1ef5459ac5e17471a18e8f9fc61a21138bafc8" }
 backend = "npm:@typespec/compiler"
 specifiers = ["1.16.0"]
 
@@ -344,7 +344,7 @@ provenance = "github-attestations"
 
 [[tools.repo-bins]]
 version = "local"
-backend = "asdf:/home/ubuntu/src/btp/agent-tools/mise-repo-bins"
+backend = "asdf:/Users/jonno/src/btp/agent-tools/mise-repo-bins"
 specifiers = ["local"]
 
 [[tools.ripgrep]]
