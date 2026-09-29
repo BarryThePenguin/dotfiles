@@ -434,18 +434,18 @@ url = "https://github.com/starship/starship/releases/download/v1.26.0/starship-a
 url_api = "https://api.github.com/repos/starship/starship/releases/assets/460374577"
 
 [[tools.usage]]
-version = "6.10.0"
+version = "6.11.0"
 backend = "packslip:github.com/jdx/usage"
-specifiers = ["6.10.0"]
+specifiers = ["6.11.0"]
 
 [tools.usage."platforms.linux-x64"]
-checksum = "sha256:d0b853eed5db9ede04891fa6e31caed8bc802c3794e59043217b460a02965b24"
-url = "https://github.com/jdx/usage/releases/download/v6.10.0/usage-x86_64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:2ebc293d1645a80e3b7c4d87cd2cca35d34c6582733260fe1d13e537bb3d1e2e"
+url = "https://github.com/jdx/usage/releases/download/v6.11.0/usage-x86_64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/usage/.github/workflows/publish-cli.yml"
 
 [tools.usage."platforms.macos-arm64"]
-checksum = "sha256:f2c89cf9446b50c0129943e76a4a25188cbf42c116c66c7d3f913f5cc7d5123c"
-url = "https://github.com/jdx/usage/releases/download/v6.10.0/usage-universal-apple-darwin.tar.gz"
+checksum = "sha256:0277664d5a7f615ec427cfc312e175684f027bf69e43e76964f086aaf5e51d3f"
+url = "https://github.com/jdx/usage/releases/download/v6.11.0/usage-universal-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/usage/.github/workflows/publish-cli.yml"
 
 [[tools.uv]]
