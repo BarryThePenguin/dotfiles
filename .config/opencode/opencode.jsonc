@@ -19,4 +19,5 @@
 			"model": "opencode/nemotron-3.5-lightning-free",
 		},
 	},
+	"plugins": ["@wakatime/opencode-wakatime"],
 }
