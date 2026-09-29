@@ -476,19 +476,19 @@ url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/573252913"
 provenance = "github-attestations"
 
 [[tools.workmux]]
-version = "0.1.264"
+version = "0.1.265"
 backend = "github:raine/workmux"
-specifiers = ["v0.1.264"]
+specifiers = ["v0.1.265"]
 
 [tools.workmux."platforms.linux-x64"]
-checksum = "sha256:a3d173c5f44d886fa6b3815dbdb6ce653e659db376fe48fa93db71bf40d11655"
-url = "https://github.com/raine/workmux/releases/download/v0.1.264/workmux-linux-amd64.tar.gz"
-url_api = "https://api.github.com/repos/raine/workmux/releases/assets/578413781"
+checksum = "sha256:c9ac9402eee0f227814eb0d772ca74936966ad0a56846479bc54f121421ba49f"
+url = "https://github.com/raine/workmux/releases/download/v0.1.265/workmux-linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/raine/workmux/releases/assets/581809534"
 
 [tools.workmux."platforms.macos-arm64"]
-checksum = "sha256:9182ac22732ff8198704b82ac26ab92965b94214c8f91fdeca21c36f71f00ee9"
-url = "https://github.com/raine/workmux/releases/download/v0.1.264/workmux-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/raine/workmux/releases/assets/578413776"
+checksum = "sha256:b2f83de4e5256f92e89cbd77d845fa8bb185100945f32329711edea8ef297687"
+url = "https://github.com/raine/workmux/releases/download/v0.1.265/workmux-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/raine/workmux/releases/assets/581809538"
 
 [[tools.yq]]
 version = "4.53.6"
