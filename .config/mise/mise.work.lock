@@ -80,6 +80,35 @@ checksum = "sha256:d289e2ba48f85cc0639cb77e4ea78c14d222d099e8d545c7bb687ba779255
 url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.118.0/downloads/glab_1.118.0_darwin_arm64.tar.gz"
 url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E118%2E0/glab_1%2E118%2E0_darwin_arm64%2Etar%2Egz"
 
+[[tools."http:coderabbit"]]
+version = "0.8.2"
+backend = "http:coderabbit"
+specifiers = ["0.8.2"]
+
+[tools."http:coderabbit"."platforms.linux-x64"]
+checksum = "sha256:a6344485153c5889c91bae71d9172c0d2d7d3924a45661173030e28570bb7bb2"
+url = "https://cli.coderabbit.ai/releases/0.8.2/coderabbit-linux-x64.zip"
+
+[tools."http:coderabbit"."platforms.macos-arm64"]
+checksum = "blake3:5fba33856c0eaf7172e28fefb56e4610e43410376203ef5de52b66b0452ca890"
+url = "https://cli.coderabbit.ai/releases/0.8.2/coderabbit-darwin-arm64.zip"
+
+[[tools."http:twg"]]
+version = "1.3.3"
+backend = "http:twg"
+specifiers = ["1.3.3"]
+
+[tools."http:twg".options]
+rename_exe = "twg"
+
+[tools."http:twg"."platforms.linux-x64"]
+checksum = "sha256:f2b27de35e2b70ca533dc544b6d41df3013743d7e4a1dcf113498528f9a38401"
+url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v1.3.3"
+
+[tools."http:twg"."platforms.macos-arm64"]
+checksum = "blake3:ca7c6dedef76756cd4ecacb7a3d1016db8d19402042c4d2c8a76455c12e2383c"
+url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.3.3"
+
 [[tools."npm:@augmentcode/auggie"]]
 version = "0.36.0"
 aube = { path = "locks/mise.work/npm-augmentcode-auggie/0.36.0", digest = "sha256:59555bbbc816d413aa7d7716ed755427c6ee65c9c62347c394ec07da54d7703a" }
