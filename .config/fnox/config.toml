@@ -27,3 +27,8 @@ sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3
 provider = "op"
 value = "Todoist API token"
 sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBaMDBqR2VqaHArbENaSGZMZ1BFNExpWlVkQVNmeDhCazB1SlpYeU45YTMwCk9saTg4d3VpOWc1SndIZ1I4VUVYNTdIZkZtWVhvSTFEQ2VaUFlRd3BZWVkKLT4gYSkwbSdcdy1ncmVhc2UgVyBHIHRHP313IC8KblM4TDRIYwotLS0gTkYvNHJyL1NzYXhkSmlrMEYzaEdaWUs3c003Um1GM2E3WXRvS2lhekdBTQqiKPy40St3ubqXjvLifeXXtNtqvdyEfz/aS19pFg0qjzpCjeB411UhL2xoBzPiIssBliKY8LhOAqawaXmklOhUqeRMRCXGrf4F1nBh:pvas8YJmOsTtRUY5KrCLnosiaQK7I9mnuuz1ryDxB2BwxgcGqfbl+c6tF8dsVkTzZxojtC/wvwfk8sALu7FdcAjwo6k=" }
+
+[secrets.HISTER__APP__ACCESS_TOKEN]
+provider = "op"
+value = "Hister App Access Token"
+sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBFclRwd04zVjA4eWVKUVEwMnhzR0JhNENPNGhRNDRoYWFKL01BZEkwWEdZCnRzMlZHZ3JrM3NydFFLVE1ScC9aMXVKM0FEc1NxYWw3eTA4TUNWNWpJencKLT4gdlVeLWdyZWFzZQpIZm1nRlJCd3ZzTDMyN0RGZTFnZ0NuaUczdHNEMTQ4Ci0tLSBzUzZ1NnlGaS9wWWVuc05iM3M3dEwwVGZ1WEcxZUFZZjVUblVHd2lnbXU0CrVxqt0XpODawOphY1Jo9Qm+9cCRgJz+4wlKGfLxumc3Ma7gqheLdtARPjCYR6Z5S0DKvGlWs4kSz5aKsx2LN51amD6eDfTRTlCVK5o=:w9TDSdYQghAXxzM5fEQpHP3VCfWsdFxeKzDJJi9VnLJeHEbu0xOHapHq/3alKkRLY0/veNHS" }

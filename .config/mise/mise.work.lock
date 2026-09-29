@@ -88,6 +88,6 @@ specifiers = ["0.36.0"]
 
 [[tools.viteplus]]
 version = "0.3.3"
-aube = { path = "locks/mise.work/viteplus/0.3.3", digest = "sha256:ebf96002c25da220f0305c6514da8b46a8dd1a3f3b8fe89bec34a89a2526e468" }
+aube = { path = "locks/mise.work/viteplus/0.3.3", digest = "sha256:c53c4ccd4034eeffb15633618ce8e983bc9937f62bb63945872ce9ae2f312ba0" }
 backend = "npm:vite-plus"
 specifiers = ["0.3.3"]

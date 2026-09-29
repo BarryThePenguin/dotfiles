@@ -124,6 +124,21 @@ url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_macOS_ar
 url_api = "https://api.github.com/repos/cli/cli/releases/assets/565857200"
 provenance = "github-attestations"
 
+[[tools."github:asciimoo/hister"]]
+version = "0.20.0"
+backend = "github:asciimoo/hister"
+specifiers = ["0.20.0"]
+
+[tools."github:asciimoo/hister"."platforms.linux-x64"]
+checksum = "sha256:28c453cd3fe383dac936f91450c0bd6d3be4944079670aa607f38e01215844fe"
+url = "https://github.com/asciimoo/hister/releases/download/v0.20.0/hister_0.20.0_linux_amd64"
+url_api = "https://api.github.com/repos/asciimoo/hister/releases/assets/585632385"
+
+[tools."github:asciimoo/hister"."platforms.macos-arm64"]
+checksum = "sha256:d13442f086dbc23c316cb19f1b42abb09e7dba4b38e0d7aeb6a2e42131f0a43c"
+url = "https://github.com/asciimoo/hister/releases/download/v0.20.0/hister_0.20.0_darwin_arm64"
+url_api = "https://api.github.com/repos/asciimoo/hister/releases/assets/585632384"
+
 [[tools.go]]
 version = "1.27.1"
 backend = "core:go"
