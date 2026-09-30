@@ -2,6 +2,9 @@
 _.file = "~/.config/mise/.env"
 EDITOR = "code"
 
+[settings.age]
+key_file = "~/.config/sops/age/keys.txt"
+
 [plugins]
 repo-bins = "~/src/btp/agent-tools/mise-repo-bins"
 
