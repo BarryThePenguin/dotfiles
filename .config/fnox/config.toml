@@ -18,11 +18,6 @@ provider = "op"
 value = "GitHub Readonly Personal Access Token/token"
 sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBaMDBqR2VqaHArbENaSGZMZ1BFNExpWlVkQVNmeDhCazB1SlpYeU45YTMwCk9saTg4d3VpOWc1SndIZ1I4VUVYNTdIZkZtWVhvSTFEQ2VaUFlRd3BZWVkKLT4gYSkwbSdcdy1ncmVhc2UgVyBHIHRHP313IC8KblM4TDRIYwotLS0gTkYvNHJyL1NzYXhkSmlrMEYzaEdaWUs3c003Um1GM2E3WXRvS2lhekdBTQqiKPy40St3ubqXjvLifeXXtNtqvdyEfz/aS19pFg0qjzpCjeB411UhL2xoBzPiIssBliKY8LhOAqawaXmklOhUqeRMRCXGrf4F1nBh:r8wxm6mKXzSfvaz+HVSFJ4m36Cn1aOfikYcxlAgofHL6P6RWCQRA2M6BhQCRI3JSWQQPyhRujh0T6rA3MgtMYhofR+l5NXya8MQKxJcCl4IpQl+pxkfFn6JLypzEwM83z0gIgKilDt5P5lbIPh9XXYcfECSoESMarA==" }
 
-[secrets.OPENCODE_API_KEY]
-provider = "op"
-value = "OpenCode Go API Key/token"
-sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBaMDBqR2VqaHArbENaSGZMZ1BFNExpWlVkQVNmeDhCazB1SlpYeU45YTMwCk9saTg4d3VpOWc1SndIZ1I4VUVYNTdIZkZtWVhvSTFEQ2VaUFlRd3BZWVkKLT4gYSkwbSdcdy1ncmVhc2UgVyBHIHRHP313IC8KblM4TDRIYwotLS0gTkYvNHJyL1NzYXhkSmlrMEYzaEdaWUs3c003Um1GM2E3WXRvS2lhekdBTQqiKPy40St3ubqXjvLifeXXtNtqvdyEfz/aS19pFg0qjzpCjeB411UhL2xoBzPiIssBliKY8LhOAqawaXmklOhUqeRMRCXGrf4F1nBh:guJBhz2C8TavU3Mv6E/AYQhBYvsv0KO4uwYt5LRBeGBawOdYnLXtb3ALfne+o5z+oxMeUaPhpl7HfkLW+SyHMvubPO8CCaNyPqPc3V25Lg==" }
-
 [secrets.TODOIST_API_TOKEN]
 provider = "op"
 value = "Todoist API token"

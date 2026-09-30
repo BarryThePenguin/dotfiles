@@ -177,6 +177,7 @@ login_shell = "/bin/zsh"
 "~/.pi/agent/prompts" = { source = "~/src/btp/agent-tools/subagent-pi/prompts", mode = "symlink" }
 "~/.pi/agent/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }
 "~/.ssh/config" = { source = "~/src/btp/dotfiles/.config/ssh/config", mode = "symlink" }
+"~/.wakatime.cfg" = { mode = "track" }
 "~/.zprezto-contrib" = { mode = "symlink-each", manifest = "git" }
 "~/.zshenv" = { mode = "symlink" }
 "~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
