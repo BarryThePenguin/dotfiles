@@ -28,7 +28,7 @@ FNOX_PROFILE = "work"
 "core:dotnet" = "10.0.102"
 "dotnet:csharp-ls" = "0.28.0"
 "dotnet:dotnet-ef" = "10.0.12"
-"dotnet:ilspycmd" = "11.0.0.9375"
+"dotnet:ilspycmd" = "11.1.0.9782"
 "npm:@augmentcode/auggie" = "0.36.0"
 aws-cli = { version = "2.37.1", symlink_bins = "true" }
 claude-code = { version = "2.1.284", minimum_release_age = "1d" }
