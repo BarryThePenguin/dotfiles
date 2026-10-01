@@ -182,3 +182,4 @@ login_shell = "/bin/zsh"
 "~/.zshenv" = { mode = "symlink" }
 "~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
 "~/CLAUDE.md" = { mode = "symlink", variants = [{ profile = "work" }] }
+"~/src/assistant" = { mode = "track", exclude = [".obsidian/workspace*.json", ".obsidian/cache", ".claude/worktrees", "data"] }
