@@ -18,7 +18,7 @@ repo-bins = "local"
 "github:asciimoo/hister" = { version = "0.20.0", os = ["macos"] }
 age = { version = "1.3.2", os = ["macos"] }
 atuin = { version = "18.23.0", os = ["macos"] }
-aube = { version = "v2.3.0", os = ["macos"] }
+aube = { version = "v2.4.0", os = ["macos"] }
 cloudflared = { version = "2026.9.3", os = ["macos"] }
 flux2 = { version = "2.9.5", os = ["macos"] }
 fnox = { version = "v1.35.3", os = ["macos"] }
