@@ -2,5 +2,6 @@
 	"$schema": "https://unpkg.com/knip@6/schema.json",
 	"tags": ["-lintignore"],
 	"entry": [".config/opencode/plugins/*.ts"],
+	"project": ["**/*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}", "!**/.agents/**"],
 	"ignoreBinaries": ["caffeinate"]
 }

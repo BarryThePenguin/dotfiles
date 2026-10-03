@@ -1,22 +1,22 @@
 {
 	"$schema": "https://opencode.ai/config.json",
 	"formatter": true,
-	"model": "opencode/big-pickle",
+	"model": "opencode-go/space-bunny-free",
 	"agents": {
 		"build": {
-			"model": "opencode/big-pickle",
+			"model": "opencode-go/space-bunny-free",
 		},
 		"general": {
-			"model": "opencode/big-pickle",
+			"model": "opencode-go/space-bunny-free",
 		},
 		"plan": {
-			"model": "opencode-go/glm-5.3#max",
+			"model": "opencode-go/mimo-v2.6-pro",
 		},
 		"explore": {
-			"model": "opencode/nemotron-3.5-lightning-free",
+			"model": "opencode-go/deepseek-v4.1-flash",
 		},
 		"title": {
-			"model": "opencode/nemotron-3.5-lightning-free",
+			"model": "opencode-go/space-bunny-free",
 		},
 	},
 	"plugins": ["@wakatime/opencode-wakatime"],

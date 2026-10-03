@@ -93,10 +93,10 @@ checksum = "sha256:fd65982c97ddad3106754b69ffa196d0e543aa591930ae52aed1adfb92f8c
 url = "https://dl.k8s.io/v1.37.1/bin/darwin/arm64/kubectl"
 
 [[tools."npm:@opencode/cli"]]
-version = "2.0.18"
-aube = { path = "locks/mise.home/npm-opencode-cli/2.0.18~009061c2", digest = "sha256:b02ef68fb0d47fdb6072bfb492fca689d992cbc1652b886d85859a9490094eb8" }
+version = "2.0.22"
+aube = { path = "locks/mise.home/npm-opencode-cli/2.0.22~009061c2", digest = "sha256:ee9e1c2e66d9e59b120bdd976c7d6946e67eb0877ec453ce69deefef2f53619c" }
 backend = "npm:@opencode/cli"
-specifiers = ["2.0.18"]
+specifiers = ["2.0.22"]
 
 [tools."npm:@opencode/cli".options]
 allow_builds = '["@opencode/cli"]'
