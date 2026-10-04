@@ -15,8 +15,8 @@ importers:
         specifier: 10.0.1
         version: 10.0.1(eslint@10.11.0(jiti@2.7.0))
       '@opencode/plugin':
-        specifier: 2.0.20
-        version: 2.0.20(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))
+        specifier: 2.0.21
+        version: 2.0.21(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))
       '@tsconfig/node-ts':
         specifier: 23.6.4
         version: 23.6.4
@@ -40,7 +40,7 @@ importers:
         version: 5.0.2(vitest@5.0.2)
       '@vitest/eslint-plugin':
         specifier: 1.6.27
-        version: 1.6.27(@typescript-eslint/eslint-plugin@8.70.1(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))(vitest@5.0.2)
+        version: 1.6.27(@typescript-eslint/eslint-plugin@8.71.0(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))(vitest@5.0.2)
       effect:
         specifier: 4.0.0-rc.112
         version: 4.0.0-rc.112
@@ -438,11 +438,11 @@ packages:
     resolution: {integrity: sha512-mGUWr1uMnf0le2TwfOZY4SFxZGXGfm4Jtay/nwAa2FLNAKXUoUwaGwBMNH36UHPtinWfTSJ3nqFQr0091CxVGg==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  '@opencode/ai@2.0.20':
-    resolution: {integrity: sha512-OgLbrorEgk38TCZIzoMkcUbe2DiARYPWD4Kp5pInlrI/s1aAAm38GydYDYEJHgkCd5FBerv1dKWGefpyMjTUMg==}
+  '@opencode/ai@2.0.21':
+    resolution: {integrity: sha512-eB4M0O44VoX075Kv+vIVxIpiKSrfjSXpNaeBSjtPgZdhZCjKN5CxjJXtyPbhrDxvmDf0PxLcvjGNKQBRMkZ0fw==}
 
-  '@opencode/client@2.0.20':
-    resolution: {integrity: sha512-gTwZCVv7tNwOLPZXZyUDF9tZnEsKuchkjXv1l98I+sTWJJNRqsEM5wnvjlOJEiwiqWZTeBk1UIk2QpR5PDGzwA==}
+  '@opencode/client@2.0.21':
+    resolution: {integrity: sha512-cX9sj9qpaTlkVfdaeLCFeV43+1mcSHVhvgjkVLCYyfQJj0MmBGgx/x9AM/GHVZDEX6T2mUljn0Qh5XhFM9CgrQ==}
     peerDependencies:
       effect: 4.0.0-rc.112
       solid-js: '>=1.9.0'
@@ -452,12 +452,12 @@ packages:
       solid-js:
         optional: true
 
-  '@opencode/plugin@2.0.20':
-    resolution: {integrity: sha512-RMJQH3cgOw7hztUUTnnv1WJ3veKYV2oxkasfEYEdzVIVvIK3LYwYZqrnlZS4VLRNOkyCeypfPDKrt0iYNPmPUw==}
+  '@opencode/plugin@2.0.21':
+    resolution: {integrity: sha512-ZLagbklGyYPg77GvK//ir3LaNXBsZQENU8APCnaT4elsBk7YzoVt8stR6+b4wH7Sfadw76cWSaNiWgDo2QOSHA==}
     peerDependencies:
-      '@opencode/theme': 2.0.20
-      '@opentui/core': '>=0.5.12'
-      '@opentui/solid': '>=0.5.12'
+      '@opencode/theme': 2.0.21
+      '@opentui/core': '>=0.5.14'
+      '@opentui/solid': '>=0.5.14'
       solid-js: '>=1.9.0'
     peerDependenciesMeta:
       '@opencode/theme':
@@ -469,14 +469,14 @@ packages:
       solid-js:
         optional: true
 
-  '@opencode/protocol@2.0.20':
-    resolution: {integrity: sha512-5tN25fwpc/2blCFpZgl9fkU92diHAVuk88TGxHH1LO27Ib/lJFWBxTvMUImrCmbyBv70f8W8MMkjkFhA5ryWVA==}
+  '@opencode/protocol@2.0.21':
+    resolution: {integrity: sha512-KvcpCPpIXPMkJaffUFwLxUAZwf6SiNf/8qFW/ZR7LEHFBcnmzyl7hPk5QthAHmnTRoR+dU2U/WMakj06ePRPyg==}
 
-  '@opencode/schema@2.0.20':
-    resolution: {integrity: sha512-rutVd9rYHa/WTZA3glLQY3pbMN/SZ6Q4yd8XrpRtbGN+2u3fukz4mTXy8QQY1mVSabdX5jYTmzPi0QJMpmGSUQ==}
+  '@opencode/schema@2.0.21':
+    resolution: {integrity: sha512-HMIU9sCNOvbMWQeslxbTtCLfvhMyar40+VHkZq9hNjXTaPWJrGxSzbuHJQhKzeOeDaiP7t1zllUDHTxTA/5SOw==}
 
-  '@opencode/util@2.0.20':
-    resolution: {integrity: sha512-+Vjkjaz7EXXp5AkIVu1ETC4TcxTa+jLtdnzCKVZQf3OuH0Z0MllbcaYaJj/ks1m8T4F7OemITM5bFWr7vBllcQ==}
+  '@opencode/util@2.0.21':
+    resolution: {integrity: sha512-wQaa4Q19zbK+B76Pzf2NV3eE8orwWw7IDlBi/Y4WpUaHwaaF+fCQGQxkByyOeWmSy38IQEX93c8RyLPB+WWjog==}
 
   '@opentelemetry/api-logs@0.219.0':
     resolution: {integrity: sha512-FFx7YnaYJlIjqWW/AG/yAZ0L/NEY724PipXXXQLdtZPbLwBGbUMTGL1i/esI56TWfTUXxhLfpgrnWJCG8aUJyg==}
@@ -1043,14 +1043,6 @@ packages:
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
-  '@typescript-eslint/eslint-plugin@8.70.1':
-    resolution: {integrity: sha512-nDNrUQ/4ruSNYbu749TRY7cfrzPtoLHEXSNBI8aaNY32LlZCajixqRf3FqcKC4p5Cam4VOHYx/t+i5+nKXvrqA==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      '@typescript-eslint/parser': ^8.70.1
-      eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
-      typescript: '>=4.8.4 <6.1.0'
-
   '@typescript-eslint/eslint-plugin@8.71.0':
     resolution: {integrity: sha512-pqcS9c1HxZTHt7End4nXqd0s5lJrrFzrgCkKFJrsbUnaL6M3+6oBFZaslg6Gjsl3argl2DDRFROnXARaZ2e4Nw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -1096,13 +1088,6 @@ packages:
     resolution: {integrity: sha512-Z1UlWHADEK2Mlb9NpWfDeSjqoZ5EyrOv4R3eQpbkzqn/EwaIdOpXXupEA1+0ZIOSJSZZDBHG0BrQyN8zUG6Pwg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
-      typescript: '>=4.8.4 <6.1.0'
-
-  '@typescript-eslint/type-utils@8.70.1':
-    resolution: {integrity: sha512-7zKTnyvaVWqzLZHPFQtX1hVHqgkMC+WebPWakNCSyrQVbIP1AM0L0TlBZtACldIRb6PptI8Odk+jyZ5kP3B1VA==}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-    peerDependencies:
-      eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
       typescript: '>=4.8.4 <6.1.0'
 
   '@typescript-eslint/type-utils@8.71.0':
@@ -3059,10 +3044,10 @@ snapshots:
       node-gyp: 12.4.0
       proc-log: 6.1.0
 
-  '@opencode/ai@2.0.20':
+  '@opencode/ai@2.0.21':
     dependencies:
       '@aws-sdk/credential-providers': 3.1057.0
-      '@opencode/schema': 2.0.20
+      '@opencode/schema': 2.0.21
       '@smithy/eventstream-codec': 4.2.14
       '@smithy/util-utf8': 4.2.2
       aws4fetch: 1.0.20
@@ -3071,21 +3056,21 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@opencode/client@2.0.20(effect@4.0.0-rc.112)':
+  '@opencode/client@2.0.21(effect@4.0.0-rc.112)':
     dependencies:
-      '@opencode/protocol': 2.0.20
-      '@opencode/schema': 2.0.20
+      '@opencode/protocol': 2.0.21
+      '@opencode/schema': 2.0.21
     optionalDependencies:
       effect: 4.0.0-rc.112
 
-  '@opencode/plugin@2.0.20(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))':
+  '@opencode/plugin@2.0.21(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@opencode/ai': 2.0.20
-      '@opencode/client': 2.0.20(effect@4.0.0-rc.112)
-      '@opencode/protocol': 2.0.20
-      '@opencode/schema': 2.0.20
-      '@opencode/util': 2.0.20(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))
+      '@opencode/ai': 2.0.21
+      '@opencode/client': 2.0.21(effect@4.0.0-rc.112)
+      '@opencode/protocol': 2.0.21
+      '@opencode/schema': 2.0.21
+      '@opencode/util': 2.0.21(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))
       '@standard-schema/spec': 1.1.0
       effect: 4.0.0-rc.112
       zod: 4.1.8
@@ -3097,17 +3082,17 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@opencode/protocol@2.0.20':
+  '@opencode/protocol@2.0.21':
     dependencies:
-      '@opencode/schema': 2.0.20
+      '@opencode/schema': 2.0.21
       effect: 4.0.0-rc.112
 
-  '@opencode/schema@2.0.20':
+  '@opencode/schema@2.0.21':
     dependencies:
       '@standard-schema/spec': 1.1.0
       effect: 4.0.0-rc.112
 
-  '@opencode/util@2.0.20(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))':
+  '@opencode/util@2.0.21(@opentelemetry/semantic-conventions@1.43.0)(redis@6.2.1(@opentelemetry/api@1.9.0))':
     dependencies:
       '@effect/opentelemetry': 4.0.0-rc.112(@opentelemetry/api-logs@0.219.0)(@opentelemetry/api@1.9.0)(@opentelemetry/resources@2.8.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-logs@0.219.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@2.8.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.8.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-node@2.8.0(@opentelemetry/api@1.9.0))(@opentelemetry/semantic-conventions@1.43.0)(effect@4.0.0-rc.112)
       '@effect/platform-node': 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.0))
@@ -3555,23 +3540,6 @@ snapshots:
     dependencies:
       '@types/node': 24.19.0
 
-  '@typescript-eslint/eslint-plugin@8.70.1(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))':
-    dependencies:
-      '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))
-      '@typescript-eslint/scope-manager': 8.70.1
-      '@typescript-eslint/type-utils': 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))
-      '@typescript-eslint/utils': 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))
-      '@typescript-eslint/visitor-keys': 8.70.1
-      eslint: 10.11.0(jiti@2.7.0)
-      ignore: 7.0.10
-      natural-compare: 1.4.0
-      ts-api-utils: 2.5.0(@typescript/typescript6@6.0.2)
-      typescript: '@typescript/typescript6@6.0.2'
-    transitivePeerDependencies:
-      - supports-color
-    optional: true
-
   '@typescript-eslint/eslint-plugin@8.71.0(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))':
     dependencies:
       '@eslint-community/regexpp': 4.12.2
@@ -3635,19 +3603,6 @@ snapshots:
   '@typescript-eslint/tsconfig-utils@8.71.0(@typescript/typescript6@6.0.2)':
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
-
-  '@typescript-eslint/type-utils@8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))':
-    dependencies:
-      '@typescript-eslint/types': 8.70.1
-      '@typescript-eslint/typescript-estree': 8.70.1(@typescript/typescript6@6.0.2)
-      '@typescript-eslint/utils': 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))
-      debug: 4.4.3
-      eslint: 10.11.0(jiti@2.7.0)
-      ts-api-utils: 2.5.0(@typescript/typescript6@6.0.2)
-      typescript: '@typescript/typescript6@6.0.2'
-    transitivePeerDependencies:
-      - supports-color
-    optional: true
 
   '@typescript-eslint/type-utils@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))':
     dependencies:
@@ -3803,13 +3758,13 @@ snapshots:
       tinyrainbow: 3.1.1
       vitest: 5.0.2(@opentelemetry/api@1.9.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(vite@8.3.1(@types/node@24.19.0)(jiti@2.7.0)(yaml@2.9.1))
 
-  '@vitest/eslint-plugin@1.6.27(@typescript-eslint/eslint-plugin@8.70.1(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))(vitest@5.0.2)':
+  '@vitest/eslint-plugin@1.6.27(@typescript-eslint/eslint-plugin@8.71.0(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))(vitest@5.0.2)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.70.1
       '@typescript-eslint/utils': 8.70.1(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))
       eslint: 10.11.0(jiti@2.7.0)
     optionalDependencies:
-      '@typescript-eslint/eslint-plugin': 8.70.1(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))
+      '@typescript-eslint/eslint-plugin': 8.71.0(@typescript-eslint/parser@8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)))(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0))
       typescript: '@typescript/typescript6@6.0.2'
       vitest: 5.0.2(@opentelemetry/api@1.9.0)(@types/node@24.19.0)(@vitest/coverage-v8@5.0.2)(vite@8.3.1(@types/node@24.19.0)(jiti@2.7.0)(yaml@2.9.1))
     transitivePeerDependencies:
