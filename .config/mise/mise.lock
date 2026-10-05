@@ -95,21 +95,21 @@ url_api = "https://api.github.com/repos/fluxcd/flux2/releases/assets/538282876"
 url = "https://github.com/fluxcd/flux2/releases/download/v2.9.5/provenance.intoto.jsonl"
 
 [[tools.fnox]]
-version = "1.35.3"
+version = "1.36.0"
 backend = "packslip:github.com/jdx/fnox"
-specifiers = ["v1.35.3"]
+specifiers = ["v1.36.0"]
 
 [tools.fnox."platforms.linux-x64"]
-checksum = "sha256:69066f81f624d355c83bcb394ba80f6add80c06b7be92c7b178d38af14a25c52"
-url = "https://github.com/jdx/fnox/releases/download/v1.35.3/fnox-x86_64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:9c4f4dd2ae9b704016798eef18e74fecb61f954cabb8ec4b97f848332954463d"
+url = "https://github.com/jdx/fnox/releases/download/v1.36.0/fnox-x86_64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/fnox/.github/workflows/release.yml"
-repository_ids = { repository = "1078762196", owner = "216188" }
+repository_ids = { repository = "1078762196" }
 
 [tools.fnox."platforms.macos-arm64"]
-checksum = "sha256:49965f9739d053f544aa32599494b3e2442dcf8c116d92a6a4afa5575e9decd3"
-url = "https://github.com/jdx/fnox/releases/download/v1.35.3/fnox-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:b1de28349089d62b24518f1a6103005f9f3c82aaf5ca7872e65bf3fc349e4166"
+url = "https://github.com/jdx/fnox/releases/download/v1.36.0/fnox-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/fnox/.github/workflows/release.yml"
-repository_ids = { repository = "1078762196", owner = "216188" }
+repository_ids = { repository = "1078762196" }
 
 [[tools.gh]]
 version = "2.101.0"
