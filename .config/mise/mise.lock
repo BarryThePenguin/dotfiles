@@ -298,7 +298,7 @@ url = "https://nodejs.org/dist/v26.10.0/node-v26.10.0-darwin-arm64.tar.gz"
 
 [[tools."npm:@typespec/compiler"]]
 version = "1.16.0"
-aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:afc858683f7310189ffbf5499a1ef5459ac5e17471a18e8f9fc61a21138bafc8" }
+aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:ec36afe1dbb6594ca1df5f1166a3faac199650405fe83fd95749d65489decb86" }
 backend = "npm:@typespec/compiler"
 specifiers = ["1.16.0"]
 
@@ -367,7 +367,7 @@ provenance = "github-attestations"
 
 [[tools.repo-bins]]
 version = "local"
-backend = "asdf:/Users/jonno/src/btp/agent-tools/mise-repo-bins"
+backend = "asdf:/home/ubuntu/src/btp/agent-tools/mise-repo-bins"
 specifiers = ["local"]
 
 [[tools.ripgrep]]
@@ -386,7 +386,7 @@ url = "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15
 url_api = "https://api.github.com/repos/BurntSushi/ripgrep/releases/assets/478118851"
 
 [[tools.rust]]
-version = "1.98.1"
+version = "1.99.0"
 backend = "core:rust"
 specifiers = ["latest"]
 
