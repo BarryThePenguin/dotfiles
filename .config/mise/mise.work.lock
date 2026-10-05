@@ -16,19 +16,19 @@ checksum = "sha256:6cba8327461d2b804e575fd841272951eecb253b2ca94c8a58acd19d5f283
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.37.4.pkg"
 
 [[tools.claude-code]]
-version = "2.1.284"
+version = "2.1.289"
 backend = "aqua:anthropics/claude-code"
-specifiers = ["2.1.284"]
+specifiers = ["2.1.289"]
 
 [tools.claude-code."platforms.linux-x64"]
-checksum = "sha256:3e143fd5753fda1d150dd081ff7c584d0eb5b85cc259729e5429957ed9de202e"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.284/claude-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/595944060"
+checksum = "sha256:aa184fe26777b16e18230da937ffe369e40f261bc65405520cafd7bd95783bef"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.289/claude-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/608449312"
 
 [tools.claude-code."platforms.macos-arm64"]
-checksum = "sha256:75603fec942fff2cbda25cfec94801402d029b4a7827b9875f64a7a326f46451"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.284/claude-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/595943851"
+checksum = "sha256:20acfc89a32ed7260b63fd2f3fd71a33de7b2d74b82c724d25941ad73d2e0e96"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.289/claude-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/608449164"
 
 [[tools.dotnet]]
 version = "10.0.102"
