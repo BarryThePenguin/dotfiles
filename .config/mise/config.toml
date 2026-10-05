@@ -21,7 +21,7 @@ atuin = { version = "18.23.0", os = ["macos"] }
 aube = { version = "v2.5.1", os = ["macos"] }
 cloudflared = { version = "2026.9.3", os = ["macos"] }
 flux2 = { version = "2.9.5", os = ["macos"] }
-fnox = { version = "v1.35.3", os = ["macos"] }
+fnox = { version = "v1.36.0", os = ["macos"] }
 gh = { version = "2.101.0", os = ["macos"] }
 go = { version = "1.27.1", os = ["macos"] }
 helm = { version = "4.3.0", os = ["macos"] }
