@@ -275,13 +275,13 @@ specifiers = ["v1.19.0"]
 checksum = "sha256:c41238298b30d7c7da53dfe850f06036dd103b65865cc9dc986077eaf3e565d2"
 url = "https://github.com/jdx/mr-boxington/releases/download/v1.19.0/mbx-x86_64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
-repository_ids = { repository = "1340721957" }
+repository_ids = { repository = "1340721957", owner = "216188" }
 
 [tools.mr-boxington."platforms.macos-arm64"]
 checksum = "sha256:dbaad252f9a483be80f6d00ad315f4957d8f9b9d19213ca05171b25a8dba6748"
 url = "https://github.com/jdx/mr-boxington/releases/download/v1.19.0/mbx-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
-repository_ids = { repository = "1340721957" }
+repository_ids = { repository = "1340721957", owner = "216188" }
 
 [[tools.node]]
 version = "26.10.0"
@@ -367,7 +367,7 @@ provenance = "github-attestations"
 
 [[tools.repo-bins]]
 version = "local"
-backend = "asdf:/home/ubuntu/src/btp/agent-tools/mise-repo-bins"
+backend = "asdf:/Users/jonno/src/btp/agent-tools/mise-repo-bins"
 specifiers = ["local"]
 
 [[tools.ripgrep]]
