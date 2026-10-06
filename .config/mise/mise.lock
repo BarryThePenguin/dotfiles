@@ -170,21 +170,21 @@ checksum = "sha256:d3870437e1e95b67f8edbde964156c84a26503f560821d40c542441658934
 url = "https://get.helm.sh/helm-v4.3.0-darwin-arm64.tar.gz"
 
 [[tools.hk]]
-version = "2.2.0"
+version = "2.4.0"
 backend = "packslip:github.com/jdx/hk"
-specifiers = ["2.2.0"]
+specifiers = ["2.4.0"]
 
 [tools.hk."platforms.linux-x64"]
-checksum = "sha256:ffb90603d1aeb6c545ff64087372c136d46bb6d820164d63b352b1c189f40053"
-url = "https://github.com/jdx/hk/releases/download/v2.2.0/hk-x86_64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:6efabe30aeabc4611a42ce6cf0fd46b9a19478e2cfd9acfd1bd93998736f3153"
+url = "https://github.com/jdx/hk/releases/download/v2.4.0/hk-x86_64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
-repository_ids = { repository = "922514152", owner = "216188" }
+repository_ids = { repository = "922514152" }
 
 [tools.hk."platforms.macos-arm64"]
-checksum = "sha256:82da7ae00554222568ea4115939e13fca640c2fae426ea828176b5b08ea45f68"
-url = "https://github.com/jdx/hk/releases/download/v2.2.0/hk-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:6e1c970b9de7ab4ee52c85869b2ea9cfe8769d25a0fe9536062e0ba62366ec59"
+url = "https://github.com/jdx/hk/releases/download/v2.4.0/hk-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
-repository_ids = { repository = "922514152", owner = "216188" }
+repository_ids = { repository = "922514152" }
 
 [[tools.java]]
 version = "27.0.0"
