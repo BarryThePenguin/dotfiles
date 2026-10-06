@@ -20,18 +20,18 @@ signer = "sigstore-oidc:https://github.com/jdx/hk/.github/workflows/release.yml"
 repository_ids = { repository = "922514152", owner = "216188" }
 
 [[tools.pnpm]]
-version = "12.8.2"
+version = "12.9.0"
 backend = "aqua:pnpm/pnpm"
-specifiers = ["12.8.2"]
+specifiers = ["12.9.0"]
 
 [tools.pnpm."platforms.linux-x64"]
-checksum = "sha256:8400740c0c9aa1cb0e5b91748b95524e1839f3fb720f8ef5d4910c3fc4d0e72f"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.8.2/pnpm-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/599659870"
+checksum = "sha256:df37180e8b3d964e08e8a6bf3bff1374dcf37108fbce1ef7ddc9b70f7cad141f"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.9.0/pnpm-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/606603786"
 provenance = "github-attestations"
 
 [tools.pnpm."platforms.macos-arm64"]
-checksum = "sha256:abdace06607e8bcdcd72517a6b4bf01f711627e5979a65c828eccd69e71e9e6f"
-url = "https://github.com/pnpm/pnpm/releases/download/v12.8.2/pnpm-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/599659862"
+checksum = "sha256:12d792463ed8f30cc80e6de4035c37d0d0d78ba57dfb27d8e82bf0fd24d98372"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.9.0/pnpm-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/606603785"
 provenance = "github-attestations"
