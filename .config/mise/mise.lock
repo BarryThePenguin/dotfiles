@@ -267,19 +267,19 @@ url = "https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.
 url_api = "https://api.github.com/repos/FiloSottile/mkcert/releases/assets/63709954"
 
 [[tools.mr-boxington]]
-version = "1.20.0"
+version = "1.21.0"
 backend = "packslip:github.com/jdx/mr-boxington"
-specifiers = ["v1.20.0"]
+specifiers = ["v1.21.0"]
 
 [tools.mr-boxington."platforms.linux-x64"]
-checksum = "sha256:f3537f6a2a7d3eaef5840fcd0bfccb108941f7a7ab395ec82914fd99c91ff357"
-url = "https://github.com/jdx/mr-boxington/releases/download/v1.20.0/mbx-x86_64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:1ed3fd18da0decc106a6242d1b724e6a4b8d0f6173b8abe4d4d68c929ed47120"
+url = "https://github.com/jdx/mr-boxington/releases/download/v1.21.0/mbx-x86_64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
 repository_ids = { repository = "1340721957" }
 
 [tools.mr-boxington."platforms.macos-arm64"]
-checksum = "sha256:0b4b12d09dd4cc4571a53472823dd04a987d0105e162ed2d383d73e22f17a602"
-url = "https://github.com/jdx/mr-boxington/releases/download/v1.20.0/mbx-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:4aa9da108e90c6c269819fed8e822a42f5101260961cd511999facd5726cf9d9"
+url = "https://github.com/jdx/mr-boxington/releases/download/v1.21.0/mbx-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
 repository_ids = { repository = "1340721957" }
 
