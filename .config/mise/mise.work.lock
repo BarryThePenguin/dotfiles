@@ -66,19 +66,19 @@ url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-darwi
 url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993595"
 
 [[tools.glab]]
-version = "1.119.0"
+version = "1.120.0"
 backend = "gitlab:gitlab-org/cli"
-specifiers = ["v1.119.0"]
+specifiers = ["v1.120.0"]
 
 [tools.glab."platforms.linux-x64"]
-checksum = "sha256:4d83375d202ffa634eaf627fd9272b610fa599f20f5b711f55d770583eca2b84"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.119.0/downloads/glab_1.119.0_linux_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E119%2E0/glab_1%2E119%2E0_linux_amd64%2Etar%2Egz"
+checksum = "sha256:4e6c59de9f7ed2f304bf93aad01ea8f8a69584f0450ce90ad696ef81f69c69aa"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.120.0/downloads/glab_1.120.0_linux_amd64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E120%2E0/glab_1%2E120%2E0_linux_amd64%2Etar%2Egz"
 
 [tools.glab."platforms.macos-arm64"]
-checksum = "sha256:d9cddd1dbe9a8bea8d5709f90a9ac13c3dd3eb0d0e94e3bc4fae6b27abd6a3db"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.119.0/downloads/glab_1.119.0_darwin_arm64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E119%2E0/glab_1%2E119%2E0_darwin_arm64%2Etar%2Egz"
+checksum = "sha256:8769650c49bb5d5ac52156d46e448e87f5570a868fe4e7bfcbd8cc66693c7afb"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.120.0/downloads/glab_1.120.0_darwin_arm64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E120%2E0/glab_1%2E120%2E0_darwin_arm64%2Etar%2Egz"
 
 [[tools."http:coderabbit"]]
 version = "0.8.2"
