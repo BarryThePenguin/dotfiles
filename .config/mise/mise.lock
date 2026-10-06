@@ -336,19 +336,19 @@ url = "https://github.com/earendil-works/pi/releases/download/v0.87.1/pi-darwin-
 url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/582094198"
 
 [[tools.podman]]
-version = "6.1.2"
+version = "6.1.3"
 backend = "github:podman-container-tools/podman"
-specifiers = ["v6.1.2"]
+specifiers = ["v6.1.3"]
 
 [tools.podman."platforms.linux-x64"]
-checksum = "sha256:6785e4dc11dad67000308749fed0f981698792309830a6b870bd5a97b3527182"
-url = "https://github.com/podman-container-tools/podman/releases/download/v6.1.2/podman-remote-static-linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/podman-container-tools/podman/releases/assets/566771156"
+checksum = "sha256:23ee4f71873810a864389b78ffe0d7536296432bb96d0c2acfbbfc7d50ee9c1b"
+url = "https://github.com/podman-container-tools/podman/releases/download/v6.1.3/podman-remote-static-linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/podman-container-tools/podman/releases/assets/598558263"
 
 [tools.podman."platforms.macos-arm64"]
-checksum = "sha256:c19c7add3dfa6d5f42e74f4b07dbecbc14b61fd21e7092ffd3dd1ba6cafbe2a6"
-url = "https://github.com/podman-container-tools/podman/releases/download/v6.1.2/podman-remote-release-darwin_arm64.zip"
-url_api = "https://api.github.com/repos/podman-container-tools/podman/releases/assets/566771048"
+checksum = "sha256:fb6f98a3ad167043f56e006fe46c412fdfc3b080cd12688a0d1b178866d652b5"
+url = "https://github.com/podman-container-tools/podman/releases/download/v6.1.3/podman-remote-release-darwin_arm64.zip"
+url_api = "https://api.github.com/repos/podman-container-tools/podman/releases/assets/598558204"
 
 [[tools.python]]
 version = "3.14.7"
