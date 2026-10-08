@@ -33,7 +33,7 @@ lima = { version = "2.2.0", os = ["macos"] }
 mkcert = { version = "1.4.4", os = ["macos"] }
 mr-boxington = { version = "v1.21.0", os = ["macos"] }
 node = { version = "26.10.0", os = ["macos"] }
-pi = { version = "v0.99.2", os = ["macos"] }
+pi = { version = "v1.0.0", os = ["macos"] }
 podman = { version = "v6.1.3", os = ["macos"] }
 python = { version = "3.14.7", os = ["macos"] }
 ripgrep = { version = "15.2.0", os = ["macos"] }
