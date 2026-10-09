@@ -48,20 +48,20 @@ checksum = "sha256:5cd46d6268f6f78f5d88bdc7159d20bd44cdaa4b3303474839f87ec6fe7ae
 url = "https://dl.deno.land/release/v2.9.7/deno-aarch64-apple-darwin.zip"
 
 [[tools.flux-operator]]
-version = "0.60.0"
+version = "0.61.0"
 backend = "aqua:controlplaneio-fluxcd/flux-operator"
-specifiers = ["0.60.0"]
+specifiers = ["0.61.0"]
 
 [tools.flux-operator."platforms.linux-x64"]
-checksum = "sha256:dd7d504bf02117fc8625ef7e71fe757473a9d69cc1d6369586d0e3ae19e40e01"
-url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.60.0/flux-operator_0.60.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/557336826"
+checksum = "sha256:5720a6b38e48f950dd97cb06f692695700e0239b28503e1926cc28cf8310145c"
+url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.61.0/flux-operator_0.61.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/603141676"
 provenance = "github-attestations"
 
 [tools.flux-operator."platforms.macos-arm64"]
-checksum = "sha256:9a40772ed9fa12263fb172d963a4da388811f295c45689861f670d25ce0bb3f0"
-url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.60.0/flux-operator_0.60.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/557336834"
+checksum = "sha256:d59e2bac6c34163c402496e08dfb29b8b54cedb0ecb8bb2036e42721ccf0e852"
+url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.61.0/flux-operator_0.61.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/603141675"
 provenance = "github-attestations"
 
 [[tools."github:SigNoz/signoz-mcp-server"]]
