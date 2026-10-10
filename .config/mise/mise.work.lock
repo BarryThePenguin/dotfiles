@@ -3,17 +3,17 @@
 lockfile_version = 3
 
 [[tools.aws-cli]]
-version = "2.37.8"
+version = "2.37.9"
 backend = "aqua:aws/aws-cli"
-specifiers = ["2.37.8"]
+specifiers = ["2.37.9"]
 
 [tools.aws-cli."platforms.linux-x64"]
-checksum = "sha256:6a2f98fee0901ff623ff9abb5c80f4d67c40e5c0ac5e2ad7afa2ba756a7d5088"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.8.zip"
+checksum = "sha256:6b3a6a3d7bb3997928f0bdf7b866914224abf242c2e54e1dcebbe84bee64f356"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.9.zip"
 
 [tools.aws-cli."platforms.macos-arm64"]
-checksum = "sha256:70c8c35b59db8eaebc2ddb398be1c343361a21b7dc8a57395615ebd77249ee1f"
-url = "https://awscli.amazonaws.com/AWSCLIV2-2.37.8.pkg"
+checksum = "sha256:a2fae32b07ca81c4327e3858ea810b1042bdfc91745a97ca30f9d5297e21834c"
+url = "https://awscli.amazonaws.com/AWSCLIV2-2.37.9.pkg"
 
 [[tools.claude-code]]
 version = "2.1.289"
