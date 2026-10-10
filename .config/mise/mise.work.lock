@@ -116,7 +116,7 @@ backend = "npm:@augmentcode/auggie"
 specifiers = ["0.36.0"]
 
 [[tools.viteplus]]
-version = "1.0.0"
-aube = { path = "locks/mise.work/viteplus/1.0.0", digest = "sha256:4724c2d3f62664b834ab30cfdbe5aaa2d58d704b97453bd3585876b7a8601435" }
+version = "1.1.0"
+aube = { path = "locks/mise.work/viteplus/1.1.0", digest = "sha256:95b55149f90e695087c6a576c658cbfe7b6d63924ecc9d2757c700387413dbc7" }
 backend = "npm:vite-plus"
-specifiers = ["1.0.0"]
+specifiers = ["1.1.0"]

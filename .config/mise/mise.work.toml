@@ -44,7 +44,7 @@ aws-cli = { version = "2.37.9", symlink_bins = "true" }
 claude-code = { version = "2.1.289", minimum_release_age = "1d" }
 git-lfs = "3.8.0"
 glab = "v1.120.0"
-viteplus = "1.0.0"
+viteplus = "1.1.0"
 
 [tools."http:twg"]
 version = "1.3.3"
