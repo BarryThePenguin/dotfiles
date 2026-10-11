@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "@typespec/compiler": "1.16.0"
+    "@typespec/compiler": "1.17.0"
   }
 }

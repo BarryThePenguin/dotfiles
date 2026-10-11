@@ -289,10 +289,10 @@ checksum = "sha256:751fdf7439f115d87ee2a8f3f18c065b6151852068e3e666ac60ac2996f75
 url = "https://nodejs.org/dist/v26.10.0/node-v26.10.0-darwin-arm64.tar.gz"
 
 [[tools."npm:@typespec/compiler"]]
-version = "1.16.0"
-aube = { path = "locks/npm-typespec-compiler/1.16.0", digest = "sha256:ec36afe1dbb6594ca1df5f1166a3faac199650405fe83fd95749d65489decb86" }
+version = "1.17.0"
+aube = { path = "locks/npm-typespec-compiler/1.17.0", digest = "sha256:f9efb508c157a53841ea7c56253f3354baee08d384ce90e3f3a8e38d67e3da3b" }
 backend = "npm:@typespec/compiler"
-specifiers = ["1.16.0"]
+specifiers = ["1.17.0"]
 
 [[tools."npm:prettier"]]
 version = "3.9.9"
