@@ -10,7 +10,7 @@ repo-bins = "~/src/btp/agent-tools/mise-repo-bins"
 
 [tools]
 repo-bins = "local"
-"npm:@typespec/compiler" = { version = "1.16.0", os = ["macos"] }
+"npm:@typespec/compiler" = { version = "1.17.0", os = ["macos"] }
 "npm:prettier" = { version = "3.9.9", os = ["macos"] }
 "npm:typescript-language-server" = { version = "6.0.1", os = ["macos"] }
 "npm:typescript" = { version = "7.0.2", os = ["macos"] }
