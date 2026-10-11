@@ -16,19 +16,19 @@ checksum = "sha256:a2fae32b07ca81c4327e3858ea810b1042bdfc91745a97ca30f9d5297e218
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.37.9.pkg"
 
 [[tools.claude-code]]
-version = "2.1.289"
+version = "2.1.296"
 backend = "aqua:anthropics/claude-code"
-specifiers = ["2.1.289"]
+specifiers = ["latest"]
 
 [tools.claude-code."platforms.linux-x64"]
-checksum = "sha256:aa184fe26777b16e18230da937ffe369e40f261bc65405520cafd7bd95783bef"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.289/claude-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/608449312"
+checksum = "sha256:45fe2b33f5cbdd114309618970bcd90b8b163e34252d66cf100d7e068d9b831d"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.296/claude-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/625598991"
 
 [tools.claude-code."platforms.macos-arm64"]
-checksum = "sha256:20acfc89a32ed7260b63fd2f3fd71a33de7b2d74b82c724d25941ad73d2e0e96"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.289/claude-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/608449164"
+checksum = "sha256:60f97cde7f7e078b424138e34ecf1ad620bd81ac3866984fb8996623a36a052e"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.296/claude-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/625598716"
 
 [[tools.dotnet]]
 version = "10.0.102"
@@ -81,33 +81,33 @@ url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.120.0/downloads/glab_1.12
 url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E120%2E0/glab_1%2E120%2E0_darwin_arm64%2Etar%2Egz"
 
 [[tools."http:coderabbit"]]
-version = "0.8.2"
+version = "0.9.0"
 backend = "http:coderabbit"
-specifiers = ["0.8.2"]
+specifiers = ["0.9.0"]
 
 [tools."http:coderabbit"."platforms.linux-x64"]
-checksum = "sha256:a6344485153c5889c91bae71d9172c0d2d7d3924a45661173030e28570bb7bb2"
-url = "https://cli.coderabbit.ai/releases/0.8.2/coderabbit-linux-x64.zip"
+checksum = "sha256:56e4c99de9d11106c3e6bf31034864db8f746cb97c9eaf9470adcfa6461da66f"
+url = "https://cli.coderabbit.ai/releases/0.9.0/coderabbit-linux-x64.zip"
 
 [tools."http:coderabbit"."platforms.macos-arm64"]
-checksum = "blake3:5fba33856c0eaf7172e28fefb56e4610e43410376203ef5de52b66b0452ca890"
-url = "https://cli.coderabbit.ai/releases/0.8.2/coderabbit-darwin-arm64.zip"
+checksum = "blake3:7549435d582efb74fcb3ddffb171fb22c94eaaff0fd31d84f6b68108eb8cad16"
+url = "https://cli.coderabbit.ai/releases/0.9.0/coderabbit-darwin-arm64.zip"
 
 [[tools."http:twg"]]
-version = "1.3.3"
+version = "1.3.5"
 backend = "http:twg"
-specifiers = ["1.3.3"]
+specifiers = ["1.3.5"]
 
 [tools."http:twg".options]
 rename_exe = "twg"
 
 [tools."http:twg"."platforms.linux-x64"]
-checksum = "sha256:f2b27de35e2b70ca533dc544b6d41df3013743d7e4a1dcf113498528f9a38401"
-url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v1.3.3"
+checksum = "sha256:d66d93220f440f006279c6687274ed4c924835da4ec205cc818bc17f6dd91c08"
+url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v1.3.5"
 
 [tools."http:twg"."platforms.macos-arm64"]
-checksum = "blake3:ca7c6dedef76756cd4ecacb7a3d1016db8d19402042c4d2c8a76455c12e2383c"
-url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.3.3"
+checksum = "sha256:bc8d9e07ba9275c2dffeda555f301828782c4972a9387dc221fe3cd3e9e33098"
+url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.3.5"
 
 [[tools."npm:@augmentcode/auggie"]]
 version = "0.36.0"

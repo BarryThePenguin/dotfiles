@@ -41,13 +41,13 @@ FNOX_PROFILE = "work"
 "dotnet:ilspycmd" = "11.1.0.9782"
 "npm:@augmentcode/auggie" = "0.36.0"
 aws-cli = { version = "2.37.9", symlink_bins = "true" }
-claude-code = { version = "2.1.289", minimum_release_age = "1d" }
+claude-code = { version = "latest", auto_update = true }
 git-lfs = "3.8.0"
 glab = "v1.120.0"
 viteplus = "1.1.0"
 
 [tools."http:twg"]
-version = "1.3.3"
+version = "1.3.5"
 rename_exe = "twg"
 
 [tools."http:twg".platforms]
@@ -57,7 +57,7 @@ linux-arm64 = { url = "https://teamwork-graph.atlassian.com/cli/twg-linux-arm64-
 linux-x64 = { url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v{{version}}" }
 
 [tools."http:coderabbit"]
-version = "0.8.2"
+version = "0.9.0"
 
 [tools."http:coderabbit".platforms]
 macos-arm64 = { url = "https://cli.coderabbit.ai/releases/{{version}}/coderabbit-darwin-arm64.zip" }
