@@ -313,19 +313,19 @@ backend = "npm:typescript-language-server"
 specifiers = ["6.0.1"]
 
 [[tools.pi]]
-version = "v1.0.0"
+version = "v1.0.2"
 backend = "aqua:earendil-works/pi"
-specifiers = ["v1.0.0"]
+specifiers = ["v1.0.2"]
 
 [tools.pi."platforms.linux-x64"]
-checksum = "sha256:8fd5543a52a889d60ad57ccbf6c969e73c75c5240aae18ac40b506947a63dc38"
-url = "https://github.com/earendil-works/pi/releases/download/v1.0.0/pi-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/603916768"
+checksum = "sha256:0d7687a6a9fcbaa88ff664cb6b28683ce9ee3e028931b55eb48a70ae9a285d18"
+url = "https://github.com/earendil-works/pi/releases/download/v1.0.2/pi-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/608828196"
 
 [tools.pi."platforms.macos-arm64"]
-checksum = "sha256:97291e7d2eb2d7d95ab1f67d26de7902302201bc8786c132bbbc9e53fa8526cc"
-url = "https://github.com/earendil-works/pi/releases/download/v1.0.0/pi-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/603916769"
+checksum = "sha256:c2f035ea4adba87916f005c99515e3c91674b11d16ba75d95d0881e4781aa3bb"
+url = "https://github.com/earendil-works/pi/releases/download/v1.0.2/pi-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/608828195"
 
 [[tools.podman]]
 version = "6.1.3"
