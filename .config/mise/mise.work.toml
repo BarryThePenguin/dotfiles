@@ -1,6 +1,9 @@
 [settings]
 trusted_config_paths = ["~/src/btp", "~/src/work"]
 
+[bootstrap]
+dotfile_groups = ["work"]
+
 [bootstrap.packages]
 "brew:awscli" = "latest"
 "brew:bash" = "latest"
@@ -23,6 +26,28 @@ environment = { HUB_HOME = "/Users/jonno/src/assistant", PATH = "/Users/jonno/.l
 working_directory = "~/src/assistant"
 stdout_path = "~/Library/Logs/hub.log"
 stderr_path = "~/Library/Logs/hub.err.log"
+
+[bootstrap.macos.launchd.agents.assistant-sync-watch]
+program = "~/.local/bin/mise"
+args = ["watch", "sync"]
+run_at_load = true
+keep_alive_on_failure = true
+throttle_interval = 60
+nice = 10
+environment = { DOTFILES = "/Users/jonno/src/btp/dotfiles", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }
+working_directory = "~/src/assistant"
+stdout_path = "~/Library/Logs/assistant-sync.log"
+stderr_path = "~/Library/Logs/assistant-sync.err.log"
+
+[bootstrap.macos.launchd.agents.assistant-sync]
+program = "~/.local/bin/mise"
+args = ["run", "sync"]
+start_interval = 600
+nice = 10
+environment = { DOTFILES = "/Users/jonno/src/btp/dotfiles", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }
+working_directory = "~/src/assistant"
+stdout_path = "~/Library/Logs/assistant-sync.log"
+stderr_path = "~/Library/Logs/assistant-sync.err.log"
 
 [env]
 DOCKER_HOST = "unix:///var/run/docker.sock" # "unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
