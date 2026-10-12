@@ -196,34 +196,6 @@ url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-macos-arm64"
 url_api = "https://api.github.com/repos/jqlang/jq/releases/assets/453012783"
 provenance = "github-attestations"
 
-[[tools.kubectl]]
-version = "1.37.0"
-backend = "aqua:kubernetes/kubernetes/kubectl"
-specifiers = ["1.37.0"]
-
-[tools.kubectl."platforms.linux-x64"]
-checksum = "sha256:6129359f4e1f3848a5572ccb0b26cf28b8ca08cef38c95a765b2f64a2c961a2f"
-url = "https://dl.k8s.io/v1.37.0/bin/linux/amd64/kubectl"
-
-[tools.kubectl."platforms.macos-arm64"]
-checksum = "sha256:583beedaebe422e71d3f1a96acef8b1fef86ea2f09a45ad01aa6c9ce287c1380"
-url = "https://dl.k8s.io/v1.37.0/bin/darwin/arm64/kubectl"
-
-[[tools.kubelogin]]
-version = "1.36.4"
-backend = "aqua:int128/kubelogin"
-specifiers = ["1.36.4"]
-
-[tools.kubelogin."platforms.linux-x64"]
-checksum = "sha256:9e8baeb4905d35a301304af2548324997add512fe94ab20e65993d167212bf85"
-url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_linux_amd64.zip"
-url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423188"
-
-[tools.kubelogin."platforms.macos-arm64"]
-checksum = "sha256:5aa470d059a9672d732439474678ac05a0de5623ad3af54966b8fe1ac7df4254"
-url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_darwin_arm64.zip"
-url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423629"
-
 [[tools.mkcert]]
 version = "1.4.4"
 backend = "aqua:FiloSottile/mkcert"
@@ -266,12 +238,6 @@ url = "https://nodejs.org/dist/v26.9.0/node-v26.9.0-linux-x64.tar.gz"
 [tools.node."platforms.macos-arm64"]
 checksum = "sha256:751fdf7439f115d87ee2a8f3f18c065b6151852068e3e666ac60ac2996f75ac9"
 url = "https://nodejs.org/dist/v26.10.0/node-v26.10.0-darwin-arm64.tar.gz"
-
-[[tools."npm:@opencode/cli"]]
-version = "2.0.26"
-aube = { path = "locks/npm-opencode-cli/2.0.26", digest = "sha256:8d97d1592008851165599fbc8a548f29eb8e066715f4c0d6ddeb6f786fb193b3" }
-backend = "npm:@opencode/cli"
-specifiers = ["2.0.26"]
 
 [[tools."npm:@typespec/compiler"]]
 version = "1.17.0"
