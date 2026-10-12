@@ -310,7 +310,7 @@ provenance = "github-attestations"
 
 [[tools.repo-bins]]
 version = "local"
-backend = "asdf:/Users/jonno/src/btp/agent-tools/mise-repo-bins"
+backend = "asdf:/home/ubuntu/src/btp/agent-tools/mise-repo-bins"
 specifiers = ["local"]
 
 [[tools.ripgrep]]
