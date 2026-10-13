@@ -68,7 +68,7 @@ FNOX_PROFILE = "work"
 aws-cli = { version = "2.37.9", symlink_bins = "true" }
 claude-code = { version = "latest", auto_update = true }
 git-lfs = "3.8.0"
-glab = "v1.120.0"
+glab = "v1.121.0"
 viteplus = "1.1.0"
 
 [tools."http:twg"]
