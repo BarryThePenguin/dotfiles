@@ -1,0 +1,122 @@
+#:schema https://mise.jdx.dev/schema/mise-task.json
+
+# --- net: laptop/cluster reachability (post-sleep failures) ---
+#
+# The laptop sleeps while unattended, and on wake macOS has lost its DNS
+# configuration: scutil --dns reports no resolver, so every Go binary (gh)
+# and every name-based client (curl, git) fails, while dig still works
+# because dig falls back to the router. The symptom reads as "github is
+# down" or "the cluster is unreachable", and diagnosing it costs an agent
+# ~10 turns of network archaeology. These probes separate the laptop from
+# the cluster in about 3 seconds.
+#
+# NET_CHECK_CONTEXTS is overridable on machines without these kubeconfig
+# contexts; a context that does not exist is skipped rather than failed.
+["net:check"]
+description = "Probe laptop network + clusters; run FIRST when any tool fails (laptop slept)"
+tools = { kubectl = "1.37.0", kubelogin = "1.36.4" }
+env = { NET_CHECK_CONTEXTS = "cozylab-readonly kubernetes-homelab" }
+run = """
+set -u
+PASS=0; FAIL=0
+check() { # check <label> <ok|fail> <detail>
+  if [ "$2" = ok ]; then printf '  ok    %s\\n' "$1"; PASS=$((PASS+1))
+  else printf '  FAIL  %s -- %s\\n' "$1" "$3"; FAIL=$((FAIL+1)); fi
+}
+
+# 1. macOS resolver configuration -- the cheapest sleep signature.
+#    NOTE: when there is no resolver, macOS prints "No DNS configuration
+#    available", which itself contains the substring "DNS configuration" --
+#    so match the real "resolver #N" entries, never that phrase.
+if [ "$(scutil --dns 2>/dev/null | grep -c 'resolver #')" -gt 0 ]; then R=ok; else R=fail; fi
+check resolver "$R" "scutil --dns reports no resolver"
+
+# 2. public name through the SYSTEM resolver. This is the layer clients and
+#    agents hit; dig bypasses it, so dig is deliberately not used here.
+PUB_IP=$(dscacheutil -q host -a name api.github.com 2>/dev/null | awk '/ip_address/{print $2}' | head -1)
+if [ -n "$PUB_IP" ]; then check public-dns ok; else check public-dns fail "system resolver cannot resolve api.github.com"; fi
+
+# 3. WAN egress, resolved by hand, so a DNS failure is not misread as a network failure
+ROUTE_IP=$(dig +short api.github.com 2>/dev/null | head -1)
+if [ -n "$ROUTE_IP" ]; then
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 --resolve api.github.com:443:$ROUTE_IP https://api.github.com)
+  if [ "$CODE" = 200 ]; then check wan-egress ok; else check wan-egress fail "api.github.com returned $CODE (resolver ok, transport not)"; fi
+else check wan-egress skip "dig has no answer for api.github.com"; fi
+
+# 4. LAN side: internal name is the canary for the router-side resolver
+LAN_IP=$(dscacheutil -q host -a name keycloak.jonno.dev 2>/dev/null | awk '/ip_address/{print $2}' | head -1)
+if [ -n "$LAN_IP" ]; then check lan-dns ok; else check lan-dns fail "keycloak.jonno.dev unresolved"; fi
+
+# 5. clusters, only for contexts this kubeconfig actually has
+for C in $NET_CHECK_CONTEXTS; do
+  if kubectl config get-contexts -o name 2>/dev/null | grep -qx "$C"; then
+    if [ "$(kubectl --context "$C" --request-timeout=8s get ns --no-headers 2>/dev/null | head -1)" != "" ]; then
+      check "$C" ok
+    else check "$C" fail "context present but the apiserver did not answer"; fi
+  fi
+done
+
+# Distinguish "resolver lost" from "off-network". dscacheutil answers for BOTH
+# public and LAN names die together when the resolver config is gone, so the
+# old both-empty test could not tell them apart: it mislabelled a full resolver
+# loss as OFF-NETWORK even while WAN egress was proven up. The resolver probe
+# (R) and the default route are the two facts that separate the cases.
+if route -n get default >/dev/null 2>&1; then NET=up; else NET=down; fi
+
+echo ""
+echo "laptop: resolver=$R route=$NET public-dns=$([ -n "$PUB_IP" ] && echo up || echo down) lan-dns=$([ -n "$LAN_IP" ] && echo up || echo down)"
+if [ "$R" = fail ]; then
+  echo "diagnosis: LAPTOP SLEPT -- macOS lost its DNS configuration; the clusters were never reached"
+  echo '            reads still work: curl --resolve <host>:443:$(dig +short <host>)'
+  echo "            repair:           sudo killall -HUP mDNSResponder (or toggle Wi-Fi), then re-run mise net:check"
+elif [ "$NET" = down ]; then
+  echo "diagnosis: OFF-NETWORK -- no default route; reconnect before anything else"
+elif [ "$FAIL" -gt 0 ]; then
+  echo "diagnosis: laptop healthy -- a failing cluster here is cluster-side, not sleep"
+else
+  echo "diagnosis: laptop healthy"
+fi
+[ "$FAIL" -eq 0 ] && exit 0 || exit 1
+"""
+
+# Regression test for net:check's diagnosis logic. scripts/net-check.test.sh
+# documents the bug it guards; hk.pkl runs this when either file changes.
+["net:check:test"]
+description = "Regression-test net:check's diagnosis against shimmed probes (hermetic)"
+run = """
+set -eu
+# Locate the dotfiles repo through the global config symlink
+# (~/.config/mise/config.toml -> <repo>/.config/mise/config.toml), so the test
+# works from any cwd and wherever the repo lives.
+repo="$(cd "$(dirname "$(readlink "$HOME/.config/mise/config.toml")")/../.." && pwd)"
+exec "$repo/scripts/net-check.test.sh"
+"""
+
+["net:fix"]
+description = "Repair the post-sleep macOS resolver (hands off to the human only when sudo is needed)"
+run = [
+  """
+set -u
+say() { printf '%s\\n' "$*"; }
+if ! command -v dscacheutil >/dev/null 2>&1; then say "not macOS -- nothing to repair"; exit 1; fi
+
+say "flushing the DNS cache (no sudo needed)"
+if dscacheutil -flushcache 2>/dev/null; then say "  flushed"; fi
+
+if sudo -n true 2>/dev/null; then
+  say "restarting mDNSResponder (passwordless sudo is available)"
+  sudo killall -HUP mDNSResponder 2>/dev/null && say "  restarted"
+else
+  say "sudo needs a password in this session, so run these yourself:"
+  say "    sudo killall -HUP mDNSResponder"
+  say "    sudo dscacheutil -flushcache"
+  say "(toggling Wi-Fi off/on also restores the resolver config, with no sudo)"
+fi
+echo ""
+say "re-running the probe"
+""",
+  # Order matters (repair, then verify), so this is a run step, not `depends`:
+  # `depends` would run the probe in parallel, before the repair.
+  { task = "net:check" },
+]
+

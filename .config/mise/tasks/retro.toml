@@ -1,0 +1,143 @@
+#:schema https://mise.jdx.dev/schema/mise-task.json
+
+# --- retro: session dump ---
+#
+# A retro needs the session's own tool history, and there are two traps on
+# the way there. The legacy session/message tables in
+# ~/.local/share/opencode/opencode.db look authoritative and are months
+# stale, and the OpenCode docs warn against inspecting that database with
+# external tools. The supported path is OpenCode's HTTP API, reached through
+# `opencode api`, which handles service discovery and authentication:
+#
+#   opencode api get /api/session                  # list sessions
+#   opencode api get /api/session/{id}/message     # messages + parts
+#
+# Each message carries content parts of type reasoning / text / tool, and a
+# completed tool part carries state.input, state.content (the output) and
+# state.metadata.exit -- everything a retro needs, plus the exit code the
+# database does not give.
+#
+# SESSION_ID selects a session; the selection rules live in the usage spec
+# below, so `mise retro:dump-session --help` states them.
+#
+#   mise retro:dump-session
+#   mise retro:dump-session ses_xxx
+#   SESSION_ID=ses_xxx mise retro:dump-session
+["retro:dump-session"]
+description = "Dump an agent session's user messages + tool calls for a retro (default: the current session)"
+tools = { "npm:@opencode/cli" = "2.0.26" }
+usage = '''
+arg "[session]" env="SESSION_ID" {
+  help "Session id (default: the current session)"
+  long_help """
+  Defaults to the most-recently-updated session in the invoking directory.
+  The newest-created session is often a concurrent one, so it is not used.
+  """
+}
+'''
+run = """
+python3 <<'PY'
+import datetime, json, os, subprocess, sys
+
+
+def api(path):
+    out = subprocess.run(['opencode', 'api', 'get', path], capture_output=True, text=True)
+    if out.returncode != 0:
+        sys.exit('opencode api get %s failed: %s' % (path, out.stderr.strip()[:200]))
+    body = json.loads(out.stdout or '{}')
+    return body.get('data', []) if isinstance(body, dict) else body
+
+
+sessions = api('/api/session')
+by_id = {s.get('id'): s for s in sessions}
+
+
+def _created(s):
+    return (s.get('time') or {}).get('created') or 0
+
+
+def _updated(s):
+    return (s.get('time') or {}).get('updated') or 0
+
+
+sid = (os.environ.get('usage_session') or '').strip()
+basis = 'argument'
+others = []
+if not sid:
+    # We want the session being written to right now, so 'updated' is the
+    # signal -- 'created' is not: the newest-created session is often a
+    # concurrent one in the same directory. Restrict to this cwd when any
+    # session shares it, then take the most recently updated.
+    cwd = os.getcwd()
+    same_dir = [x for x in sessions if (x.get('location') or {}).get('directory') == cwd]
+    ranked = sorted(same_dir or sessions, key=lambda x: (_updated(x), _created(x)), reverse=True)
+    sid = ranked[0].get('id', '') if ranked else ''
+    basis = 'most-recently-updated session' + (' in %s' % cwd if same_dir else '')
+    others = ranked[1:4]
+if not sid:
+    sys.exit('no session found')
+
+s = by_id.get(sid) or {}
+print('session %s' % sid)
+print('  selected:  %s' % basis)
+print('  title:     %s' % (s.get('title') or ''))
+if others:
+    print('  other recent (pass ses_... as the argument, or SESSION_ID):')
+    for o in others:
+        print('    %s  %s' % (o.get('id'), (o.get('title') or '')[:48]))
+print('  directory: %s' % ((s.get('location') or {}).get('directory') or ''))
+created = (s.get('time') or {}).get('created')
+if created:
+    print('  created:   %s' % datetime.datetime.fromtimestamp(created / 1000).strftime('%Y-%m-%d %H:%M:%S'))
+tok = s.get('tokens') or {}
+if tok:
+    print('  tokens:    in=%s out=%s cache_read=%s' % (tok.get('input'), tok.get('output'), (tok.get('cache') or {}).get('read')))
+if s.get('cost') is not None:
+    print('  cost:      %s' % s['cost'])
+print('-' * 60)
+
+# The API returns the most recent messages newest-first and caps the page (50
+# by default; ~200 is accepted, larger is rejected). Ask for the largest page
+# that works and read it in order; a very long session's earliest turns may
+# still be out of view -- this is a retro on the recent work.
+messages = api('/api/session/%s/message?limit=200' % sid)
+messages = sorted(messages, key=lambda m: (m.get('time') or {}).get('created') or 0)
+ok = err = 0
+for i, m in enumerate(messages, 1):
+    if m.get('type') == 'user':
+        body = m.get('content')
+        if isinstance(body, list):
+            body = ' '.join(p.get('text', '') for p in body if isinstance(p, dict) and p.get('type') == 'text')
+        print('[msg %d] USER: %s' % (i, str(body or '')[:300].replace(chr(10), ' / ')))
+        continue
+
+    for p in (m.get('content') or []):
+        if not isinstance(p, dict):
+            continue
+        if p.get('type') == 'reasoning':
+            print('[msg %d] reasoning: %s' % (i, (p.get('text') or '').replace(chr(10), ' ')[:110]))
+        elif p.get('type') == 'text':
+            txt = (p.get('text') or '').replace(chr(10), ' ')
+            if txt.strip():
+                print('[msg %d] agent: %s' % (i, txt[:110]))
+        elif p.get('type') == 'tool':
+            st = p.get('state') or {}
+            status = st.get('status', '?')
+            inp = st.get('input') or {}
+            out = ''
+            for c in (st.get('content') or []):
+                if isinstance(c, dict) and c.get('type') == 'text':
+                    out += c.get('text', '')
+            target = inp.get('command') or inp.get('pattern') or inp.get('path') or inp.get('url') or json.dumps(inp)[:80]
+            exit_code = (st.get('metadata') or {}).get('exit')
+            if status == 'completed':
+                ok += 1
+            else:
+                err += 1
+            print('[msg %d] %-7s %-10s out=%-6s exit=%-4s :: %s' % (i, p.get('name', '?'), status, len(out), exit_code, str(target)[:110]))
+
+print('-' * 60)
+print('tool calls: %d completed, %d failed' % (ok, err))
+PY
+"""
+

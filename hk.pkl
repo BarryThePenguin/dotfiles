@@ -2,11 +2,18 @@ amends "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Config.pk
 import "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Builtins.pkl"
 // Using a coding agent? See https://hk.jdx.dev/agents
 
-local linters = new Mapping {
+local linters = new Mapping<String, Step> {
     ["eslint"] = Builtins.eslint
     ["knip"] = Builtins.knip
     ["prettier"] = Builtins.prettier
     ["tsc"] = Builtins.tsc
+    // The builtins are JS-only, and shellcheck cannot see a logic bug in a
+    // bash task. Run the net:check regression test whenever the task or its
+    // test changes.
+    ["net_check_test"] = new Step {
+        glob = List(".config/mise/tasks/net.toml", "scripts/net-check.test.sh")
+        check = "scripts/net-check.test.sh"
+    }
 }
 
 // mise's per-tool lockfiles (.config/mise/locks/**) are generated, vendored

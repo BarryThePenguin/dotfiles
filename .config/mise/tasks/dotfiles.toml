@@ -28,7 +28,7 @@ run = "mise bootstrap status --missing"
 
 ["bootstrap"]
 description = "Project-specific setup (run by mise bootstrap)"
-run = "mise run devenv:secrets"
+depends = ["devenv:secrets"]
 
 ["devenv:secrets"]
 description = "Provision age key from 1Password"
@@ -50,3 +50,4 @@ run = "limactl stop podman"
 ["devenv:lima:rm"]
 description = "Remove Lima instance"
 run = "limactl remove podman"
+
