@@ -1,4 +1,13 @@
-#:schema https://mise.jdx.dev/schema/mise-task.json
+#!/usr/bin/env python3
+#MISE description="Dump an agent session's user messages + tool calls for a retro (default: the current session)"
+#MISE tools={ "npm:@opencode/cli" = "2.0.26" }
+#USAGE arg "[session]" env="SESSION_ID" {
+#USAGE   help "Session id (default: the current session)"
+#USAGE   long_help """
+#USAGE   Defaults to the most-recently-updated session in the invoking directory.
+#USAGE   The newest-created session is often a concurrent one, so it is not used.
+#USAGE   """
+#USAGE }
 
 # --- retro: session dump ---
 #
@@ -18,25 +27,11 @@
 # database does not give.
 #
 # SESSION_ID selects a session; the selection rules live in the usage spec
-# below, so `mise retro:dump-session --help` states them.
+# above, so `mise retro:dump-session --help` states them.
 #
 #   mise retro:dump-session
 #   mise retro:dump-session ses_xxx
 #   SESSION_ID=ses_xxx mise retro:dump-session
-["retro:dump-session"]
-description = "Dump an agent session's user messages + tool calls for a retro (default: the current session)"
-tools = { "npm:@opencode/cli" = "2.0.26" }
-usage = '''
-arg "[session]" env="SESSION_ID" {
-  help "Session id (default: the current session)"
-  long_help """
-  Defaults to the most-recently-updated session in the invoking directory.
-  The newest-created session is often a concurrent one, so it is not used.
-  """
-}
-'''
-run = """
-python3 <<'PY'
 import datetime, json, os, subprocess, sys
 
 
@@ -138,6 +133,3 @@ for i, m in enumerate(messages, 1):
 
 print('-' * 60)
 print('tool calls: %d completed, %d failed' % (ok, err))
-PY
-"""
-

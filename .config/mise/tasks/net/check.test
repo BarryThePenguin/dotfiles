@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#MISE description="Regression-test net:check's diagnosis against shimmed probes (hermetic)"
+# scripts/net-check.test.sh documents the bug it guards; hk.pkl runs this when
+# either file changes.
+set -eu
+# Locate the dotfiles repo through the global config symlink
+# (~/.config/mise/config.toml -> <repo>/.config/mise/config.toml), so the test
+# works from any cwd and wherever the repo lives.
+repo="$(cd "$(dirname "$(readlink "$HOME/.config/mise/config.toml")")/../.." && pwd)"
+exec "$repo/scripts/net-check.test.sh"

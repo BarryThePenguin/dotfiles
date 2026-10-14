@@ -2,9 +2,6 @@
 _.file = "~/.config/mise/.env"
 EDITOR = "code"
 
-[settings.age]
-key_file = "~/.config/sops/age/keys.txt"
-
 [plugins]
 repo-bins = "~/src/btp/agent-tools/mise-repo-bins"
 
@@ -51,9 +48,6 @@ dotfiles.root = "~/src/btp/dotfiles"
 lockfile_mode = "generate"
 lockfile_platforms = ["macos-arm64", "linux-x64"]
 
-[task_config]
-includes = [".config/mise/tasks/dotfiles.toml"]
-
 [bootstrap.macos.keyboard]
 key_repeat = 2
 initial_key_repeat = 15
@@ -83,6 +77,9 @@ show_pathbar = true
 
 [bootstrap.hooks.post-repos]
 run = "git -C ~/.config/zsh/.zprezto submodule update --init --recursive"
+
+[bootstrap.hooks.pre-dotfiles]
+run = "~/src/btp/dotfiles/.config/mise/tasks/age/key"
 
 [bootstrap.services.mise-history]
 builtin = "history-watch"
@@ -142,6 +139,7 @@ login_shell = "/bin/zsh"
 "~/.claude/statusline-command.sh" = { mode = "track" }
 "~/.config/1Password" = { mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
+"~/.config/fnox/age.txt" = { source = "~/.config/sops/age/keys.txt", mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "symlink" }
 "~/.config/gh" = { mode = "symlink-each", manifest = "git" }
 "~/.config/gh/hosts.yml" = { mode = "track" }
@@ -157,6 +155,7 @@ login_shell = "/bin/zsh"
 "~/.config/jj/config.toml" = { mode = "symlink" }
 "~/.config/kube/config" = { mode = "track" }
 "~/.config/mise" = { mode = "symlink-each", manifest = "git" }
+"~/.config/mise/age.txt" = { source = "~/.config/sops/age/keys.txt", mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink" }

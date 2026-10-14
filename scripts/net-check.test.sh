@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regression test for the net:check diagnosis logic in
-# .config/mise/tasks/net.toml.
+# .config/mise/tasks/net/check.
 #
 # Guards the 2026-10-13 bug: the resolver probe grepped `scutil --dns` for
 # "DNS configuration" -- a substring of the *absence* message "No DNS

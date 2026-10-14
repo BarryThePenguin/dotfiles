@@ -11,7 +11,7 @@ local linters = new Mapping<String, Step> {
     // bash task. Run the net:check regression test whenever the task or its
     // test changes.
     ["net_check_test"] = new Step {
-        glob = List(".config/mise/tasks/net.toml", "scripts/net-check.test.sh")
+        glob = List(".config/mise/tasks/net/check", "scripts/net-check.test.sh")
         check = "scripts/net-check.test.sh"
     }
 }

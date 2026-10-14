@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#MISE description="Repair the post-sleep macOS resolver (hands off to the human only when sudo is needed)"
+# Order matters (repair, then verify), so the probe is depends_post, not
+# `depends`: `depends` would run it in parallel, before the repair.
+#MISE depends_post=["net:check"]
+set -u
+say() { printf '%s\n' "$*"; }
+if ! command -v dscacheutil >/dev/null 2>&1; then say "not macOS -- nothing to repair"; exit 1; fi
+
+say "flushing the DNS cache (no sudo needed)"
+if dscacheutil -flushcache 2>/dev/null; then say "  flushed"; fi
+
+if sudo -n true 2>/dev/null; then
+  say "restarting mDNSResponder (passwordless sudo is available)"
+  sudo killall -HUP mDNSResponder 2>/dev/null && say "  restarted"
+else
+  say "sudo needs a password in this session, so run these yourself:"
+  say "    sudo killall -HUP mDNSResponder"
+  say "    sudo dscacheutil -flushcache"
+  say "(toggling Wi-Fi off/on also restores the resolver config, with no sudo)"
+fi
+echo ""
+say "re-running the probe"

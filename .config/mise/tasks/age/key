@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#MISE description="Fetch the age key from 1Password into the sops default location"
+set -euo pipefail
+
+config="${XDG_CONFIG_HOME:-$HOME/.config}"
+key="$config/sops/age/keys.txt"
+
+install -d -m 700 "$(dirname "$key")"
+
+if [[ ! -s "$key" ]]; then
+  tmp="$(umask 077; mktemp "$key.XXXXXX")"
+  trap 'rm -f "$tmp"' EXIT
+  op document get "age.key" --vault Jonno > "$tmp"
+  mv "$tmp" "$key"
+fi
+
+chmod 600 "$key"

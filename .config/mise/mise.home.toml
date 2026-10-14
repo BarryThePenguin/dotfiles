@@ -17,9 +17,6 @@ dotfile_groups = ["home"]
 "brew-cask:utm" = "latest"
 "brew-cask:zed" = "latest"
 
-[task_config]
-includes = [".config/mise/tasks/net.toml", ".config/mise/tasks/retro.toml"]
-
 [tools]
 "github:SigNoz/signoz-mcp-server" = "v0.15.0"
 "npm:@opencode/cli" = { version = "latest", allow_builds = ["@opencode/cli"], auto_update = true }

@@ -6,8 +6,8 @@ own guidance. Keep it to pointers: repo guidance belongs in the repo's
 outside the home directory.
 
 The mise tasks named here are defined once, in the task files under
-`~/src/btp/dotfiles/.config/mise/tasks/` (`dotfiles.toml`, `net.toml`,
-`retro.toml`). Each is symlinked into `~/.config/mise/tasks/` like every other
+`~/src/btp/dotfiles/.config/mise/tasks/` (`dotfiles.toml`, `net/`,
+`retro/`). Each is symlinked into `~/.config/mise/tasks/` like every other
 managed dotfile, so they run in every project as bare `mise <task>` — no
 `--dir`, no repo of origin to remember.
 
