@@ -15,6 +15,7 @@ managed dotfile, so they run in every project as bare `mise <task>` — no
 
 - GitHub URLs, issue numbers, or PR numbers → use `gh`
 - GitLab URLs, MR numbers, or issue numbers → use `glab`
+- Forgejo URLs, issue numbers, or PR numbers (code.jonno.dev, git.jonno.dev) → use `fj`
 
 ## Anything failing to connect, resolve a host, or authenticate
 
