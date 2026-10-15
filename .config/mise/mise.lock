@@ -37,21 +37,19 @@ url_api = "https://api.github.com/repos/atuinsh/atuin/releases/assets/580134148"
 provenance = "github-attestations"
 
 [[tools.aube]]
-version = "2.6.1"
+version = "2.7.0"
 backend = "packslip:github.com/aubepkg/aube"
-specifiers = ["v2.6.1"]
+specifiers = ["v2.7.0"]
 
 [tools.aube."platforms.linux-x64"]
-checksum = "sha256:364b4cf201970cd5c943390dd3e736b4256b14a0ac52d304f8fb4acfd6a1fbd3"
-url = "https://github.com/aubepkg/aube/releases/download/v2.6.1/aube-v2.6.1-x86_64-unknown-linux-gnu.tar.gz"
+checksum = "sha256:1a1c1771a7ee3619e774f2108124f4c8c2aa877e7deacf747be9847b3bbc1231"
+url = "https://github.com/aubepkg/aube/releases/download/v2.7.0/aube-v2.7.0-x86_64-unknown-linux-gnu.tar.gz"
 signer = "sigstore-oidc:https://github.com/aubepkg/aube/.github/workflows/release.yml"
-repository_ids = { repository = "1214542327" }
 
 [tools.aube."platforms.macos-arm64"]
-checksum = "sha256:a36856db187dd8f2c3cbf651de1384a2d0748d7cc5507671e6ec02751f00c032"
-url = "https://github.com/aubepkg/aube/releases/download/v2.6.1/aube-v2.6.1-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:d67dcf1ea36629445595417ea6d7de9859fa723e422394cbbcd677d0164a5fa0"
+url = "https://github.com/aubepkg/aube/releases/download/v2.7.0/aube-v2.7.0-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/aubepkg/aube/.github/workflows/release.yml"
-repository_ids = { repository = "1214542327" }
 
 [[tools.cargo-binstall]]
 version = "1.25.3"
