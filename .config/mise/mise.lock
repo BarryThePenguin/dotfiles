@@ -53,6 +53,23 @@ url = "https://github.com/aubepkg/aube/releases/download/v2.6.1/aube-v2.6.1-aarc
 signer = "sigstore-oidc:https://github.com/aubepkg/aube/.github/workflows/release.yml"
 repository_ids = { repository = "1214542327" }
 
+[[tools.cargo-binstall]]
+version = "1.25.3"
+backend = "aqua:cargo-bins/cargo-binstall"
+specifiers = ["1.25.3"]
+
+[tools.cargo-binstall."platforms.linux-x64"]
+checksum = "sha256:a974ce4e525edfb78f953869cbe7c1b57d00ae04358adc1ae47462120d80bb6c"
+url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.25.3/cargo-binstall-x86_64-unknown-linux-gnu.tgz"
+url_api = "https://api.github.com/repos/cargo-bins/cargo-binstall/releases/assets/628280029"
+provenance = "github-attestations"
+
+[tools.cargo-binstall."platforms.macos-arm64"]
+checksum = "sha256:b027e09e54431e56a75ce63858a798e1bfd9cd5fa62894186d46808d50b31335"
+url = "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.25.3/cargo-binstall-aarch64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/cargo-bins/cargo-binstall/releases/assets/628281302"
+provenance = "github-attestations"
+
 [[tools."cargo:forgejo-cli"]]
 version = "0.6.0"
 backend = "cargo:forgejo-cli"
