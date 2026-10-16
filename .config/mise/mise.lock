@@ -481,19 +481,19 @@ url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec
 url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138836"
 
 [[tools.workmux]]
-version = "0.1.271"
+version = "0.1.272"
 backend = "github:raine/workmux"
-specifiers = ["v0.1.271"]
+specifiers = ["v0.1.272"]
 
 [tools.workmux."platforms.linux-x64"]
-checksum = "sha256:471ff99640a3963e4ff034fa232dbcea38dbd0b47aea50df4bb4579c19bdbb01"
-url = "https://github.com/raine/workmux/releases/download/v0.1.271/workmux-linux-amd64.tar.gz"
-url_api = "https://api.github.com/repos/raine/workmux/releases/assets/610542977"
+checksum = "sha256:3048fe62c03c0150a716b7289cc0c04fe7c9b7190503d969c6ff4c1e1b062457"
+url = "https://github.com/raine/workmux/releases/download/v0.1.272/workmux-linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/raine/workmux/releases/assets/625996060"
 
 [tools.workmux."platforms.macos-arm64"]
-checksum = "sha256:9471ebaa121629a4c48fa5111e3dcba26c3dca80776082ae1d57475a60b14448"
-url = "https://github.com/raine/workmux/releases/download/v0.1.271/workmux-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/raine/workmux/releases/assets/610542986"
+checksum = "sha256:30ec6ed10f56b2a7e92a2002e79cd5dabe67a181a4d2dcf98492f3a96ccaafe5"
+url = "https://github.com/raine/workmux/releases/download/v0.1.272/workmux-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/raine/workmux/releases/assets/625996062"
 
 [[tools.yq]]
 version = "4.54.1"
