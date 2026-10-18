@@ -20,4 +20,20 @@
 		},
 	},
 	"plugins": ["@wakatime/opencode-wakatime"],
+	"mcp": {
+		"servers": {
+			"hister": {
+				"type": "remote",
+				"url": "https://search.jonno.dev/mcp",
+				"oauth": false,
+				"headers": {
+					"Authorization": "Bearer {env:HISTER__APP__ACCESS_TOKEN}",
+				},
+			},
+			"mise": {
+				"type": "local",
+				"command": ["/Users/jonno/.local/bin/mise", "mcp"],
+			},
+		},
+	},
 }
