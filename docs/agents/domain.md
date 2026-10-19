@@ -5,8 +5,8 @@ exploring the codebase.
 
 ## Before exploring, read these
 
-- **`CONTEXT.md`** at the repo root, or **`CONTEXT-MAP.md`** if it exists. A
-  context map points to one `CONTEXT.md` per bounded context; read the files
+- **`GLOSSARY.md`** at the repo root, or **`GLOSSARY-MAP.md`** if it exists. A
+  context map points to one `GLOSSARY.md` per bounded context; read the files
   relevant to the topic.
 - **`docs/adr/`** — read system-wide ADRs that touch the area you're about to
   work in.
@@ -23,7 +23,7 @@ This repository is currently a single-context domain model:
 
 ```text
 /
-├── CONTEXT.md
+├── GLOSSARY.md
 ├── docs/adr/                  ← system-wide architectural decisions
 └── .agents/skills/            ← engineering skills
 ```
@@ -33,14 +33,14 @@ than making consumers guess which glossary applies:
 
 ```text
 /
-├── CONTEXT-MAP.md             ← points to each context's glossary
+├── GLOSSARY-MAP.md             ← points to each context's glossary
 ├── docs/adr/                  ← system-wide decisions
 └── src/
     ├── <context-a>/
-    │   ├── CONTEXT.md
+    │   ├── GLOSSARY.md
     │   └── docs/adr/          ← context-specific decisions
     └── <context-b>/
-        ├── CONTEXT.md
+        ├── GLOSSARY.md
         └── docs/adr/
 ```
 
@@ -48,7 +48,7 @@ than making consumers guess which glossary applies:
 
 When output names a domain concept — in an Issue title, refactor proposal,
 hypothesis, or test name — use the term as defined in the relevant
-`CONTEXT.md`. Do not drift to synonyms that the glossary explicitly avoids.
+`GLOSSARY.md`. Do not drift to synonyms that the glossary explicitly avoids.
 
 If the concept needed is not in the glossary, that is a signal: either the
 project already has a term that should be used, or there is a real gap to take
