@@ -139,7 +139,7 @@ login_shell = "/bin/zsh"
 "~/.claude/agents" = { mode = "track" }
 "~/.claude/settings.json" = { mode = "track" }
 "~/.claude/statusline-command.sh" = { mode = "track" }
-"~/.config/1Password" = { mode = "symlink" }
+"~/.config/1Password" = { mode = "symlink-each", manifest = "git" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/age.txt" = { source = "~/.config/sops/age/keys.txt", mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "symlink" }
