@@ -68,5 +68,14 @@ shim curl 'exit 0'
 shim route 'exit 1'
 assert "off-network" "route=down" "diagnosis: OFF-NETWORK"
 
+# --- wan-egress skipped (dig has no answer) --------------------------------
+# A skipped probe is not a failure: the diagnosis stays healthy.
+shim scutil 'printf "DNS configuration\nresolver #1\n"'
+shim dscacheutil 'echo "ip_address: 1.2.3.4"'
+shim dig 'exit 0'
+shim curl 'echo 200'
+shim route 'exit 0'
+assert "wan-egress skipped" "skip  wan-egress" "diagnosis: laptop healthy"
+
 if [ "$fail" = 0 ]; then echo "net:check test: PASS"; else echo "net:check test: FAIL"; fi
 exit "$fail"

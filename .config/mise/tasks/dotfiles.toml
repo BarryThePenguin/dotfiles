@@ -14,7 +14,7 @@ description = "Install dotfiles via mise bootstrap"
 run = "mise bootstrap --only dotfiles,repos,tools --yes"
 
 ["dotfiles:update"]
-description = "Update stowed dotfiles"
+description = "Update mise, Homebrew packages and zprezto"
 dir = "{{env.DOTFILES}}"
 run = ["mise self-update", "brew update", "brew upgrade", "zprezto-update"]
 
@@ -28,16 +28,7 @@ run = "mise bootstrap status --missing"
 
 ["bootstrap"]
 description = "Project-specific setup (run by mise bootstrap)"
-depends = ["devenv:secrets"]
-
-["devenv:secrets"]
-description = "Provision age key from 1Password"
-env = { AGE_KEY = "$HOME/.config/sops/age/keys.txt" }
-run = """
-[ -f "$AGE_KEY" ] && echo "Age key already exists" && exit 0
-mkdir -p "$(dirname "$AGE_KEY")"
-op document get --vault Private "age.key" --out-file "$AGE_KEY"
-"""
+depends = ["age:key"]
 
 ["devenv:lima"]
 description = "Start Lima instance with Podman"

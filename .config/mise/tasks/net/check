@@ -17,8 +17,9 @@
 # contexts; a context that does not exist is skipped rather than failed.
 set -u
 PASS=0; FAIL=0
-check() { # check <label> <ok|fail> <detail>
+check() { # check <label> <ok|skip|fail> <detail>
   if [ "$2" = ok ]; then printf '  ok    %s\n' "$1"; PASS=$((PASS+1))
+  elif [ "$2" = skip ]; then printf '  skip  %s -- %s\n' "$1" "$3"
   else printf '  FAIL  %s -- %s\n' "$1" "$3"; FAIL=$((FAIL+1)); fi
 }
 
@@ -54,11 +55,9 @@ for C in $NET_CHECK_CONTEXTS; do
   fi
 done
 
-# Distinguish "resolver lost" from "off-network". dscacheutil answers for BOTH
-# public and LAN names die together when the resolver config is gone, so the
-# old both-empty test could not tell them apart: it mislabelled a full resolver
-# loss as OFF-NETWORK even while WAN egress was proven up. The resolver probe
-# (R) and the default route are the two facts that separate the cases.
+# Distinguish "resolver lost" from "off-network". Public and LAN names die
+# together when the resolver config is gone, so name lookups cannot tell the
+# cases apart; the resolver probe (R) and the default route can.
 if route -n get default >/dev/null 2>&1; then NET=up; else NET=down; fi
 
 echo ""
