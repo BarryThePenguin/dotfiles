@@ -3,17 +3,17 @@
 lockfile_version = 3
 
 [[tools.aws-cli]]
-version = "2.37.12"
+version = "2.38.1"
 backend = "aqua:aws/aws-cli"
-specifiers = ["2.37.12"]
+specifiers = ["2.38.1"]
 
 [tools.aws-cli."platforms.linux-x64"]
-checksum = "sha256:e6d3c672fb36ed4b12c354c39a993eee2b34da1437cafb10bac4480840cfa83f"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.37.12.zip"
+checksum = "sha256:b11ed416d91f4251da363a17706938eeaf0e520745754c104c0c1890dd8363c7"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.38.1.zip"
 
 [tools.aws-cli."platforms.macos-arm64"]
-checksum = "sha256:c2290ff2f067bb548088c9210dfbce088ec10095d809aacfa556a2cf9929de88"
-url = "https://awscli.amazonaws.com/AWSCLIV2-2.37.12.pkg"
+checksum = "sha256:390f461072e2cd65dfb11e9d53653ec66296a6efb4ce2c87a2e8473fff63433d"
+url = "https://awscli.amazonaws.com/AWSCLIV2-2.38.1.pkg"
 
 [[tools.claude-code]]
 version = "2.1.302"
@@ -66,19 +66,19 @@ url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.0/git-lfs-darwi
 url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/532993595"
 
 [[tools.glab]]
-version = "1.122.0"
+version = "1.123.0"
 backend = "gitlab:gitlab-org/cli"
-specifiers = ["v1.122.0"]
+specifiers = ["v1.123.0"]
 
 [tools.glab."platforms.linux-x64"]
-checksum = "sha256:242326668011a110ea6dcbe865cfbf3ab763f9909851c90ef0da23ab1f2f3808"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.122.0/downloads/glab_1.122.0_linux_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E122%2E0/glab_1%2E122%2E0_linux_amd64%2Etar%2Egz"
+checksum = "sha256:9c9ac4c2b74ec8709dec4819a4041050f3680c6aaa18f0ed30434081f4fe9bef"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.123.0/downloads/glab_1.123.0_linux_amd64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E123%2E0/glab_1%2E123%2E0_linux_amd64%2Etar%2Egz"
 
 [tools.glab."platforms.macos-arm64"]
-checksum = "sha256:cbdd6e28d35f9eb09aef79ad23d2712d67c9254677a60ed6d701b5362f659fef"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.122.0/downloads/glab_1.122.0_darwin_arm64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E122%2E0/glab_1%2E122%2E0_darwin_arm64%2Etar%2Egz"
+checksum = "sha256:bf776ea47d3b30410267adab9c870990be274e85f6dccccee4289f5ecf1386df"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.123.0/downloads/glab_1.123.0_darwin_arm64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E123%2E0/glab_1%2E123%2E0_darwin_arm64%2Etar%2Egz"
 
 [[tools."http:coderabbit"]]
 version = "0.9.0"
@@ -109,14 +109,48 @@ url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v1.3.5"
 checksum = "sha256:bc8d9e07ba9275c2dffeda555f301828782c4972a9387dc221fe3cd3e9e33098"
 url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.3.5"
 
+[[tools.kubectl]]
+version = "1.37.0"
+backend = "aqua:kubernetes/kubernetes/kubectl"
+specifiers = ["1.37.0"]
+
+[tools.kubectl."platforms.linux-x64"]
+checksum = "sha256:6129359f4e1f3848a5572ccb0b26cf28b8ca08cef38c95a765b2f64a2c961a2f"
+url = "https://dl.k8s.io/v1.37.0/bin/linux/amd64/kubectl"
+
+[tools.kubectl."platforms.macos-arm64"]
+checksum = "sha256:583beedaebe422e71d3f1a96acef8b1fef86ea2f09a45ad01aa6c9ce287c1380"
+url = "https://dl.k8s.io/v1.37.0/bin/darwin/arm64/kubectl"
+
+[[tools.kubelogin]]
+version = "1.36.4"
+backend = "aqua:int128/kubelogin"
+specifiers = ["1.36.4"]
+
+[tools.kubelogin."platforms.linux-x64"]
+checksum = "sha256:9e8baeb4905d35a301304af2548324997add512fe94ab20e65993d167212bf85"
+url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_linux_amd64.zip"
+url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423188"
+
+[tools.kubelogin."platforms.macos-arm64"]
+checksum = "sha256:5aa470d059a9672d732439474678ac05a0de5623ad3af54966b8fe1ac7df4254"
+url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_darwin_arm64.zip"
+url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423629"
+
 [[tools."npm:@augmentcode/auggie"]]
 version = "0.36.0"
 aube = { path = "locks/mise.work/npm-augmentcode-auggie/0.36.0", digest = "sha256:59555bbbc816d413aa7d7716ed755427c6ee65c9c62347c394ec07da54d7703a" }
 backend = "npm:@augmentcode/auggie"
 specifiers = ["0.36.0"]
 
+[[tools."npm:@opencode/cli"]]
+version = "2.0.26"
+aube = { path = "locks/mise.work/npm-opencode-cli/2.0.26", digest = "sha256:8d97d1592008851165599fbc8a548f29eb8e066715f4c0d6ddeb6f786fb193b3" }
+backend = "npm:@opencode/cli"
+specifiers = ["2.0.26"]
+
 [[tools.viteplus]]
-version = "1.2.0"
-aube = { path = "locks/mise.work/viteplus/1.2.0", digest = "sha256:88fe4a80c47850210c4c79e6fc0ade38e4e8064602809e1d55a9f1137f5e15c5" }
+version = "1.3.0"
+aube = { path = "locks/mise.work/viteplus/1.3.0", digest = "sha256:c870d6902eb0c9fc16342bb47f02433253e6d3b124cc7e7d7cf629ccfc0cb3e3" }
 backend = "npm:vite-plus"
-specifiers = ["1.2.0"]
+specifiers = ["1.3.0"]
