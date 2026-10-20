@@ -24,7 +24,7 @@ shim() { # shim <name> <body>
 # Default: no clusters (get-contexts is empty -> the loop skips every
 # context), so the task never reaches a real apiserver. Cases override the
 # probes they care about.
-shim kubectl 'case "$1" in config) exit 0 ;; esac; exit 0'
+shim kubectl "case \$1 in config) exit 0 ;; esac; exit 0"
 
 fail=0
 assert() { # assert <case-name> <needle>...

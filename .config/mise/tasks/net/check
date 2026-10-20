@@ -38,7 +38,7 @@ if [ -n "$PUB_IP" ]; then check public-dns ok; else check public-dns fail "syste
 # 3. WAN egress, resolved by hand, so a DNS failure is not misread as a network failure
 ROUTE_IP=$(dig +short api.github.com 2>/dev/null | head -1)
 if [ -n "$ROUTE_IP" ]; then
-  CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 --resolve api.github.com:443:$ROUTE_IP https://api.github.com)
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 --resolve api.github.com:443:"$ROUTE_IP" https://api.github.com)
   if [ "$CODE" = 200 ]; then check wan-egress ok; else check wan-egress fail "api.github.com returned $CODE (resolver ok, transport not)"; fi
 else check wan-egress skip "dig has no answer for api.github.com"; fi
 
@@ -64,7 +64,7 @@ echo ""
 echo "laptop: resolver=$R route=$NET public-dns=$([ -n "$PUB_IP" ] && echo up || echo down) lan-dns=$([ -n "$LAN_IP" ] && echo up || echo down)"
 if [ "$R" = fail ]; then
   echo "diagnosis: LAPTOP SLEPT -- macOS lost its DNS configuration; the clusters were never reached"
-  echo '            reads still work: curl --resolve <host>:443:$(dig +short <host>)'
+  echo "            reads still work: curl --resolve <host>:443:\$(dig +short <host>)"
   echo "            repair:           sudo killall -HUP mDNSResponder (or toggle Wi-Fi), then re-run mise net:check"
 elif [ "$NET" = down ]; then
   echo "diagnosis: OFF-NETWORK -- no default route; reconnect before anything else"
