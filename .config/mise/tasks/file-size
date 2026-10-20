@@ -9,6 +9,8 @@
 #
 # Usage:
 #   mise run file-size -- FILE...        hk step; paths are relative to the repo root
+#   mise run file-size -- --no-ratchet FILE...  also flag oversized files that did not grow
+#   mise run file-size -- --all          list every oversized tracked file, largest first
 #   mise run file-size -- --claude-hook  Claude Code PostToolUse hook; reads the tool call JSON on stdin
 set -euo pipefail
 
@@ -75,12 +77,26 @@ MSG
   esac
 }
 
-# Exit 0 if the file is new or bigger than at HEAD.
+# Exit 0 if the file is new or bigger than at HEAD (always, without the ratchet).
 grew() {
   local before
+  ((ratchet)) || return 0
   before=$(git cat-file -s "HEAD:$1" 2>/dev/null) || return 0
   (($2 > before))
 }
+
+ratchet=1
+list=0
+if [[ ${1:-} == --no-ratchet ]]; then
+  ratchet=0
+  shift
+elif [[ ${1:-} == --all ]]; then
+  ratchet=0
+  list=1
+  shift
+  set --
+  while IFS= read -r file; do set -- "$@" "$file"; done < <(git ls-files)
+fi
 
 hook=0
 if [[ ${1:-} == --claude-hook ]]; then
@@ -131,8 +147,18 @@ done <<<"$counts"
 
 ((${#offenders[@]})) || exit 0
 
+if ((list)); then
+  printf '%s\n' "${offenders[@]}" | sort -t '~' -k 2 -rn
+  echo "${#offenders[@]} file(s) over the token limit (bytes / 4)"
+  exit 0
+fi
+
 {
-  echo "ERROR: ${#offenders[@]} file(s) over the token limit (bytes / 4) and larger than at HEAD:"
+  if ((ratchet)); then
+    echo "ERROR: ${#offenders[@]} file(s) over the token limit (bytes / 4) and larger than at HEAD:"
+  else
+    echo "ERROR: ${#offenders[@]} file(s) over the token limit (bytes / 4):"
+  fi
   printf '  %s\n' "${offenders[@]}"
   for file in ${docs_files[@]+"${docs_files[@]}"}; do
     headings=$(awk '/^## / && n++ < 12 { printf "    line %d: %s\n", NR, $0 }' "$file")
@@ -150,6 +176,13 @@ Split by topic, never at an arbitrary line:
      (search for the old path).
 MSG
   ((hook)) || echo "  5. Re-stage the new files with git add, then commit again."
+  cat <<'MSG'
+
+Do not get under the limit by deleting comments, docs or tests, or by minifying,
+reformatting or golfing code. That loses the context agents rely on and leaves the
+file just as tangled. Split it, and keep every comment and test with the code it
+describes.
+MSG
   echo
   echo "By file type:"
   for cat in $cats; do
@@ -157,9 +190,10 @@ MSG
   done
   cat <<'MSG'
 
-A file already over its limit may be edited if it does not grow, so shrinking is
-always allowed. If a file is machine-generated (lockfile, codegen, vendored), do
-not split it: add it to `exclude` in the repo's hk.pkl, or to is_generated() in
+A file already over its limit may be edited if it does not grow. Removing genuinely
+dead or duplicated code is fine; trimming comments to fit is not. If a file is
+machine-generated (lockfile, codegen, vendored), do not split it: add it to
+`exclude` in the repo's hk.pkl, or to is_generated() in
 ~/.config/mise/tasks/file-size for every repo.
 MSG
 } >&2
