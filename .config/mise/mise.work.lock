@@ -41,9 +41,9 @@ backend = "dotnet:csharp-ls"
 specifiers = ["0.28.0"]
 
 [[tools."dotnet:dotnet-ef"]]
-version = "10.0.12"
+version = "10.0.13"
 backend = "dotnet:dotnet-ef"
-specifiers = ["10.0.12"]
+specifiers = ["10.0.13"]
 
 [[tools."dotnet:ilspycmd"]]
 version = "11.1.0.9782"
