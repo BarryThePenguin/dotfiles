@@ -1,0 +1,12 @@
+amends "package://github.com/jdx/hk/releases/download/v2.7.0/hk@2.7.0#/Config.pkl"
+
+// User-level hk config: adds these steps to every project's hooks (pre-commit,
+// check, fix). A project step with the same name wins.
+steps {
+    // Agents read whole files, so keep each under ~5,000 tokens (bytes / 4;
+    // more for docs and config). The script skips generated files and lets files
+    // already over the limit shrink. Per-repo exclusions go in the repo's `exclude`.
+    ["file_size"] = new Step {
+        check = "mise run file-size -- {{files}}"
+    }
+}

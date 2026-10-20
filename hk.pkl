@@ -13,6 +13,7 @@ local linters = new Mapping<String, Step> {
             ".config/mise/tasks/age/key",
             ".config/mise/tasks/net/*",
             "bin/bootstrap",
+            ".config/mise/tasks/file-size",
             "scripts/*.sh"
         )
         check = "shellcheck {{files}}"

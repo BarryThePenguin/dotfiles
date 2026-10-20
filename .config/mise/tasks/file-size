@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+#MISE description="Fail on files too big for an agent (tokens ~ bytes / 4); hk step and Claude Code hook"
+#MISE dir="{{cwd}}"
+#MISE quiet=true
+# Fail when a file is too big for an agent to work with comfortably.
+# Tokens are estimated as bytes / 4. The limit depends on the file type, and a
+# file already over its limit may be edited as long as it does not grow, so
+# existing offenders never block unrelated work.
+#
+# Usage:
+#   mise run file-size -- FILE...        hk step; paths are relative to the repo root
+#   mise run file-size -- --claude-hook  Claude Code PostToolUse hook; reads the tool call JSON on stdin
+set -euo pipefail
+
+# Smallest limit below; files under it skip the per-type lookup.
+MIN_LIMIT=5000
+
+# Machine-written files that agents do not author, so they are not split.
+is_generated() {
+  case "$1" in
+    *.lock | *-lock.yaml | *-lock.json | *-lock.toml | *.min.js | *.min.css | *.map | \
+      *.snap | *.generated.* | */generated/* | */__generated__/* | */node_modules/*) return 0 ;;
+  esac
+  return 1
+}
+
+category() {
+  case "$1" in
+    *.md | *.mdx | *.txt | *.rst | *.adoc) echo docs ;;
+    *.json | *.jsonc | *.yaml | *.yml | *.toml | *.tpl) echo config ;;
+    *.sh | *.bash | *.zsh) echo shell ;;
+    *.*) echo code ;;
+    *)
+      # No extension: tell scripts from other files by the shebang.
+      if [[ $(head -n 1 "$1") == '#!'*sh ]]; then echo shell; else echo code; fi
+      ;;
+  esac
+}
+
+# Docs and config have no natural seam to split on, so they get more room.
+limit_for() {
+  case "$1" in
+    docs | config) echo 8000 ;;
+    *) echo 5000 ;;
+  esac
+}
+
+advice_for() {
+  case "$1" in
+    docs) cat <<'MSG'
+  Docs: split at the top-level "##" headings listed above. Make a directory named
+  after the file (docs/foo.md -> docs/foo/<section>.md), one file per section or
+  group of related sections, and leave the original as a short index linking to each.
+MSG
+      ;;
+    shell) cat <<'MSG'
+  Shell: move related functions into library files that the main script sources
+  (lib/<topic>.sh), or turn independent subcommands into separate scripts. Keep the
+  entry point small: argument parsing and orchestration only.
+MSG
+      ;;
+    config) cat <<'MSG'
+  Config/data: split by resource or component and join them with the tool's own
+  mechanism (kustomize resources, Helm templates, imports). A Helm _helpers.tpl
+  can become several _<topic>.tpl files; Helm loads them all. If the file is
+  generated, exclude it instead of splitting it.
+MSG
+      ;;
+    code) cat <<'MSG'
+  Code: split by responsibility, not line count. Move each cohesive group of
+  functions or types into a module named for what it does, import or re-export it
+  from the original so callers do not change, and move its tests alongside.
+MSG
+      ;;
+  esac
+}
+
+# Exit 0 if the file is new or bigger than at HEAD.
+grew() {
+  local before
+  before=$(git cat-file -s "HEAD:$1" 2>/dev/null) || return 0
+  (($2 > before))
+}
+
+hook=0
+if [[ ${1:-} == --claude-hook ]]; then
+  hook=1
+  file=$(jq -r '.tool_input.file_path // empty')
+  [[ -n $file && -f $file ]] || exit 0
+  # Resolve symlinks (macOS /var -> /private/var) so the path is relative to the repo root.
+  file=$(cd "$(dirname "$file")" && pwd -P)/$(basename "$file")
+  root=$(git -C "$(dirname "$file")" rev-parse --show-toplevel 2>/dev/null) || exit 0
+  cd "$root"
+  rel=${file#"$root"/}
+  # Gitignored files (build output, vendored code) are not worth the agent's time.
+  git check-ignore -q -- "$rel" && exit 0
+  set -- "$rel"
+fi
+
+files=()
+for file in "$@"; do
+  [[ -f $file ]] || continue
+  is_generated "$file" && continue
+  files+=("$file")
+done
+((${#files[@]})) || exit 0
+
+# One wc call for every file; forking per file is slow on large repos.
+counts=$(wc -c -- "${files[@]}")
+# With several files wc appends a "total" line; drop it.
+((${#files[@]} > 1)) && counts=${counts%$'\n'*}
+
+offenders=()
+docs_files=()
+cats=" "
+example=
+while read -r bytes file; do
+  tokens=$((bytes / 4))
+  ((tokens > MIN_LIMIT)) || continue
+  # Binary files are not agent-authored text; -I makes grep skip them.
+  grep -qI . "$file" 2>/dev/null || continue
+  cat=$(category "$file")
+  limit=$(limit_for "$cat")
+  ((tokens > limit)) || continue
+  grew "$file" "$bytes" || continue
+  offenders+=("$file (~$tokens tokens, limit $limit)")
+  [[ $cat == docs ]] && docs_files+=("$file")
+  [[ $cats == *" $cat "* ]] || cats="$cats$cat "
+  example=${example:-$file}
+done <<<"$counts"
+
+((${#offenders[@]})) || exit 0
+
+{
+  echo "ERROR: ${#offenders[@]} file(s) over the token limit (bytes / 4) and larger than at HEAD:"
+  printf '  %s\n' "${offenders[@]}"
+  for file in ${docs_files[@]+"${docs_files[@]}"}; do
+    headings=$(awk '/^## / && n++ < 12 { printf "    line %d: %s\n", NR, $0 }' "$file")
+    [[ -n $headings ]] || continue
+    printf '\n  Headings in %s:\n%s\n' "$file" "$headings"
+  done
+  cat <<MSG
+
+Split by topic, never at an arbitrary line:
+  1. List the file's distinct topics or responsibilities.
+  2. Create one new file per topic, named for what it holds
+     (e.g. $(basename "${example%.*}")-<topic>.${example##*.}), next to the original.
+  3. Move each topic's content verbatim; do not rewrite or summarise it.
+  4. Leave the original as a short index, or delete it and update every reference
+     (search for the old path).
+MSG
+  ((hook)) || echo "  5. Re-stage the new files with git add, then commit again."
+  echo
+  echo "By file type:"
+  for cat in $cats; do
+    advice_for "$cat"
+  done
+  cat <<'MSG'
+
+A file already over its limit may be edited if it does not grow, so shrinking is
+always allowed. If a file is machine-generated (lockfile, codegen, vendored), do
+not split it: add it to `exclude` in the repo's hk.pkl, or to is_generated() in
+~/.config/mise/tasks/file-size for every repo.
+MSG
+} >&2
+# Exit 2 feeds stderr back to Claude from a PostToolUse hook.
+((hook)) && exit 2
+exit 1
