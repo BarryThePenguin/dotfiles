@@ -6,6 +6,9 @@ MISE_CONFIG="$DOTFILES_DIR/.config/mise/config.toml"
 
 export DOTFILES="$DOTFILES_DIR"
 
+# Optional profile (home, work, devcontainer); recorded for this machine only.
+PROFILE="${1:-}"
+
 if ! command -v mise &>/dev/null; then
   echo "Installing mise..."
   curl https://mise.run | sh
@@ -20,6 +23,11 @@ fi
 
 echo "Trusting config..."
 mise trust "$MISE_CONFIG"
+
+if [[ -n "$PROFILE" ]]; then
+  mkdir -p "$HOME/.config/mise"
+  printf 'env = ["%s"]\n' "$PROFILE" > "$HOME/.config/mise/miserc.local.toml"
+fi
 
 echo "Bootstrapping..."
 MISE_CONFIG_FILE="$MISE_CONFIG" mise bootstrap --yes

@@ -1,5 +1,4 @@
 [env]
-_.file = "~/.config/mise/.env"
 EDITOR = "code"
 
 [plugins]
@@ -160,7 +159,7 @@ login_shell = "/bin/zsh"
 "~/.config/mise/age.txt" = { source = "~/.config/sops/age/keys.txt", mode = "symlink" }
 "~/.config/starship/starship.toml" = { mode = "symlink" }
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
-"~/.config/zellij" = { mode = "symlink" }
+"~/.config/zellij" = { mode = "symlink-each", manifest = "git" }
 "~/.config/zsh" = { mode = "symlink-each", manifest = "git" }
 "~/.pi/agent/agents" = { source = "~/src/btp/agent-tools/subagent-pi/agents", mode = "symlink" }
 "~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/agent-tools/issue-tools-pi", mode = "symlink" }
@@ -180,6 +179,7 @@ target = "~"
 exclude = ["AGENTS.md"]
 
 [dotfile_groups.home.entries]
+"~/.config/zellij/layouts/default.kdl" = { source = "~/src/btp/dotfiles/.config/zellij/layouts/home.kdl", mode = "symlink" }
 "~/.config/opencode/cli.json" = { source = "~/src/btp/dotfiles/.config/opencode/cli.json", mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { source = "~/src/btp/dotfiles/.config/opencode/opencode.jsonc", mode = "symlink" }
 "~/.config/opencode/plugins/caffeinate.ts" = { source = "~/src/btp/dotfiles/.config/opencode/plugins/caffeinate.ts", mode = "symlink" }
@@ -192,6 +192,7 @@ root = "work"
 target = "~"
 
 [dotfile_groups.work.entries]
+"~/.config/zellij/layouts/default.kdl" = { source = "~/src/btp/dotfiles/.config/zellij/layouts/work.kdl", mode = "symlink" }
 "~/.mcp.json" = { source = "~/src/btp/dotfiles/.mcp.json", mode = "symlink" }
 "~/CLAUDE.md" = { mode = "symlink" }
 "~/.claude/skills" = { source = "~/src/btp/dotfiles/.agents/skills", mode = "symlink" }

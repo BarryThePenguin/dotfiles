@@ -10,8 +10,5 @@
 		}
 	},
 	"remoteUser": "vscode",
-	"containerEnv": {
-		"MISE_ENV": "devcontainer"
-	},
-	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/barrythepenguin/dotfiles/main/bin/bootstrap | bash"
+	"postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/barrythepenguin/dotfiles/main/bin/bootstrap | bash -s devcontainer"
 }

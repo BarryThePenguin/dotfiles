@@ -5,14 +5,13 @@ OS X configuration files. There's no place like ~/.
 ## Installation
 
 ```shell
-$ curl https://mise.run | sh
 $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-$ mkdir -p ~/src/btp
-$ git clone https://github.com/BarryThePenguin/dotfiles.git ~/src/btp/dotfiles
-$ cd ~/src/btp/dotfiles
-$ brew bundle --file stow/Brewfile
-$ mise dotfiles:install
+$ curl -fsSL https://raw.githubusercontent.com/BarryThePenguin/dotfiles/main/bin/bootstrap | bash
 ```
+
+`bin/bootstrap` installs mise, clones this repo to `~/src/btp/dotfiles`, then runs `mise bootstrap --yes`. Pass a profile (`home`, `work` or `devcontainer`) with `bash -s work`; it is saved to `~/.config/mise/miserc.local.toml`, and the default is `home`. To preview, run `mise bootstrap --dry-run` from the clone.
+
+[AGENTS.md](AGENTS.md) describes the repo layout.
 
 ## Includes
 
