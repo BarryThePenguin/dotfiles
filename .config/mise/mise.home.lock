@@ -166,8 +166,8 @@ url_api = "https://api.github.com/repos/lima-vm/lima/releases/assets/607822568"
 provenance = "github-attestations"
 
 [[tools."npm:@opencode/cli"]]
-version = "2.0.32"
-aube = { path = "locks/mise.home/npm-opencode-cli/2.0.32~009061c2", digest = "sha256:1d53710ca0ba6bede240bd9f7d0c32d6fae76ecdf53f8bc9b15dbf9e9a6fadd0" }
+version = "2.1.0"
+aube = { path = "locks/mise.home/npm-opencode-cli/2.1.0~009061c2", digest = "sha256:4b5b55eeadb6c2e6613fc3395ec846e56c7b37df045822a4a3228624c42f9cf7" }
 backend = "npm:@opencode/cli"
 specifiers = ["latest"]
 
