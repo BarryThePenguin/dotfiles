@@ -120,34 +120,6 @@ url = "https://dl.k8s.io/v1.37.1/bin/linux/amd64/kubectl"
 checksum = "sha256:fd65982c97ddad3106754b69ffa196d0e543aa591930ae52aed1adfb92f8c77f"
 url = "https://dl.k8s.io/v1.37.1/bin/darwin/arm64/kubectl"
 
-[[tools.kubectl]]
-version = "1.37.0"
-backend = "aqua:kubernetes/kubernetes/kubectl"
-specifiers = ["1.37.0"]
-
-[tools.kubectl."platforms.linux-x64"]
-checksum = "sha256:6129359f4e1f3848a5572ccb0b26cf28b8ca08cef38c95a765b2f64a2c961a2f"
-url = "https://dl.k8s.io/v1.37.0/bin/linux/amd64/kubectl"
-
-[tools.kubectl."platforms.macos-arm64"]
-checksum = "sha256:583beedaebe422e71d3f1a96acef8b1fef86ea2f09a45ad01aa6c9ce287c1380"
-url = "https://dl.k8s.io/v1.37.0/bin/darwin/arm64/kubectl"
-
-[[tools.kubelogin]]
-version = "1.36.4"
-backend = "aqua:int128/kubelogin"
-specifiers = ["1.36.4"]
-
-[tools.kubelogin."platforms.linux-x64"]
-checksum = "sha256:9e8baeb4905d35a301304af2548324997add512fe94ab20e65993d167212bf85"
-url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_linux_amd64.zip"
-url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423188"
-
-[tools.kubelogin."platforms.macos-arm64"]
-checksum = "sha256:5aa470d059a9672d732439474678ac05a0de5623ad3af54966b8fe1ac7df4254"
-url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_darwin_arm64.zip"
-url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423629"
-
 [[tools.lima]]
 version = "2.2.1"
 backend = "aqua:lima-vm/lima"
@@ -173,12 +145,6 @@ specifiers = ["latest"]
 
 [tools."npm:@opencode/cli".options]
 allow_builds = '["@opencode/cli"]'
-
-[[tools."npm:@opencode/cli"]]
-version = "2.0.26"
-aube = { path = "locks/mise.home/npm-opencode-cli/2.0.26", digest = "sha256:8d97d1592008851165599fbc8a548f29eb8e066715f4c0d6ddeb6f786fb193b3" }
-backend = "npm:@opencode/cli"
-specifiers = ["2.0.26"]
 
 [[tools.slsa-verifier]]
 version = "2.7.1"
