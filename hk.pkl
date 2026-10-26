@@ -26,8 +26,8 @@ local linters = new Mapping<String, Step> {
     }
 }
 
-// mise's per-tool lockfiles (.config/mise/locks/**) are generated, vendored
-// package.json/lockfile pairs, not project source — exclude them from linting.
-exclude = List(".config/mise/locks/**")
+// mise's per-tool lockfiles (.config/mise/locks/**, .mise/locks/**) are generated,
+// vendored package.json/lockfile pairs, not project source — exclude them from linting.
+exclude = List(".config/mise/locks/**", ".mise/locks/**")
 
 steps = linters
