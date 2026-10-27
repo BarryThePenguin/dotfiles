@@ -6,7 +6,3 @@ node_modules
 .env
 .zsh_history
 .zsh_sessions
-
-.agents/*
-!.agents/skills/
-.agents/skills/*
