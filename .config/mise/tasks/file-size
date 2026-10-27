@@ -50,9 +50,12 @@ limit_for() {
 advice_for() {
   case "$1" in
     docs) cat <<'MSG'
-  Docs: split at the top-level "##" headings listed above. Make a directory named
-  after the file (docs/foo.md -> docs/foo/<section>.md), one file per section or
-  group of related sections, and leave the original as a short index linking to each.
+  Docs: `mq split docs/foo.md` moves each "##" section verbatim into
+  docs/foo/<section>.md and leaves docs/foo.md a list of links (--dry-run previews;
+  mq --help covers the other commands). Then edit each link line in the original to say
+  what the file holds and when to read it. A doc without "##" headings gets one
+  heading per topic first; `mq split` needs them. Done when every section sits in
+  exactly one new file, each under the limit, and the original is that index.
 MSG
       ;;
     shell) cat <<'MSG'
@@ -71,7 +74,8 @@ MSG
     code) cat <<'MSG'
   Code: split by responsibility, not line count. Move each cohesive group of
   functions or types into a module named for what it does, import or re-export it
-  from the original so callers do not change, and move its tests alongside.
+  from the original so callers do not change, and move its tests alongside. Dead or
+  duplicated code may go.
 MSG
       ;;
   esac
@@ -127,9 +131,9 @@ counts=$(wc -c -- "${files[@]}")
 ((${#files[@]} > 1)) && counts=${counts%$'\n'*}
 
 offenders=()
+offender_files=()
 docs_files=()
 cats=" "
-example=
 while read -r bytes file; do
   tokens=$((bytes / 4))
   ((tokens > MIN_LIMIT)) || continue
@@ -140,9 +144,9 @@ while read -r bytes file; do
   ((tokens > limit)) || continue
   grew "$file" "$bytes" || continue
   offenders+=("$file (~$tokens tokens, limit $limit)")
+  offender_files+=("$file")
   [[ $cat == docs ]] && docs_files+=("$file")
   [[ $cats == *" $cat "* ]] || cats="$cats$cat "
-  example=${example:-$file}
 done <<<"$counts"
 
 ((${#offenders[@]})) || exit 0
@@ -160,29 +164,30 @@ fi
     echo "ERROR: ${#offenders[@]} file(s) over the token limit (bytes / 4):"
   fi
   printf '  %s\n' "${offenders[@]}"
+  # Keep each original recoverable, even when untracked, before anything rewrites it.
+  for file in "${offender_files[@]}"; do
+    sha=$(git hash-object -w -- "$file" 2>/dev/null) || continue
+    printf '  Original of %s saved; restore with: git cat-file -p %s > %q\n' "$file" "$sha" "$file"
+  done
   for file in ${docs_files[@]+"${docs_files[@]}"}; do
-    headings=$(awk '/^## / && n++ < 12 { printf "    line %d: %s\n", NR, $0 }' "$file")
+    headings=$(awk '/^## / && n++ < 40 { printf "    line %d: %s\n", NR, $0 }' "$file")
     [[ -n $headings ]] || continue
     printf '\n  Headings in %s:\n%s\n' "$file" "$headings"
   done
   cat <<MSG
 
-Split by topic, never at an arbitrary line:
+Splitting is the expected fix and part of your task, whatever change you were
+making: split first, then make your change in the new layout. No approval needed.
+Split by topic, at a seam. The size drops because content moves to new files:
   1. List the file's distinct topics or responsibilities.
-  2. Create one new file per topic, named for what it holds
-     (e.g. $(basename "${example%.*}")-<topic>.${example##*.}), next to the original.
-  3. Move each topic's content verbatim; do not rewrite or summarise it.
+  2. Create one new file per topic, named for what it holds; the file type below
+     says where it goes.
+  3. Move each topic's content verbatim, with every comment, section and test
+     beside what it describes.
   4. Leave the original as a short index, or delete it and update every reference
      (search for the old path).
 MSG
   ((hook)) || echo "  5. Re-stage the new files with git add, then commit again."
-  cat <<'MSG'
-
-Do not get under the limit by deleting comments, docs or tests, or by minifying,
-reformatting or golfing code. That loses the context agents rely on and leaves the
-file just as tangled. Split it, and keep every comment and test with the code it
-describes.
-MSG
   echo
   echo "By file type:"
   for cat in $cats; do
@@ -190,9 +195,7 @@ MSG
   done
   cat <<'MSG'
 
-A file already over its limit may be edited if it does not grow. Removing genuinely
-dead or duplicated code is fine; trimming comments to fit is not. If a file is
-machine-generated (lockfile, codegen, vendored), do not split it: add it to
+A machine-generated file (lockfile, codegen, vendored) has nothing to split: add it to
 `exclude` in the repo's hk.pkl, or to is_generated() in
 ~/.config/mise/tasks/file-size for every repo.
 MSG

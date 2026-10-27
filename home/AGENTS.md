@@ -11,6 +11,12 @@ issue/PR/MR references and URLs through the matching tool:
 
 A bare `#123` refers to the current repo's forge.
 
+## Shell
+
+The login shell is zsh, which does not word-split unquoted variables. Put
+multi-step logic in a script with a `#!/usr/bin/env bash` shebang and run that, or
+loop over an array.
+
 ## References
 
 - [Connectivity failures (DNS / laptop sleep)](~/.config/agents/connectivity.md)

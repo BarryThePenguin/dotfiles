@@ -10,7 +10,3 @@ node_modules
 .agents/*
 !.agents/skills/
 .agents/skills/*
-!.agents/skills/model-routing/
-!.agents/skills/todoist-check-in/
-!.agents/skills/todoist-process-inbox/
-!.agents/skills/todoist-triage/

@@ -6,7 +6,6 @@ Personal dotfiles for macOS, managed by [mise](https://mise.jdx.dev/). Files in 
 
 ```
 .config/          XDG config, mirrors ~/.config (mise, git, zsh, opencode, ssh, …)
-.agents/skills/   agent skills; linked into ~/.claude, ~/.config/opencode and ~/.pi
 .zprezto-contrib/ custom prezto modules
 home/             `home` profile files: ~/AGENTS.md and ~/.config/agents
 work/             `work` profile files: ~/CLAUDE.md
@@ -16,7 +15,7 @@ docs/agents/      per-skill config (issue tracker, triage labels, domain docs)
 mise.toml         tooling for working on this repo (hk, pnpm)
 ```
 
-Related repo: `~/src/btp/agent-tools` holds the TypeScript tooling (issue-tools, doist, subagent-pi). Dotfile entries link into it, so changes there go in that repo.
+Related repos: `~/src/btp/agent-tools` holds the TypeScript tooling (issue-tools, doist, subagent-pi), and `~/src/btp/skills` holds the agent skills, linked into `~/.claude`, `~/.config/opencode`, `~/.pi` and `~/.agents`. Dotfile entries link into both, so changes there go in those repos.
 
 ## Mise config
 

@@ -24,8 +24,7 @@ This repository is currently a single-context domain model:
 ```text
 /
 ├── GLOSSARY.md
-├── docs/adr/                  ← system-wide architectural decisions
-└── .agents/skills/            ← engineering skills
+└── docs/adr/                  ← system-wide architectural decisions
 ```
 
 If the domain is later split into bounded contexts, use an explicit map rather
