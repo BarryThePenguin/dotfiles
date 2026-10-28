@@ -51,12 +51,12 @@ stderr_path = "~/Library/Logs/life-sync.err.log"
 "brew-cask:zed" = "latest"
 
 [tools]
-"github:SigNoz/signoz-mcp-server" = "v0.15.0"
+"github:SigNoz/signoz-mcp-server" = "v0.16.0"
 "npm:@opencode/cli" = { version = "latest", allow_builds = ["@opencode/cli"], auto_update = true }
-copilot = "v1.0.103"
+copilot = "v1.0.104"
 cosign = "3.1.4"
 deno = "2.9.8"
-flux-operator = "0.61.0"
+flux-operator = "0.62.0"
 helm = "4.3.1"
 kind = "0.33.0"
 kubectl = "1.37.1"

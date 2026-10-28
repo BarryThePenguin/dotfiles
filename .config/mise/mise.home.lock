@@ -3,19 +3,20 @@
 lockfile_version = 3
 
 [[tools.copilot]]
-version = "v1.0.103"
+version = "v1.0.104"
 backend = "aqua:github/copilot-cli"
-specifiers = ["v1.0.103"]
+specifiers = ["v1.0.104"]
 
 [tools.copilot."platforms.linux-x64"]
-checksum = "sha256:9aeb4430e9ac9523546db07b227c7aba179a4710a55f9ac29ad143b0f9e1b325"
-url = "https://github.com/github/copilot-cli/releases/download/v1.0.103/copilot-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/666399952"
+checksum = "sha256:fa9722665f2c670aa6ce26f1eb30fbfe7ed0177606bf61c21125855345c9c447"
+checksum_source = "mise-versions"
+url = "https://github.com/github/copilot-cli/releases/download/v1.0.104/copilot-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/680166939"
 
 [tools.copilot."platforms.macos-arm64"]
-checksum = "sha256:33e6553b23d1e15946685df297cac12e0b3efe98102009d5e7093453ecc6e60b"
-url = "https://github.com/github/copilot-cli/releases/download/v1.0.103/copilot-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/666399728"
+checksum = "sha256:c6084c40bb761be1b1bbaff3f69426ee51d842327b6b4af0d9290436477cc708"
+url = "https://github.com/github/copilot-cli/releases/download/v1.0.104/copilot-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/680166703"
 
 [[tools.cosign]]
 version = "3.1.4"
@@ -48,36 +49,37 @@ checksum = "sha256:5882caa6c9b7ab7adb06f23ec1894ac5bec0b1a5df1195157f75829a0d3cb
 url = "https://dl.deno.land/release/v2.9.8/deno-aarch64-apple-darwin.zip"
 
 [[tools.flux-operator]]
-version = "0.61.0"
+version = "0.62.0"
 backend = "aqua:controlplaneio-fluxcd/flux-operator"
-specifiers = ["0.61.0"]
+specifiers = ["0.62.0"]
 
 [tools.flux-operator."platforms.linux-x64"]
-checksum = "sha256:5720a6b38e48f950dd97cb06f692695700e0239b28503e1926cc28cf8310145c"
-url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.61.0/flux-operator_0.61.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/603141676"
+checksum = "sha256:10644e9e8552175eaecb829733a37d4a684af8aec6ba7fa6e6fadf5766f508c2"
+url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.62.0/flux-operator_0.62.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/678905864"
 provenance = "github-attestations"
 
 [tools.flux-operator."platforms.macos-arm64"]
-checksum = "sha256:d59e2bac6c34163c402496e08dfb29b8b54cedb0ecb8bb2036e42721ccf0e852"
-url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.61.0/flux-operator_0.61.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/603141675"
+checksum = "sha256:2234bf8898ed96b54b12bad2e14b186b5483b1e6d272d9aa8160ce357c1e5d48"
+url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.62.0/flux-operator_0.62.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/678905862"
 provenance = "github-attestations"
 
 [[tools."github:SigNoz/signoz-mcp-server"]]
-version = "0.15.0"
+version = "0.16.0"
 backend = "github:SigNoz/signoz-mcp-server"
-specifiers = ["v0.15.0"]
+specifiers = ["v0.16.0"]
 
 [tools."github:SigNoz/signoz-mcp-server"."platforms.linux-x64"]
-checksum = "sha256:9b0ac2e11a84f71b35590bf128ebad607286649a7e23e0bd6bcb9c6f9a3457ce"
-url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.15.0/signoz-mcp-server_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/587831518"
+checksum = "sha256:12c7f2e58002cdf523120cc81c5304839a702ca3650c27a7dbdecee4ec01c6c2"
+checksum_source = "mise-versions"
+url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.16.0/signoz-mcp-server_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/668440056"
 
 [tools."github:SigNoz/signoz-mcp-server"."platforms.macos-arm64"]
-checksum = "sha256:d6957894b9c5c10ecf01ade4ab2d841048d1cdd7027c04c692201162a0f9661d"
-url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.15.0/signoz-mcp-server_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/587831516"
+checksum = "sha256:5b41beae8760b6945129db287c4cff27248476da42c9be96b0263275a8cb0ffa"
+url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.16.0/signoz-mcp-server_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/668440057"
 
 [[tools.helm]]
 version = "4.3.1"
