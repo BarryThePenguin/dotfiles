@@ -1,5 +1,5 @@
 overrides:
-  "@types/node": 24.19.2
+  "@types/node": 26.6.5
 allowBuilds:
   "@google/genai": true
   "@mongodb-js/zstd": false
