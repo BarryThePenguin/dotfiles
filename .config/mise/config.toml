@@ -167,6 +167,7 @@ login_shell = "/bin/zsh"
 "~/.pi/agent/agents" = { source = "~/src/btp/agent-tools/subagent-pi/agents", mode = "symlink" }
 "~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/agent-tools/issue-tools-pi", mode = "symlink" }
 "~/.pi/agent/extensions/subagent-pi" = { source = "~/src/btp/agent-tools/subagent-pi", mode = "symlink" }
+"~/.pi/agent/mcp.json" = { mode = "symlink" }
 "~/.pi/agent/prompts" = { source = "~/src/btp/agent-tools/subagent-pi/prompts", mode = "symlink" }
 "~/.pi/agent/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }
 "~/.ssh/config" = { source = "~/src/btp/dotfiles/.config/ssh/config", mode = "symlink" }

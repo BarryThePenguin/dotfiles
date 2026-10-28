@@ -65,11 +65,11 @@ FNOX_PROFILE = "work"
 "dotnet:dotnet-ef" = "10.0.14"
 "dotnet:ilspycmd" = "11.1.0.9782"
 "npm:@augmentcode/auggie" = "0.36.0"
-aws-cli = { version = "2.38.5", symlink_bins = "true" }
+aws-cli = { version = "2.39.0", symlink_bins = "true" }
 claude-code = { version = "latest", auto_update = true }
 dotnet = "10.0.402"
 git-lfs = "3.8.1"
-glab = "v1.124.0"
+glab = "v1.125.0"
 viteplus = "1.4.0"
 
 [tools."http:twg"]
