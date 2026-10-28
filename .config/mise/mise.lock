@@ -35,13 +35,13 @@ url_api = "https://api.github.com/repos/atuinsh/atuin/releases/assets/665441742"
 provenance = "github-attestations"
 
 [[tools.aube]]
-version = "2.8.3"
+version = "2.8.4"
 backend = "packslip:github.com/aubepkg/aube"
-specifiers = ["v2.8.3"]
+specifiers = ["v2.8.4"]
 
 [tools.aube."platforms.macos-arm64"]
-checksum = "sha256:83a509c5bc8a4ce161f68f2325383b269368d682c2cc3b42669e67c235a301e2"
-url = "https://github.com/aubepkg/aube/releases/download/v2.8.3/aube-v2.8.3-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:3c755c18237fcefbd4bf113ca7017bb1010cd12d7b756b6e2b5577862d294c71"
+url = "https://github.com/aubepkg/aube/releases/download/v2.8.4/aube-v2.8.4-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/aubepkg/aube/.github/workflows/release.yml"
 repository_ids = { repository = "1214542327" }
 
@@ -62,14 +62,14 @@ backend = "cargo:forgejo-cli"
 specifiers = ["0.7.0"]
 
 [[tools.cloudflared]]
-version = "2026.10.4"
+version = "2026.10.5"
 backend = "aqua:cloudflare/cloudflared"
-specifiers = ["2026.10.4"]
+specifiers = ["2026.10.5"]
 
 [tools.cloudflared."platforms.macos-arm64"]
-checksum = "sha256:68b6bc4080ac1330234db2a9002d07f98b000537a1bd531a687b660d4160fa7f"
-url = "https://github.com/cloudflare/cloudflared/releases/download/2026.10.4/cloudflared-darwin-arm64.tgz"
-url_api = "https://api.github.com/repos/cloudflare/cloudflared/releases/assets/677936244"
+checksum = "sha256:184c7d4f5f977348243a6d7ca8f6cf6073b9b2746cfe8c1fe15aa59e9a522bf0"
+url = "https://github.com/cloudflare/cloudflared/releases/download/2026.10.5/cloudflared-darwin-arm64.tgz"
+url_api = "https://api.github.com/repos/cloudflare/cloudflared/releases/assets/681689374"
 
 [[tools.flux2]]
 version = "2.10.0"
@@ -104,14 +104,14 @@ url_api = "https://api.github.com/repos/cli/cli/releases/assets/679195704"
 provenance = "github-attestations"
 
 [[tools."github:asciimoo/hister"]]
-version = "0.20.0"
+version = "0.21.0"
 backend = "github:asciimoo/hister"
-specifiers = ["0.20.0"]
+specifiers = ["0.21.0"]
 
 [tools."github:asciimoo/hister"."platforms.macos-arm64"]
-checksum = "sha256:d13442f086dbc23c316cb19f1b42abb09e7dba4b38e0d7aeb6a2e42131f0a43c"
-url = "https://github.com/asciimoo/hister/releases/download/v0.20.0/hister_0.20.0_darwin_arm64"
-url_api = "https://api.github.com/repos/asciimoo/hister/releases/assets/585632384"
+checksum = "sha256:7761c782ee042597769e8db62a3bb0e1dcf0e90ba3f8951686df61f462a715f5"
+url = "https://github.com/asciimoo/hister/releases/download/v0.21.0/hister_0.21.0_darwin_arm64"
+url_api = "https://api.github.com/repos/asciimoo/hister/releases/assets/681045084"
 
 [[tools.go]]
 version = "1.27.3"

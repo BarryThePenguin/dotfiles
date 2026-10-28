@@ -49,20 +49,20 @@ checksum = "sha256:5882caa6c9b7ab7adb06f23ec1894ac5bec0b1a5df1195157f75829a0d3cb
 url = "https://dl.deno.land/release/v2.9.8/deno-aarch64-apple-darwin.zip"
 
 [[tools.flux-operator]]
-version = "0.62.0"
+version = "0.62.1"
 backend = "aqua:controlplaneio-fluxcd/flux-operator"
-specifiers = ["0.62.0"]
+specifiers = ["0.62.1"]
 
 [tools.flux-operator."platforms.linux-x64"]
-checksum = "sha256:10644e9e8552175eaecb829733a37d4a684af8aec6ba7fa6e6fadf5766f508c2"
-url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.62.0/flux-operator_0.62.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/678905864"
+checksum = "sha256:7bb9e54d370039d8701d4271b38aed57d6c89668432b7caddce69f4e26e24c1b"
+url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.62.1/flux-operator_0.62.1_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/682028324"
 provenance = "github-attestations"
 
 [tools.flux-operator."platforms.macos-arm64"]
-checksum = "sha256:2234bf8898ed96b54b12bad2e14b186b5483b1e6d272d9aa8160ce357c1e5d48"
-url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.62.0/flux-operator_0.62.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/678905862"
+checksum = "sha256:3a245269899e20a193c474f74dc1b8ca2088dac1afd489b88424448755144f5c"
+url = "https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v0.62.1/flux-operator_0.62.1_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/releases/assets/682028322"
 provenance = "github-attestations"
 
 [[tools."github:SigNoz/signoz-mcp-server"]]
@@ -168,8 +168,8 @@ url_api = "https://api.github.com/repos/lima-vm/lima/releases/assets/607822568"
 provenance = "github-attestations"
 
 [[tools."npm:@opencode/cli"]]
-version = "2.1.4"
-aube = { path = "locks/mise.home/npm-opencode-cli/2.1.4~009061c2", digest = "sha256:187c80319242b8bff1621fad922121343f6287db16e5902b35571868a17e9fe5" }
+version = "2.2.0"
+aube = { path = "locks/mise.home/npm-opencode-cli/2.2.0~009061c2", digest = "sha256:feaa9c8f2e3bb04339622da82d2c1ee7b1caac8b806c2d039e6c18af7471ddb7" }
 backend = "npm:@opencode/cli"
 specifiers = ["latest"]
 
