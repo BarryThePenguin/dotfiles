@@ -6,6 +6,7 @@ HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4317"
 OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
+OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 
 [bootstrap]
 dotfile_groups = ["home"]
