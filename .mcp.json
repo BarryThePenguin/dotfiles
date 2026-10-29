@@ -6,6 +6,14 @@
 			"args": [],
 			"env": {}
 		},
+		"hister": {
+			"type": "remote",
+			"url": "https://search.jonno.dev/mcp",
+			"oauth": false,
+			"headers": {
+				"Authorization": "Bearer {env:HISTER__APP__ACCESS_TOKEN}"
+			}
+		},
 		"issue-tools": {
 			"type": "stdio",
 			"command": "issue-tools-claude",

@@ -16,20 +16,37 @@ checksum = "sha256:79808bae5c61422adc1fbd14182abacca4e6df11263753033fa69441d0745
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.39.0.pkg"
 
 [[tools.claude-code]]
-version = "2.1.311"
+version = "2.1.312"
 backend = "aqua:anthropics/claude-code"
 specifiers = ["latest"]
 
 [tools.claude-code."platforms.linux-x64"]
-checksum = "sha256:1e506d1d4466d854f0a2ea662f04122c77475e8c71a680bbbdc1c99fefff3fa7"
+checksum = "sha256:d9324231c4e3dfe342e853f56c752348ae060f9f221cdf4b0f90ef1dc47ee907"
 checksum_source = "mise-versions"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.311/claude-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/679248991"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.312/claude-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/682511222"
 
 [tools.claude-code."platforms.macos-arm64"]
-checksum = "sha256:28dc437c4530e4fbd5e4f8924119cb001c332b64de5e817b35898c39ec107155"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.311/claude-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/679248777"
+checksum = "sha256:b5ff41139e79b6ffdabe4df93c09ee628b1306a78be6459139fd7c7f175c85ac"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.312/claude-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/682510790"
+
+[[tools.databricks-cli]]
+version = "1.22.1"
+backend = "aqua:databricks/cli"
+specifiers = ["1.22.1"]
+
+[tools.databricks-cli."platforms.linux-x64"]
+checksum = "sha256:91a0e5850958e3ead8aa1110155f78596b5a03a69d60a5dc91de210bf17340e5"
+checksum_source = "mise-versions"
+url = "https://github.com/databricks/cli/releases/download/v1.22.1/databricks_cli_1.22.1_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/databricks/cli/releases/assets/666015190"
+
+[tools.databricks-cli."platforms.macos-arm64"]
+checksum = "sha256:2ef3311c931f36d3d032a567dc9587acfbf83b01781c575ed2b3db9a67ddf36b"
+checksum_source = "mise-versions"
+url = "https://github.com/databricks/cli/releases/download/v1.22.1/databricks_cli_1.22.1_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/databricks/cli/releases/assets/666015159"
 
 [[tools.dotnet]]
 version = "10.0.402"
@@ -95,22 +112,6 @@ url = "https://cli.coderabbit.ai/releases/0.9.0/coderabbit-linux-x64.zip"
 checksum = "blake3:7549435d582efb74fcb3ddffb171fb22c94eaaff0fd31d84f6b68108eb8cad16"
 url = "https://cli.coderabbit.ai/releases/0.9.0/coderabbit-darwin-arm64.zip"
 
-[[tools."http:twg"]]
-version = "1.3.5"
-backend = "http:twg"
-specifiers = ["1.3.5"]
-
-[tools."http:twg".options]
-rename_exe = "twg"
-
-[tools."http:twg"."platforms.linux-x64"]
-checksum = "sha256:d66d93220f440f006279c6687274ed4c924835da4ec205cc818bc17f6dd91c08"
-url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v1.3.5"
-
-[tools."http:twg"."platforms.macos-arm64"]
-checksum = "sha256:bc8d9e07ba9275c2dffeda555f301828782c4972a9387dc221fe3cd3e9e33098"
-url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.3.5"
-
 [[tools.kubectl]]
 version = "1.37.0"
 backend = "aqua:kubernetes/kubernetes/kubectl"
@@ -152,6 +153,19 @@ version = "2.0.26"
 aube = { path = "locks/mise.work/npm-opencode-cli/2.0.26", digest = "sha256:8d97d1592008851165599fbc8a548f29eb8e066715f4c0d6ddeb6f786fb193b3" }
 backend = "npm:@opencode/cli"
 specifiers = ["2.0.26"]
+
+[[tools.twg]]
+version = "1.3.9"
+backend = "http:twg"
+specifiers = ["1.3.9"]
+
+[tools.twg."platforms.linux-x64"]
+checksum = "sha256:66a12bd584282ec56d79663da6257358779512bb656c55094fb3835c65be1df3"
+url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v1.3.9"
+
+[tools.twg."platforms.macos-arm64"]
+checksum = "sha256:20121ce59afba78be83866f42fd44705e8c5c446ce881567b82b0057d906de90"
+url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.3.9"
 
 [[tools.viteplus]]
 version = "1.4.0"
