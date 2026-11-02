@@ -4,9 +4,27 @@ trusted_config_paths = ["~/src/btp"]
 [env]
 HOLODECK_SSL_CERT_PATH = "/Users/jonno/holodeck-localhost.pem"
 HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
-OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4317"
-OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
-OTEL_EXPORTER_OTLP_TIMEOUT = "500"
+# Every CLI and MCP server in ~/src/btp/agent-tools that is built on
+# telemetry-core emits here, with no per-tool code: startCli() only starts the
+# SDK when an OTLP endpoint is named, and the exporters read these variables.
+# Collector and its access rules: homelab/docs/otel-collector.md.
+#
+# Was http://localhost:4317 + grpc + 500ms — a leftover local-collector
+# experiment with nothing listening, so every tool's export was a silent no-op.
+# HTTP, not gRPC: the public door is a Cilium Gateway + Cloudflare tunnel, and
+# gRPC there would need an h2c backend route. 5s, not 500ms: a batch that has
+# to cross the tunnel must not be dropped for being slower than a local one.
+OTEL_EXPORTER_OTLP_ENDPOINT = "https://otel.jonno.dev"
+OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+OTEL_EXPORTER_OTLP_TIMEOUT = "5000"
+# Keep laptop telemetry distinguishable from anything in-cluster, which the
+# collector labels `homelab` when a sender says nothing.
+OTEL_RESOURCE_ATTRIBUTES = "deployment.environment=local"
+# Cloudflare Access service token — the public door's only credential. These
+# two come from fnox (global config, `OpenTelemetry Ingest`), and the header is
+# blank when they are absent; see the note in docs/otel-collector.md about
+# getting them into a shell, since fnox's hook is project-scoped.
+OTEL_EXPORTER_OTLP_HEADERS = "CF-Access-Client-Id=${OTEL_CF_ACCESS_CLIENT_ID:-},CF-Access-Client-Secret=${OTEL_CF_ACCESS_CLIENT_SECRET:-}"
 
 [bootstrap]
 dotfile_groups = ["home"]
