@@ -16,20 +16,20 @@ checksum = "sha256:79808bae5c61422adc1fbd14182abacca4e6df11263753033fa69441d0745
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.39.0.pkg"
 
 [[tools.claude-code]]
-version = "2.1.312"
+version = "2.1.316"
 backend = "aqua:anthropics/claude-code"
 specifiers = ["latest"]
 
 [tools.claude-code."platforms.linux-x64"]
-checksum = "sha256:d9324231c4e3dfe342e853f56c752348ae060f9f221cdf4b0f90ef1dc47ee907"
+checksum = "sha256:9ca14cd81a7b0d9654d392fc1253773e70f31f470aa98334732744956cd1006b"
 checksum_source = "mise-versions"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.312/claude-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/682511222"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.316/claude-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/693882314"
 
 [tools.claude-code."platforms.macos-arm64"]
-checksum = "sha256:b5ff41139e79b6ffdabe4df93c09ee628b1306a78be6459139fd7c7f175c85ac"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.312/claude-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/682510790"
+checksum = "sha256:e8956064b1c5055c1c79945aa7714faef98b29060a065c6930e8956953d0bace"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.316/claude-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/693882159"
 
 [[tools.databricks-cli]]
 version = "1.22.1"
@@ -83,6 +83,23 @@ url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/66638843
 checksum = "sha256:0ba10e897e0496412cd86eacaed4ed554c97ddc29bc5c709d28faa5eaaa2222c"
 url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.1/git-lfs-darwin-arm64-v3.8.1.zip"
 url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/666388058"
+
+[[tools."github:DataDog/pup"]]
+version = "1.19.1"
+backend = "github:DataDog/pup"
+specifiers = ["1.19.1"]
+
+[tools."github:DataDog/pup"."platforms.linux-x64"]
+checksum = "sha256:995c36655b45ea88b031a1a8e80b43d9d96c6e2c37aed9f3bd9545b0f6ba16b6"
+checksum_source = "mise-versions"
+url = "https://github.com/DataDog/pup/releases/download/v1.19.1/pup_1.19.1_Linux_x86_64.tar.gz"
+url_api = "https://api.github.com/repos/DataDog/pup/releases/assets/553969133"
+
+[tools."github:DataDog/pup"."platforms.macos-arm64"]
+checksum = "sha256:a0d359cc7b73af51b3bccf7c08447d3899ffc2560455c8b4a3b0517b68685893"
+checksum_source = "mise-versions"
+url = "https://github.com/DataDog/pup/releases/download/v1.19.1/pup_1.19.1_Darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/DataDog/pup/releases/assets/553969118"
 
 [[tools.glab]]
 version = "1.125.0"

@@ -1,5 +1,5 @@
-amends "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Builtins.pkl"
+amends "package://github.com/jdx/hk/releases/download/v2.8.1/hk@2.8.1#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.8.1/hk@2.8.1#/Builtins.pkl"
 // Using a coding agent? See https://hk.jdx.dev/agents
 
 local linters = new Mapping<String, Step> {
@@ -13,7 +13,6 @@ local linters = new Mapping<String, Step> {
             ".config/mise/tasks/age/key",
             ".config/mise/tasks/net/*",
             "bin/bootstrap",
-            ".config/mise/tasks/file-size",
             "scripts/*.sh"
         )
         check = "shellcheck {{files}}"
