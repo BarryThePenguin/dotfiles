@@ -14,11 +14,11 @@ repo-bins = "local"
 "github:asciimoo/hister" = { version = "0.21.0", os = ["macos"] }
 age = { version = "1.3.2", os = ["macos"] }
 ast-grep = { version = "0.51.0", os = ["macos"] }
-atuin = { version = "18.24.2", os = ["macos"] }
-aube = { version = "v2.8.4", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"], os = ["macos"] }
-cloudflared = { version = "2026.10.5", os = ["macos"] }
+atuin = { version = "18.24.4", os = ["macos"] }
+aube = { version = "v2.8.5", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"], os = ["macos"] }
+cloudflared = { version = "2026.10.7", os = ["macos"] }
 flux2 = { version = "2.10.0", os = ["macos"] }
-fnox = { version = "v1.43.0", workflow = "release.yml", os = ["macos"] }
+fnox = { version = "v1.45.0", workflow = "release.yml", os = ["macos"] }
 gh = { version = "2.103.3", os = ["macos"] }
 go = { version = "1.27.3", os = ["macos"] }
 hk = { version = "2.8.1", os = ["macos"] }
@@ -35,13 +35,13 @@ rust = { version = "1.99.1", mr_boxington = true, os = ["macos"] }
 shellcheck = { version = "0.11.0", os = ["macos"] }
 sops = { version = "3.13.3", os = ["macos"] }
 starship = { version = "1.27.0", os = ["macos"] }
-usage = { version = "7.1.3", workflow = "publish-cli.yml", os = ["macos"] }
+usage = { version = "7.1.4", workflow = "publish-cli.yml", os = ["macos"] }
 uv = { version = "0.13.6", os = ["macos"] }
 watchexec = { version = "2.8.0", os = ["macos"] }
-workmux = { version = "v0.1.277", os = ["macos"] }
+workmux = { version = "v0.1.278", os = ["macos"] }
 yq = { version = "4.54.1", os = ["macos"] }
 zellij = { version = "0.45.1", os = ["macos"] }
-cargo-binstall = { version = "1.26.1", os = ["macos"] }
+cargo-binstall = { version = "1.26.2", os = ["macos"] }
 
 [settings]
 self_update.auto = true

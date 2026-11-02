@@ -3,20 +3,20 @@
 lockfile_version = 3
 
 [[tools.copilot]]
-version = "v1.0.104"
+version = "v1.0.105"
 backend = "aqua:github/copilot-cli"
-specifiers = ["v1.0.104"]
+specifiers = ["v1.0.105"]
 
 [tools.copilot."platforms.linux-x64"]
-checksum = "sha256:fa9722665f2c670aa6ce26f1eb30fbfe7ed0177606bf61c21125855345c9c447"
+checksum = "sha256:aba1f06f27bc0447656647f76e0a4cf58b4b2a341c75ff04a750982b6aeb6bd2"
 checksum_source = "mise-versions"
-url = "https://github.com/github/copilot-cli/releases/download/v1.0.104/copilot-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/680166939"
+url = "https://github.com/github/copilot-cli/releases/download/v1.0.105/copilot-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/683349254"
 
 [tools.copilot."platforms.macos-arm64"]
-checksum = "sha256:c6084c40bb761be1b1bbaff3f69426ee51d842327b6b4af0d9290436477cc708"
-url = "https://github.com/github/copilot-cli/releases/download/v1.0.104/copilot-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/680166703"
+checksum = "sha256:34aacd03fb478d47e4b3cfc5ca045c37278c5d8d86239466521a16ea54ac84aa"
+url = "https://github.com/github/copilot-cli/releases/download/v1.0.105/copilot-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/683348970"
 
 [[tools.cosign]]
 version = "3.1.4"
@@ -66,20 +66,20 @@ url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/rele
 provenance = "github-attestations"
 
 [[tools."github:SigNoz/signoz-mcp-server"]]
-version = "0.16.0"
+version = "0.17.0"
 backend = "github:SigNoz/signoz-mcp-server"
-specifiers = ["v0.16.0"]
+specifiers = ["v0.17.0"]
 
 [tools."github:SigNoz/signoz-mcp-server"."platforms.linux-x64"]
-checksum = "sha256:12c7f2e58002cdf523120cc81c5304839a702ca3650c27a7dbdecee4ec01c6c2"
+checksum = "sha256:62b6749a238eb91593716ce1f43d51579f6d44fc15fb700f99c243febcf30335"
 checksum_source = "mise-versions"
-url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.16.0/signoz-mcp-server_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/668440056"
+url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.17.0/signoz-mcp-server_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/692733638"
 
 [tools."github:SigNoz/signoz-mcp-server"."platforms.macos-arm64"]
-checksum = "sha256:5b41beae8760b6945129db287c4cff27248476da42c9be96b0263275a8cb0ffa"
-url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.16.0/signoz-mcp-server_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/668440057"
+checksum = "sha256:0f78c6ac89e24d0d1fafba34e44f83f0221af1e443ddb9e4d72fbc8ce57d5c4c"
+url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.17.0/signoz-mcp-server_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/692733635"
 
 [[tools.helm]]
 version = "4.3.1"
@@ -168,8 +168,8 @@ url_api = "https://api.github.com/repos/lima-vm/lima/releases/assets/607822568"
 provenance = "github-attestations"
 
 [[tools."npm:@opencode/cli"]]
-version = "2.2.0"
-aube = { path = "locks/mise.home/npm-opencode-cli/2.2.0~009061c2", digest = "sha256:feaa9c8f2e3bb04339622da82d2c1ee7b1caac8b806c2d039e6c18af7471ddb7" }
+version = "2.2.5"
+aube = { path = "locks/mise.home/npm-opencode-cli/2.2.5~009061c2", digest = "sha256:5423c53b1334bf1a0e09a122f05c23b204c2359adc0cce62d1b6270c268bd496" }
 backend = "npm:@opencode/cli"
 specifiers = ["latest"]
 
