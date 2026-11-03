@@ -86,7 +86,7 @@ FNOX_PROFILE = "work"
 "dotnet:ilspycmd" = "11.1.0.9782"
 "github:DataDog/pup" = "v2.3.0"
 "npm:@augmentcode/auggie" = "0.36.0"
-aspire = "13.6.2"
+aspire = "v13.6.4"
 aws-cli = { version = "2.39.0", symlink_bins = "true" }
 claude-code = { version = "latest", auto_update = true }
 databricks-cli = "1.22.1"
