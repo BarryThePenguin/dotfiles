@@ -2,6 +2,23 @@
 
 lockfile_version = 3
 
+[[tools.aspire]]
+version = "13.6.2"
+backend = "github:microsoft/aspire"
+specifiers = ["13.6.2"]
+
+[tools.aspire."platforms.linux-x64"]
+checksum = "sha256:47b028b5f5f5cd26a7f68468e065db99e73ebfdc37d1b6c07ad3b8a061d60c64"
+url = "https://github.com/microsoft/aspire/releases/download/v13.6.2/aspire-cli-linux-x64-13.6.2.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/aspire/releases/assets/660621103"
+provenance = "github-attestations"
+
+[tools.aspire."platforms.macos-arm64"]
+checksum = "sha256:86e2a1a8541129f95eb32b9c77b7dbcbeda5df6cedfa1b2afd3f5560bb780dce"
+url = "https://github.com/microsoft/aspire/releases/download/v13.6.2/aspire-cli-osx-arm64-13.6.2.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/aspire/releases/assets/660621133"
+provenance = "github-attestations"
+
 [[tools.aws-cli]]
 version = "2.39.0"
 backend = "aqua:aws/aws-cli"

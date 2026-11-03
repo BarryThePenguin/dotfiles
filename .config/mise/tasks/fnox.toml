@@ -1,0 +1,16 @@
+#:schema https://mise.jdx.dev/schema/mise-task.json
+
+# Once a secret has a `sync` entry fnox never calls 1Password again, and the
+# cache never refreshes by itself. Run this after rotating any token.
+#
+# Runs from $HOME so ~/fnox.local.toml is loaded for the work-only sync. Each
+# command pins its profile: FNOX_PROFILE=work is set on the work machine, and an
+# unpinned `--global` sync would write work secrets into this public repo.
+["fnox:sync"]
+description = "Refresh the age-encrypted sync cache from 1Password (default and work profiles)"
+dir = "{{env.HOME}}"
+run = [
+  "fnox -P default sync --global --provider age --force",
+  # Work-only secrets live in the untracked ~/fnox.local.toml, not this public repo.
+  "fnox -P work sync --local-file --provider age --force GITLAB_TOKEN",
+]

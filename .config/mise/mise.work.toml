@@ -19,7 +19,7 @@ dotfile_groups = ["work"]
 
 [bootstrap.macos.launchd.agents.hub]
 program = "~/.local/share/mise/shims/fnox"
-args = ["exec", "--profile", "work", "--", "/Users/jonno/.local/share/mise/shims/hub", "serve"]
+args = ["exec", "--profile", "work", "--", "/Users/jonno/.local/bin/hub", "serve"]
 run_at_load = true
 keep_alive = true
 environment = { HUB_HOME = "/Users/jonno/src/assistant", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }
@@ -53,9 +53,6 @@ stderr_path = "~/Library/Logs/assistant-sync.err.log"
 DOCKER_HOST = "unix:///var/run/docker.sock" # "unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
 TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = "/var/run/docker.sock"
 TESTCONTAINERS_RYUK_DISABLED = "true"
-OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4317"
-OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
-OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 CI_JOB_TOKEN = "${GITLAB_TOKEN:-}"
 NPM_TOKEN = "${GITLAB_TOKEN:-}"
 FNOX_PROFILE = "work"
@@ -66,6 +63,7 @@ FNOX_PROFILE = "work"
 "dotnet:ilspycmd" = "11.1.0.9782"
 "github:DataDog/pup" = "v2.3.0"
 "npm:@augmentcode/auggie" = "0.36.0"
+aspire = "13.6.2"
 aws-cli = { version = "2.39.0", symlink_bins = "true" }
 claude-code = { version = "latest", auto_update = true }
 databricks-cli = "1.22.1"
