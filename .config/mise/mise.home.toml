@@ -8,6 +8,15 @@ HOLODECK_SSL_KEY_PATH = "/Users/jonno/holodeck-localhost-key.pem"
 [bootstrap]
 dotfile_groups = ["home"]
 
+[bootstrap.macos.launchd.agents.otelcol]
+program = "~/.local/share/mise/shims/fnox"
+args = ["exec", "--only", "OTEL_CF_*", "--", "/Users/jonno/.local/share/mise/shims/otelcol-contrib", "--config", "/Users/jonno/.config/otelcol/config.yaml"]
+run_at_load = true
+keep_alive = true
+environment = { OTEL_SDK_DISABLED = "true", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }
+stdout_path = "~/Library/Logs/otelcol.log"
+stderr_path = "~/Library/Logs/otelcol.err.log"
+
 [bootstrap.macos.launchd.agents.hub]
 program = "~/.local/share/mise/shims/fnox"
 args = ["exec", "--", "/Users/jonno/.local/bin/hub", "serve"]

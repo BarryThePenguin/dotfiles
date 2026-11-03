@@ -1,0 +1,85 @@
+# Local OTLP collector, home profile. Linked to ~/.config/otelcol/config.yaml.
+#
+# Everything local (agent-tools CLIs and MCP servers) sends to localhost:4317/4318;
+# this forwards it to the homelab collector behind Cloudflare Access. The Access
+# credentials exist only in this process: the launchd agent runs it under
+# `fnox exec --only 'OTEL_CF_*'`, so no tool or other OTel app ever holds them.
+# Collector and its access rules: homelab/docs/otel-collector.md.
+
+extensions:
+  # Persistent queue: batches survive the tunnel or the laptop being offline.
+  file_storage:
+    directory: ${env:HOME}/.local/state/otelcol
+    create_directory: true
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+      http:
+        endpoint: 127.0.0.1:4318
+  # agent-tools (scripts/launch) enters here so both profiles share one launcher;
+  # on the work profile this is the port that also fans out to Aspire.
+  otlp/agent-tools:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4328
+
+processors:
+  # Keep laptop telemetry distinguishable from anything in-cluster, which the
+  # homelab collector labels `homelab` when a sender says nothing.
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: local
+        action: upsert
+  batch:
+    timeout: 5s
+
+exporters:
+  # HTTP, not gRPC: the public door is a Cilium Gateway + Cloudflare tunnel, and
+  # gRPC there would need an h2c backend route.
+  otlp_http/homelab:
+    endpoint: https://otel.jonno.dev
+    headers:
+      CF-Access-Client-Id: ${env:OTEL_CF_ACCESS_CLIENT_ID}
+      CF-Access-Client-Secret: ${env:OTEL_CF_ACCESS_CLIENT_SECRET}
+    # A batch that crosses the tunnel must not be dropped for being slow.
+    timeout: 5s
+    sending_queue:
+      enabled: true
+      storage: file_storage
+      queue_size: 5000
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 10m
+
+service:
+  extensions: [file_storage]
+  telemetry:
+    logs:
+      level: warn
+    # Counters such as otelcol_exporter_sent_spans / _send_failed_spans:
+    # curl localhost:8888/metrics
+    metrics:
+      level: basic
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 127.0.0.1
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp, otlp/agent-tools]
+      processors: [resource, batch]
+      exporters: [otlp_http/homelab]
+    metrics:
+      receivers: [otlp, otlp/agent-tools]
+      processors: [resource, batch]
+      exporters: [otlp_http/homelab]
+    logs:
+      receivers: [otlp, otlp/agent-tools]
+      processors: [resource, batch]
+      exporters: [otlp_http/homelab]

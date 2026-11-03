@@ -1,5 +1,8 @@
 [env]
 EDITOR = "code"
+OTEL_EXPORTER_OTLP_ENDPOINT = "{{ get_env(name='OTEL_EXPORTER_OTLP_ENDPOINT', default='http://localhost:4318') }}"
+OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 
 [tools]
 "npm:@typespec/compiler" = { version = "1.17.0", os = ["macos"] }
@@ -8,6 +11,7 @@ EDITOR = "code"
 "npm:typescript" = { version = "7.0.2", os = ["macos"] }
 "cargo:forgejo-cli" = { version = "0.7.0", os = ["macos"] }
 "github:asciimoo/hister" = { version = "0.21.0", os = ["macos"] }
+"github:open-telemetry/opentelemetry-collector-releases" = { version = "0.164.0", matching_regex = "^otelcol-contrib_", os = ["macos"] }
 age = { version = "1.3.2", os = ["macos"] }
 ast-grep = { version = "0.51.0", os = ["macos"] }
 atuin = { version = "18.24.4", os = ["macos"] }
@@ -182,6 +186,7 @@ exclude = ["AGENTS.md"]
 
 [dotfile_groups.home.entries]
 "~/.config/zellij/layouts/default.kdl" = { source = "~/src/btp/dotfiles/.config/zellij/layouts/home.kdl", mode = "symlink" }
+"~/.config/otelcol/config.yaml" = { source = "~/src/btp/dotfiles/.config/otelcol/home.yaml", mode = "symlink" }
 "~/.config/opencode/cli.json" = { source = "~/src/btp/dotfiles/.config/opencode/cli.json", mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { source = "~/src/btp/dotfiles/.config/opencode/opencode.jsonc", mode = "symlink" }
 "~/.config/opencode/plugins/caffeinate.ts" = { source = "~/src/btp/dotfiles/.config/opencode/plugins/caffeinate.ts", mode = "symlink" }
@@ -195,6 +200,7 @@ target = "~"
 
 [dotfile_groups.work.entries]
 "~/.config/zellij/layouts/default.kdl" = { source = "~/src/btp/dotfiles/.config/zellij/layouts/work.kdl", mode = "symlink" }
+"~/.config/otelcol/config.yaml" = { source = "~/src/btp/dotfiles/.config/otelcol/work.yaml", mode = "symlink" }
 "~/.mcp.json" = { source = "~/src/btp/dotfiles/.mcp.json", mode = "symlink" }
 "~/CLAUDE.md" = { mode = "symlink" }
 "~/.claude/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }

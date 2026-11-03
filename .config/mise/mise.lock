@@ -113,6 +113,19 @@ checksum = "sha256:7761c782ee042597769e8db62a3bb0e1dcf0e90ba3f8951686df61f462a71
 url = "https://github.com/asciimoo/hister/releases/download/v0.21.0/hister_0.21.0_darwin_arm64"
 url_api = "https://api.github.com/repos/asciimoo/hister/releases/assets/681045084"
 
+[[tools."github:open-telemetry/opentelemetry-collector-releases"]]
+version = "0.164.0"
+backend = "github:open-telemetry/opentelemetry-collector-releases"
+specifiers = ["0.164.0"]
+
+[tools."github:open-telemetry/opentelemetry-collector-releases".options]
+matching_regex = "^otelcol-contrib_"
+
+[tools."github:open-telemetry/opentelemetry-collector-releases"."platforms.macos-arm64"]
+checksum = "sha256:af6a0c56886e3cc36ccebe849fa167bad2bc47a97a48fd8497a0d6f93d0cf73a"
+url = "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.164.0/otelcol-contrib_0.164.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/open-telemetry/opentelemetry-collector-releases/releases/assets/679888517"
+
 [[tools.go]]
 version = "1.27.3"
 backend = "core:go"

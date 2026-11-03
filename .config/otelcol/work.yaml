@@ -1,0 +1,110 @@
+# Local OTLP collector, work profile. Linked to ~/.config/otelcol/config.yaml.
+#
+# Two ways in, so routing never depends on what a sender puts in its attributes:
+#   :4317 gRPC / :4318 HTTP   every other local OTel app  -> Aspire only
+#   :4328 HTTP                agent-tools (scripts/launch) -> Aspire and the homelab
+# Work telemetry from other apps deliberately never reaches the homelab.
+#
+# The homelab Access credentials exist only in this process: the launchd agent
+# runs it under `fnox exec --only 'OTEL_CF_*'`.
+# Dashboard: aspire-dashboard launchd agent, UI on http://localhost:18888.
+# Collector and its access rules: homelab/docs/otel-collector.md.
+
+extensions:
+  # Persistent queue for the homelab exporter: batches survive the tunnel or the
+  # laptop being offline.
+  file_storage:
+    directory: ${env:HOME}/.local/state/otelcol
+    create_directory: true
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+      http:
+        endpoint: 127.0.0.1:4318
+  otlp/agent-tools:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4328
+
+processors:
+  # Tag everything from this machine, whatever the sender set.
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: work
+        action: upsert
+  batch:
+    timeout: 1s
+
+exporters:
+  otlp_grpc/aspire:
+    endpoint: 127.0.0.1:18889
+    tls:
+      insecure: true
+    # The dashboard may be stopped; neither block senders nor grow without bound.
+    sending_queue:
+      enabled: true
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 30s
+  # HTTP, not gRPC: the public door is a Cilium Gateway + Cloudflare tunnel, and
+  # gRPC there would need an h2c backend route.
+  otlp_http/homelab:
+    endpoint: https://otel.jonno.dev
+    headers:
+      CF-Access-Client-Id: ${env:OTEL_CF_ACCESS_CLIENT_ID}
+      CF-Access-Client-Secret: ${env:OTEL_CF_ACCESS_CLIENT_SECRET}
+    # A batch that crosses the tunnel must not be dropped for being slow.
+    timeout: 5s
+    sending_queue:
+      enabled: true
+      storage: file_storage
+      queue_size: 5000
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 10m
+
+service:
+  extensions: [file_storage]
+  telemetry:
+    logs:
+      level: warn
+    # Counters such as otelcol_exporter_sent_spans / _send_failed_spans, to see
+    # whether each destination is receiving: curl localhost:8888/metrics
+    metrics:
+      level: basic
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 127.0.0.1
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlp_grpc/aspire]
+    metrics:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlp_grpc/aspire]
+    logs:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlp_grpc/aspire]
+    traces/agent-tools:
+      receivers: [otlp/agent-tools]
+      processors: [resource, batch]
+      exporters: [otlp_grpc/aspire, otlp_http/homelab]
+    metrics/agent-tools:
+      receivers: [otlp/agent-tools]
+      processors: [resource, batch]
+      exporters: [otlp_grpc/aspire, otlp_http/homelab]
+    logs/agent-tools:
+      receivers: [otlp/agent-tools]
+      processors: [resource, batch]
+      exporters: [otlp_grpc/aspire, otlp_http/homelab]

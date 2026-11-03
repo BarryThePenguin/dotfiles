@@ -40,32 +40,12 @@ sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3
 
 [secrets.OTEL_CF_ACCESS_CLIENT_ID]
 provider = "op"
-env = false
+env = "exec"
 value = "OpenTelemetry Ingest/username"
 sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBsdTFNaUpraEZ1aHBRYkp0aFdPVVFUak1QNnYrZ3FQdXNaNzZHZHFFamtrCkZ1a0xnV0VrZnB2azVvejZRYVQ3eW4zendUa1FZNTY0L1IzVmFmNjBMZmMKLT4gSjhXLWdyZWFzZSBdajg7XlI0ZyBreSkgVHIgUz5ZfW1ECmtMQlhlYXhBL0lPT0JrOFE3c0xmbE15TVJBSUhZNUVTZGk5TCsvWW5NYWU3VytXSmJjQWJ0TXpDcWRvM0ErNjcKTE1wenFjdkZGQUY4c242bnpHSURIL3pzYjEzRUpNckUvNUw4YlFkY0p6VTA2ZEp0Q1UyNFdJWQotLS0gUGltQkhyYlkrOEE0eEF1T255MXRIeW1TNERQR1JXV3lBSk9aMlF4NEl1WQoR4Qm1L34jhm71pDnTdtzid8PcK96oNFO5HK/7WWJOj68u/9jMHZK0x5TW4hFVlfj0/EpwTwotJp30+H2flgdmYec36O71T9BxRhCY:RqeRb9SQ8JIi+GGeFxdrt9XCzREdP8d9X43ozcTP//+L/WrSlIvPMMjCIxH7kLPAjyJpl/OMyzFRXvzoeZh5Hahwcw==" }
 
 [secrets.OTEL_CF_ACCESS_CLIENT_SECRET]
 provider = "op"
-env = false
+env = "exec"
 value = "OpenTelemetry Ingest/credential"
 sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBsdTFNaUpraEZ1aHBRYkp0aFdPVVFUak1QNnYrZ3FQdXNaNzZHZHFFamtrCkZ1a0xnV0VrZnB2azVvejZRYVQ3eW4zendUa1FZNTY0L1IzVmFmNjBMZmMKLT4gSjhXLWdyZWFzZSBdajg7XlI0ZyBreSkgVHIgUz5ZfW1ECmtMQlhlYXhBL0lPT0JrOFE3c0xmbE15TVJBSUhZNUVTZGk5TCsvWW5NYWU3VytXSmJjQWJ0TXpDcWRvM0ErNjcKTE1wenFjdkZGQUY4c242bnpHSURIL3pzYjEzRUpNckUvNUw4YlFkY0p6VTA2ZEp0Q1UyNFdJWQotLS0gUGltQkhyYlkrOEE0eEF1T255MXRIeW1TNERQR1JXV3lBSk9aMlF4NEl1WQoR4Qm1L34jhm71pDnTdtzid8PcK96oNFO5HK/7WWJOj68u/9jMHZK0x5TW4hFVlfj0/EpwTwotJp30+H2flgdmYec36O71T9BxRhCY:FHxkz5cxhuN5gqaW1gTi7EZwtQPSNVgupwRcrwFHBtUgoLn+DndCiDJvOEI9+fG6QtDt5mcNRSpjjZgzNuVW7aAWtH01jNkO3RiC1GJRInrhxA==" }
-
-[secrets.OTEL_EXPORTER_OTLP_ENDPOINT]
-default = "https://otel.jonno.dev"
-env = "exec"
-
-[secrets.OTEL_EXPORTER_OTLP_PROTOCOL]
-default = "http/protobuf"
-env = "exec"
-
-[secrets.OTEL_EXPORTER_OTLP_TIMEOUT]
-default = "5000"
-env = "exec"
-
-[secrets.OTEL_RESOURCE_ATTRIBUTES]
-default = "deployment.environment=local"
-env = "exec"
-
-[secrets.OTEL_EXPORTER_OTLP_HEADERS]
-default = "CF-Access-Client-Id=${OTEL_CF_ACCESS_CLIENT_ID},CF-Access-Client-Secret=${OTEL_CF_ACCESS_CLIENT_SECRET}"
-env = "exec"

@@ -17,6 +17,29 @@ dotfile_groups = ["work"]
 # [bootstrap.brew.taps]
 # "showpad/gitlab" = "git@gitlab.com:showpad-code/devops/homebrew.git"
 
+[bootstrap.macos.launchd.agents.otelcol]
+program = "~/.local/share/mise/shims/fnox"
+args = ["exec", "--profile", "work", "--only", "OTEL_CF_*", "--", "/Users/jonno/.local/share/mise/shims/otelcol-contrib", "--config", "/Users/jonno/.config/otelcol/config.yaml"]
+run_at_load = true
+keep_alive = true
+environment = { OTEL_SDK_DISABLED = "true", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }
+stdout_path = "~/Library/Logs/otelcol.log"
+stderr_path = "~/Library/Logs/otelcol.err.log"
+
+# Standalone Aspire dashboard the collector forwards to. UI http://localhost:18888;
+# anonymous, bound to localhost. OTLP is on 18889/18890 so the collector keeps
+# the standard 4317/4318. OTEL_SDK_DISABLED: the global OTEL_EXPORTER_OTLP_ENDPOINT would
+# make the dashboard export its own telemetry to the collector, which feeds it
+# back to the dashboard (a loop of ~18 spans/s).
+[bootstrap.macos.launchd.agents.aspire-dashboard]
+program = "~/.local/share/mise/shims/aspire"
+args = ["dashboard", "run", "--allow-anonymous", "--otlp-grpc-url", "http://localhost:18889", "--otlp-http-url", "http://localhost:18890", "--frontend-url", "http://localhost:18888", "--nologo", "--non-interactive"]
+run_at_load = true
+keep_alive = true
+environment = { OTEL_SDK_DISABLED = "true", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }
+stdout_path = "~/Library/Logs/aspire-dashboard.log"
+stderr_path = "~/Library/Logs/aspire-dashboard.err.log"
+
 [bootstrap.macos.launchd.agents.hub]
 program = "~/.local/share/mise/shims/fnox"
 args = ["exec", "--profile", "work", "--", "/Users/jonno/.local/bin/hub", "serve"]
