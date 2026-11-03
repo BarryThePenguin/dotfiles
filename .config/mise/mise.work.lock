@@ -3,20 +3,20 @@
 lockfile_version = 3
 
 [[tools.aspire]]
-version = "13.6.2"
+version = "13.6.4"
 backend = "github:microsoft/aspire"
-specifiers = ["13.6.2"]
+specifiers = ["v13.6.4"]
 
 [tools.aspire."platforms.linux-x64"]
-checksum = "sha256:47b028b5f5f5cd26a7f68468e065db99e73ebfdc37d1b6c07ad3b8a061d60c64"
-url = "https://github.com/microsoft/aspire/releases/download/v13.6.2/aspire-cli-linux-x64-13.6.2.tar.gz"
-url_api = "https://api.github.com/repos/microsoft/aspire/releases/assets/660621103"
+checksum = "sha256:4d875fa954dc4385b2ef08c03fd9c3546819fda9b669d43bd96fa3354487cfb3"
+url = "https://github.com/microsoft/aspire/releases/download/v13.6.4/aspire-cli-linux-x64-13.6.4.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/aspire/releases/assets/671299680"
 provenance = "github-attestations"
 
 [tools.aspire."platforms.macos-arm64"]
-checksum = "sha256:86e2a1a8541129f95eb32b9c77b7dbcbeda5df6cedfa1b2afd3f5560bb780dce"
-url = "https://github.com/microsoft/aspire/releases/download/v13.6.2/aspire-cli-osx-arm64-13.6.2.tar.gz"
-url_api = "https://api.github.com/repos/microsoft/aspire/releases/assets/660621133"
+checksum = "sha256:b96438aaa3ed05bf99d6f41591ffe6b97c25054a08b296678d46f87d9032353c"
+url = "https://github.com/microsoft/aspire/releases/download/v13.6.4/aspire-cli-osx-arm64-13.6.4.tar.gz"
+url_api = "https://api.github.com/repos/microsoft/aspire/releases/assets/671299708"
 provenance = "github-attestations"
 
 [[tools.aws-cli]]
