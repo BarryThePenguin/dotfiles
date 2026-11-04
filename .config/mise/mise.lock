@@ -14,14 +14,14 @@ url_api = "https://api.github.com/repos/FiloSottile/age/releases/assets/53554189
 provenance = "github-attestations"
 
 [[tools.ast-grep]]
-version = "0.51.0"
+version = "0.51.1"
 backend = "aqua:ast-grep/ast-grep"
-specifiers = ["0.51.0"]
+specifiers = ["0.51.1"]
 
 [tools.ast-grep."platforms.macos-arm64"]
-checksum = "sha256:e18e13c27ed6c4b3ec4de00745b0755dee9dc26c035e226f4dd5d147dca99cc8"
-url = "https://github.com/ast-grep/ast-grep/releases/download/0.51.0/app-aarch64-apple-darwin.zip"
-url_api = "https://api.github.com/repos/ast-grep/ast-grep/releases/assets/644256001"
+checksum = "sha256:a95772097b4d02bd9d45ed63b300c37041ae3c36632b3bf19250cc7c10187dc4"
+url = "https://github.com/ast-grep/ast-grep/releases/download/0.51.1/app-aarch64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/ast-grep/ast-grep/releases/assets/701845634"
 
 [[tools.atuin]]
 version = "18.24.4"
@@ -35,13 +35,13 @@ url_api = "https://api.github.com/repos/atuinsh/atuin/releases/assets/690584610"
 provenance = "github-attestations"
 
 [[tools.aube]]
-version = "2.8.5"
+version = "2.9.0"
 backend = "packslip:github.com/aubepkg/aube"
-specifiers = ["v2.8.5"]
+specifiers = ["v2.9.0"]
 
 [tools.aube."platforms.macos-arm64"]
-checksum = "sha256:74c22535927c8ecd1ca9937371e9cce40a6b4ae7915ea5e45cfff17eb5dad5ff"
-url = "https://github.com/aubepkg/aube/releases/download/v2.8.5/aube-v2.8.5-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:8e4d70433ae1e7ba7f43581fbfd7756210881ce1f67e1440d166bd12297161e4"
+url = "https://github.com/aubepkg/aube/releases/download/v2.9.0/aube-v2.9.0-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/aubepkg/aube/.github/workflows/release.yml"
 repository_ids = { repository = "1214542327" }
 
@@ -82,13 +82,13 @@ url = "https://github.com/fluxcd/flux2/releases/download/v2.10.0/flux_2.10.0_dar
 url_api = "https://api.github.com/repos/fluxcd/flux2/releases/assets/678609572"
 
 [[tools.fnox]]
-version = "1.45.0"
+version = "1.46.0"
 backend = "packslip:github.com/jdx/fnox"
-specifiers = ["v1.45.0"]
+specifiers = ["v1.46.0"]
 
 [tools.fnox."platforms.macos-arm64"]
-checksum = "sha256:e851212b2f7319ab88ab7784e008bfb091ccee91f2696a328684fc8ce80e4263"
-url = "https://github.com/jdx/fnox/releases/download/v1.45.0/fnox-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:d9d0c44c7a597d1745f6f40b987d2567ac3269b4aad444543a24547d3659b105"
+url = "https://github.com/jdx/fnox/releases/download/v1.46.0/fnox-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/fnox/.github/workflows/release.yml"
 repository_ids = { repository = "1078762196" }
 
@@ -208,24 +208,24 @@ url = "https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.
 url_api = "https://api.github.com/repos/FiloSottile/mkcert/releases/assets/63709954"
 
 [[tools.mr-boxington]]
-version = "1.28.0"
+version = "1.29.1"
 backend = "packslip:github.com/jdx/mr-boxington"
-specifiers = ["v1.28.0"]
+specifiers = ["v1.29.1"]
 
 [tools.mr-boxington."platforms.macos-arm64"]
-checksum = "sha256:ac73ba0637a443ba9c43354008f6bcd5d9e8a84b703e46f23202025c1f849472"
-url = "https://github.com/jdx/mr-boxington/releases/download/v1.28.0/mbx-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:2c19baafcda87ad948f071c571f57b2cf9eaeee2c971c5536b93ae3a036d5e75"
+url = "https://github.com/jdx/mr-boxington/releases/download/v1.29.1/mbx-aarch64-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/release.yml"
 repository_ids = { repository = "1340721957" }
 
 [[tools.node]]
-version = "26.12.1"
+version = "26.13.0"
 backend = "core:node"
-specifiers = ["26.12.1"]
+specifiers = ["26.13.0"]
 
 [tools.node."platforms.macos-arm64"]
-checksum = "sha256:1901d539912c02afa10d1cc126943a8855a7eedebe830119463470db5e6c59e8"
-url = "https://nodejs.org/dist/v26.12.1/node-v26.12.1-darwin-arm64.tar.gz"
+checksum = "sha256:d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6"
+url = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-arm64.tar.gz"
 
 [[tools."npm:@opencode/cli"]]
 version = "2.0.26"
@@ -252,20 +252,20 @@ backend = "npm:typescript"
 specifiers = ["7.0.2"]
 
 [[tools."npm:typescript-language-server"]]
-version = "6.0.2"
-aube = { path = "locks/npm-typescript-language-server/6.0.2", digest = "sha256:c04c228752c1b960fe23a17ede2a5332d60f7a757f2485adadabf23ec0facdf0" }
+version = "6.0.3"
+aube = { path = "locks/npm-typescript-language-server/6.0.3", digest = "sha256:e4cdcc07515542ffa6a9a4f6a23faa66433e1c1b54b110d71fc149e9894775c9" }
 backend = "npm:typescript-language-server"
-specifiers = ["6.0.2"]
+specifiers = ["6.0.3"]
 
 [[tools.pi]]
-version = "v1.4.0"
+version = "v1.5.0"
 backend = "aqua:earendil-works/pi"
-specifiers = ["v1.4.0"]
+specifiers = ["v1.5.0"]
 
 [tools.pi."platforms.macos-arm64"]
-checksum = "sha256:79d9979d76a2a5adb7c28e27e9b44629928ccd0dc9fbb6ae7217860bd5e8be5d"
-url = "https://github.com/earendil-works/pi/releases/download/v1.4.0/pi-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/663978807"
+checksum = "sha256:a9bf0d82d58d2a7d337f4ae4171b5fc9ebffe42509527a831364c4b65adf2cdf"
+url = "https://github.com/earendil-works/pi/releases/download/v1.5.0/pi-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/701404873"
 
 [[tools.podman]]
 version = "6.1.4"
@@ -336,25 +336,25 @@ url = "https://github.com/starship/starship/releases/download/v1.27.0/starship-a
 url_api = "https://api.github.com/repos/starship/starship/releases/assets/650074353"
 
 [[tools.usage]]
-version = "7.1.4"
+version = "7.1.5"
 backend = "packslip:github.com/jdx/usage"
-specifiers = ["7.1.4"]
+specifiers = ["7.1.5"]
 
 [tools.usage."platforms.macos-arm64"]
-checksum = "sha256:cae1865b2bb4eb8c22087381d4fbc29344837960c71dbf865dc55296c19d535d"
-url = "https://github.com/jdx/usage/releases/download/v7.1.4/usage-universal-apple-darwin.tar.gz"
+checksum = "sha256:90ac6ec790cebe79c2e234171b9e16b6071e02dc0506f2953315fc5c0222b2d9"
+url = "https://github.com/jdx/usage/releases/download/v7.1.5/usage-universal-apple-darwin.tar.gz"
 signer = "sigstore-oidc:https://github.com/jdx/usage/.github/workflows/publish-cli.yml"
 repository_ids = { repository = "677629099" }
 
 [[tools.uv]]
-version = "0.13.6"
+version = "0.13.7"
 backend = "aqua:astral-sh/uv"
-specifiers = ["0.13.6"]
+specifiers = ["0.13.7"]
 
 [tools.uv."platforms.macos-arm64"]
-checksum = "sha256:60fbd5c8a1ed681845eea28d9d622fcde03c51e91a43465b64a1e17db1ed3472"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.6/uv-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/679980393"
+checksum = "sha256:81b811b57e4624df7ed3aac148e0359100d9962f3d9dce00aec533dc2e086731"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/704009442"
 provenance = "github-attestations"
 
 [[tools.watchexec]]
