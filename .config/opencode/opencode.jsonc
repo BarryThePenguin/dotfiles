@@ -10,13 +10,13 @@
 			"model": "opencode-go/mimo-v2.6-flash",
 		},
 		"plan": {
-			"model": "opencode-go/mimo-v2.6-pro",
+			"model": "opencode-go/deepseek-v4.1-flash#max",
 		},
 		"explore": {
 			"model": "opencode-go/deepseek-v4.1-flash#low",
 		},
 		"title": {
-			"model": "opencode-go/longcat-2.5-preview-free",
+			"model": "opencode-go/beam-free",
 		},
 	},
 	"plugins": ["@wakatime/opencode-wakatime"],
