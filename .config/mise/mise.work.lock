@@ -20,17 +20,17 @@ url_api = "https://api.github.com/repos/microsoft/aspire/releases/assets/6712997
 provenance = "github-attestations"
 
 [[tools.aws-cli]]
-version = "2.39.1"
+version = "2.39.2"
 backend = "aqua:aws/aws-cli"
-specifiers = ["2.39.1"]
+specifiers = ["2.39.2"]
 
 [tools.aws-cli."platforms.linux-x64"]
-checksum = "sha256:5b6c10e0a8ccdcf30c84bd643fea511f103d257a4787a7cef878691d63169804"
-url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.39.1.zip"
+checksum = "sha256:bb3e675d5c9a915121f3f90b380ec041ba52517067d017e4a4ceba40e0213247"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.39.2.zip"
 
 [tools.aws-cli."platforms.macos-arm64"]
-checksum = "sha256:2a0e523fc3f58efe7d35914b3cf6a35adc5820002489b7a4a65e006b2f4073de"
-url = "https://awscli.amazonaws.com/AWSCLIV2-2.39.1.pkg"
+checksum = "sha256:74153a9818dd70efe0503253f6e9c994ca93205d87fda06bde491aee9b91df5b"
+url = "https://awscli.amazonaws.com/AWSCLIV2-2.39.2.pkg"
 
 [[tools.claude-code]]
 version = "2.1.316"
