@@ -89,7 +89,7 @@ FNOX_PROFILE = "work"
 aspire = "v13.6.4"
 aws-cli = { version = "2.39.1", symlink_bins = "true" }
 claude-code = { version = "latest", auto_update = true }
-databricks-cli = "1.22.1"
+databricks-cli = "v1.23.0"
 dotnet = "10.0.402"
 git-lfs = "3.8.1"
 glab = "v1.126.0"
