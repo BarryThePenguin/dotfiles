@@ -119,19 +119,19 @@ url = "https://github.com/DataDog/pup/releases/download/v2.3.5/pup_2.3.5_Darwin_
 url_api = "https://api.github.com/repos/DataDog/pup/releases/assets/683597159"
 
 [[tools.glab]]
-version = "1.125.0"
+version = "1.126.0"
 backend = "gitlab:gitlab-org/cli"
-specifiers = ["v1.125.0"]
+specifiers = ["v1.126.0"]
 
 [tools.glab."platforms.linux-x64"]
-checksum = "sha256:c7325f14e408be26fcc1ba5f7a7f71f02c1a20aa3ac6018a57fb04901ea5549a"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.125.0/downloads/glab_1.125.0_linux_amd64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E125%2E0/glab_1%2E125%2E0_linux_amd64%2Etar%2Egz"
+checksum = "sha256:f386519ba83e9482979992ee7f60eeebee4d95b950f95f4fe7289e0a1b1ea74c"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.126.0/downloads/glab_1.126.0_linux_amd64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E126%2E0/glab_1%2E126%2E0_linux_amd64%2Etar%2Egz"
 
 [tools.glab."platforms.macos-arm64"]
-checksum = "sha256:e77f5756c3c8d9ffeaef0bf234533f395680ab9f128a75cec4c1bd7a1049788c"
-url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.125.0/downloads/glab_1.125.0_darwin_arm64.tar.gz"
-url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E125%2E0/glab_1%2E125%2E0_darwin_arm64%2Etar%2Egz"
+checksum = "sha256:11980310aaad2bd9c4e75b5635a60e984da5d0e6245187f2cd6e8db0ec4c5a92"
+url = "https://gitlab.com/gitlab-org/cli/-/releases/v1.126.0/downloads/glab_1.126.0_darwin_arm64.tar.gz"
+url_api = "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/packages/generic/glab/1%2E126%2E0/glab_1%2E126%2E0_darwin_arm64%2Etar%2Egz"
 
 [[tools."http:coderabbit"]]
 version = "0.9.0"
