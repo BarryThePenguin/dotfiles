@@ -1,5 +1,6 @@
 .DS_Store
 .scratch
+fnox.local.toml
 mise.local.toml
 **/.claude/settings.local.json
 **/.claude/worktrees
