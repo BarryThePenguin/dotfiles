@@ -8,4 +8,4 @@ lockfile_platforms = ["macos-arm64", "linux-x64"]
 
 [tools]
 hk = { version = "2.11.0", workflow = "release.yml" }
-pnpm = "12.16.1"
+pnpm = "12.17.0"
