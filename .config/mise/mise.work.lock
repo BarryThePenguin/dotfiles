@@ -177,10 +177,10 @@ url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_d
 url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423629"
 
 [[tools."npm:@augmentcode/auggie"]]
-version = "0.36.0"
-aube = { path = "locks/mise.work/npm-augmentcode-auggie/0.36.0", digest = "sha256:59555bbbc816d413aa7d7716ed755427c6ee65c9c62347c394ec07da54d7703a" }
+version = "0.37.0"
+aube = { path = "locks/mise.work/npm-augmentcode-auggie/0.37.0", digest = "sha256:17041a5e50fc57c33de129b55c9eb8433c0e32669ed170863c75367c9a5ba4f2" }
 backend = "npm:@augmentcode/auggie"
-specifiers = ["0.36.0"]
+specifiers = ["0.37.0"]
 
 [[tools."npm:@opencode/cli"]]
 version = "2.0.26"
