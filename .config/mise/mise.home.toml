@@ -51,6 +51,7 @@ stderr_path = "~/Library/Logs/life-sync.err.log"
 
 [bootstrap.packages]
 "brew-cask:headlamp" = "latest"
+"brew-cask:moonlight" = "latest"
 "brew-cask:notion" = "latest"
 "brew-cask:opencode-desktop" = "latest"
 "brew-cask:utm" = "latest"
@@ -58,6 +59,7 @@ stderr_path = "~/Library/Logs/life-sync.err.log"
 
 [tools]
 "github:SigNoz/signoz-mcp-server" = "v0.17.0"
+"npm:@opencode/browse" = { version = "0.0.16", allow_low_downloads = true }
 "npm:@opencode/cli" = { version = "latest", allow_builds = ["@opencode/cli"], auto_update = true }
 copilot = "v1.0.105"
 cosign = "3.1.4"

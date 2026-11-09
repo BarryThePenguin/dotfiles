@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Pair the browse browser extension with this machine's relay"
+# Install the extension once from the Chrome Web Store, then run this and enter
+# the printed code under the extension's Options -> advanced -> Pairing code.
+set -euo pipefail
+exec browse pair "$@"

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Show where to install the browse browser extension"
+set -euo pipefail
+exec browse extension "$@"
