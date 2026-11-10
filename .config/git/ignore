@@ -4,3 +4,13 @@ fnox.local.toml
 mise.local.toml
 **/.claude/settings.local.json
 **/.claude/worktrees
+
+# --- Obsidian UI and Layout State ---
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/graph.json
+
+# --- Plugins and Caches ---
+.obsidian/caches/
+.obsidian/plugins/smart-connections/
+.obsidian/plugins/copilot/
