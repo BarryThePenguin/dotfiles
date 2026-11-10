@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Re-pin vendored skills to each source's default branch and re-fetch"
+#MISE quiet=true
+#MISE dir="{{cwd}}"
+set -euo pipefail
+exec mise run skills:sync -- --update
