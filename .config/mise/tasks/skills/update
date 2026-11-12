@@ -3,4 +3,4 @@
 #MISE quiet=true
 #MISE dir="{{cwd}}"
 set -euo pipefail
-exec mise run skills:sync -- --update
+exec skills update "$@"
