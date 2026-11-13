@@ -33,21 +33,21 @@ checksum = "sha256:f89c9288dbd9bd0579914ea3a72acc14bca1ae3d3112e92bcb29ff5a48b88
 url = "https://awscli.amazonaws.com/AWSCLIV2-2.39.5.pkg"
 
 [[tools.claude-code]]
-version = "2.1.319"
+version = "2.1.322"
 backend = "aqua:anthropics/claude-code"
 specifiers = ["latest"]
 
 [tools.claude-code."platforms.linux-x64"]
-checksum = "sha256:8cf226393c8eca446d6ca60fa6bbe3fa7b5fa4de82a7b410d1edbd48689cd776"
+checksum = "sha256:3d2bc5ae54d4d4cd63510e9fcca5b6d48d2b18806708df8c8f691aa486c5dca8"
 checksum_source = "mise-versions"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.319/claude-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/715419124"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.322/claude-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/729757174"
 
 [tools.claude-code."platforms.macos-arm64"]
-checksum = "sha256:7ae10919ce40346befabe3c18da4d5ccc860201b6785b3ae726d8961472d0e5d"
+checksum = "sha256:0ff389f1a313f50778c2472c2f85882ca82c10156398c68cfc3c332004694646"
 checksum_source = "mise-versions"
-url = "https://github.com/anthropics/claude-code/releases/download/v2.1.319/claude-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/715418856"
+url = "https://github.com/anthropics/claude-code/releases/download/v2.1.322/claude-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/729756939"
 
 [[tools.databricks-cli]]
 version = "v1.24.0"
@@ -207,3 +207,6 @@ version = "1.5.1"
 aube = { path = "locks/mise.work/viteplus/1.5.1", digest = "sha256:211c17f4620cdbbf664a550f09e25428121a146c77e0581210006ae9f78d6762" }
 backend = "npm:vite-plus"
 specifiers = ["1.5.1"]
+
+[tools.viteplus.provenance]
+repository = "github.com/voidzero-dev/vite-plus"
