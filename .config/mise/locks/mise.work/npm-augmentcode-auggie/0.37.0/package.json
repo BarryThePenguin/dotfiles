@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "@augmentcode/auggie": "0.37.0"
+    "@augmentcode/auggie": "0.37.1"
   }
 }
