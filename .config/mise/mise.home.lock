@@ -3,21 +3,21 @@
 lockfile_version = 4
 
 [[tools.copilot]]
-version = "v1.0.106"
+version = "v1.0.107"
 backend = "aqua:github/copilot-cli"
-specifiers = ["v1.0.106"]
+specifiers = ["v1.0.107"]
 
 [tools.copilot."platforms.linux-x64"]
-checksum = "sha256:bb2ac6a50c2d7ceffee3b489f278fb9ba4fd39d4678dd75b5b021d4feedcc3ef"
+checksum = "sha256:aff04181566f637010a88e68ea145ac1515ec596fae3890d06d81bb8c4be0c4e"
 checksum_source = "mise-versions"
-url = "https://github.com/github/copilot-cli/releases/download/v1.0.106/copilot-linux-x64.tar.gz"
-url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/715522092"
+url = "https://github.com/github/copilot-cli/releases/download/v1.0.107/copilot-linux-x64.tar.gz"
+url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/718482878"
 
 [tools.copilot."platforms.macos-arm64"]
-checksum = "sha256:ed8f7895f1721fb129d08b5139d140a01af5df716c319698fd79f8fb7f9e19a1"
+checksum = "sha256:85c58e1ba11a5869c9f5f59017571674ef6199e474c118caad3cb23ebe99448a"
 checksum_source = "mise-versions"
-url = "https://github.com/github/copilot-cli/releases/download/v1.0.106/copilot-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/715521514"
+url = "https://github.com/github/copilot-cli/releases/download/v1.0.107/copilot-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/github/copilot-cli/releases/assets/718482636"
 
 [[tools.cosign]]
 version = "3.1.4"
