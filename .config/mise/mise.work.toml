@@ -85,7 +85,7 @@ FNOX_PROFILE = "work"
 "dotnet:dotnet-ef" = "10.0.14"
 "dotnet:ilspycmd" = "11.2.0.10050"
 "github:DataDog/pup" = "v2.3.10"
-"npm:@augmentcode/auggie" = "0.37.0"
+"npm:@augmentcode/auggie" = "0.37.1"
 aspire = "v13.6.4"
 aws-cli = { version = "2.39.6", symlink_bins = "true" }
 claude-code = { version = "latest", auto_update = true }
