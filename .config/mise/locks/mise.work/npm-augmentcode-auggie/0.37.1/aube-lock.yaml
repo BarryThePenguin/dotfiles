@@ -9,13 +9,13 @@ importers:
   .:
     dependencies:
       '@augmentcode/auggie':
-        specifier: 0.37.0
-        version: 0.37.0
+        specifier: 0.37.1
+        version: 0.37.1
 
 packages:
 
-  '@augmentcode/auggie@0.37.0':
-    resolution: {integrity: sha512-TFDyF4dphA41woTw0LPkfYqGnXhWrjvbogec9uJYWDJdhIfOmGGwMXOKJf3ZtCjgjXVWcy5owOPEkyJoYejwGw==}
+  '@augmentcode/auggie@0.37.1':
+    resolution: {integrity: sha512-TFnkuFUFR5U2xWXbsol8sbO9w0im9nyH+cI6AzJmSAjvkcAiTeLxAf4SX8TcwWq4S6HdhmgOdYfAHKXeF/DjnQ==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -27,7 +27,7 @@ packages:
 
 snapshots:
 
-  '@augmentcode/auggie@0.37.0':
+  '@augmentcode/auggie@0.37.1':
     optionalDependencies:
       node-pty: 1.2.0-beta.14
 
