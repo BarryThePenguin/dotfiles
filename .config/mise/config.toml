@@ -5,7 +5,7 @@ OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
 OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 
 [tools]
-"npm:@typespec/compiler" = { version = "1.17.0", os = ["macos"] }
+"npm:@typespec/compiler" = { version = "1.18.0", os = ["macos"] }
 "npm:prettier" = { version = "3.9.10", os = ["macos"] }
 "npm:typescript-language-server" = { version = "6.0.3", os = ["macos"] }
 "npm:typescript" = { version = "7.0.2", os = ["macos"] }
