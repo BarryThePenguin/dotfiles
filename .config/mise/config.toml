@@ -7,7 +7,7 @@ OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 [tools]
 "npm:@typespec/compiler" = { version = "1.18.0", os = ["macos"] }
 "npm:prettier" = { version = "3.9.10", os = ["macos"] }
-"npm:typescript-language-server" = { version = "6.0.3", os = ["macos"] }
+"npm:typescript-language-server" = { version = "6.1.0", os = ["macos"] }
 "npm:typescript" = { version = "7.0.2", os = ["macos"] }
 "cargo:forgejo-cli" = { version = "0.7.0", os = ["macos"] }
 "github:asciimoo/hister" = { version = "0.21.0", os = ["macos"] }
