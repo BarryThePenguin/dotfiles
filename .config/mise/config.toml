@@ -18,7 +18,7 @@ atuin = { version = "18.24.5", os = ["macos"] }
 aube = { version = "v2.9.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"], os = ["macos"] }
 cloudflared = { version = "2026.10.7", os = ["macos"] }
 flux2 = { version = "2.10.0", os = ["macos"] }
-fnox = { version = "v1.46.0", workflow = "release.yml", os = ["macos"] }
+fnox = { version = "v1.47.0", workflow = "release.yml", os = ["macos"] }
 gh = { version = "2.103.3", os = ["macos"] }
 go = { version = "1.27.3", os = ["macos"] }
 golangci-lint = { version = "2.15.0", os = ["macos"] }
