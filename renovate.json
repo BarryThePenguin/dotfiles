@@ -1,4 +1,12 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["github>BarryThePenguin/renovate-config"]
+	"extends": ["github>BarryThePenguin/renovate-config"],
+	"packageRules": [
+		{
+			"description": "mise auto_update keeps \"latest\" current; Renovate's lockfile update leaves the aube graph at the old version and mise lock fails",
+			"matchManagers": ["mise"],
+			"matchDepNames": ["npm:@opencode/cli"],
+			"enabled": false
+		}
+	]
 }
