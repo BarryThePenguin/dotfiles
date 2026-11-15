@@ -3,9 +3,9 @@
 	"extends": ["github>BarryThePenguin/renovate-config"],
 	"packageRules": [
 		{
-			"description": "mise auto_update keeps \"latest\" current; Renovate's lockfile update leaves the aube graph at the old version and mise lock fails",
+			"description": "mise auto_update keeps these on \"latest\"; for npm tools Renovate's lockfile update also leaves the aube graph at the old version and mise lock fails",
 			"matchManagers": ["mise"],
-			"matchDepNames": ["npm:@opencode/cli"],
+			"matchDepNames": ["npm:@opencode/cli", "claude-code"],
 			"enabled": false
 		}
 	]
