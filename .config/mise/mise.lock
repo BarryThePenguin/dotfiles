@@ -248,10 +248,10 @@ backend = "npm:@opencode/cli"
 specifiers = ["2.0.26"]
 
 [[tools."npm:@typespec/compiler"]]
-version = "1.17.0"
-aube = { path = "locks/npm-typespec-compiler/1.17.0", digest = "sha256:ed33537e880f88c8076e9edebe32fd8d6861932d93218c567c6f041cd826ad48" }
+version = "1.18.0"
+aube = { path = "locks/npm-typespec-compiler/1.18.0", digest = "sha256:19ca2400fbff80cdd34d76b26822c2fa4646aa4a7e8f54d0b7f50f94f3b9f770" }
 backend = "npm:@typespec/compiler"
-specifiers = ["1.17.0"]
+specifiers = ["1.18.0"]
 
 [[tools."npm:prettier"]]
 version = "3.9.10"
