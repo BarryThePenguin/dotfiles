@@ -5,7 +5,7 @@
 		{
 			"description": "mise auto_update keeps these on \"latest\"; for npm tools Renovate's lockfile update also leaves the aube graph at the old version and mise lock fails",
 			"matchManagers": ["mise"],
-			"matchDepNames": ["npm:@opencode/cli", "claude-code"],
+			"matchDepNames": ["opencode", "claude-code"],
 			"enabled": false
 		}
 	]

@@ -28,6 +28,11 @@ provider = "op"
 value = "Hister App Access Token"
 sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAwcU1kNGpQYlBQcHRLMTR1N285am9PdDF4T1VGUUp1M2FCajlmSlFkclE0CkRTWGxsWnpROVZZTkUyM2k5NnpIQzV1T0pwczR5Y3JoVldwM2ZiRzlmNHcKLT4gQUstZ3JlYXNlIFBGYSBWKDMgeHg0ClB6a3lsclZNUHQ1bVNZYXBRTW94d1pNRlozTjRQaWJmd2I0RVdnTFZIUkx6dElraFVJRitCVThMR25FclBmbEYKa2RFQWRkVlhGUnNlbTlHSlcwcwotLS0gTXJKRXN6V1RFYzZ3c0lNTnEyVU1mZVJyMkdRcXhESWpFMUZ6OG5XbUV6TQpBkWEYrpHHY84l5CqROj/h6ZrVhICqIcfWkqwOB1KsykeLRU4arn/0uqQDdx+BiK6fyASzdRWCCjUW8MnFlo4D+lN/38f/sInOPnJa:/OHTBSW5pntnSJKsKd+PnedVLwO5sm/44JyehOp4rkc6fqNFrpiCZ6+/8GM4lZb3paqBK68D" }
 
+[secrets.FORGEJO_NPM_TOKEN]
+provider = "op"
+value = "Forgejo btp npm registry dev/token"
+sync = { provider = "age", value = "fnox-age-batch-v1:YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBVU0F3TVBGekZFOVZrakk2bDAvU2c3OHA2b0Q5a3M2dFlxbnRVM0U0THlrCjB3M2xmT3NacGZrTzYyUkozaTRnemlVN0crSHRYNlc4U0wzLy9DK3h4S1EKLT4gO0AtZ3JlYXNlCmVJWGdCU09UV3lzZlFxOUw4bXpOSWd3TlJNeHA3UldEcUR3aWpWL1NXOEpGcjI1ayt3Ci0tLSBLbzFhUlRNN0NSbW5KOUFHbVpVS0RMQlBUTDloTHhwcXlIbDV6eUNzREZvCrwoWxgF4OTxGsNIfpyIixnuuGV1pYrawpO0NbrKtnEn5/HJMtddsyk1DRqwI1xQud7bY0j038X60BoDxhALHY9rDO1g24QBx9Q446I=:SWcEzCDC/jKdXKVncyGeql2Wx4Q4ElCLJkdEvqBvdkvS0Bz+8anv7cb3IrWO7vctMh4O1bjbS6GSiCtItAJo+a0XpE8=" }
+
 [secrets.FORGEJO_TOKEN]
 provider = "op"
 value = "Forgejo Personal Access Token/token"
