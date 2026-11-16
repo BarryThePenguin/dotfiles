@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #MISE description="Dump an agent session's user messages + tool calls for a retro (default: the current session)"
-#MISE tools={ "npm:@opencode/cli" = "2.0.26" }
+#MISE tools={ "opencode" = "latest" }
 #USAGE arg "[session]" env="SESSION_ID" {
 #USAGE   help "Session id (default: the current session)"
 #USAGE   long_help """
