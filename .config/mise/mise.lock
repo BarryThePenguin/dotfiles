@@ -357,14 +357,14 @@ url = "https://github.com/raine/workmux/releases/download/v0.1.281/workmux-darwi
 url_api = "https://api.github.com/repos/raine/workmux/releases/assets/723842551"
 
 [[tools.yq]]
-version = "4.54.2"
+version = "4.54.3"
 backend = "aqua:mikefarah/yq"
-specifiers = ["4.54.2"]
+specifiers = ["4.54.3"]
 
 [tools.yq."platforms.macos-arm64"]
-checksum = "sha256:34923a7ca09a32a4257702ced5f7f2e5e83b16968cce3866f5ff830e4ce1cdd4"
-url = "https://github.com/mikefarah/yq/releases/download/v4.54.2/yq_darwin_arm64"
-url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/715419585"
+checksum = "sha256:a2aebb93b5bdcb61bb76f630e42a0ef6a3ee10842a6516cd7b9e4080786ec593"
+url = "https://github.com/mikefarah/yq/releases/download/v4.54.3/yq_darwin_arm64"
+url_api = "https://api.github.com/repos/mikefarah/yq/releases/assets/726219940"
 provenance = "cosign"
 
 [[tools.zellij]]
