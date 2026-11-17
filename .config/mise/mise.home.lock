@@ -150,13 +150,13 @@ specifiers = ["0.0.16"]
 [tools."npm:@opencode/browse".options]
 allow_low_downloads = "true"
 
-[[tools."npm:@opencode/cli"]]
+[[tools.opencode]]
 version = "2.3.0"
-aube = { path = "locks/mise.home/npm-opencode-cli/2.3.0~009061c2", digest = "sha256:7551d2030029342acda79c9d94e764e59e099221b482eb878f5f589eb576a26d" }
+aube = { path = "locks/mise.home/opencode/2.3.0~009061c2", digest = "sha256:7551d2030029342acda79c9d94e764e59e099221b482eb878f5f589eb576a26d" }
 backend = "npm:@opencode/cli"
 specifiers = ["latest"]
 
-[tools."npm:@opencode/cli".options]
+[tools.opencode.options]
 allow_builds = '["@opencode/cli"]'
 
 [[tools.slsa-verifier]]
