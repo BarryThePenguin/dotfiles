@@ -148,10 +148,10 @@ checksum = "blake3:7549435d582efb74fcb3ddffb171fb22c94eaaff0fd31d84f6b68108eb8ca
 url = "https://cli.coderabbit.ai/releases/0.9.0/coderabbit-darwin-arm64.zip"
 
 [[tools."npm:@augmentcode/auggie"]]
-version = "0.37.1"
-aube = { path = "locks/mise.work/npm-augmentcode-auggie/0.37.1", digest = "sha256:d35cce2607535c16321c597041ca32280f23847816b2a8e156d4ae16ddc4fb40" }
+version = "1.2.1"
+aube = { path = "locks/mise.work/npm-augmentcode-auggie/1.2.1", digest = "sha256:73d77d9e362323e78a485dd31c66e4234ced6d61cfd1736c650b70599706d226" }
 backend = "npm:@augmentcode/auggie"
-specifiers = ["0.37.1"]
+specifiers = ["1.2.1"]
 
 [[tools.twg]]
 version = "1.4.4"
