@@ -9,13 +9,13 @@ importers:
   .:
     dependencies:
       '@opencode/browse':
-        specifier: 0.0.16
-        version: 0.0.16
+        specifier: 0.0.17
+        version: 0.0.17
 
 packages:
 
-  '@opencode/browse@0.0.16':
-    resolution: {integrity: sha512-DOiguaDF1EovDR/w+4xLmkri5Lpc6DxgUUfVuIxwxt34kWu2HB1uZ5ISlM6YumlGek869K9/ih7Ls2gh7VzDEw==}
+  '@opencode/browse@0.0.17':
+    resolution: {integrity: sha512-unlQPLBWTsb5rvajczO4uR5dd4LM4/1uB2ca5jKeEx10ICSHAtzljueKzEmY5X7rWmH2pPADAi7trUnjACms6Q==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
@@ -51,7 +51,7 @@ packages:
 
 snapshots:
 
-  '@opencode/browse@0.0.16':
+  '@opencode/browse@0.0.17':
     dependencies:
       acorn: 8.18.0
       patchright-core: 1.63.0
