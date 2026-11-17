@@ -1,6 +1,11 @@
 {
   "name": "mise-npm-install",
   "private": true,
+  "aube": {
+    "allowBuilds": {
+      "@opencode/cli": true
+    }
+  },
   "dependencies": {
     "@opencode/cli": "2.3.0"
   }
