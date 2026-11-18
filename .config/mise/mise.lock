@@ -287,14 +287,15 @@ url = "https://github.com/earendil-works/pi/releases/download/v1.5.2/pi-darwin-a
 url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/731292526"
 
 [[tools.podman]]
-version = "6.1.4"
+version = "6.2.0"
 backend = "github:podman-container-tools/podman"
-specifiers = ["v6.1.4"]
+specifiers = ["v6.2.0"]
 
 [tools.podman."platforms.macos-arm64"]
-checksum = "sha256:dadcb94999dcb7f19f8269e292fc56d2bfbe2bfab5826981a568a466bff26843"
-url = "https://github.com/podman-container-tools/podman/releases/download/v6.1.4/podman-remote-release-darwin_arm64.zip"
-url_api = "https://api.github.com/repos/podman-container-tools/podman/releases/assets/634977395"
+checksum = "sha256:34b4a24e2a749d1ad5e2edacaf01efcf2c2cc89175e5db8c953fd46ba663d17e"
+checksum_source = "mise-versions"
+url = "https://github.com/podman-container-tools/podman/releases/download/v6.2.0/podman-remote-release-darwin_arm64.zip"
+url_api = "https://api.github.com/repos/podman-container-tools/podman/releases/assets/732770385"
 
 [[tools.python]]
 version = "3.15.2"
