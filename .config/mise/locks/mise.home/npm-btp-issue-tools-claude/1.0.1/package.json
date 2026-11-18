@@ -1,0 +1,7 @@
+{
+  "name": "mise-npm-install",
+  "private": true,
+  "dependencies": {
+    "@btp/issue-tools-claude": "1.0.1"
+  }
+}

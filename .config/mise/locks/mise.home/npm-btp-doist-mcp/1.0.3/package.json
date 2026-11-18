@@ -1,0 +1,7 @@
+{
+  "name": "mise-npm-install",
+  "private": true,
+  "dependencies": {
+    "@btp/doist-mcp": "1.0.3"
+  }
+}

@@ -171,6 +171,72 @@ url = "https://github.com/lima-vm/lima/releases/download/v2.3.0/lima-2.3.0-Darwi
 url_api = "https://api.github.com/repos/lima-vm/lima/releases/assets/717479690"
 provenance = "github-attestations"
 
+[[tools."npm:@btp/catalogue-mcp"]]
+version = "1.1.0"
+aube = { path = "locks/mise.home/npm-btp-catalogue-mcp/1.1.0", digest = "sha256:419cdd36e290092b1751535c9a6d632343c6ed4ba6a1146a58114f619002808b" }
+backend = "npm:@btp/catalogue-mcp"
+specifiers = ["1.1.0"]
+
+[[tools."npm:@btp/ci-cli"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-ci-cli/1.0.0", digest = "sha256:9119a2fa754fff90100eebd25218f81752f072168affd6b942ba13a545836d8f" }
+backend = "npm:@btp/ci-cli"
+specifiers = ["1.0.0"]
+
+[[tools."npm:@btp/doist-cli"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-doist-cli/1.0.0", digest = "sha256:2be26d29d210f80bd4f7a45259454420a110b1503b6aeaed8b3a04c6610ff8f8" }
+backend = "npm:@btp/doist-cli"
+specifiers = ["1.0.0"]
+
+[[tools."npm:@btp/doist-mcp"]]
+version = "1.0.3"
+aube = { path = "locks/mise.home/npm-btp-doist-mcp/1.0.3", digest = "sha256:3f8396b50880f463f8ba631b0d79742e8d7793d5aac55a35e38d7359eaff334b" }
+backend = "npm:@btp/doist-mcp"
+specifiers = ["1.0.3"]
+
+[[tools."npm:@btp/file-size-cli"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-file-size-cli/1.0.0", digest = "sha256:c30530fea1160728f858f428110a26097422ce73343a66e592352292e4cd960b" }
+backend = "npm:@btp/file-size-cli"
+specifiers = ["1.0.0"]
+
+[[tools."npm:@btp/hub"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-hub/1.0.0", digest = "sha256:1055cf9d6c6427aedc40f1feafd5a7882b8ce4be6244cbb3def44a72f499345a" }
+backend = "npm:@btp/hub"
+specifiers = ["1.0.0"]
+
+[[tools."npm:@btp/issue-tools-claude"]]
+version = "1.0.1"
+aube = { path = "locks/mise.home/npm-btp-issue-tools-claude/1.0.1", digest = "sha256:4805adf778517fdaee9abf9e5a4e34a6a8d7ef651e87321b31ce69e54603d70a" }
+backend = "npm:@btp/issue-tools-claude"
+specifiers = ["1.0.1"]
+
+[[tools."npm:@btp/nms-save-cli"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-nms-save-cli/1.0.0", digest = "sha256:b895af4716c755e3e3afc9c959d2184fe7f3b32e62a2ee9081d5939c52f2a982" }
+backend = "npm:@btp/nms-save-cli"
+specifiers = ["1.0.0"]
+
+[[tools."npm:@btp/onix"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-onix/1.0.0", digest = "sha256:66015102f542d10c86e6ff4be6be26b1cf451ff33ee3f667ac386e59aa79b3f1" }
+backend = "npm:@btp/onix"
+specifiers = ["1.0.0"]
+
+[[tools."npm:@btp/opencode-go-usage"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-opencode-go-usage/1.0.0", digest = "sha256:001e16948869d2daa7da6efb3cdd8784e835d4cf93c71a4f6a330e7f1a0c6188" }
+backend = "npm:@btp/opencode-go-usage"
+specifiers = ["1.0.0"]
+
+[[tools."npm:@btp/skills-cli"]]
+version = "1.0.0"
+aube = { path = "locks/mise.home/npm-btp-skills-cli/1.0.0", digest = "sha256:f2827ac2b92a14c77d5453e8ed88a265ecee82aabdd91f0b8b326d8571d28cdc" }
+backend = "npm:@btp/skills-cli"
+specifiers = ["1.0.0"]
+
 [[tools."npm:@opencode/browse"]]
 version = "0.0.17"
 aube = { path = "locks/mise.home/npm-opencode-browse/0.0.17~fcb60795", digest = "sha256:d93528997eeaa5a3e93d7040d673be10d0d311e1e9dac3e58a6009f37f8dc451" }
@@ -179,6 +245,9 @@ specifiers = ["0.0.17"]
 
 [tools."npm:@opencode/browse".options]
 allow_low_downloads = "true"
+
+[tools."npm:@opencode/browse".provenance]
+repository = "github.com/anomalyco/browse"
 
 [[tools.opencode]]
 version = "2.3.0"
