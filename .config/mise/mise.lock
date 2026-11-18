@@ -387,15 +387,15 @@ url = "https://github.com/watchexec/watchexec/releases/download/v2.8.0/watchexec
 url_api = "https://api.github.com/repos/watchexec/watchexec/releases/assets/616138836"
 
 [[tools.workmux]]
-version = "0.1.281"
+version = "0.1.282"
 backend = "github:raine/workmux"
-specifiers = ["v0.1.281"]
+specifiers = ["v0.1.282"]
 
 [tools.workmux."platforms.macos-arm64"]
-checksum = "sha256:ce68622c42088671731d539cc404b7e45138db304d9f55a84c285bf1bfccc491"
+checksum = "sha256:47a5e1fea7e150c3fc24cb713fe444077b44272ca0c4033fe7cc3e3a3e236b2f"
 checksum_source = "mise-versions"
-url = "https://github.com/raine/workmux/releases/download/v0.1.281/workmux-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/raine/workmux/releases/assets/723842551"
+url = "https://github.com/raine/workmux/releases/download/v0.1.282/workmux-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/raine/workmux/releases/assets/733079221"
 
 [[tools.yq]]
 version = "4.54.3"
