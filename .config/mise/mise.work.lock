@@ -50,21 +50,21 @@ url = "https://github.com/anthropics/claude-code/releases/download/v2.1.325/clau
 url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/745018486"
 
 [[tools.databricks-cli]]
-version = "v1.25.0"
+version = "v1.26.0"
 backend = "aqua:databricks/cli"
-specifiers = ["v1.25.0"]
+specifiers = ["v1.26.0"]
 
 [tools.databricks-cli."platforms.linux-x64"]
-checksum = "sha256:fbf7cabcece4a139b8dbcc217a9f2bac478d1577310b5043c49129093f173c37"
+checksum = "sha256:522488842972a06936207a503426ad364d8061da2e330636da60f444a32840f5"
 checksum_source = "mise-versions"
-url = "https://github.com/databricks/cli/releases/download/v1.25.0/databricks_cli_1.25.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/databricks/cli/releases/assets/727686688"
+url = "https://github.com/databricks/cli/releases/download/v1.26.0/databricks_cli_1.26.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/databricks/cli/releases/assets/735962665"
 
 [tools.databricks-cli."platforms.macos-arm64"]
-checksum = "sha256:be83411a8cc52b669f70fa7748c1e31b2a91fd4c80730f5982e9a318387758a7"
+checksum = "sha256:66c9cbe36fc0abb491e0746124a95ea644054112e6b5ed78adb0ee530c4ddaf0"
 checksum_source = "mise-versions"
-url = "https://github.com/databricks/cli/releases/download/v1.25.0/databricks_cli_1.25.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/databricks/cli/releases/assets/727686645"
+url = "https://github.com/databricks/cli/releases/download/v1.26.0/databricks_cli_1.26.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/databricks/cli/releases/assets/735962609"
 
 [[tools.dotnet]]
 version = "11.0.100"
