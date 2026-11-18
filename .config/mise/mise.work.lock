@@ -103,21 +103,21 @@ url = "https://github.com/git-lfs/git-lfs/releases/download/v3.8.1/git-lfs-darwi
 url_api = "https://api.github.com/repos/git-lfs/git-lfs/releases/assets/666388058"
 
 [[tools."github:DataDog/pup"]]
-version = "2.4.3"
+version = "2.4.4"
 backend = "github:DataDog/pup"
-specifiers = ["v2.4.3"]
+specifiers = ["v2.4.4"]
 
 [tools."github:DataDog/pup"."platforms.linux-x64"]
-checksum = "sha256:52cfdb6b4475bd30fe16b0863697654a63624e5da5910bd8581946ee5c6c2de1"
+checksum = "sha256:86ed3acd3f71e33cc88e173dc9a52f958056a3fbfd00f4d2d111e2bcd6f5fe16"
 checksum_source = "mise-versions"
-url = "https://github.com/DataDog/pup/releases/download/v2.4.3/pup_2.4.3_Linux_x86_64.tar.gz"
-url_api = "https://api.github.com/repos/DataDog/pup/releases/assets/729740555"
+url = "https://github.com/DataDog/pup/releases/download/v2.4.4/pup_2.4.4_Linux_x86_64.tar.gz"
+url_api = "https://api.github.com/repos/DataDog/pup/releases/assets/734142514"
 
 [tools."github:DataDog/pup"."platforms.macos-arm64"]
-checksum = "sha256:16c4572c0c0d5fb3b18f640fbf57f16252e5ecf13d44f77f906c6ed4ac3bb267"
+checksum = "sha256:47f8f6b7be035bf766cff066de09ec960e3d472fdee7084e9bfc1251cdf9f8bd"
 checksum_source = "mise-versions"
-url = "https://github.com/DataDog/pup/releases/download/v2.4.3/pup_2.4.3_Darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/DataDog/pup/releases/assets/729740535"
+url = "https://github.com/DataDog/pup/releases/download/v2.4.4/pup_2.4.4_Darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/DataDog/pup/releases/assets/734142497"
 
 [[tools.glab]]
 version = "1.128.0"
