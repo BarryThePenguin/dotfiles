@@ -142,16 +142,13 @@ url_api = "https://api.github.com/repos/lima-vm/lima/releases/assets/717479690"
 provenance = "github-attestations"
 
 [[tools."npm:@opencode/browse"]]
-version = "0.0.17"
-aube = { path = "locks/mise.home/npm-opencode-browse/0.0.17~fcb60795", digest = "sha256:d93528997eeaa5a3e93d7040d673be10d0d311e1e9dac3e58a6009f37f8dc451" }
+version = "0.1.0"
+aube = { path = "locks/mise.home/npm-opencode-browse/0.1.0~fcb60795", digest = "sha256:00a12557c97666f34098a52296914fa5c06c11ad7174f2e3b3d634a062994663" }
 backend = "npm:@opencode/browse"
-specifiers = ["0.0.17"]
+specifiers = ["0.1.0"]
 
 [tools."npm:@opencode/browse".options]
 allow_low_downloads = "true"
-
-[tools."npm:@opencode/browse".provenance]
-repository = "github.com/anomalyco/browse"
 
 [[tools.opencode]]
 version = "2.3.2"
