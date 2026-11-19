@@ -28,7 +28,7 @@ OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 "npm:typescript" = { version = "7.0.2", os = ["macos"] }
 age = { version = "1.3.2", os = ["macos"] }
 ast-grep = { version = "0.51.2", os = ["macos"] }
-atuin = { version = "18.24.7", os = ["macos"] }
+atuin = { version = "18.24.8", os = ["macos"] }
 aube = { version = "v2.10.0", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"], os = ["macos"] }
 cloudflared = { version = "2026.11.0", os = ["macos"] }
 flux2 = { version = "2.10.0", os = ["macos"] }
