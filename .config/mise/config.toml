@@ -5,13 +5,27 @@ OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
 OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 
 [tools]
+"cargo:forgejo-cli" = { version = "0.7.0", os = ["macos"] }
+"github:asciimoo/hister" = { version = "0.21.0", os = ["macos"] }
+"github:open-telemetry/opentelemetry-collector-releases" = { version = "v0.165.0", matching_regex = "^otelcol-contrib_", os = ["macos"] }
+"npm:@btp/catalogue" = "1.2.0"
+"npm:@btp/catalogue-mcp" = "1.1.0"
+"npm:@btp/ci-cli" = "1.0.0"
+"npm:@btp/doist-cli" = "1.0.0"
+"npm:@btp/doist-mcp" = "1.0.3"
+"npm:@btp/file-size-cli" = "1.0.0"
+"npm:@btp/hub" = "1.0.1"
+"npm:@btp/issue-tools-claude" = "1.0.1"
+"npm:@btp/nms-save-cli" = "1.0.0"
+"npm:@btp/mq-cli" = "1.0.0"
+"npm:@btp/mq-mcp" = "1.0.0"
+"npm:@btp/onix" = "1.0.0"
+"npm:@btp/opencode-go-usage" = "1.0.0"
+"npm:@btp/skills-cli" = "1.0.0"
 "npm:@typespec/compiler" = { version = "1.18.0", os = ["macos"] }
 "npm:prettier" = { version = "3.10.1", os = ["macos"] }
 "npm:typescript-language-server" = { version = "6.1.0", os = ["macos"] }
 "npm:typescript" = { version = "7.0.2", os = ["macos"] }
-"cargo:forgejo-cli" = { version = "0.7.0", os = ["macos"] }
-"github:asciimoo/hister" = { version = "0.21.0", os = ["macos"] }
-"github:open-telemetry/opentelemetry-collector-releases" = { version = "v0.165.0", matching_regex = "^otelcol-contrib_", os = ["macos"] }
 age = { version = "1.3.2", os = ["macos"] }
 ast-grep = { version = "0.51.2", os = ["macos"] }
 atuin = { version = "18.24.6", os = ["macos"] }
@@ -67,13 +81,9 @@ show_pathbar = true
 "~/.config/base16-shell" = { url = "https://github.com/chriskempson/base16-shell.git", ref = "master" }
 "~/.zprezto-contrib/zsh-notify" = { url = "https://github.com/marzocchi/zsh-notify.git", ref = "master" }
 "~/src/btp/advent-of-code" = { url = "https://github.com/BarryThePenguin/advent-of-code.git", ref = "main" }
-"~/src/btp/agent-tools" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/agent-tools.git", ref = "main" }
 "~/src/btp/gillyreads.com" = { url = "https://github.com/BarryThePenguin/gillyreads.com.git", ref = "main" }
-"~/src/btp/homelab" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/homelab.git", ref = "main" }
-"~/src/btp/skills" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/skills.git", ref = "main" }
-"~/src/btp/renovate-config" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/renovate-config.git", ref = "main" }
+"~/src/btp/home" = { url = "ssh://git@git.jonno.dev/btp/home.git", ref = "main" }
 "~/src/btp/simple-desktop-images" = { url = "https://github.com/BarryThePenguin/simple-desktop-images.git", ref = "main" }
-"~/src/btp/woodpecker-plugins" = { url = "ssh://git@git.jonno.dev/BarryThePenguin/woodpecker-plugins.git", ref = "main" }
 "~/src/hono/hono" = { url = "https://github.com/BarryThePenguin/hono.git", ref = "main" }
 "~/src/hono/middleware" = { url = "https://github.com/BarryThePenguin/middleware.git", ref = "main" }
 "~/src/hono/vite-plugins" = { url = "https://github.com/BarryThePenguin/vite-plugins.git", ref = "main" }
@@ -139,11 +149,11 @@ login_shell = "/bin/zsh"
 
 [dotfiles]
 "~/.agents/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }
-"~/.local/bin" = { source = "~/src/btp/agent-tools/bin", mode = "symlink-each", manifest = "git" }
 "~/.claude/agents" = { mode = "track" }
 "~/.claude/settings.json" = { mode = "track" }
 "~/.claude/statusline-command.sh" = { mode = "track" }
 "~/.config/1Password" = { mode = "symlink-each", manifest = "git" }
+"~/.config/agents" = { source = "~/src/btp/dotfiles/home/agents", mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/age.txt" = { source = "~/.config/sops/age/keys.txt", mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "symlink" }
@@ -156,8 +166,8 @@ login_shell = "/bin/zsh"
 "~/.config/git/work.gitconfig" = { mode = "symlink" }
 "~/.config/gpg/gpg-agent.conf" = { mode = "symlink" }
 "~/.config/gpg/gpg.conf" = { mode = "symlink" }
-"~/.config/hk" = { mode = "symlink-each", manifest = "git" }
 "~/.config/hister/config.yml" = { mode = "symlink" }
+"~/.config/hk" = { mode = "symlink-each", manifest = "git" }
 "~/.config/homebrew/Brewfile" = { mode = "symlink" }
 "~/.config/jj/config.toml" = { mode = "symlink" }
 "~/.config/kube/config" = { mode = "track" }
@@ -167,19 +177,19 @@ login_shell = "/bin/zsh"
 "~/.config/workmux/config.yaml" = { mode = "symlink" }
 "~/.config/zellij" = { mode = "symlink-each", manifest = "git" }
 "~/.config/zsh" = { mode = "symlink-each", manifest = "git" }
+"~/.npmrc" = { mode = "track" }
 "~/.pi/agent/agents" = { source = "~/src/btp/agent-tools/subagent-pi/agents", mode = "symlink" }
-"~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/agent-tools/issue-tools-pi", mode = "symlink" }
+"~/.pi/agent/extensions/issue-tools-pi" = { source = "~/src/btp/issue-tools/issue-tools-pi", mode = "symlink" }
 "~/.pi/agent/extensions/subagent-pi" = { source = "~/src/btp/agent-tools/subagent-pi", mode = "symlink" }
 "~/.pi/agent/mcp.json" = { mode = "symlink" }
 "~/.pi/agent/prompts" = { source = "~/src/btp/agent-tools/subagent-pi/prompts", mode = "symlink" }
 "~/.pi/agent/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }
 "~/.ssh/config" = { source = "~/src/btp/dotfiles/.config/ssh/config", mode = "symlink" }
-"~/fnox.toml" = { mode = "track" }
 "~/.wakatime.cfg" = { mode = "track" }
 "~/.zprezto-contrib" = { mode = "symlink-each", manifest = "git" }
 "~/.zshenv" = { mode = "symlink" }
 "~/AGENTS.md" = { source = "~/src/btp/dotfiles/home/AGENTS.md", mode = "symlink" }
-"~/.config/agents" = { source = "~/src/btp/dotfiles/home/agents", mode = "symlink" }
+"~/fnox.toml" = { mode = "track" }
 
 [dotfile_groups.home]
 root = "home"
@@ -192,7 +202,7 @@ exclude = ["AGENTS.md"]
 "~/.config/opencode/cli.json" = { source = "~/src/btp/dotfiles/.config/opencode/cli.json", mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { source = "~/src/btp/dotfiles/.config/opencode/opencode.jsonc", mode = "symlink" }
 "~/.config/opencode/plugins/caffeinate.ts" = { source = "~/src/btp/dotfiles/.config/opencode/plugins/caffeinate.ts", mode = "symlink" }
-"~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/agent-tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
+"~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/issue-tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
 "~/.config/opencode/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }
 "~/.config/opencode/tui.json" = { source = "~/src/btp/dotfiles/.config/opencode/tui.json", mode = "symlink" }
 

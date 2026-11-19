@@ -42,7 +42,7 @@ stderr_path = "~/Library/Logs/aspire-dashboard.err.log"
 
 [bootstrap.macos.launchd.agents.hub]
 program = "~/.local/share/mise/shims/fnox"
-args = ["exec", "--profile", "work", "--", "/Users/jonno/.local/bin/hub", "serve"]
+args = ["exec", "--profile", "work", "--", "hub", "serve"]
 run_at_load = true
 keep_alive = true
 environment = { HUB_HOME = "/Users/jonno/src/assistant", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }

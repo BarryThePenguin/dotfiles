@@ -19,7 +19,7 @@ stderr_path = "~/Library/Logs/otelcol.err.log"
 
 [bootstrap.macos.launchd.agents.hub]
 program = "~/.local/share/mise/shims/fnox"
-args = ["exec", "--", "/Users/jonno/.local/bin/hub", "serve"]
+args = ["exec", "--", "hub", "serve"]
 run_at_load = true
 keep_alive = true
 environment = { HUB_HOME = "/Users/jonno/src/btp/life", PATH = "/Users/jonno/.local/share/mise/shims:/Users/jonno/.local/bin:/opt/homebrew/bin:/usr/bin:/bin" }
@@ -59,17 +59,6 @@ stderr_path = "~/Library/Logs/life-sync.err.log"
 
 [tools]
 "github:SigNoz/signoz-mcp-server" = "v0.18.0"
-"npm:@btp/catalogue-mcp" = "1.1.0"
-"npm:@btp/ci-cli" = "1.0.0"
-"npm:@btp/doist-cli" = "1.0.0"
-"npm:@btp/doist-mcp" = "1.0.3"
-"npm:@btp/file-size-cli" = "1.0.0"
-"npm:@btp/hub" = "1.0.0"
-"npm:@btp/issue-tools-claude" = "1.0.1"
-"npm:@btp/nms-save-cli" = "1.0.0"
-"npm:@btp/onix" = "1.0.0"
-"npm:@btp/opencode-go-usage" = "1.0.0"
-"npm:@btp/skills-cli" = "1.0.0"
 "npm:@opencode/browse" = { version = "0.0.17", allow_low_downloads = true }
 copilot = "v1.0.109"
 cosign = "3.1.4"

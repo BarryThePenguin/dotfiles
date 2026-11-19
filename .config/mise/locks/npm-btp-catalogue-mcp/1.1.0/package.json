@@ -1,0 +1,7 @@
+{
+  "name": "mise-npm-install",
+  "private": true,
+  "dependencies": {
+    "@btp/catalogue-mcp": "1.1.0"
+  }
+}

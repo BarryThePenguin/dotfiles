@@ -1,0 +1,7 @@
+{
+  "name": "mise-npm-install",
+  "private": true,
+  "dependencies": {
+    "@btp/mq-mcp": "1.0.0"
+  }
+}
