@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "@btp/doist-cli": "1.0.0"
+    "prettier": "3.10.1"
   }
 }

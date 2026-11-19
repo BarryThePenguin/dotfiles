@@ -3,8 +3,6 @@ import "package://github.com/jdx/hk/releases/download/v2.8.1/hk@2.8.1#/Builtins.
 // Using a coding agent? See https://hk.jdx.dev/agents
 
 local linters = new Mapping<String, Step> {
-    ["eslint"] = Builtins.eslint
-    ["knip"] = Builtins.knip
     ["prettier"] = Builtins.prettier
     // The bash scripts have no .sh extension, and the zsh ones (scripts/+x,
     // scripts/fix-gpg) are beyond shellcheck, so the files are listed.

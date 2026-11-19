@@ -351,8 +351,8 @@ backend = "npm:typescript-language-server"
 specifiers = ["6.1.0"]
 
 [[tools.opencode]]
-version = "2.3.0"
-aube = { path = "locks/opencode/2.3.0~009061c2", digest = "sha256:7551d2030029342acda79c9d94e764e59e099221b482eb878f5f589eb576a26d" }
+version = "2.3.2"
+aube = { path = "locks/opencode/2.3.2~009061c2", digest = "sha256:f67371b7894a6b7f810fff23c77cbe2f5b52832421b3b92ce701dad6714a5b56" }
 backend = "npm:@opencode/cli"
 specifiers = ["latest"]
 

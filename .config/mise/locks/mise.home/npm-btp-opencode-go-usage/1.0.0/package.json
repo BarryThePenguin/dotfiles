@@ -1,7 +1,0 @@
-{
-  "name": "mise-npm-install",
-  "private": true,
-  "dependencies": {
-    "@btp/opencode-go-usage": "1.0.0"
-  }
-}

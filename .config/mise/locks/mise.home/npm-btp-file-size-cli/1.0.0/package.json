@@ -1,7 +1,0 @@
-{
-  "name": "mise-npm-install",
-  "private": true,
-  "dependencies": {
-    "@btp/file-size-cli": "1.0.0"
-  }
-}

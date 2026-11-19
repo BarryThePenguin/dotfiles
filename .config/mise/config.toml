@@ -201,8 +201,6 @@ exclude = ["AGENTS.md"]
 "~/.config/otelcol/config.yaml" = { source = "~/src/btp/dotfiles/.config/otelcol/home.yaml", mode = "symlink" }
 "~/.config/opencode/cli.json" = { source = "~/src/btp/dotfiles/.config/opencode/cli.json", mode = "symlink" }
 "~/.config/opencode/opencode.jsonc" = { source = "~/src/btp/dotfiles/.config/opencode/opencode.jsonc", mode = "symlink" }
-"~/.config/opencode/plugins/caffeinate.ts" = { source = "~/src/btp/dotfiles/.config/opencode/plugins/caffeinate.ts", mode = "symlink" }
-"~/.config/opencode/plugins/issue-tools.ts" = { source = "~/src/btp/issue-tools/issue-tools-opencode/src/index.ts", mode = "symlink" }
 "~/.config/opencode/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }
 "~/.config/opencode/tui.json" = { source = "~/src/btp/dotfiles/.config/opencode/tui.json", mode = "symlink" }
 

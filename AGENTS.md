@@ -12,10 +12,8 @@ work/             `work` profile files: ~/CLAUDE.md
 scripts/          executable helpers, each with a shebang
 docs/agents/      per-skill config (issue tracker, triage labels, domain docs)
 .zshenv           sets ZDOTDIR; always sourced
-mise.toml         tooling for working on this repo (hk, pnpm)
+mise.toml         tooling for working on this repo (hk, node, prettier)
 ```
-
-Related repos: `~/src/btp/agent-tools` holds the TypeScript tooling (issue-tools, doist, subagent-pi), and `~/src/btp/skills` holds the agent skills, linked into `~/.claude`, `~/.config/opencode`, `~/.pi` and `~/.agents`. Dotfile entries link into both, so changes there go in those repos.
 
 ## Mise config
 
@@ -35,10 +33,10 @@ Declare a new link under `[dotfiles]`, then `mise run dotfiles:install`. Preview
 
 ## Verify
 
-`pnpm check` runs typecheck, lint and tests; `hk` runs the same linters plus the `net:check` regression test.
+`hk check --all` is the gate; its steps live in `hk.pkl`.
 
 ## Agent skills
 
-- Issues and specs live in Todoist, project Dotfiles (id `6h9Wxp68J6HrG99m`). Before touching issues, read `docs/agents/issue-tracker.md`.
+- Before touching issues, read `docs/agents/issue-tracker.md`.
 - Before applying or creating triage labels, read `docs/agents/triage-labels.md`.
-- Before exploring the domain, read `docs/agents/domain.md`; it points to `GLOSSARY.md` and `docs/adr/`.
+- Before exploring the domain, read `docs/agents/domain.md`.

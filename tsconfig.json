@@ -1,8 +1,0 @@
-{
-	"compilerOptions": {
-		"composite": true,
-		"tsBuildInfoFile": "${configDir}/dist/tsconfig.tsbuildinfo"
-	},
-	"files": [],
-	"references": [{ "path": "./tsconfig.repo-config-files.json" }]
-}
