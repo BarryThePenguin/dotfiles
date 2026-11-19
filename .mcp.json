@@ -12,12 +12,6 @@
 			"headers": {
 				"Authorization": "Bearer {env:HISTER__APP__ACCESS_TOKEN}"
 			}
-		},
-		"issue-tools": {
-			"type": "stdio",
-			"command": "issue-tools-claude",
-			"args": [],
-			"env": {}
 		}
 	}
 }
