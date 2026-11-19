@@ -25,14 +25,11 @@ url = "https://github.com/ast-grep/ast-grep/releases/download/0.51.2/app-aarch64
 url_api = "https://api.github.com/repos/ast-grep/ast-grep/releases/assets/734229272"
 
 [[tools.atuin]]
-version = "18.24.6"
+version = "18.24.7"
 backend = "aqua:atuinsh/atuin"
-specifiers = ["18.24.6"]
+specifiers = ["18.24.7"]
 
 [tools.atuin."platforms.macos-arm64"]
-checksum = "sha256:756b7d2f8cb919d29888ea52b2fb19aba92ed52ddbca456839088ccc63257f5b"
-url = "https://github.com/atuinsh/atuin/releases/download/v18.24.6/atuin-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/atuinsh/atuin/releases/assets/729825753"
 provenance = "github-attestations"
 
 [[tools.aube]]
