@@ -206,7 +206,7 @@ checksum = "blake3:1dbcb33ee0b9ee5c4b0fe1dc1f6652546af5c2484556dd522fab46bb248e8
 url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.4.4"
 
 [[tools.viteplus]]
-version = "1.6.0"
-aube = { path = "locks/mise.work/viteplus/1.6.0", digest = "sha256:5cbd0562565199e500d8f3d1b7b1dc3daa3dea06d873f7115e1b3f6f329d9281" }
+version = "1.7.0"
+aube = { path = "locks/mise.work/viteplus/1.7.0", digest = "sha256:d0020db5e20acfdc92e9dd76a7370fe81f0814c0774d89f1df4de056097354d9" }
 backend = "npm:vite-plus"
-specifiers = ["1.6.0"]
+specifiers = ["1.7.0"]
