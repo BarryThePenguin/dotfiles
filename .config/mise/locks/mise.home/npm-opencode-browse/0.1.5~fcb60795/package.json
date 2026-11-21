@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "@opencode/browse": "0.1.1"
+    "@opencode/browse": "0.1.5"
   }
 }
