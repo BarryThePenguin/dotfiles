@@ -1,0 +1,3 @@
+# Use a repo's Claude guide when it has no AGENTS.md.
+project_doc_fallback_filenames = ["CLAUDE.md"]
+sandbox_mode = "workspace-write"

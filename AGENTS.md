@@ -29,7 +29,7 @@ Declare a new link under `[dotfiles]`, then `mise run dotfiles:install`. Preview
 - Prefer `symlink-each` with `manifest = "git"` for a directory an app also writes into (`1Password`, `gh`, `mise`, `zellij`, `zsh`). A plain `symlink` makes the app write its state into this repo.
 - To vary a file per profile, link each profile's variant to one fixed path from its `[dotfile_groups.<profile>.entries]` (zellij's `layouts/default.kdl` links `home.kdl` or `work.kdl`), so consumers need no profile lookup.
 - `git add` a new file in a `symlink-each` directory before installing; only tracked files link.
-- A single-file entry overrides its parent directory's mode (`gh/hosts.yml` is `track` inside `gh`'s `symlink-each`).
+- GitHub CLI merges shared aliases into `gh/config.yml` and tracks `gh/hosts.yml` separately.
 
 ## Verify
 

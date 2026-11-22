@@ -151,13 +151,14 @@ login_shell = "/bin/zsh"
 "~/.agents/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }
 "~/.claude/agents" = { mode = "track" }
 "~/.claude/settings.json" = { mode = "track" }
+"~/.claude/settings.json/statusline" = { source = "~/src/btp/dotfiles/.claude/statusline.json", merge = true }
 "~/.claude/statusline-command.sh" = { mode = "track" }
 "~/.config/1Password" = { mode = "symlink-each", manifest = "git" }
 "~/.config/agents" = { source = "~/src/btp/dotfiles/home/agents", mode = "symlink" }
 "~/.config/atuin/config.toml" = { mode = "symlink" }
 "~/.config/fnox/age.txt" = { source = "~/.config/sops/age/keys.txt", mode = "symlink" }
 "~/.config/fnox/config.toml" = { mode = "symlink" }
-"~/.config/gh" = { mode = "symlink-each", manifest = "git" }
+"~/.config/gh/config.yml/shared" = { source = "~/src/btp/dotfiles/.config/gh/config.yml", merge = true }
 "~/.config/gh/hosts.yml" = { mode = "track" }
 "~/.config/ghostty/config" = { mode = "symlink" }
 "~/.config/git/btp.gitconfig" = { mode = "symlink" }
@@ -209,8 +210,9 @@ root = "work"
 target = "~"
 
 [dotfile_groups.work.entries]
+"~/.codex/config.toml/defaults" = { source = "~/src/btp/dotfiles/.config/codex/defaults.toml", merge = true }
 "~/.config/zellij/layouts/default.kdl" = { source = "~/src/btp/dotfiles/.config/zellij/layouts/work.kdl", mode = "symlink" }
 "~/.config/otelcol/config.yaml" = { source = "~/src/btp/dotfiles/.config/otelcol/work.yaml", mode = "symlink" }
-"~/.mcp.json" = { source = "~/src/btp/dotfiles/.mcp.json", mode = "symlink" }
+"~/.mcp.json/shared-servers" = { source = "~/src/btp/dotfiles/.mcp.json", merge = true }
 "~/CLAUDE.md" = { mode = "symlink" }
 "~/.claude/skills" = { source = "~/src/btp/skills/skills", mode = "symlink-each", manifest = "git" }
