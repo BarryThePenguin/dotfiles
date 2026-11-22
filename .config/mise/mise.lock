@@ -244,16 +244,16 @@ checksum = "sha256:aec2514ea1ceb2ba52455e9ec65986f6749a06dd759e5db2a72e6889668c9
 url = "https://nodejs.org/dist/v26.13.1/node-v26.13.1-darwin-arm64.tar.gz"
 
 [[tools."npm:@btp/catalogue"]]
-version = "1.2.0"
-aube = { path = "locks/npm-btp-catalogue/1.2.0", digest = "sha256:183aac4c6d78945a78a65ca9235c3ae7cd1e1f3d586a834fbfc609e35ff3bea3" }
+version = "2.0.0"
+aube = { path = "locks/npm-btp-catalogue/2.0.0", digest = "sha256:6afb406f67de2631728ad33276dd0a5b2c834cb615ebed30d81eaa283180701a" }
 backend = "npm:@btp/catalogue"
-specifiers = ["1.2.0"]
+specifiers = ["2.0.0"]
 
 [[tools."npm:@btp/catalogue-mcp"]]
-version = "1.1.0"
-aube = { path = "locks/npm-btp-catalogue-mcp/1.1.0", digest = "sha256:419cdd36e290092b1751535c9a6d632343c6ed4ba6a1146a58114f619002808b" }
+version = "2.0.0"
+aube = { path = "locks/npm-btp-catalogue-mcp/2.0.0", digest = "sha256:7f980c2d152529364c650e3aebb9b54a8cf943835fe94c577c87b1f864f7837b" }
 backend = "npm:@btp/catalogue-mcp"
-specifiers = ["1.1.0"]
+specifiers = ["2.0.0"]
 
 [[tools."npm:@btp/ci-cli"]]
 version = "1.0.0"
@@ -280,16 +280,16 @@ backend = "npm:@btp/file-size-cli"
 specifiers = ["1.0.0"]
 
 [[tools."npm:@btp/hub"]]
-version = "1.0.1"
-aube = { path = "locks/npm-btp-hub/1.0.1", digest = "sha256:df4ae241ccc8583724cc2434573c8bff6ab15e467e249ef9eff787f53c5e71b9" }
+version = "1.0.2"
+aube = { path = "locks/npm-btp-hub/1.0.2", digest = "sha256:ebaa15ed543b80ec363c8dcd63f0bb18de9be230417fe965ad8c4c1a25477bd3" }
 backend = "npm:@btp/hub"
-specifiers = ["1.0.1"]
+specifiers = ["1.0.2"]
 
 [[tools."npm:@btp/issue-tools-claude"]]
-version = "1.0.1"
-aube = { path = "locks/npm-btp-issue-tools-claude/1.0.1", digest = "sha256:147671e6a6d5c4a20401e790cef41101b74efb269c93b8f18271791701d21218" }
+version = "1.0.2"
+aube = { path = "locks/npm-btp-issue-tools-claude/1.0.2", digest = "sha256:7e2cfd0f0c558759bf39d5ff2c7850129cdb7a19cb325adc846e71dacd7ec3f4" }
 backend = "npm:@btp/issue-tools-claude"
-specifiers = ["1.0.1"]
+specifiers = ["1.0.2"]
 
 [[tools."npm:@btp/mq-cli"]]
 version = "1.0.0"
@@ -310,10 +310,10 @@ backend = "npm:@btp/nms-save-cli"
 specifiers = ["1.0.0"]
 
 [[tools."npm:@btp/onix"]]
-version = "1.0.0"
-aube = { path = "locks/npm-btp-onix/1.0.0", digest = "sha256:66015102f542d10c86e6ff4be6be26b1cf451ff33ee3f667ac386e59aa79b3f1" }
+version = "1.0.1"
+aube = { path = "locks/npm-btp-onix/1.0.1", digest = "sha256:1bcc34b79bcff661e18d8633fdac1a2df41201a4acb840ef6472cae875211099" }
 backend = "npm:@btp/onix"
-specifiers = ["1.0.0"]
+specifiers = ["1.0.1"]
 
 [[tools."npm:@btp/opencode-go-usage"]]
 version = "1.0.0"
@@ -322,10 +322,10 @@ backend = "npm:@btp/opencode-go-usage"
 specifiers = ["1.0.0"]
 
 [[tools."npm:@btp/skills-cli"]]
-version = "1.0.0"
-aube = { path = "locks/npm-btp-skills-cli/1.0.0", digest = "sha256:f2827ac2b92a14c77d5453e8ed88a265ecee82aabdd91f0b8b326d8571d28cdc" }
+version = "1.1.0"
+aube = { path = "locks/npm-btp-skills-cli/1.1.0", digest = "sha256:1a6a820f7ecc1a80c696eada12ea8f5db5b17a8c56936a5fab99831f8e588f7d" }
 backend = "npm:@btp/skills-cli"
-specifiers = ["1.0.0"]
+specifiers = ["1.1.0"]
 
 [[tools."npm:@typespec/compiler"]]
 version = "1.18.0"

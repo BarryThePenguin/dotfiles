@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "@btp/skills-cli": "1.0.0"
+    "@btp/issue-tools-claude": "1.0.2"
   }
 }

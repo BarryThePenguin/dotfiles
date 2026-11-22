@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@btp/skills-cli':
-        specifier: 1.0.0
-        version: 1.0.0(vitest@5.1.0(vite@8.3.8))
+        specifier: 1.1.0
+        version: 1.1.0(vitest@5.1.0(vite@8.3.8))
 
 packages:
 
@@ -22,8 +22,8 @@ packages:
   '@btp/forge-read@1.0.1':
     resolution: {integrity: sha512-F/6P7dxFuDtLmOVDjlGmATSlC9FmtEo122y9A4cOVEjGc2Vpu9zY5lBYwhbkoaSuRwf2hCF+UBEtFNtanru7qQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforge-read/-/1.0.1/forge-read-1.0.1.tgz}
 
-  '@btp/forgejo-api@1.0.1':
-    resolution: {integrity: sha512-8bFpA6mSXflmk+yEG9JVEhtuKfvbTj+F5DG4BzQg2qL5DzbYwhAk9XPoIAOWr7jLwOM+UmHwnyV2U39c0C+Z8g==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforgejo-api/-/1.0.1/forgejo-api-1.0.1.tgz}
+  '@btp/forgejo-api@1.1.0':
+    resolution: {integrity: sha512-wBVJ4Y1iwj0NPmCFRilKmnCFiH4Zg3DXxj3iYUmKbpO85y7TXNrT2FXIzZLzXmGbuKkTkI4sGBX8dXKNpaqYgA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforgejo-api/-/1.1.0/forgejo-api-1.1.0.tgz}
 
   '@btp/github-api@1.0.1':
     resolution: {integrity: sha512-I7KT7VlUpRw1rqjjuldFWMUOYTK/EXL+wkJy7V3NopsjgTZPcPhqt95bL/IJwj/jtZsr6TkoPZAqAwbDjpwt6A==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fgithub-api/-/1.0.1/github-api-1.0.1.tgz}
@@ -34,14 +34,14 @@ packages:
   '@btp/http-api-core@1.0.1':
     resolution: {integrity: sha512-91/9fJVNYC/vTDOwVK1eRtI8nroXrCia41vDTzNy8MZJ31wsQFL+3KZF/zEG2szlS8cvHosR8B3rPwcVR4Dt9Q==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhttp-api-core/-/1.0.1/http-api-core-1.0.1.tgz}
 
-  '@btp/skills-cli@1.0.0':
-    resolution: {integrity: sha512-ld5aPeeL4HKCPpvffZnOIjqaH49oCgrQ2AhISAZL++SzQ7TIMIcFENumR+QE7HGKGDazpF4DZz/BdDeFA8blYQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-cli/-/1.0.0/skills-cli-1.0.0.tgz}
+  '@btp/skills-cli@1.1.0':
+    resolution: {integrity: sha512-RBJf87/D+HzL/NFEZr7Rbu7XrSi/3VfI0v7JIckFHDzMDsyG7LNxZkGdUqcvXNq1rQ/geCMCGaV6DrL7prV3aw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-cli/-/1.1.0/skills-cli-1.1.0.tgz}
     hasBin: true
 
-  '@btp/skills-core@1.0.0':
-    resolution: {integrity: sha512-gI4kUv55EOIySDPW7oo+ZzIjtFfepuk+fqhHywEhPBswx0c0iVQgiw96NMWbdQWclbJ6Xr/flNNv1PemLVPPNg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-core/-/1.0.0/skills-core-1.0.0.tgz}
+  '@btp/skills-core@1.1.0':
+    resolution: {integrity: sha512-KIj51975dykjWjw4ReyIGaMuU67p58XmBRHfBgp5nudqu5nhbP/7kEpN70MJC83dWRwWDjyaT44jPqmhf+/l/Q==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-core/-/1.1.0/skills-core-1.1.0.tgz}
     peerDependencies:
-      vitest: 5.1.0
+      vitest: 5.1.1
 
   '@btp/xdg-paths@1.0.1':
     resolution: {integrity: sha512-F+RYc8kJzbgXIL3/N0xQ1LoTFC5aIx4aT6oVo+5BXiiJFjFBTOmnIaw1eJ8baRAmeq/4DcELKLSBLInQq4pOrQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fxdg-paths/-/1.0.1/xdg-paths-1.0.1.tgz}
@@ -202,8 +202,22 @@ packages:
       vite:
         optional: true
 
+  '@vitest/mocker@5.1.1':
+    resolution: {integrity: sha512-b2OgTB4+3ImWIVafXKazJXwLKwQxUNnix6b3xUvUTMh7RyXlrtzoxfZr8aEz9zkHOMAS4K5lu3TvFWoiVeVTQg==}
+    peerDependencies:
+      msw: ^2.4.9 || ^3.0.0
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      msw:
+        optional: true
+      vite:
+        optional: true
+
   '@vitest/spy@5.1.0':
     resolution: {integrity: sha512-2DPO5OMHWKrBngC+fCmTQqemNF0gidRhp3lxbBmRhW+M1XJrfgPpqNqWVevXtn2f2ufD5ZaR1B6B641aAlcX5A==}
+
+  '@vitest/spy@5.1.1':
+    resolution: {integrity: sha512-6K8C6alQG1/Yc8/ZI22iJS7JEsxPdVzqtqDq+/xM4Z0mGVykemMVjLhqMy/q6/IHYG3kKD8hKSwRen/ZdyI9vQ==}
 
   assertion-error@2.0.1:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
@@ -347,15 +361,15 @@ packages:
     resolution: {integrity: sha512-j7WyPdf0CJoutMzMoPLF/bVXHtKZIT9Rb4eGeEbWw8X2t5oirjPgpL+OpaENZrILYaXqYwnVH+qgUwVbl+pUJQ==}
     engines: {node: '>= 18'}
 
-  source-map-js@1.2.2:
-    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
-    engines: {node: '>=0.10.0'}
+  source-map-js@1.2.4:
+    resolution: {integrity: sha512-J7ZjMvHd9O1fcT/5V09QWaaSl2BbWx3F6O08spde82Namf9UB0GxRVIPiNbVsdKkoizHiSpTodo3vp2bAy91MA==}
+    engines: {node: '>=6.0.0'}
 
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
 
-  tinybench@6.2.3:
-    resolution: {integrity: sha512-Al01C2JIBnO2CXCAPbpAl6sUiOZHeThGtHYNTa51JRw9PyWOCdr+9Ong05R4qg/Sk3+H645E8ov1h2c58ityNw==}
+  tinybench@6.2.4:
+    resolution: {integrity: sha512-SQ52jEncXxbMCzJuY2A/jGIbbAu6NYsBWW7grz2pNE+EnzQdoGaoBfpk4qC/opE7qiUcGmGgaGIz5EoHdS1O9w==}
     engines: {node: '>=20.0.0'}
 
   tinyexec@1.3.1:
@@ -465,6 +479,47 @@ packages:
       jsdom:
         optional: true
 
+  vitest@5.1.1:
+    resolution: {integrity: sha512-trVmzUFOSraCZcI3uZIMD5FqBh4atFkC/XuJP/IU7qtyQay0FCs3Ia+0QiQ2JJwGyWG/xrcBoJNel2+O7kEZ0g==}
+    engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
+    hasBin: true
+    peerDependencies:
+      '@edge-runtime/vm': '*'
+      '@opentelemetry/api': ^1.9.0
+      '@types/node': ^22.0.0 || >=24.0.0
+      '@vitest/browser-playwright': 5.1.1
+      '@vitest/browser-preview': 5.1.1
+      '@vitest/browser-webdriverio': ^5.0.0-beta.5 || >=5.0.0
+      '@vitest/coverage-istanbul': 5.1.1
+      '@vitest/coverage-v8': 5.1.1
+      '@vitest/ui': 5.1.1
+      happy-dom: '*'
+      jsdom: '*'
+      vite: ^6.4.0 || ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      '@edge-runtime/vm':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+      '@types/node':
+        optional: true
+      '@vitest/browser-playwright':
+        optional: true
+      '@vitest/browser-preview':
+        optional: true
+      '@vitest/browser-webdriverio':
+        optional: true
+      '@vitest/coverage-istanbul':
+        optional: true
+      '@vitest/coverage-v8':
+        optional: true
+      '@vitest/ui':
+        optional: true
+      happy-dom:
+        optional: true
+      jsdom:
+        optional: true
+
   why-is-node-running@3.2.1:
     resolution: {integrity: sha512-Tb2FUhB4vUsGQlfSquQLYkApkuPAFQXGFzxWKHHumVz2dK+X1RUm/HnID4+TfIGYJ1kTcwOaCk/buYCEJr6YjQ==}
     engines: {node: '>=20.11'}
@@ -478,9 +533,9 @@ snapshots:
 
   '@btp/forge-read@1.0.1':
     dependencies:
-      '@btp/forgejo-api': 1.0.1
+      '@btp/forgejo-api': 1.1.0
 
-  '@btp/forgejo-api@1.0.1':
+  '@btp/forgejo-api@1.1.0':
     dependencies:
       '@btp/http-api-core': 1.0.1
       undici: 8.12.4
@@ -496,25 +551,25 @@ snapshots:
 
   '@btp/http-api-core@1.0.1': {}
 
-  '@btp/skills-cli@1.0.0(vitest@5.1.0(vite@8.3.8))':
+  '@btp/skills-cli@1.1.0(vitest@5.1.0(vite@8.3.8))':
     dependencies:
       '@btp/cmd-core': 1.0.1(vitest@5.1.0(vite@8.3.8))
-      '@btp/skills-core': 1.0.0(vitest@5.1.0(vite@8.3.8))
+      '@btp/skills-core': 1.1.0(vitest@5.1.1(vite@8.3.8))
     transitivePeerDependencies:
       - typescript
       - vitest
 
-  '@btp/skills-core@1.0.0(vitest@5.1.0(vite@8.3.8))':
+  '@btp/skills-core@1.1.0(vitest@5.1.1(vite@8.3.8))':
     dependencies:
       '@btp/forge-read': 1.0.1
-      '@btp/forgejo-api': 1.0.1
+      '@btp/forgejo-api': 1.1.0
       '@btp/github-api': 1.0.1
       '@btp/gitlab-api': 1.0.1
       '@btp/http-api-core': 1.0.1
       '@btp/xdg-paths': 1.0.1
       smol-toml: 1.9.1
       valibot: 1.5.0
-      vitest: 5.1.0(vite@8.3.8)
+      vitest: 5.1.1(vite@8.3.8)
     transitivePeerDependencies:
       - typescript
 
@@ -631,7 +686,18 @@ snapshots:
     optionalDependencies:
       vite: 8.3.8
 
+  '@vitest/mocker@5.1.1(vite@8.3.8)':
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      '@vitest/spy': 5.1.1
+      estree-walker: 3.0.3
+      magic-string: 1.4.5
+    optionalDependencies:
+      vite: 8.3.8
+
   '@vitest/spy@5.1.0': {}
+
+  '@vitest/spy@5.1.1': {}
 
   assertion-error@2.0.1: {}
 
@@ -719,7 +785,7 @@ snapshots:
     dependencies:
       nanoid: 3.3.20
       picocolors: 1.1.1
-      source-map-js: 1.2.2
+      source-map-js: 1.2.4
 
   rolldown@1.2.19:
     dependencies:
@@ -745,11 +811,11 @@ snapshots:
 
   smol-toml@1.9.1: {}
 
-  source-map-js@1.2.2: {}
+  source-map-js@1.2.4: {}
 
   std-env@4.3.0: {}
 
-  tinybench@6.2.3: {}
+  tinybench@6.2.4: {}
 
   tinyexec@1.3.1: {}
 
@@ -786,7 +852,26 @@ snapshots:
       obug: 3.0.0
       picomatch: 4.0.7
       std-env: 4.3.0
-      tinybench: 6.2.3
+      tinybench: 6.2.4
+      tinyexec: 1.3.1
+      tinyglobby: 0.2.17
+      vite: 8.3.8
+      why-is-node-running: 3.2.1
+    transitivePeerDependencies:
+      - msw
+
+  vitest@5.1.1(vite@8.3.8):
+    dependencies:
+      '@types/chai': 5.2.3
+      '@vitest/mocker': 5.1.1(vite@8.3.8)
+      chai: 6.3.0
+      es-module-lexer: 2.3.2
+      expect-type: 1.4.0
+      magic-string: 1.4.5
+      obug: 3.0.0
+      picomatch: 4.0.7
+      std-env: 4.3.0
+      tinybench: 6.2.4
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       vite: 8.3.8

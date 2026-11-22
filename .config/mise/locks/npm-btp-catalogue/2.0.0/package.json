@@ -2,6 +2,6 @@
   "name": "mise-npm-install",
   "private": true,
   "dependencies": {
-    "@btp/catalogue": "1.2.0"
+    "@btp/catalogue": "2.0.0"
   }
 }

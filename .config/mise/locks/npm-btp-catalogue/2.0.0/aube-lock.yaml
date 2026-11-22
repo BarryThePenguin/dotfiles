@@ -8,17 +8,17 @@ importers:
 
   .:
     dependencies:
-      '@btp/catalogue-mcp':
-        specifier: 1.1.0
-        version: 1.1.0(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/catalogue':
+        specifier: 2.0.0
+        version: 2.0.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
 
 packages:
 
-  '@btp/catalogue-core@1.1.0':
-    resolution: {integrity: sha512-d1rl8JJVk4XtDie6ClKW2b6H9aMrhqkuhRPHN526Z7k91+XzCnrder6a+qFBCF9ZrLjfWC9v471a8o65yssG8g==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fcatalogue-core/-/1.1.0/catalogue-core-1.1.0.tgz}
+  '@btp/catalogue-core@2.1.0':
+    resolution: {integrity: sha512-knEGbwdzUJnUU+/S8IGerdzeKfj/4qhQXaykta2cOgz5eJWB5RJZoXVeUFUe6ijFxvBf4vL94vmc2KUNRTUFEQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fcatalogue-core/-/2.1.0/catalogue-core-2.1.0.tgz}
 
-  '@btp/catalogue-mcp@1.1.0':
-    resolution: {integrity: sha512-arATlUH9lubG2/BzzDz5RtQsKiNNXpPfMON+4MJvJNxq7kkXkCzkj0XRM2/fmfJ+Eawjlzs2Nm0W4NDxAHFRdg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fcatalogue-mcp/-/1.1.0/catalogue-mcp-1.1.0.tgz}
+  '@btp/catalogue@2.0.0':
+    resolution: {integrity: sha512-vCh0PSdLDnkDMug00UvxtbMdMIlzGgOrvHInv2f6hy2jMVt0Dr8dCTrikz/WQ97tcmKWF72b6W12ijbCTTxMcw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fcatalogue/-/2.0.0/catalogue-2.0.0.tgz}
     hasBin: true
 
   '@btp/cmd-core@1.0.1':
@@ -29,33 +29,17 @@ packages:
   '@btp/forge-read@1.0.1':
     resolution: {integrity: sha512-F/6P7dxFuDtLmOVDjlGmATSlC9FmtEo122y9A4cOVEjGc2Vpu9zY5lBYwhbkoaSuRwf2hCF+UBEtFNtanru7qQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforge-read/-/1.0.1/forge-read-1.0.1.tgz}
 
-  '@btp/forgejo-api@1.0.1':
-    resolution: {integrity: sha512-8bFpA6mSXflmk+yEG9JVEhtuKfvbTj+F5DG4BzQg2qL5DzbYwhAk9XPoIAOWr7jLwOM+UmHwnyV2U39c0C+Z8g==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforgejo-api/-/1.0.1/forgejo-api-1.0.1.tgz}
+  '@btp/forgejo-api@1.1.0':
+    resolution: {integrity: sha512-wBVJ4Y1iwj0NPmCFRilKmnCFiH4Zg3DXxj3iYUmKbpO85y7TXNrT2FXIzZLzXmGbuKkTkI4sGBX8dXKNpaqYgA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforgejo-api/-/1.1.0/forgejo-api-1.1.0.tgz}
 
   '@btp/http-api-core@1.0.1':
     resolution: {integrity: sha512-91/9fJVNYC/vTDOwVK1eRtI8nroXrCia41vDTzNy8MZJ31wsQFL+3KZF/zEG2szlS8cvHosR8B3rPwcVR4Dt9Q==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhttp-api-core/-/1.0.1/http-api-core-1.0.1.tgz}
-
-  '@btp/mcp-hosting@1.0.1':
-    resolution: {integrity: sha512-9sqAxEBiRkw3MT9CiwO0n7bdYiGNsZqS+V2L4Z0NKsCwnnmAUUw3UVM7dx8+FB+ArAT9j+q0btsVMpke7c27Dw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fmcp-hosting/-/1.0.1/mcp-hosting-1.0.1.tgz}
-    peerDependencies:
-      vitest: 5.1.0
-
-  '@btp/sqlite-kysely@1.0.1':
-    resolution: {integrity: sha512-1ygnCVgtttCSGp846toVetDiW0GDJV9pVTfizWPN+j1kf7MQQGNtIPJqOkk257aqJrHypnN0bL0MMQ5nPDfspA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-kysely/-/1.0.1/sqlite-kysely-1.0.1.tgz}
-
-  '@btp/sqlite-runtime@1.0.1':
-    resolution: {integrity: sha512-NmmnKz0SSAhZPG5lhNr1wQ0Kxr+IbUn/X4A1z4NT5glcILEBt/mpaaXV6OwK4sqq8xUulUmrjhBEdJUI1QEmYg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-runtime/-/1.0.1/sqlite-runtime-1.0.1.tgz}
-    peerDependencies:
-      vitest: 5.1.0
 
   '@btp/telemetry-core@1.0.1':
     resolution: {integrity: sha512-rJsF1W1JTMZ80rtKVdM7khaWY8xdCLtPakhgqDU3LzsV8OxKedDCV8u/bvXnR02v7z6eLRQhC/mcTMwMcwJ8wA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Ftelemetry-core/-/1.0.1/telemetry-core-1.0.1.tgz}
     peerDependencies:
       '@modelcontextprotocol/server': ^2.3.0
       vitest: 5.1.0
-
-  '@btp/xdg-paths@1.0.1':
-    resolution: {integrity: sha512-F+RYc8kJzbgXIL3/N0xQ1LoTFC5aIx4aT6oVo+5BXiiJFjFBTOmnIaw1eJ8baRAmeq/4DcELKLSBLInQq4pOrQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fxdg-paths/-/1.0.1/xdg-paths-1.0.1.tgz}
 
   '@emnapi/core@2.0.0-beta.2':
     resolution: {integrity: sha512-MzCVoWtcg4Pm2B3je5mMvYMvj3MmBKw+fU7vbsJc9/iT8ip6/eYIHo/Dsm/mr+wsHB6SEyJDuxB09Yy6r/8+4A==}
@@ -75,12 +59,6 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hono/node-server@2.1.9':
-    resolution: {integrity: sha512-Sk4NQd3GFY0WZWCzndwFMPwJhtD0y9qjsQ+pjID0/03nK9pxyBCUoUHCho8QYBLBVhi0ssL8UkNPHqbgSOFPIQ==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      hono: ^4 || ^5.0.0-0
-
   '@jridgewell/resolve-uri@3.1.3':
     resolution: {integrity: sha512-lhTtjtoEArWBjismtfS761S9Hlyn+nIZqOZVYoZ1Xn82PMNMVnk+jj/NhC4fAXGTs7ydONcJiR5vyQBTMDu27g==}
     engines: {node: '>=6.0.0'}
@@ -97,12 +75,6 @@ packages:
   '@modelcontextprotocol/core@2.4.0':
     resolution: {integrity: sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==}
     engines: {node: '>=20'}
-
-  '@modelcontextprotocol/node@2.1.2':
-    resolution: {integrity: sha512-IIcIqBpr6NCQQs5DgJTgvbSOAw+3iaR/uquqg+e0nXCdudfjPg/80x0TseUnQx14AUAtE4fsJCEpJKPyb6WPVA==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      '@modelcontextprotocol/server': ^2.4.0
 
   '@modelcontextprotocol/server@2.4.0':
     resolution: {integrity: sha512-rgR9yxSaAJ+bcsi/XroT/S2AfPiIWloXAnrdfYSCms9ivVju0ishu/wW0J21Ho6+ZOR1r7RyeRbjiRuF87ix5Q==}
@@ -422,11 +394,6 @@ packages:
   '@types/node@26.6.6':
     resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
 
-  '@valibot/to-json-schema@1.8.0':
-    resolution: {integrity: sha512-a0M+uwCuQZEPAo65NYkFSJ14O5c213KoSZmPdoCfuFvUhfULi4T2Z6Tpjv6lTVMW9RoLm74RpRAjNEa43KcN+g==}
-    peerDependencies:
-      valibot: ^1.5.0
-
   '@vitest/mocker@5.1.0':
     resolution: {integrity: sha512-5umB9/jlWcqVS6fsrFmv5Gdnpu6wAUio/lEOwAmvB7v+lFo/IW2B9FhAD0p19GCULTgMzLCdUmuCDCnAzWgppQ==}
     peerDependencies:
@@ -522,10 +489,6 @@ packages:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
 
-  hono@4.13.19:
-    resolution: {integrity: sha512-KmXvQAXwcAHV+muzbIwoJ23niEB5nMoDVr9WcRkU8mvjUECm/1+7v4Jgp7P7a+H6MLFrh+vXrGonGrGS+RQfkA==}
-    engines: {node: '>=16.9.0'}
-
   import-in-the-middle@3.6.0:
     resolution: {integrity: sha512-xRU7hI24S2FhucXtuZXn8EpcOjfVP6iiEQyR0USayPeaOroEmSsNlqnl95866iRdRtkHrd6Q/Z4D14R60au0+A==}
     engines: {node: '>=18'}
@@ -533,10 +496,6 @@ packages:
   is-fullwidth-code-point@3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
-
-  kysely@0.29.9:
-    resolution: {integrity: sha512-K48ErswC3MlIcBqR0pYIIEl+n9rIgwxgzaM1FxKHMXn7egxr1NHj7bCeF98mXl9A3/QoL5I7mo5S/mLXgeDgGA==}
-    engines: {node: '>=22.0.0'}
 
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
@@ -664,9 +623,9 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  source-map-js@1.2.2:
-    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
-    engines: {node: '>=0.10.0'}
+  source-map-js@1.2.4:
+    resolution: {integrity: sha512-J7ZjMvHd9O1fcT/5V09QWaaSl2BbWx3F6O08spde82Namf9UB0GxRVIPiNbVsdKkoizHiSpTodo3vp2bAy91MA==}
+    engines: {node: '>=6.0.0'}
 
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
@@ -679,8 +638,8 @@ packages:
     resolution: {integrity: sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==}
     engines: {node: '>=8'}
 
-  tinybench@6.2.3:
-    resolution: {integrity: sha512-Al01C2JIBnO2CXCAPbpAl6sUiOZHeThGtHYNTa51JRw9PyWOCdr+9Ong05R4qg/Sk3+H645E8ov1h2c58ityNw==}
+  tinybench@6.2.4:
+    resolution: {integrity: sha512-SQ52jEncXxbMCzJuY2A/jGIbbAu6NYsBWW7grz2pNE+EnzQdoGaoBfpk4qC/opE7qiUcGmGgaGIz5EoHdS1O9w==}
     engines: {node: '>=20.0.0'}
 
   tinyexec@1.3.1:
@@ -700,14 +659,6 @@ packages:
   undici@8.12.4:
     resolution: {integrity: sha512-8Mx+uNKKER2bA4AdtedkqRbwUCIJFr2nJckXRe5yrDqzePqwLP7VNcctN8/XdmDSbF7mS+jJKIszlL+vbam1VA==}
     engines: {node: '>=22.19.0'}
-
-  valibot@1.5.0:
-    resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
-    peerDependencies:
-      typescript: '>=5'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   vite@8.3.8:
     resolution: {integrity: sha512-LzOn3h9rG/0vhLdXrV4yJ4QFA9eEoqCl+Yx+kGJd7aB9w6nfNgVHKSYwLPZUHrz4ZGa+t+kXjV9itvcHDLQouA==}
@@ -824,29 +775,19 @@ packages:
 
 snapshots:
 
-  '@btp/catalogue-core@1.1.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/catalogue-core@2.1.0':
     dependencies:
       '@btp/forge-read': 1.0.1
-      '@btp/forgejo-api': 1.0.1
-      '@btp/sqlite-kysely': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/sqlite-runtime': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/xdg-paths': 1.0.1
+      '@btp/forgejo-api': 1.1.0
+
+  '@btp/catalogue@2.0.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+    dependencies:
+      '@btp/catalogue-core': 2.1.0
+      '@btp/cmd-core': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
     transitivePeerDependencies:
       - '@modelcontextprotocol/server'
       - supports-color
-      - vitest
-
-  '@btp/catalogue-mcp@1.1.0(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
-    dependencies:
-      '@btp/catalogue-core': 1.1.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/mcp-hosting': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@modelcontextprotocol/server': 2.4.0
-      '@valibot/to-json-schema': 1.8.0(valibot@1.5.0)
-      valibot: 1.5.0
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
       - vitest
 
   '@btp/cmd-core@1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
@@ -855,38 +796,14 @@ snapshots:
 
   '@btp/forge-read@1.0.1':
     dependencies:
-      '@btp/forgejo-api': 1.0.1
+      '@btp/forgejo-api': 1.1.0
 
-  '@btp/forgejo-api@1.0.1':
+  '@btp/forgejo-api@1.1.0':
     dependencies:
       '@btp/http-api-core': 1.0.1
       undici: 8.12.4
 
   '@btp/http-api-core@1.0.1': {}
-
-  '@btp/mcp-hosting@1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
-    dependencies:
-      '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@modelcontextprotocol/node': 2.1.2(@modelcontextprotocol/server@2.4.0)
-      '@modelcontextprotocol/server': 2.4.0
-      vitest: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))
-    transitivePeerDependencies:
-      - supports-color
-
-  '@btp/sqlite-kysely@1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
-    dependencies:
-      '@btp/sqlite-runtime': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@opentelemetry/api': 1.10.0
-      kysely: 0.29.9
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/server'
-      - supports-color
-      - vitest
-
-  '@btp/sqlite-runtime@1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
-    dependencies:
-      vitest: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))
 
   '@btp/telemetry-core@1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
@@ -906,8 +823,6 @@ snapshots:
       vitest: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))
     transitivePeerDependencies:
       - supports-color
-
-  '@btp/xdg-paths@1.0.1': {}
 
   '@emnapi/core@2.0.0-beta.2':
     dependencies:
@@ -937,10 +852,6 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.3
 
-  '@hono/node-server@2.1.9(hono@4.13.19)':
-    dependencies:
-      hono: 4.13.19
-
   '@jridgewell/resolve-uri@3.1.3': {}
 
   '@jridgewell/sourcemap-codec@1.6.0': {}
@@ -955,12 +866,6 @@ snapshots:
   '@modelcontextprotocol/core@2.4.0':
     dependencies:
       zod: 4.6.7
-
-  '@modelcontextprotocol/node@2.1.2(@modelcontextprotocol/server@2.4.0)':
-    dependencies:
-      '@hono/node-server': 2.1.9(hono@4.13.19)
-      '@modelcontextprotocol/server': 2.4.0
-      hono: 4.13.19
 
   '@modelcontextprotocol/server@2.4.0':
     dependencies:
@@ -1268,10 +1173,6 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
-  '@valibot/to-json-schema@1.8.0(valibot@1.5.0)':
-    dependencies:
-      valibot: 1.5.0
-
   '@vitest/mocker@5.1.0(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
@@ -1336,8 +1237,6 @@ snapshots:
 
   get-caller-file@2.0.5: {}
 
-  hono@4.13.19: {}
-
   import-in-the-middle@3.6.0:
     dependencies:
       cjs-module-lexer: 2.3.0
@@ -1345,8 +1244,6 @@ snapshots:
       module-details-from-path: 1.0.4
 
   is-fullwidth-code-point@3.0.0: {}
-
-  kysely@0.29.9: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true
@@ -1421,7 +1318,7 @@ snapshots:
     dependencies:
       nanoid: 3.3.20
       picocolors: 1.1.1
-      source-map-js: 1.2.2
+      source-map-js: 1.2.4
 
   protobufjs@7.6.6:
     dependencies:
@@ -1468,7 +1365,7 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.2.19
       '@rolldown/binding-win32-x64-msvc': 1.2.19
 
-  source-map-js@1.2.2: {}
+  source-map-js@1.2.4: {}
 
   std-env@4.3.0: {}
 
@@ -1482,7 +1379,7 @@ snapshots:
     dependencies:
       ansi-regex: 5.0.1
 
-  tinybench@6.2.3: {}
+  tinybench@6.2.4: {}
 
   tinyexec@1.3.1: {}
 
@@ -1497,8 +1394,6 @@ snapshots:
   undici-types@8.9.0: {}
 
   undici@8.12.4: {}
-
-  valibot@1.5.0: {}
 
   vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1):
     dependencies:
@@ -1523,7 +1418,7 @@ snapshots:
       obug: 3.0.0
       picomatch: 4.0.7
       std-env: 4.3.0
-      tinybench: 6.2.3
+      tinybench: 6.2.4
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       vite: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
