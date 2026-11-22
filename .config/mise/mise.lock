@@ -105,15 +105,15 @@ url = "https://github.com/cli/cli/releases/download/v2.104.0/gh_2.104.0_macOS_ar
 url_api = "https://api.github.com/repos/cli/cli/releases/assets/740719079"
 provenance = "github-attestations"
 
-[[tools."github:asciimoo/hister"]]
-version = "0.21.0"
-backend = "github:asciimoo/hister"
-specifiers = ["0.21.0"]
+[[tools."github:asciimoo/nogon"]]
+version = "0.22.0"
+backend = "github:asciimoo/nogon"
+specifiers = ["0.22.0"]
 
-[tools."github:asciimoo/hister"."platforms.macos-arm64"]
-checksum = "sha256:7761c782ee042597769e8db62a3bb0e1dcf0e90ba3f8951686df61f462a715f5"
-url = "https://github.com/asciimoo/hister/releases/download/v0.21.0/hister_0.21.0_darwin_arm64"
-url_api = "https://api.github.com/repos/asciimoo/hister/releases/assets/681045084"
+[tools."github:asciimoo/nogon"."platforms.macos-arm64"]
+checksum = "sha256:373b3dc141654ce2c440cd56bd6f6f40e1a0dfa2158f66540ea1a0b6952c8800"
+url = "https://github.com/asciimoo/nogon/releases/download/v0.22.0/nogon_0.22.0_darwin_arm64"
+url_api = "https://api.github.com/repos/asciimoo/nogon/releases/assets/766853470"
 
 [[tools."github:open-telemetry/opentelemetry-collector-releases"]]
 version = "0.165.0"

@@ -6,7 +6,7 @@ OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 
 [tools]
 "cargo:forgejo-cli" = { version = "0.7.0", os = ["macos"] }
-"github:asciimoo/hister" = { version = "0.21.0", os = ["macos"] }
+"github:asciimoo/nogon" = { version = "0.22.0", os = ["macos"] }
 "github:open-telemetry/opentelemetry-collector-releases" = { version = "v0.165.0", matching_regex = "^otelcol-contrib_", os = ["macos"] }
 "npm:@btp/catalogue" = "1.2.0"
 "npm:@btp/catalogue-mcp" = "1.1.0"
@@ -166,7 +166,7 @@ login_shell = "/bin/zsh"
 "~/.config/git/work.gitconfig" = { mode = "symlink" }
 "~/.config/gpg/gpg-agent.conf" = { mode = "symlink" }
 "~/.config/gpg/gpg.conf" = { mode = "symlink" }
-"~/.config/hister/config.yml" = { mode = "symlink" }
+"~/.config/nogon/config.yml" = { mode = "symlink" }
 "~/.config/hk" = { mode = "symlink-each", manifest = "git" }
 "~/.config/homebrew/Brewfile" = { mode = "symlink" }
 "~/.config/jj/config.toml" = { mode = "symlink" }
