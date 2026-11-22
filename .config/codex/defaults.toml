@@ -1,3 +1,19 @@
 # Use a repo's Claude guide when it has no AGENTS.md.
 project_doc_fallback_filenames = ["CLAUDE.md"]
 sandbox_mode = "workspace-write"
+
+# Shared work MCP servers, matching .mcp.json.
+[mcp_servers.catalogue]
+url = "https://catalogue.jonno.dev/mcp"
+
+[mcp_servers.catalogue.oauth]
+client_id = "a164f1d9-8c7d-4bb2-95cd-c7024db02364"
+callback_port = 19876
+callback_url = "http://127.0.0.1:19876/callback"
+
+[mcp_servers.doist]
+command = "doist-mcp"
+
+[mcp_servers.nogon]
+url = "https://search.jonno.dev/mcp"
+bearer_token_env_var = "NOGON__APP__ACCESS_TOKEN"
