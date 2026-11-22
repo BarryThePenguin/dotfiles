@@ -291,6 +291,12 @@ aube = { path = "locks/npm-btp-issue-tools-claude/1.0.2", digest = "sha256:7e2cf
 backend = "npm:@btp/issue-tools-claude"
 specifiers = ["1.0.2"]
 
+[[tools."npm:@btp/jev"]]
+version = "1.0.0"
+aube = { path = "locks/npm-btp-jev/1.0.0", digest = "sha256:ad9e0ed37f6325f8b87b0351ace820240662e8b96d94a35fbe00e808856b0606" }
+backend = "npm:@btp/jev"
+specifiers = ["1.0.0"]
+
 [[tools."npm:@btp/mq-cli"]]
 version = "1.0.0"
 aube = { path = "locks/npm-btp-mq-cli/1.0.0", digest = "sha256:fa2cabbaae6286d6f5bf0e0801fcf57da2dfc49ebaf39ecc5b99eae15cba9879" }
