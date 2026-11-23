@@ -10,7 +10,7 @@ OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 "github:open-telemetry/opentelemetry-collector-releases" = { version = "v0.165.0", matching_regex = "^otelcol-contrib_", os = ["macos"] }
 "npm:@btp/catalogue" = "2.0.0"
 "npm:@btp/catalogue-mcp" = "2.0.0"
-"npm:@btp/ci-cli" = "1.0.0"
+"npm:@btp/ci-cli" = "1.1.0"
 "npm:@btp/doist-cli" = "1.0.0"
 "npm:@btp/doist-mcp" = "1.0.3"
 "npm:@btp/file-size-cli" = "1.0.0"

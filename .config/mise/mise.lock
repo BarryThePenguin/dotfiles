@@ -256,10 +256,10 @@ backend = "npm:@btp/catalogue-mcp"
 specifiers = ["2.0.0"]
 
 [[tools."npm:@btp/ci-cli"]]
-version = "1.0.0"
-aube = { path = "locks/npm-btp-ci-cli/1.0.0", digest = "sha256:9119a2fa754fff90100eebd25218f81752f072168affd6b942ba13a545836d8f" }
+version = "1.1.0"
+aube = { path = "locks/npm-btp-ci-cli/1.1.0", digest = "sha256:fb77e2b1798392d31603bf3fef9522dcb65bd0b5c5a3548cb099fc20ebd4cb8f" }
 backend = "npm:@btp/ci-cli"
-specifiers = ["1.0.0"]
+specifiers = ["1.1.0"]
 
 [[tools."npm:@btp/doist-cli"]]
 version = "1.0.0"
