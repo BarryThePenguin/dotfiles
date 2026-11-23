@@ -51,7 +51,7 @@ rust = { version = "1.100.0", mr_boxington = true, os = ["macos"] }
 shellcheck = { version = "0.11.0", os = ["macos"] }
 sops = { version = "3.13.3", os = ["macos"] }
 starship = { version = "1.27.0", os = ["macos"] }
-usage = { version = "7.3.0", workflow = "publish-cli.yml", os = ["macos"] }
+usage = { version = "7.4.0", workflow = "publish-cli.yml", os = ["macos"] }
 uv = { version = "0.13.8", os = ["macos"] }
 watchexec = { version = "2.8.0", os = ["macos"] }
 workmux = { version = "v0.1.282", os = ["macos"] }
