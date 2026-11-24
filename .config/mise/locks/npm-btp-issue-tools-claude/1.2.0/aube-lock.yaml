@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@btp/issue-tools-claude':
-        specifier: 1.0.2
-        version: 1.0.2(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+        specifier: 1.2.0
+        version: 1.2.0(valibot@1.5.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
 
 packages:
 
@@ -34,12 +34,16 @@ packages:
   '@btp/http-api-core@1.0.1':
     resolution: {integrity: sha512-91/9fJVNYC/vTDOwVK1eRtI8nroXrCia41vDTzNy8MZJ31wsQFL+3KZF/zEG2szlS8cvHosR8B3rPwcVR4Dt9Q==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhttp-api-core/-/1.0.1/http-api-core-1.0.1.tgz}
 
-  '@btp/issue-tools-claude@1.0.2':
-    resolution: {integrity: sha512-DdeHdmDV1IFvT4Kcfwglc7oSJdrWkmO+9sEdkD5OBjQo1dp4t3ggDkSzdA9ObeKXCyMUSldmeAUG5lLBavGYPg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fissue-tools-claude/-/1.0.2/issue-tools-claude-1.0.2.tgz}
+  '@btp/issue-tools-claude@1.2.0':
+    resolution: {integrity: sha512-XVgrOiY3H8eUcfkZYX5DNp3RMV3oCXHpSDrfq9MVGIKsHuyqL19lR578IG6Ryp3jab1OV/242CIeVVjgAfgQUg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fissue-tools-claude/-/1.2.0/issue-tools-claude-1.2.0.tgz}
     hasBin: true
 
-  '@btp/issue-tools-core@1.1.0':
-    resolution: {integrity: sha512-qrAHhd+mq/q4UUWhvyGLvdE18m0Sb7u8yM85L/xrr3Q2bSH344SglWCDW3o+uX5/Nzivp/+pMYeW64wz8bPAdA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fissue-tools-core/-/1.1.0/issue-tools-core-1.1.0.tgz}
+  '@btp/issue-tools-core@1.3.0':
+    resolution: {integrity: sha512-qaW/0X0sFpXX8m4jL7OaQNC9BWYMpu7QAieqbkJEFBFtcF4Nfg5MFLpwVDN/ytCPo8/vzg2KYq7P8ORjaT3S2w==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fissue-tools-core/-/1.3.0/issue-tools-core-1.3.0.tgz}
+
+  '@btp/issue-tools-mcp@1.3.0':
+    resolution: {integrity: sha512-2ULKzSkmvQicJpN/Z+AMFRewedEIqexPXcrufghbEv4e2phkifvPXzusCjL+rOkxxCvPTZlHbU7bUAxHrmIVFg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fissue-tools-mcp/-/1.3.0/issue-tools-mcp-1.3.0.tgz}
+    hasBin: true
 
   '@btp/mcp-hosting@1.0.1':
     resolution: {integrity: sha512-9sqAxEBiRkw3MT9CiwO0n7bdYiGNsZqS+V2L4Z0NKsCwnnmAUUw3UVM7dx8+FB+ArAT9j+q0btsVMpke7c27Dw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fmcp-hosting/-/1.0.1/mcp-hosting-1.0.1.tgz}
@@ -51,8 +55,8 @@ packages:
     peerDependencies:
       vitest: 5.1.0
 
-  '@btp/sqlite-kysely@1.0.1':
-    resolution: {integrity: sha512-1ygnCVgtttCSGp846toVetDiW0GDJV9pVTfizWPN+j1kf7MQQGNtIPJqOkk257aqJrHypnN0bL0MMQ5nPDfspA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-kysely/-/1.0.1/sqlite-kysely-1.0.1.tgz}
+  '@btp/sqlite-kysely@1.0.2':
+    resolution: {integrity: sha512-kbHmBP+ZsuNTQTCSLoYIP3AUns/6A+rJdwsZFcMGB/tSelNL1PNYRKDv7fwyBAgxFfRRkqhXShp0aNqhIAXHag==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-kysely/-/1.0.2/sqlite-kysely-1.0.2.tgz}
 
   '@btp/sqlite-runtime@1.0.1':
     resolution: {integrity: sha512-NmmnKz0SSAhZPG5lhNr1wQ0Kxr+IbUn/X4A1z4NT5glcILEBt/mpaaXV6OwK4sqq8xUulUmrjhBEdJUI1QEmYg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-runtime/-/1.0.1/sqlite-runtime-1.0.1.tgz}
@@ -667,8 +671,8 @@ packages:
   hastscript@9.0.3:
     resolution: {integrity: sha512-1ALZXSmCGmW3h8AMz4R4+QKSKFi7sNgXLVwmwB8FYVtl1CwQ3WDkSAEY/d5tp1g/vbQgq2s1WlHgfO3jbw1TsA==}
 
-  hono@4.13.19:
-    resolution: {integrity: sha512-KmXvQAXwcAHV+muzbIwoJ23niEB5nMoDVr9WcRkU8mvjUECm/1+7v4Jgp7P7a+H6MLFrh+vXrGonGrGS+RQfkA==}
+  hono@4.13.21:
+    resolution: {integrity: sha512-h9UsguqfVk4kjUwLvQpHOmOaJpW10jz9lp8bvKUUa04wJG/fabKFBqXZ06D6LFaeKQZtUZRVeg0gfkTTEsX7Mw==}
     engines: {node: '>=16.9.0'}
 
   html-void-elements@3.0.0:
@@ -1095,8 +1099,8 @@ packages:
     resolution: {integrity: sha512-Stg6edJXC/6/xqGwSXwFokrUhChJ18amEjpKH89WrQQ0oVFDF+pUUcTpiwWhFUrE89Vf16FBOlwhaw+lescxMQ==}
     engines: {node: '>=20'}
 
-  tinybench@6.2.4:
-    resolution: {integrity: sha512-SQ52jEncXxbMCzJuY2A/jGIbbAu6NYsBWW7grz2pNE+EnzQdoGaoBfpk4qC/opE7qiUcGmGgaGIz5EoHdS1O9w==}
+  tinybench@6.2.5:
+    resolution: {integrity: sha512-b/8GRMdnY4cqkfCLyaFpTGIv1qwfi3oT0mWaepwT++6Z/ZrYehNfZZ2JDKVLKGhNoEkS3IIB1ELtCT0XS5DtOA==}
     engines: {node: '>=20.0.0'}
 
   tinyexec@1.3.1:
@@ -1297,7 +1301,7 @@ snapshots:
 
   '@btp/doist-core@1.0.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
-      '@btp/sqlite-kysely': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/sqlite-kysely': 1.0.2(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/sqlite-runtime': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/xdg-paths': 1.0.1
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0)
@@ -1322,19 +1326,16 @@ snapshots:
 
   '@btp/http-api-core@1.0.1': {}
 
-  '@btp/issue-tools-claude@1.0.2(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/issue-tools-claude@1.2.0(valibot@1.5.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
-      '@btp/issue-tools-core': 1.1.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/mcp-hosting': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@modelcontextprotocol/server': 2.4.0
+      '@btp/issue-tools-mcp': 1.3.0(valibot@1.5.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
     transitivePeerDependencies:
-      - '@valibot/to-json-schema'
       - supports-color
       - typescript
+      - valibot
       - vitest
 
-  '@btp/issue-tools-core@1.1.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/issue-tools-core@1.3.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
       '@btp/doist-core': 1.0.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/forge-read': 1.0.1
@@ -1349,6 +1350,20 @@ snapshots:
       - '@valibot/to-json-schema'
       - supports-color
       - typescript
+      - vitest
+
+  '@btp/issue-tools-mcp@1.3.0(valibot@1.5.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+    dependencies:
+      '@btp/doist-core': 1.0.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/issue-tools-core': 1.3.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/mcp-hosting': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@modelcontextprotocol/server': 2.4.0
+      '@valibot/to-json-schema': 1.8.0(valibot@1.5.0)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+      - valibot
       - vitest
 
   '@btp/mcp-hosting@1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
@@ -1390,7 +1405,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@btp/sqlite-kysely@1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/sqlite-kysely@1.0.2(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
       '@btp/sqlite-runtime': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
@@ -1454,9 +1469,9 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.3
 
-  '@hono/node-server@2.1.11(hono@4.13.19)':
+  '@hono/node-server@2.1.11(hono@4.13.21)':
     dependencies:
-      hono: 4.13.19
+      hono: 4.13.21
 
   '@jridgewell/resolve-uri@3.1.3': {}
 
@@ -1475,9 +1490,9 @@ snapshots:
 
   '@modelcontextprotocol/node@2.1.2(@modelcontextprotocol/server@2.4.0)':
     dependencies:
-      '@hono/node-server': 2.1.11(hono@4.13.19)
+      '@hono/node-server': 2.1.11(hono@4.13.21)
       '@modelcontextprotocol/server': 2.4.0
-      hono: 4.13.19
+      hono: 4.13.21
 
   '@modelcontextprotocol/server@2.4.0':
     dependencies:
@@ -2040,7 +2055,7 @@ snapshots:
       property-information: 7.2.0
       space-separated-tokens: 2.0.2
 
-  hono@4.13.19: {}
+  hono@4.13.21: {}
 
   html-void-elements@3.0.0: {}
 
@@ -2780,7 +2795,7 @@ snapshots:
     dependencies:
       real-require: 1.0.0
 
-  tinybench@6.2.4: {}
+  tinybench@6.2.5: {}
 
   tinyexec@1.3.1: {}
 
@@ -2897,7 +2912,7 @@ snapshots:
       obug: 3.0.0
       picomatch: 4.0.7
       std-env: 4.3.0
-      tinybench: 6.2.4
+      tinybench: 6.2.5
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       vite: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)

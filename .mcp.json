@@ -18,7 +18,7 @@
 			"type": "http",
 			"url": "https://search.jonno.dev/mcp",
 			"headers": {
-				"Authorization": "Bearer {env:NOGON__APP__ACCESS_TOKEN}"
+				"Authorization": "Bearer ${NOGON__APP__ACCESS_TOKEN}"
 			}
 		}
 	}

@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@btp/skills-cli':
-        specifier: 1.1.0
-        version: 1.1.0(vitest@5.1.0(vite@8.3.8))
+        specifier: 1.2.1
+        version: 1.2.1(vitest@5.1.0(vite@8.3.8))
 
 packages:
 
@@ -34,12 +34,12 @@ packages:
   '@btp/http-api-core@1.0.1':
     resolution: {integrity: sha512-91/9fJVNYC/vTDOwVK1eRtI8nroXrCia41vDTzNy8MZJ31wsQFL+3KZF/zEG2szlS8cvHosR8B3rPwcVR4Dt9Q==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhttp-api-core/-/1.0.1/http-api-core-1.0.1.tgz}
 
-  '@btp/skills-cli@1.1.0':
-    resolution: {integrity: sha512-RBJf87/D+HzL/NFEZr7Rbu7XrSi/3VfI0v7JIckFHDzMDsyG7LNxZkGdUqcvXNq1rQ/geCMCGaV6DrL7prV3aw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-cli/-/1.1.0/skills-cli-1.1.0.tgz}
+  '@btp/skills-cli@1.2.1':
+    resolution: {integrity: sha512-bDINYPDbhGIlJfXGJsKlno4RVuKIjfk0uKnSpxZ2frpubO7zLeIGHCi3QWFz31iHO2yQ2zOzrrprfioH6AIbfw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-cli/-/1.2.1/skills-cli-1.2.1.tgz}
     hasBin: true
 
-  '@btp/skills-core@1.1.0':
-    resolution: {integrity: sha512-KIj51975dykjWjw4ReyIGaMuU67p58XmBRHfBgp5nudqu5nhbP/7kEpN70MJC83dWRwWDjyaT44jPqmhf+/l/Q==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-core/-/1.1.0/skills-core-1.1.0.tgz}
+  '@btp/skills-core@1.2.1':
+    resolution: {integrity: sha512-9gx3wRu0Y0uS1UvQ9KLqsk7XsTS/vnwNStNtEcLpmyegsd9bR730URu4WuL6gmzTY32e19wXIMkSnoJli/wuQw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-core/-/1.2.1/skills-core-1.2.1.tgz}
     peerDependencies:
       vitest: 5.1.1
 
@@ -234,6 +234,10 @@ packages:
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
 
+  eslint-visitor-keys@5.0.1:
+    resolution: {integrity: sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
@@ -368,8 +372,8 @@ packages:
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
 
-  tinybench@6.2.4:
-    resolution: {integrity: sha512-SQ52jEncXxbMCzJuY2A/jGIbbAu6NYsBWW7grz2pNE+EnzQdoGaoBfpk4qC/opE7qiUcGmGgaGIz5EoHdS1O9w==}
+  tinybench@6.2.5:
+    resolution: {integrity: sha512-b/8GRMdnY4cqkfCLyaFpTGIv1qwfi3oT0mWaepwT++6Z/ZrYehNfZZ2JDKVLKGhNoEkS3IIB1ELtCT0XS5DtOA==}
     engines: {node: '>=20.0.0'}
 
   tinyexec@1.3.1:
@@ -379,6 +383,10 @@ packages:
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
+
+  toml-eslint-parser@1.0.3:
+    resolution: {integrity: sha512-A5F0cM6+mDleacLIEUkmfpkBbnHJFV1d2rprHU2MXNk7mlxHq2zGojA+SRvQD1RoMo9gqjZPWEaKG4v1BQ48lw==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
   tslib@2.9.1:
     resolution: {integrity: sha512-a4Ux9VKuIMHsOS7ENbEq6hK2ZGYIT27Rtl0E4eD9KqwxhKiQeMZE/9xb3IdYwWaSOyIBQLExhQgXDTYoiCxnWA==}
@@ -551,15 +559,15 @@ snapshots:
 
   '@btp/http-api-core@1.0.1': {}
 
-  '@btp/skills-cli@1.1.0(vitest@5.1.0(vite@8.3.8))':
+  '@btp/skills-cli@1.2.1(vitest@5.1.0(vite@8.3.8))':
     dependencies:
       '@btp/cmd-core': 1.0.1(vitest@5.1.0(vite@8.3.8))
-      '@btp/skills-core': 1.1.0(vitest@5.1.1(vite@8.3.8))
+      '@btp/skills-core': 1.2.1(vitest@5.1.1(vite@8.3.8))
     transitivePeerDependencies:
       - typescript
       - vitest
 
-  '@btp/skills-core@1.1.0(vitest@5.1.1(vite@8.3.8))':
+  '@btp/skills-core@1.2.1(vitest@5.1.1(vite@8.3.8))':
     dependencies:
       '@btp/forge-read': 1.0.1
       '@btp/forgejo-api': 1.1.0
@@ -568,6 +576,7 @@ snapshots:
       '@btp/http-api-core': 1.0.1
       '@btp/xdg-paths': 1.0.1
       smol-toml: 1.9.1
+      toml-eslint-parser: 1.0.3
       valibot: 1.5.0
       vitest: 5.1.1(vite@8.3.8)
     transitivePeerDependencies:
@@ -707,6 +716,8 @@ snapshots:
 
   es-module-lexer@2.3.2: {}
 
+  eslint-visitor-keys@5.0.1: {}
+
   estree-walker@3.0.3:
     dependencies:
       '@types/estree': 1.0.10
@@ -815,7 +826,7 @@ snapshots:
 
   std-env@4.3.0: {}
 
-  tinybench@6.2.4: {}
+  tinybench@6.2.5: {}
 
   tinyexec@1.3.1: {}
 
@@ -823,6 +834,10 @@ snapshots:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
+
+  toml-eslint-parser@1.0.3:
+    dependencies:
+      eslint-visitor-keys: 5.0.1
 
   tslib@2.9.1:
     optional: true
@@ -852,7 +867,7 @@ snapshots:
       obug: 3.0.0
       picomatch: 4.0.7
       std-env: 4.3.0
-      tinybench: 6.2.4
+      tinybench: 6.2.5
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       vite: 8.3.8
@@ -871,7 +886,7 @@ snapshots:
       obug: 3.0.0
       picomatch: 4.0.7
       std-env: 4.3.0
-      tinybench: 6.2.4
+      tinybench: 6.2.5
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       vite: 8.3.8

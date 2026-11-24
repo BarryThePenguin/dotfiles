@@ -256,10 +256,10 @@ backend = "npm:@btp/catalogue-mcp"
 specifiers = ["2.0.0"]
 
 [[tools."npm:@btp/ci-cli"]]
-version = "1.1.0"
-aube = { path = "locks/npm-btp-ci-cli/1.1.0", digest = "sha256:fb77e2b1798392d31603bf3fef9522dcb65bd0b5c5a3548cb099fc20ebd4cb8f" }
+version = "1.1.1"
+aube = { path = "locks/npm-btp-ci-cli/1.1.1", digest = "sha256:53c7d5594c53f9e0c5985c6764dd18d65b2a2e5d9e39718aea090ec278854918" }
 backend = "npm:@btp/ci-cli"
-specifiers = ["1.1.0"]
+specifiers = ["1.1.1"]
 
 [[tools."npm:@btp/doist-cli"]]
 version = "1.0.0"
@@ -286,10 +286,10 @@ backend = "npm:@btp/hub"
 specifiers = ["1.0.2"]
 
 [[tools."npm:@btp/issue-tools-claude"]]
-version = "1.0.2"
-aube = { path = "locks/npm-btp-issue-tools-claude/1.0.2", digest = "sha256:7e2cfd0f0c558759bf39d5ff2c7850129cdb7a19cb325adc846e71dacd7ec3f4" }
+version = "1.2.0"
+aube = { path = "locks/npm-btp-issue-tools-claude/1.2.0", digest = "sha256:56c04c0ced92b53de2727b281e051c7b5f45a2f77df6d5fc858a930aa541eb8d" }
 backend = "npm:@btp/issue-tools-claude"
-specifiers = ["1.0.2"]
+specifiers = ["1.2.0"]
 
 [[tools."npm:@btp/jev"]]
 version = "1.0.0"
@@ -328,10 +328,10 @@ backend = "npm:@btp/opencode-go-usage"
 specifiers = ["1.0.0"]
 
 [[tools."npm:@btp/skills-cli"]]
-version = "1.1.0"
-aube = { path = "locks/npm-btp-skills-cli/1.1.0", digest = "sha256:1a6a820f7ecc1a80c696eada12ea8f5db5b17a8c56936a5fab99831f8e588f7d" }
+version = "1.2.1"
+aube = { path = "locks/npm-btp-skills-cli/1.2.1", digest = "sha256:ca907cd9a86bbc8418f81117c468ffcfadf0ce22b9af25ca755bf0702c3f61d4" }
 backend = "npm:@btp/skills-cli"
-specifiers = ["1.1.0"]
+specifiers = ["1.2.1"]
 
 [[tools."npm:@typespec/compiler"]]
 version = "1.18.0"
@@ -358,8 +358,8 @@ backend = "npm:typescript-language-server"
 specifiers = ["6.1.0"]
 
 [[tools.opencode]]
-version = "2.3.2"
-aube = { path = "locks/opencode/2.3.2~009061c2", digest = "sha256:f67371b7894a6b7f810fff23c77cbe2f5b52832421b3b92ce701dad6714a5b56" }
+version = "2.4.1"
+aube = { path = "locks/opencode/2.4.1~009061c2", digest = "sha256:b9fc4e48974771958bd8f4b11f0f2e33467c5330f543017ccdb89513462b9dca" }
 backend = "npm:@opencode/cli"
 specifiers = ["latest"]
 

@@ -10,19 +10,19 @@ OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 "github:open-telemetry/opentelemetry-collector-releases" = { version = "v0.165.0", matching_regex = "^otelcol-contrib_", os = ["macos"] }
 "npm:@btp/catalogue" = "2.0.0"
 "npm:@btp/catalogue-mcp" = "2.0.0"
-"npm:@btp/ci-cli" = "1.1.0"
+"npm:@btp/ci-cli" = "1.1.1"
 "npm:@btp/doist-cli" = "1.0.0"
 "npm:@btp/doist-mcp" = "1.0.3"
 "npm:@btp/file-size-cli" = "1.0.0"
 "npm:@btp/hub" = "1.0.2"
-"npm:@btp/issue-tools-claude" = "1.0.2"
+"npm:@btp/issue-tools-claude" = "1.2.0"
 "npm:@btp/jev" = "1.0.0"
 "npm:@btp/nms-save-cli" = "1.0.0"
 "npm:@btp/mq-cli" = "1.0.0"
 "npm:@btp/mq-mcp" = "1.0.0"
 "npm:@btp/onix" = "1.0.1"
 "npm:@btp/opencode-go-usage" = "1.0.0"
-"npm:@btp/skills-cli" = "1.1.0"
+"npm:@btp/skills-cli" = "1.2.1"
 "npm:@typespec/compiler" = { version = "1.18.0", os = ["macos"] }
 "npm:prettier" = { version = "3.10.1", os = ["macos"] }
 "npm:typescript-language-server" = { version = "6.1.0", os = ["macos"] }
