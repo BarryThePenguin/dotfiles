@@ -1,13 +1,5 @@
 {
 	"mcpServers": {
-		"catalogue": {
-			"type": "http",
-			"url": "https://catalogue.jonno.dev/mcp",
-			"oauth": {
-				"clientId": "a164f1d9-8c7d-4bb2-95cd-c7024db02364",
-				"callbackPort": 19876
-			}
-		},
 		"doist": {
 			"type": "stdio",
 			"command": "doist-mcp",
