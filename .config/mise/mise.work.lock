@@ -49,20 +49,21 @@ url = "https://github.com/anthropics/claude-code/releases/download/v2.1.331/clau
 url_api = "https://api.github.com/repos/anthropics/claude-code/releases/assets/784084261"
 
 [[tools.codex]]
-version = "0.171.0"
+version = "0.172.0"
 backend = "aqua:openai/codex"
 specifiers = ["latest"]
 
 [tools.codex."platforms.linux-x64"]
-checksum = "sha256:8391d67757496bfd14893eca6cbf0c96994bf2627566ff1f018f70600c9ef6b3"
+checksum = "sha256:63e3b00065ed7f62166d0522e17f663cb866a31d80d03e63365482ed34a1d991"
 checksum_source = "mise-versions"
-url = "https://github.com/openai/codex/releases/download/rust-v0.171.0/codex-package-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/openai/codex/releases/assets/769869089"
+url = "https://github.com/openai/codex/releases/download/rust-v0.172.0/codex-package-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/openai/codex/releases/assets/785031494"
 
 [tools.codex."platforms.macos-arm64"]
-checksum = "sha256:58c88032ec446e72922d911d8f03773102da20c16a6059cf21f6744bce57f210"
-url = "https://github.com/openai/codex/releases/download/rust-v0.171.0/codex-package-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/openai/codex/releases/assets/769863147"
+checksum = "sha256:0970016d48209a09c4039139629ed79b4a31c5e3d864e792c043419d98fa6466"
+checksum_source = "mise-versions"
+url = "https://github.com/openai/codex/releases/download/rust-v0.172.0/codex-package-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/openai/codex/releases/assets/785021808"
 
 [[tools.databricks-cli]]
 version = "v1.26.0"
@@ -162,50 +163,11 @@ url = "https://cli.coderabbit.ai/releases/0.9.0/coderabbit-linux-x64.zip"
 checksum = "blake3:7549435d582efb74fcb3ddffb171fb22c94eaaff0fd31d84f6b68108eb8cad16"
 url = "https://cli.coderabbit.ai/releases/0.9.0/coderabbit-darwin-arm64.zip"
 
-[[tools.kubectl]]
-version = "1.37.0"
-backend = "aqua:kubernetes/kubernetes/kubectl"
-specifiers = ["1.37.0"]
-
-[tools.kubectl."platforms.linux-x64"]
-checksum = "sha256:6129359f4e1f3848a5572ccb0b26cf28b8ca08cef38c95a765b2f64a2c961a2f"
-url = "https://dl.k8s.io/v1.37.0/bin/linux/amd64/kubectl"
-
-[tools.kubectl."platforms.macos-arm64"]
-checksum = "sha256:583beedaebe422e71d3f1a96acef8b1fef86ea2f09a45ad01aa6c9ce287c1380"
-url = "https://dl.k8s.io/v1.37.0/bin/darwin/arm64/kubectl"
-
-[[tools.kubelogin]]
-version = "1.36.4"
-backend = "aqua:int128/kubelogin"
-specifiers = ["1.36.4"]
-
-[tools.kubelogin."platforms.linux-x64"]
-checksum = "sha256:9e8baeb4905d35a301304af2548324997add512fe94ab20e65993d167212bf85"
-checksum_source = "mise-versions"
-url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_linux_amd64.zip"
-url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423188"
-
-[tools.kubelogin."platforms.macos-arm64"]
-checksum = "sha256:5aa470d059a9672d732439474678ac05a0de5623ad3af54966b8fe1ac7df4254"
-checksum_source = "mise-versions"
-url = "https://github.com/int128/kubelogin/releases/download/v1.36.4/kubelogin_darwin_arm64.zip"
-url_api = "https://api.github.com/repos/int128/kubelogin/releases/assets/545423629"
-
 [[tools."npm:@augmentcode/auggie"]]
 version = "1.2.2"
 aube = { path = "locks/mise.work/npm-augmentcode-auggie/1.2.2", digest = "sha256:e021ce7be32f8aca22135e56062625c277ac7ab9482d432df4c9ac04170dd1fb" }
 backend = "npm:@augmentcode/auggie"
 specifiers = ["1.2.2"]
-
-[[tools.opencode]]
-version = "2.4.1"
-aube = { path = "locks/mise.work/opencode/2.4.1~009061c2", digest = "sha256:b9fc4e48974771958bd8f4b11f0f2e33467c5330f543017ccdb89513462b9dca" }
-backend = "npm:@opencode/cli"
-specifiers = ["latest"]
-
-[tools.opencode.options]
-allow_builds = '["@opencode/cli"]'
 
 [[tools.twg]]
 version = "1.4.6"
@@ -222,7 +184,7 @@ url = "https://teamwork-graph.atlassian.com/cli/twg-darwin-arm64-v1.4.6"
 
 [[tools.viteplus]]
 version = "1.7.0"
-aube = { path = "locks/mise.work/viteplus/1.7.0", digest = "sha256:a891ebb2d666eb9fc57b91a729be4c66e81a87db53dfa58ef572d4350abe85ea" }
+aube = { path = "locks/mise.work/viteplus/1.7.0", digest = "sha256:aae7d9352cb8c35ef68f183e3ec816f5b458d70cfe6fe93c8d97e96bf149dfba" }
 backend = "npm:vite-plus"
 specifiers = ["1.7.0"]
 
