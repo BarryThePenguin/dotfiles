@@ -67,21 +67,21 @@ url_api = "https://api.github.com/repos/controlplaneio-fluxcd/flux-operator/rele
 provenance = "github-attestations"
 
 [[tools."github:SigNoz/signoz-mcp-server"]]
-version = "0.19.0"
+version = "0.20.0"
 backend = "github:SigNoz/signoz-mcp-server"
-specifiers = ["v0.19.0"]
+specifiers = ["v0.20.0"]
 
 [tools."github:SigNoz/signoz-mcp-server"."platforms.linux-x64"]
-checksum = "sha256:f668782e38a2ffb297ad6d2dfa5e1251dc03225b06ca0488a1d30abc36bb891d"
+checksum = "sha256:a7ac13e665c48bd0e24b50175ae7a1f48b970ef511345e8c4cdd8e6be7320d5e"
 checksum_source = "mise-versions"
-url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.19.0/signoz-mcp-server_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/739749890"
+url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.20.0/signoz-mcp-server_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/763183313"
 
 [tools."github:SigNoz/signoz-mcp-server"."platforms.macos-arm64"]
-checksum = "sha256:c79a451f4a467122092e5030ba5ec1a40c2f4acada4217058e5ba78dac338fcf"
+checksum = "sha256:567edbf1d7669dddeabca523d1d625688d8c4ee87ab0840e70f166a070dc9d7d"
 checksum_source = "mise-versions"
-url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.19.0/signoz-mcp-server_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/739749882"
+url = "https://github.com/SigNoz/signoz-mcp-server/releases/download/v0.20.0/signoz-mcp-server_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/SigNoz/signoz-mcp-server/releases/assets/763183315"
 
 [[tools.helm]]
 version = "4.3.2"
