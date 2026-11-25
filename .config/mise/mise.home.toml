@@ -58,7 +58,7 @@ stderr_path = "~/Library/Logs/life-sync.err.log"
 "brew-cask:zed" = "latest"
 
 [tools]
-"github:SigNoz/signoz-mcp-server" = "v0.19.0"
+"github:SigNoz/signoz-mcp-server" = "v0.20.0"
 "npm:@opencode/browse" = { version = "0.1.5", allow_low_downloads = true }
 copilot = "v1.0.114"
 cosign = "3.1.4"
