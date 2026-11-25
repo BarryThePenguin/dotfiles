@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@btp/hub':
-        specifier: 1.0.2
-        version: 1.0.2(@types/node@26.6.6)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))(yaml@2.9.1)
+        specifier: 1.1.0
+        version: 1.1.0(@types/node@26.6.6)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))(yaml@2.9.1)
 
 packages:
 
@@ -28,11 +28,17 @@ packages:
       '@valibot/to-json-schema': ^1.7.0
       vitest: 5.1.0
 
+  '@btp/forge-read@1.0.1':
+    resolution: {integrity: sha512-F/6P7dxFuDtLmOVDjlGmATSlC9FmtEo122y9A4cOVEjGc2Vpu9zY5lBYwhbkoaSuRwf2hCF+UBEtFNtanru7qQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforge-read/-/1.0.1/forge-read-1.0.1.tgz}
+
   '@btp/forgejo-api@1.1.0':
     resolution: {integrity: sha512-wBVJ4Y1iwj0NPmCFRilKmnCFiH4Zg3DXxj3iYUmKbpO85y7TXNrT2FXIzZLzXmGbuKkTkI4sGBX8dXKNpaqYgA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforgejo-api/-/1.1.0/forgejo-api-1.1.0.tgz}
 
   '@btp/forgejo-source@1.0.0':
     resolution: {integrity: sha512-7S0Rfw7tREynCZO8DxXIp3lWA+oCqcF2TgVmM+84QflHw3P7PcVPKUbxOTA+iEw64a8Zec/CDQNbP7scC+155g==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fforgejo-source/-/1.0.0/forgejo-source-1.0.0.tgz}
+
+  '@btp/github-api@1.0.1':
+    resolution: {integrity: sha512-I7KT7VlUpRw1rqjjuldFWMUOYTK/EXL+wkJy7V3NopsjgTZPcPhqt95bL/IJwj/jtZsr6TkoPZAqAwbDjpwt6A==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fgithub-api/-/1.0.1/github-api-1.0.1.tgz}
 
   '@btp/gitlab-api@1.0.1':
     resolution: {integrity: sha512-4RRfIOLQMB2N508PbQZ8w/Xc84hpKGz24e/7Ayj+cyxuwgNwq1l1gabmg9XfdjR41qgYdKOMiOH5KaAuMAefaA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fgitlab-api/-/1.0.1/gitlab-api-1.0.1.tgz}
@@ -40,13 +46,13 @@ packages:
   '@btp/http-api-core@1.0.1':
     resolution: {integrity: sha512-91/9fJVNYC/vTDOwVK1eRtI8nroXrCia41vDTzNy8MZJ31wsQFL+3KZF/zEG2szlS8cvHosR8B3rPwcVR4Dt9Q==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhttp-api-core/-/1.0.1/http-api-core-1.0.1.tgz}
 
-  '@btp/hub-core@1.0.1':
-    resolution: {integrity: sha512-S9eKcLS2L2bwGob97UsXpvviqZcRc54m7HBoCOt1BZyt2AzruRo+6GUE9z30clk1qjgx70wegl6g7h9FPAZIWw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhub-core/-/1.0.1/hub-core-1.0.1.tgz}
+  '@btp/hub-core@1.1.0':
+    resolution: {integrity: sha512-VwHnQ8LVZgOCYI/KuO1EfCa07Vr1wx8dwRDvdliIkuDrSRcw/zeeYX8JBFxvrvHzCBAJv8GNhO2EwB4okkNpTQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhub-core/-/1.1.0/hub-core-1.1.0.tgz}
     peerDependencies:
-      vitest: 5.1.0
+      vitest: 5.1.1
 
-  '@btp/hub@1.0.2':
-    resolution: {integrity: sha512-f0VTk4D7NJIRi9m672Y9q4c9icljvg/65DbgfnqAOvbHqyFR23fXlVMHyYqaUmktlWI7sys5/oK3g4AvGBiGJw==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhub/-/1.0.2/hub-1.0.2.tgz}
+  '@btp/hub@1.1.0':
+    resolution: {integrity: sha512-XvMRCK9mTZA4g2i7l3JA95YfwzdJ607a8BSRigh6+PXwmpeou/vp7UXx26DT0X47vxj8QkifD2f3fAgYrieI+g==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fhub/-/1.1.0/hub-1.1.0.tgz}
     hasBin: true
 
   '@btp/mq-core@1.0.1':
@@ -54,8 +60,13 @@ packages:
     peerDependencies:
       vitest: 5.1.0
 
-  '@btp/sqlite-kysely@1.0.1':
-    resolution: {integrity: sha512-1ygnCVgtttCSGp846toVetDiW0GDJV9pVTfizWPN+j1kf7MQQGNtIPJqOkk257aqJrHypnN0bL0MMQ5nPDfspA==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-kysely/-/1.0.1/sqlite-kysely-1.0.1.tgz}
+  '@btp/skills-core@1.3.0':
+    resolution: {integrity: sha512-znE2I57qtv3UMSRhszMmf2wW5H9Uy2vAjSuj+TTxJfEgPnhfuVlFGrMWVe0rCVhB9wYwxxj1hAR4b/LP0cUcfQ==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fskills-core/-/1.3.0/skills-core-1.3.0.tgz}
+    peerDependencies:
+      vitest: 5.1.1
+
+  '@btp/sqlite-kysely@1.0.2':
+    resolution: {integrity: sha512-kbHmBP+ZsuNTQTCSLoYIP3AUns/6A+rJdwsZFcMGB/tSelNL1PNYRKDv7fwyBAgxFfRRkqhXShp0aNqhIAXHag==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-kysely/-/1.0.2/sqlite-kysely-1.0.2.tgz}
 
   '@btp/sqlite-runtime@1.0.1':
     resolution: {integrity: sha512-NmmnKz0SSAhZPG5lhNr1wQ0Kxr+IbUn/X4A1z4NT5glcILEBt/mpaaXV6OwK4sqq8xUulUmrjhBEdJUI1QEmYg==, tarball: https://code.jonno.dev/api/packages/btp/npm/%40btp%2Fsqlite-runtime/-/1.0.1/sqlite-runtime-1.0.1.tgz}
@@ -92,8 +103,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hono/node-server@2.1.6':
-    resolution: {integrity: sha512-p/KH9MnfNcsm3sR6x4lNgm5j+QN4Et8srKredl9DZfXiyZ1UQ3aQ2YVpFLbqktYN5JI+DB+VZFKM2PqE5hLKjQ==}
+  '@hono/node-server@2.1.9':
+    resolution: {integrity: sha512-Sk4NQd3GFY0WZWCzndwFMPwJhtD0y9qjsQ+pjID0/03nK9pxyBCUoUHCho8QYBLBVhi0ssL8UkNPHqbgSOFPIQ==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4 || ^5.0.0-0
@@ -491,8 +502,22 @@ packages:
       vite:
         optional: true
 
+  '@vitest/mocker@5.1.1':
+    resolution: {integrity: sha512-b2OgTB4+3ImWIVafXKazJXwLKwQxUNnix6b3xUvUTMh7RyXlrtzoxfZr8aEz9zkHOMAS4K5lu3TvFWoiVeVTQg==}
+    peerDependencies:
+      msw: ^2.4.9 || ^3.0.0
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      msw:
+        optional: true
+      vite:
+        optional: true
+
   '@vitest/spy@5.1.0':
     resolution: {integrity: sha512-2DPO5OMHWKrBngC+fCmTQqemNF0gidRhp3lxbBmRhW+M1XJrfgPpqNqWVevXtn2f2ufD5ZaR1B6B641aAlcX5A==}
+
+  '@vitest/spy@5.1.1':
+    resolution: {integrity: sha512-6K8C6alQG1/Yc8/ZI22iJS7JEsxPdVzqtqDq+/xM4Z0mGVykemMVjLhqMy/q6/IHYG3kKD8hKSwRen/ZdyI9vQ==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -609,6 +634,10 @@ packages:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
 
+  eslint-visitor-keys@5.0.1:
+    resolution: {integrity: sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
   estree-util-is-identifier-name@3.0.0:
     resolution: {integrity: sha512-hFtqIDZTIUZ9BXLb8y4pYGyk6+wekIivNVTcmvk8NoOh+VeRn5y6cEHzbURrWbfp1fIqdVipilzj+lfaadNZmg==}
 
@@ -701,8 +730,8 @@ packages:
   hastscript@9.0.3:
     resolution: {integrity: sha512-1ALZXSmCGmW3h8AMz4R4+QKSKFi7sNgXLVwmwB8FYVtl1CwQ3WDkSAEY/d5tp1g/vbQgq2s1WlHgfO3jbw1TsA==}
 
-  hono@4.13.17:
-    resolution: {integrity: sha512-vZIcbkvjOR5hHRWERbGkr8fGfF0GGM1ooYkuH448iO3b2AdVEr3AXZSw4Z3Kn+1L5z0CVoVeyV29VGYmFh05kQ==}
+  hono@4.13.19:
+    resolution: {integrity: sha512-KmXvQAXwcAHV+muzbIwoJ23niEB5nMoDVr9WcRkU8mvjUECm/1+7v4Jgp7P7a+H6MLFrh+vXrGonGrGS+RQfkA==}
     engines: {node: '>=16.9.0'}
 
   html-void-elements@3.0.0:
@@ -826,8 +855,8 @@ packages:
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
 
-  lucide@1.77.0:
-    resolution: {integrity: sha512-DqoScWUEDcTC0KXPKKlZIIdOE++crPcGAQ60KfBNiT+Aq0sgQtxY/1sBCKBzLLo2yLLhYUperyUGHV5PwlBaIQ==}
+  lucide@1.78.0:
+    resolution: {integrity: sha512-4lMWPv+OZGL1N2jkTNGjw86Rd3+4gyCdBHHXw+emfCvbQEojOPwPQo20y4SEUxy5ZBc3IDp3KC1vA7PPiuLbQA==}
 
   magic-string@1.4.5:
     resolution: {integrity: sha512-oLLC2+YvQUfAa+vxoufE/yc1icb87M9iXIRqAoR/2EhE/8cb3SF/+Gi0c2By1B+5Vz2e2vQtUvHiu1+63Znh+w==}
@@ -1142,8 +1171,8 @@ packages:
     resolution: {integrity: sha512-Stg6edJXC/6/xqGwSXwFokrUhChJ18amEjpKH89WrQQ0oVFDF+pUUcTpiwWhFUrE89Vf16FBOlwhaw+lescxMQ==}
     engines: {node: '>=20'}
 
-  tinybench@6.2.4:
-    resolution: {integrity: sha512-SQ52jEncXxbMCzJuY2A/jGIbbAu6NYsBWW7grz2pNE+EnzQdoGaoBfpk4qC/opE7qiUcGmGgaGIz5EoHdS1O9w==}
+  tinybench@6.2.5:
+    resolution: {integrity: sha512-b/8GRMdnY4cqkfCLyaFpTGIv1qwfi3oT0mWaepwT++6Z/ZrYehNfZZ2JDKVLKGhNoEkS3IIB1ELtCT0XS5DtOA==}
     engines: {node: '>=20.0.0'}
 
   tinyexec@1.3.1:
@@ -1153,6 +1182,10 @@ packages:
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
+
+  toml-eslint-parser@1.0.3:
+    resolution: {integrity: sha512-A5F0cM6+mDleacLIEUkmfpkBbnHJFV1d2rprHU2MXNk7mlxHq2zGojA+SRvQD1RoMo9gqjZPWEaKG4v1BQ48lw==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
   trim-lines@3.0.1:
     resolution: {integrity: sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg==}
@@ -1301,6 +1334,47 @@ packages:
       jsdom:
         optional: true
 
+  vitest@5.1.1:
+    resolution: {integrity: sha512-trVmzUFOSraCZcI3uZIMD5FqBh4atFkC/XuJP/IU7qtyQay0FCs3Ia+0QiQ2JJwGyWG/xrcBoJNel2+O7kEZ0g==}
+    engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
+    hasBin: true
+    peerDependencies:
+      '@edge-runtime/vm': '*'
+      '@opentelemetry/api': ^1.9.0
+      '@types/node': ^22.0.0 || >=24.0.0
+      '@vitest/browser-playwright': 5.1.1
+      '@vitest/browser-preview': 5.1.1
+      '@vitest/browser-webdriverio': ^5.0.0-beta.5 || >=5.0.0
+      '@vitest/coverage-istanbul': 5.1.1
+      '@vitest/coverage-v8': 5.1.1
+      '@vitest/ui': 5.1.1
+      happy-dom: '*'
+      jsdom: '*'
+      vite: ^6.4.0 || ^7.0.0 || ^8.0.0
+    peerDependenciesMeta:
+      '@edge-runtime/vm':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+      '@types/node':
+        optional: true
+      '@vitest/browser-playwright':
+        optional: true
+      '@vitest/browser-preview':
+        optional: true
+      '@vitest/browser-webdriverio':
+        optional: true
+      '@vitest/coverage-istanbul':
+        optional: true
+      '@vitest/coverage-v8':
+        optional: true
+      '@vitest/ui':
+        optional: true
+      happy-dom:
+        optional: true
+      jsdom:
+        optional: true
+
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
 
@@ -1338,9 +1412,9 @@ packages:
 
 snapshots:
 
-  '@btp/cloudflare-source@1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/cloudflare-source@1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
-      '@btp/hub-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/hub-core': 1.1.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       valibot: 1.5.0
     transitivePeerDependencies:
       - '@modelcontextprotocol/server'
@@ -1354,7 +1428,7 @@ snapshots:
 
   '@btp/doist-core@1.0.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
-      '@btp/sqlite-kysely': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/sqlite-kysely': 1.0.2(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/sqlite-runtime': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/xdg-paths': 1.0.1
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0)
@@ -1368,21 +1442,29 @@ snapshots:
       - supports-color
       - typescript
 
+  '@btp/forge-read@1.0.1':
+    dependencies:
+      '@btp/forgejo-api': 1.1.0
+
   '@btp/forgejo-api@1.1.0':
     dependencies:
       '@btp/http-api-core': 1.0.1
       undici: 8.12.4
 
-  '@btp/forgejo-source@1.0.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/forgejo-source@1.0.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
       '@btp/forgejo-api': 1.1.0
-      '@btp/hub-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/hub-core': 1.1.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       valibot: 1.5.0
     transitivePeerDependencies:
       - '@modelcontextprotocol/server'
       - supports-color
       - typescript
       - vitest
+
+  '@btp/github-api@1.0.1':
+    dependencies:
+      '@btp/http-api-core': 1.0.1
 
   '@btp/gitlab-api@1.0.1':
     dependencies:
@@ -1391,11 +1473,11 @@ snapshots:
 
   '@btp/http-api-core@1.0.1': {}
 
-  '@btp/hub-core@1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/hub-core@1.1.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
       '@btp/gitlab-api': 1.0.1
       '@btp/mq-core': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/sqlite-kysely': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/sqlite-kysely': 1.0.2(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/sqlite-runtime': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@opentelemetry/api': 1.10.0
@@ -1403,33 +1485,34 @@ snapshots:
       mdast-util-to-string: 4.0.0
       smol-toml: 1.9.1
       valibot: 1.5.0
-      vitest: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))
+      vitest: 5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))
       yaml: 2.9.1
     transitivePeerDependencies:
       - '@modelcontextprotocol/server'
       - supports-color
       - typescript
 
-  '@btp/hub@1.0.2(@types/node@26.6.6)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))(yaml@2.9.1)':
+  '@btp/hub@1.1.0(@types/node@26.6.6)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))(yaml@2.9.1)':
     dependencies:
-      '@btp/cloudflare-source': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/cloudflare-source': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/cmd-core': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/forgejo-source': 1.0.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/forgejo-source': 1.0.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/gitlab-api': 1.0.1
-      '@btp/hub-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/hub-core': 1.1.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/mq-core': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/skills-core': 1.3.0(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/todoist-source': 1.0.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@hono/node-server': 2.1.6(hono@4.13.17)
-      '@hono/otel': 1.3.0(hono@4.13.17)
-      '@modelcontextprotocol/hono': 2.0.2(@modelcontextprotocol/server@2.4.0)(hono@4.13.17)
+      '@hono/node-server': 2.1.9(hono@4.13.19)
+      '@hono/otel': 1.3.0(hono@4.13.19)
+      '@modelcontextprotocol/hono': 2.0.2(@modelcontextprotocol/server@2.4.0)(hono@4.13.19)
       '@modelcontextprotocol/server': 2.4.0
       '@opentelemetry/api': 1.10.0
       '@valibot/to-json-schema': 1.8.0(valibot@1.5.0)
       design-book: 0.22.0
       hast-util-to-jsx-runtime: 2.3.7
-      hono: 4.13.17
-      lucide: 1.77.0
+      hono: 4.13.19
+      lucide: 1.78.0
       valibot: 1.5.0
       vite: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
     transitivePeerDependencies:
@@ -1479,7 +1562,25 @@ snapshots:
       - supports-color
       - typescript
 
-  '@btp/sqlite-kysely@1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+  '@btp/skills-core@1.3.0(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
+    dependencies:
+      '@btp/forge-read': 1.0.1
+      '@btp/forgejo-api': 1.1.0
+      '@btp/github-api': 1.0.1
+      '@btp/gitlab-api': 1.0.1
+      '@btp/http-api-core': 1.0.1
+      '@btp/mq-core': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/xdg-paths': 1.0.1
+      smol-toml: 1.9.1
+      toml-eslint-parser: 1.0.3
+      valibot: 1.5.0
+      vitest: 5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))
+      yaml: 2.9.1
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
+  '@btp/sqlite-kysely@1.0.2(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
       '@btp/sqlite-runtime': 1.0.1(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       '@btp/telemetry-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
@@ -1516,7 +1617,7 @@ snapshots:
   '@btp/todoist-source@1.0.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))':
     dependencies:
       '@btp/doist-core': 1.0.0(@modelcontextprotocol/server@2.4.0)(@valibot/to-json-schema@1.8.0(valibot@1.5.0))(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
-      '@btp/hub-core': 1.0.1(@modelcontextprotocol/server@2.4.0)(vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
+      '@btp/hub-core': 1.1.0(@modelcontextprotocol/server@2.4.0)(vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)))
       valibot: 1.5.0
     transitivePeerDependencies:
       - '@modelcontextprotocol/server'
@@ -1555,15 +1656,15 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.3
 
-  '@hono/node-server@2.1.6(hono@4.13.17)':
+  '@hono/node-server@2.1.9(hono@4.13.19)':
     dependencies:
-      hono: 4.13.17
+      hono: 4.13.19
 
-  '@hono/otel@1.3.0(hono@4.13.17)':
+  '@hono/otel@1.3.0(hono@4.13.19)':
     dependencies:
       '@opentelemetry/api': 1.10.0
       '@opentelemetry/semantic-conventions': 1.45.0
-      hono: 4.13.17
+      hono: 4.13.19
 
   '@jridgewell/resolve-uri@3.1.3': {}
 
@@ -1580,10 +1681,10 @@ snapshots:
     dependencies:
       zod: 4.6.7
 
-  '@modelcontextprotocol/hono@2.0.2(@modelcontextprotocol/server@2.4.0)(hono@4.13.17)':
+  '@modelcontextprotocol/hono@2.0.2(@modelcontextprotocol/server@2.4.0)(hono@4.13.19)':
     dependencies:
       '@modelcontextprotocol/server': 2.4.0
-      hono: 4.13.17
+      hono: 4.13.19
 
   '@modelcontextprotocol/server@2.4.0':
     dependencies:
@@ -1932,7 +2033,18 @@ snapshots:
     optionalDependencies:
       vite: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
 
+  '@vitest/mocker@5.1.1(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))':
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      '@vitest/spy': 5.1.1
+      estree-walker: 3.0.3
+      magic-string: 1.4.5
+    optionalDependencies:
+      vite: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
+
   '@vitest/spy@5.1.0': {}
+
+  '@vitest/spy@5.1.1': {}
 
   ansi-regex@5.0.1: {}
 
@@ -2018,6 +2130,8 @@ snapshots:
   escalade@3.2.0: {}
 
   escape-string-regexp@5.0.0: {}
+
+  eslint-visitor-keys@5.0.1: {}
 
   estree-util-is-identifier-name@3.0.0: {}
 
@@ -2185,7 +2299,7 @@ snapshots:
       property-information: 7.2.0
       space-separated-tokens: 2.0.2
 
-  hono@4.13.17: {}
+  hono@4.13.19: {}
 
   html-void-elements@3.0.0: {}
 
@@ -2271,7 +2385,7 @@ snapshots:
 
   longest-streak@3.1.0: {}
 
-  lucide@1.77.0: {}
+  lucide@1.78.0: {}
 
   magic-string@1.4.5:
     dependencies:
@@ -2935,7 +3049,7 @@ snapshots:
     dependencies:
       real-require: 1.0.0
 
-  tinybench@6.2.4: {}
+  tinybench@6.2.5: {}
 
   tinyexec@1.3.1: {}
 
@@ -2943,6 +3057,10 @@ snapshots:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
+
+  toml-eslint-parser@1.0.3:
+    dependencies:
+      eslint-visitor-keys: 5.0.1
 
   trim-lines@3.0.1: {}
 
@@ -3052,7 +3170,29 @@ snapshots:
       obug: 3.0.0
       picomatch: 4.0.7
       std-env: 4.3.0
-      tinybench: 6.2.4
+      tinybench: 6.2.5
+      tinyexec: 1.3.1
+      tinyglobby: 0.2.17
+      vite: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)
+      why-is-node-running: 3.2.1
+    optionalDependencies:
+      '@opentelemetry/api': 1.10.0
+      '@types/node': 26.6.6
+    transitivePeerDependencies:
+      - msw
+
+  vitest@5.1.1(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1)):
+    dependencies:
+      '@types/chai': 5.2.3
+      '@vitest/mocker': 5.1.1(vite@8.3.8(@types/node@26.6.6)(yaml@2.9.1))
+      chai: 6.3.0
+      es-module-lexer: 2.3.2
+      expect-type: 1.4.0
+      magic-string: 1.4.5
+      obug: 3.0.0
+      picomatch: 4.0.7
+      std-env: 4.3.0
+      tinybench: 6.2.5
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       vite: 8.3.8(@types/node@26.6.6)(yaml@2.9.1)

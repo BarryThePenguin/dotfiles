@@ -1,6 +1,8 @@
 # Use a repo's Claude guide when it has no AGENTS.md.
 project_doc_fallback_filenames = ["CLAUDE.md"]
 sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
 
 # Shared work MCP servers, matching .mcp.json.
 [mcp_servers.catalogue]

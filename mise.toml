@@ -4,6 +4,6 @@ lockfile_mode = "generate"
 lockfile_platforms = ["macos-arm64", "linux-x64"]
 
 [tools]
-hk = { version = "2.11.1", workflow = "release.yml" }
+hk = { version = "2.13.0", workflow = "release.yml" }
 node = "26.13.1"
 "npm:prettier" = "3.10.1"
