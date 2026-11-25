@@ -81,7 +81,7 @@ NPM_TOKEN = "${GITLAB_TOKEN:-}"
 FNOX_PROFILE = "work"
 
 [tools]
-"dotnet:csharp-ls" = "0.28.0"
+"dotnet:csharp-ls" = "0.29.0"
 "dotnet:dotnet-ef" = "11.0.0"
 "dotnet:ilspycmd" = "11.2.0.10050"
 "github:DataDog/pup" = "v2.5.2"
