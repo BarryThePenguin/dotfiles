@@ -87,7 +87,7 @@ FNOX_PROFILE = "work"
 "github:DataDog/pup" = "v2.5.2"
 "npm:@augmentcode/auggie" = "1.2.2"
 aspire = "v13.6.5"
-aws-cli = { version = "2.41.0", symlink_bins = "true" }
+aws-cli = { version = "2.41.1", symlink_bins = "true" }
 claude-code = { version = "latest", auto_update = true }
 codex = { version = "latest", auto_update = true }
 databricks-cli = "v1.26.0"
