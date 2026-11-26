@@ -66,21 +66,21 @@ url = "https://github.com/openai/codex/releases/download/rust-v0.172.0/codex-pac
 url_api = "https://api.github.com/repos/openai/codex/releases/assets/785021808"
 
 [[tools.databricks-cli]]
-version = "v1.26.0"
+version = "v1.27.0"
 backend = "aqua:databricks/cli"
-specifiers = ["v1.26.0"]
+specifiers = ["v1.27.0"]
 
 [tools.databricks-cli."platforms.linux-x64"]
-checksum = "sha256:522488842972a06936207a503426ad364d8061da2e330636da60f444a32840f5"
+checksum = "sha256:9e80f9de62c38b29c128ef47a44a1d890cd3a9091407fdc5b10406133f0f15c5"
 checksum_source = "mise-versions"
-url = "https://github.com/databricks/cli/releases/download/v1.26.0/databricks_cli_1.26.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/databricks/cli/releases/assets/735962665"
+url = "https://github.com/databricks/cli/releases/download/v1.27.0/databricks_cli_1.27.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/databricks/cli/releases/assets/767107630"
 
 [tools.databricks-cli."platforms.macos-arm64"]
-checksum = "sha256:66c9cbe36fc0abb491e0746124a95ea644054112e6b5ed78adb0ee530c4ddaf0"
+checksum = "sha256:0fe8a824985343f62a2fe39bcef2a4c5f3cbc7aadf231364c8b41b7ebaa162b4"
 checksum_source = "mise-versions"
-url = "https://github.com/databricks/cli/releases/download/v1.26.0/databricks_cli_1.26.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/databricks/cli/releases/assets/735962609"
+url = "https://github.com/databricks/cli/releases/download/v1.27.0/databricks_cli_1.27.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/databricks/cli/releases/assets/767107590"
 
 [[tools.dotnet]]
 version = "11.0.100"
