@@ -8,7 +8,7 @@ OTEL_EXPORTER_OTLP_TIMEOUT = "500"
 "cargo:forgejo-cli" = { version = "0.7.0", os = ["macos"] }
 "github:asciimoo/nogon" = { version = "0.22.0", os = ["macos"] }
 "github:open-telemetry/opentelemetry-collector-releases" = { version = "v0.165.0", matching_regex = "^otelcol-contrib_", os = ["macos"] }
-"github:woodpecker-ci/woodpecker" = { version = "3.18.1", matching = "woodpecker-cli", os = ["macos"] }
+"github:woodpecker-ci/woodpecker" = { version = "v3.20.1", matching = "woodpecker-cli", os = ["macos"] }
 "npm:@btp/catalogue" = "2.0.0"
 "npm:@btp/catalogue-mcp" = "2.0.0"
 "npm:@btp/ci-cli" = "1.1.1"
