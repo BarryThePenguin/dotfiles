@@ -130,17 +130,18 @@ url = "https://github.com/open-telemetry/opentelemetry-collector-releases/releas
 url_api = "https://api.github.com/repos/open-telemetry/opentelemetry-collector-releases/releases/assets/719711786"
 
 [[tools."github:woodpecker-ci/woodpecker"]]
-version = "3.18.1"
+version = "3.20.1"
 backend = "github:woodpecker-ci/woodpecker"
-specifiers = ["3.18.1"]
+specifiers = ["v3.20.1"]
 
 [tools."github:woodpecker-ci/woodpecker".options]
 matching = "woodpecker-cli"
 
 [tools."github:woodpecker-ci/woodpecker"."platforms.macos-arm64"]
-checksum = "sha256:a10f00ca6af4856a7d4c9c1aad83199e30625436def8530702978a496b19e72c"
-url = "https://github.com/woodpecker-ci/woodpecker/releases/download/v3.18.1/woodpecker-cli_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/woodpecker-ci/woodpecker/releases/assets/551575313"
+checksum = "sha256:2726bf9958ff133471201e3c6d6679b346d7d3b94f196e0cb0b32f0e717d17a9"
+checksum_source = "mise-versions"
+url = "https://github.com/woodpecker-ci/woodpecker/releases/download/v3.20.1/woodpecker-cli_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/woodpecker-ci/woodpecker/releases/assets/689755757"
 
 [[tools.go]]
 version = "1.27.4"
