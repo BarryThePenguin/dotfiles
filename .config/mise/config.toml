@@ -33,7 +33,7 @@ ast-grep = { version = "0.51.3", os = ["macos"] }
 atuin = { version = "18.25.0", os = ["macos"] }
 aube = { version = "v2.10.1", workflow = ["release-plz.yml@refs/heads/main", "release.yml@refs/heads/main"], os = ["macos"] }
 cloudflared = { version = "2026.11.1", os = ["macos"] }
-flux2 = { version = "2.10.0", os = ["macos"] }
+flux2 = { version = "2.10.1", os = ["macos"] }
 fnox = { version = "v1.50.0", workflow = "release.yml", os = ["macos"] }
 gh = { version = "2.105.0", os = ["macos"] }
 go = { version = "1.27.4", os = ["macos"] }
