@@ -381,15 +381,15 @@ specifiers = ["latest"]
 allow_builds = '["@opencode/cli"]'
 
 [[tools.pi]]
-version = "v1.5.2"
+version = "v1.6.0"
 backend = "aqua:earendil-works/pi"
-specifiers = ["v1.5.2"]
+specifiers = ["v1.6.0"]
 
 [tools.pi."platforms.macos-arm64"]
-checksum = "sha256:56b5e194d485ced555667b8ba3276157a8272e9ecde9e001e428af80985bdd9b"
+checksum = "sha256:6429287b7ae98d726ec577815d14fd680e7c587e89ecc5153b4a145dc4adba33"
 checksum_source = "mise-versions"
-url = "https://github.com/earendil-works/pi/releases/download/v1.5.2/pi-darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/731292526"
+url = "https://github.com/earendil-works/pi/releases/download/v1.6.0/pi-darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/earendil-works/pi/releases/assets/771562449"
 
 [[tools.podman]]
 version = "6.2.0"
