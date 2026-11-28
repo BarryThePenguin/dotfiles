@@ -55,7 +55,7 @@ starship = { version = "1.27.0", os = ["macos"] }
 usage = { version = "7.4.0", workflow = "publish-cli.yml", os = ["macos"] }
 uv = { version = "0.13.9", os = ["macos"] }
 watchexec = { version = "2.8.0", os = ["macos"] }
-workmux = { version = "v0.1.283", os = ["macos"] }
+workmux = { version = "v0.1.284", os = ["macos"] }
 yq = { version = "4.54.3", os = ["macos"] }
 zellij = { version = "0.46.0", os = ["macos"] }
 cargo-binstall = { version = "1.27.0", os = ["macos"] }
